@@ -1,4 +1,3 @@
-import React from 'react'
 import { ShopApp } from './ShopApp'
 
 function App() {
