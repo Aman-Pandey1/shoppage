@@ -95,7 +95,7 @@ const Main: React.FC = () => {
   return (
     <div>
       <CartSidebar />
-      <main style={{ marginLeft: 340, padding: 20 }}>
+      <main className="content" style={{ marginLeft: 340, padding: 20 }}>
         <h2 style={{ marginTop: 0 }}>Shop</h2>
         {content}
       </main>
