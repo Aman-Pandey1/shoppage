@@ -49,7 +49,7 @@ export const ProductList: React.FC<{
       >
         ← Back to categories
       </button>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20, alignItems: 'start' }}>
         {products.map((p) => (
           <div
             key={p._id}

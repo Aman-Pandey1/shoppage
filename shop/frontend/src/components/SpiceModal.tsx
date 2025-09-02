@@ -20,8 +20,8 @@ export const SpiceModal: React.FC<{
             style={{
               padding: '10px 12px',
               borderRadius: 8,
-              border: selected === lvl ? '2px solid #0ea5e9' : '1px solid #ddd',
-              background: selected === lvl ? '#e0f2fe' : '#fff',
+              border: selected === lvl ? '2px solid var(--primary-600)' : '1px solid var(--border)',
+              background: selected === lvl ? 'rgba(14,165,233,0.12)' : 'var(--panel-2)',
               cursor: 'pointer',
             }}
           >
@@ -30,8 +30,8 @@ export const SpiceModal: React.FC<{
         ))}
       </div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 16 }}>
-        <button onClick={onCancel} style={{ padding: '10px 14px', borderRadius: 6, border: '1px solid #ddd' }}>Cancel</button>
-        <button onClick={() => onConfirm(selected)} style={{ padding: '10px 14px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>OK</button>
+        <button onClick={onCancel} style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--panel-2)' }}>Cancel</button>
+        <button onClick={() => onConfirm(selected)} className="primary-btn" style={{ padding: '10px 14px', borderRadius: 8 }}>OK</button>
       </div>
     </Modal>
   );

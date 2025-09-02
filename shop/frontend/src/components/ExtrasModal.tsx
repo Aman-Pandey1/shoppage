@@ -41,12 +41,13 @@ export const ExtrasModal: React.FC<{
   }
 
   function canConfirm(): boolean {
-    return groups.every((g, idx) => {
+    for (let idx = 0; idx < groups.length; idx++) {
       const gk = groupKey(idx);
       const set = selected[gk] || new Set<string>();
       const { min } = constraints[gk] || { min: 0, max: Infinity };
-      return set.size >= min;
-    });
+      if (set.size < min) return false;
+    }
+    return true;
   }
 
   function handleConfirm() {
@@ -70,7 +71,7 @@ export const ExtrasModal: React.FC<{
           const min = group.minSelect ?? 0;
           const max = group.maxSelect ?? group.options.length;
           return (
-            <div key={group.groupKey} style={{ border: '1px solid #eee', borderRadius: 8, padding: 12 }}>
+            <div key={group.groupKey} style={{ border: '1px solid var(--border)', borderRadius: 10, padding: 12, background: 'var(--panel-2)' }}>
               <div style={{ fontWeight: 600, marginBottom: 8 }}>
                 {group.groupLabel} {min > 0 ? `(choose at least ${min})` : ''} {max > 0 ? `(up to ${max})` : ''}
               </div>
@@ -84,8 +85,8 @@ export const ExtrasModal: React.FC<{
                       style={{
                         padding: '8px 10px',
                         borderRadius: 6,
-                        border: active ? '2px solid #0ea5e9' : '1px solid #ddd',
-                        background: active ? '#e0f2fe' : '#fff',
+                        border: active ? '2px solid var(--primary-600)' : '1px solid var(--border)',
+                        background: active ? 'rgba(14,165,233,0.12)' : 'var(--panel)',
                         cursor: 'pointer',
                       }}
                     >
@@ -99,8 +100,8 @@ export const ExtrasModal: React.FC<{
         })}
       </div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 16 }}>
-        <button onClick={onCancel} style={{ padding: '10px 14px', borderRadius: 6, border: '1px solid #ddd' }}>Cancel</button>
-        <button disabled={!canConfirm()} onClick={handleConfirm} style={{ padding: '10px 14px', borderRadius: 6, border: '1px solid #0ea5e9', background: canConfirm() ? '#0ea5e9' : '#93c5fd', color: '#fff' }}>Add</button>
+        <button onClick={onCancel} style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--panel-2)' }}>Cancel</button>
+        <button disabled={!canConfirm()} onClick={handleConfirm} className="primary-btn" style={{ padding: '10px 14px', borderRadius: 8, opacity: canConfirm() ? 1 : 0.7 }}>Add</button>
       </div>
     </Modal>
   );
