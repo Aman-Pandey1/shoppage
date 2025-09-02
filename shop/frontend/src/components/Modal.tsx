@@ -11,7 +11,7 @@ type ModalProps = {
 const overlayStyle: React.CSSProperties = {
   position: 'fixed',
   inset: 0,
-  background: 'rgba(2,6,23,0.6)',
+  background: 'rgba(2,6,23,0.35)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -21,7 +21,7 @@ const overlayStyle: React.CSSProperties = {
 
 const panelStyle: React.CSSProperties = {
   width: 'min(92vw, 640px)',
-  background: 'linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02))',
+  background: 'var(--panel)',
   borderRadius: 12,
   border: '1px solid var(--border)',
   boxShadow: 'var(--shadow-soft)',
@@ -33,10 +33,12 @@ const headerStyle: React.CSSProperties = {
   borderBottom: '1px solid var(--border)',
   fontWeight: 700,
   fontSize: 18,
+  color: 'var(--text)'
 };
 
 const bodyStyle: React.CSSProperties = {
   padding: 20,
+  color: 'var(--text)'
 };
 
 const footerStyle: React.CSSProperties = {
@@ -50,8 +52,9 @@ const footerStyle: React.CSSProperties = {
 const buttonStyle: React.CSSProperties = {
   padding: '10px 14px',
   borderRadius: 8,
-  border: '1px solid var(--border)',
-  background: 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))',
+  border: '1px solid var(--primary-600)',
+  background: 'linear-gradient(180deg, rgba(14,165,233,0.16), rgba(14,165,233,0.10))',
+  color: 'var(--text)',
   cursor: 'pointer',
 };
 

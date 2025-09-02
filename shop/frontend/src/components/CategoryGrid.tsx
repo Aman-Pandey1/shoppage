@@ -36,8 +36,9 @@ export const CategoryGrid: React.FC<{
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
         gap: 20,
+        alignItems: 'start'
       }}
     >
       {categories.map((cat) => (

@@ -18,7 +18,7 @@ export const CartSidebar: React.FC = () => {
       overflowY: 'auto',
       zIndex: 10,
       boxShadow: 'var(--shadow-soft)'
-    }} className="animate-slideInLeft">
+    }} className="animate-slideInLeft cart-sidebar">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <h3 style={{ margin: 0, letterSpacing: '.02em' }}>Cart</h3>
         <button onClick={clearCart} className="primary-btn" style={{ padding: '6px 10px', borderRadius: 8 }}>Clear</button>

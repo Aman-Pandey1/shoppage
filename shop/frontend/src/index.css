@@ -3,27 +3,27 @@
   line-height: 1.5;
   font-weight: 400;
 
-  /* Theme palette */
-  --bg: #0b1220;
-  --panel: #0f172a;
-  --panel-2: #111827;
-  --card: #0b1220;
-  --muted: #94a3b8;
-  --text: #e5e7eb;
-  --primary: #22d3ee; /* cyan-400 */
-  --primary-600: #0891b2;
+  /* Theme palette (light / cream) */
+  --bg: #fffaf1; /* soft cream */
+  --panel: #ffffff;
+  --panel-2: #f8fafc;
+  --card: #ffffff;
+  --muted: #64748b; /* slate-500 */
+  --text: #0f172a; /* slate-900 */
+  --primary: #0ea5e9; /* sky-500 */
+  --primary-600: #0284c7; /* sky-600 */
   --accent: #a78bfa; /* violet-400 */
   --danger: #ef4444;
-  --border: #1f2937;
-  --ring: rgba(34, 211, 238, 0.45);
+  --border: #e5e7eb; /* gray-200 */
+  --ring: rgba(14, 165, 233, 0.35);
 
   /* Radii & shadows */
   --radius: 14px;
   --radius-sm: 10px;
-  --shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.25);
-  --shadow-pop: 0 12px 40px rgba(34, 211, 238, 0.15);
+  --shadow-soft: 0 8px 30px rgba(2, 6, 23, 0.06);
+  --shadow-pop: 0 12px 40px rgba(14, 165, 233, 0.14);
 
-  color-scheme: dark;
+  color-scheme: light;
   color: var(--text);
   background-color: var(--bg);
 
@@ -47,8 +47,8 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: radial-gradient(1200px 800px at 10% -10%, rgba(167,139,250,0.15), transparent 40%),
-              radial-gradient(900px 700px at 110% 10%, rgba(34,211,238,0.14), transparent 45%),
+  background: radial-gradient(1000px 700px at 10% -10%, rgba(167,139,250,0.10), transparent 42%),
+              radial-gradient(800px 600px at 110% 10%, rgba(14,165,233,0.10), transparent 46%),
               var(--bg);
 }
 
@@ -109,7 +109,6 @@ button:focus-visible {
   border: 1px solid var(--primary-600);
   background: linear-gradient(180deg, rgba(34,211,238,0.2), rgba(34,211,238,0.1));
   color: #0e1726;
-  color: var(--text);
 }
 .primary-btn:hover {
   background: linear-gradient(180deg, rgba(34,211,238,0.3), rgba(34,211,238,0.15));
@@ -144,4 +143,26 @@ button:focus-visible {
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+/* Layout helpers */
+.content {
+  margin-left: 340px;
+  padding: 20px;
+}
+
+/* Responsive layout adjustments */
+@media (max-width: 1024px) {
+  .cart-sidebar {
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+    bottom: auto !important;
+    width: auto !important;
+    margin: 12px;
+  }
+  .content {
+    margin-left: 0 !important;
+    padding: 12px !important;
+  }
 }
