@@ -11,25 +11,27 @@ type ModalProps = {
 const overlayStyle: React.CSSProperties = {
   position: 'fixed',
   inset: 0,
-  background: 'rgba(0,0,0,0.5)',
+  background: 'rgba(2,6,23,0.6)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   zIndex: 1000,
+  backdropFilter: 'blur(4px)'
 };
 
 const panelStyle: React.CSSProperties = {
   width: 'min(92vw, 640px)',
-  background: '#fff',
-  borderRadius: 8,
-  boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+  background: 'linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02))',
+  borderRadius: 12,
+  border: '1px solid var(--border)',
+  boxShadow: 'var(--shadow-soft)',
   overflow: 'hidden',
 };
 
 const headerStyle: React.CSSProperties = {
   padding: '16px 20px',
-  borderBottom: '1px solid #eee',
-  fontWeight: 600,
+  borderBottom: '1px solid var(--border)',
+  fontWeight: 700,
   fontSize: 18,
 };
 
@@ -39,7 +41,7 @@ const bodyStyle: React.CSSProperties = {
 
 const footerStyle: React.CSSProperties = {
   padding: 16,
-  borderTop: '1px solid #eee',
+  borderTop: '1px solid var(--border)',
   display: 'flex',
   justifyContent: 'flex-end',
   gap: 12,
@@ -47,9 +49,9 @@ const footerStyle: React.CSSProperties = {
 
 const buttonStyle: React.CSSProperties = {
   padding: '10px 14px',
-  borderRadius: 6,
-  border: '1px solid #ddd',
-  background: '#fafafa',
+  borderRadius: 8,
+  border: '1px solid var(--border)',
+  background: 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))',
   cursor: 'pointer',
 };
 
@@ -57,7 +59,7 @@ export const Modal: React.FC<ModalProps> = ({ open, onClose, title, children, fo
   if (!open) return null;
   return (
     <div style={overlayStyle} onClick={onClose}>
-      <div style={panelStyle} onClick={(e) => e.stopPropagation()}>
+      <div style={panelStyle} className="animate-popIn" onClick={(e) => e.stopPropagation()}>
         {title ? <div style={headerStyle}>{title}</div> : null}
         <div style={bodyStyle}>{children}</div>
         {footer ? <div style={footerStyle}>{footer}</div> : (
