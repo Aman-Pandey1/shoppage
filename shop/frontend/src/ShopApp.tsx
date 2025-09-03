@@ -92,13 +92,30 @@ const Main: React.FC = () => {
     return <CategoryGrid onSelect={setSelectedCategory} />;
   }, [selectedCategory]);
 
+  const [mobileCartOpen, setMobileCartOpen] = useState(false);
+
   return (
     <div>
-      <CartSidebar />
-      <main className="content" style={{ marginLeft: 340, padding: 20 }}>
-        <h2 style={{ marginTop: 0 }}>Shop</h2>
+      {/* Backdrop for mobile drawer */}
+      <div className="cart-backdrop hide-desktop" data-show={mobileCartOpen ? 'true' : 'false'} onClick={() => setMobileCartOpen(false)} />
+
+      <CartSidebar open={mobileCartOpen} onClose={() => setMobileCartOpen(false)} />
+      <main className="content">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+          <h2 style={{ marginTop: 0 }}>Shop</h2>
+          {/* Desktop cart summary chip (optional) */}
+          <div className="hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
+            <span>Items: {state.items.length}</span>
+          </div>
+        </div>
         {content}
       </main>
+
+      {/* Mobile FAB */}
+      <button className="cart-fab hide-desktop" onClick={() => setMobileCartOpen(true)}>
+        <span style={{ fontSize: 18 }}>🛒</span>
+        <span style={{ fontWeight: 800 }}>Cart ({state.items.length})</span>
+      </button>
 
       <PrivacyPolicyModal open={privacyOpen} onAccept={handleAcceptPrivacy} />
       <FulfillmentModal open={fulfillmentOpen} onChoose={handleChooseFulfillment} />
