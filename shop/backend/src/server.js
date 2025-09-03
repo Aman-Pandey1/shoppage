@@ -5,6 +5,7 @@ import cors from 'cors';
 import morgan from 'morgan';
 import categoriesRouter from './routes/categories.js';
 import productsRouter from './routes/products.js';
+import authRouter from './routes/auth.js';
 
 dotenv.config();
 
@@ -110,6 +111,7 @@ if (USE_MOCK_DATA) {
 }
 
 app.get('/health', (_req, res) => res.json({ ok: true, mock: !!app.locals.mockData }));
+app.use('/api/auth', authRouter);
 app.use('/api/categories', categoriesRouter);
 app.use('/api/products', productsRouter);
 

@@ -7,6 +7,9 @@ import { PrivacyPolicyModal } from './components/PrivacyPolicyModal';
 import { FulfillmentModal } from './components/FulfillmentModal';
 import { SpiceModal } from './components/SpiceModal';
 import { ExtrasModal } from './components/ExtrasModal';
+import { LoginModal } from './components/LoginModal';
+import { AdminDashboard } from './components/AdminDashboard';
+import { clearAuthToken } from './lib/api';
 import type { Category, Product, SelectedOption } from './types';
 
 const Main: React.FC = () => {
@@ -79,7 +82,13 @@ const Main: React.FC = () => {
     setPendingSpice(undefined);
   }
 
+  const [isAdmin, setIsAdmin] = useState<boolean>(() => !!localStorage.getItem('auth_token'));
+  const [loginOpen, setLoginOpen] = useState(false);
+
   const content = useMemo(() => {
+    if (isAdmin) {
+      return <AdminDashboard />;
+    }
     if (selectedCategory) {
       return (
         <ProductList
@@ -90,20 +99,44 @@ const Main: React.FC = () => {
       );
     }
     return <CategoryGrid onSelect={setSelectedCategory} />;
-  }, [selectedCategory]);
+  }, [selectedCategory, isAdmin]);
+
+  const [mobileCartOpen, setMobileCartOpen] = useState(false);
 
   return (
     <div>
-      <CartSidebar />
-      <main className="content" style={{ marginLeft: 340, padding: 20 }}>
-        <h2 style={{ marginTop: 0 }}>Shop</h2>
+      {/* Backdrop for mobile drawer */}
+      <div className="cart-backdrop hide-desktop" data-show={mobileCartOpen ? 'true' : 'false'} onClick={() => setMobileCartOpen(false)} />
+
+      <CartSidebar open={mobileCartOpen} onClose={() => setMobileCartOpen(false)} />
+      <main className="content">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+          <h2 style={{ marginTop: 0 }}>{isAdmin ? 'Admin Dashboard' : 'Shop'}</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {!isAdmin ? (
+              <button onClick={() => setLoginOpen(true)}>Login</button>
+            ) : (
+              <button onClick={() => { clearAuthToken(); setIsAdmin(false); }}>Logout</button>
+            )}
+            <div className="hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
+              <span>Items: {state.items.length}</span>
+            </div>
+          </div>
+        </div>
         {content}
       </main>
+
+      {/* Mobile FAB */}
+      <button className="cart-fab hide-desktop" onClick={() => setMobileCartOpen(true)}>
+        <span style={{ fontSize: 18 }}>🛒</span>
+        <span style={{ fontWeight: 800 }}>Cart ({state.items.length})</span>
+      </button>
 
       <PrivacyPolicyModal open={privacyOpen} onAccept={handleAcceptPrivacy} />
       <FulfillmentModal open={fulfillmentOpen} onChoose={handleChooseFulfillment} />
       <SpiceModal open={spiceOpen} spiceLevels={pendingProduct?.spiceLevels} onCancel={() => setSpiceOpen(false)} onConfirm={confirmSpice} />
       <ExtrasModal open={extrasOpen} groups={pendingProduct?.extraOptionGroups} onCancel={() => setExtrasOpen(false)} onConfirm={confirmExtras} />
+      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} onSuccess={() => setIsAdmin(true)} />
     </div>
   );
 };
