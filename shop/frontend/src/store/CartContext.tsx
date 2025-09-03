@@ -12,6 +12,7 @@ type CartContextValue = {
     spiceLevel?: string;
     selectedOptions?: SelectedOption[];
   }) => void;
+  lastAdded?: { name: string; quantity: number } | null;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
@@ -35,6 +36,7 @@ function generateItemId(productId: string, spiceLevel?: string, selectedOptions?
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, setState] = useState<CartState>({ items: [] });
+  const [lastAdded, setLastAdded] = useState<{ name: string; quantity: number } | null>(null);
 
   useEffect(() => {
     try {
@@ -88,6 +90,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return { ...prev, items: [...prev.items, newItem] };
     });
+    setLastAdded({ name: product.name, quantity });
   }, []);
 
   const removeItem = useCallback((id: string) => {
@@ -108,8 +111,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [state.items]);
 
   const value = useMemo(
-    () => ({ state, setFulfillmentType, addItem, removeItem, updateQuantity, clearCart, getCartTotal }),
-    [state, setFulfillmentType, addItem, removeItem, updateQuantity, clearCart, getCartTotal]
+    () => ({ state, setFulfillmentType, addItem, removeItem, updateQuantity, clearCart, getCartTotal, lastAdded }),
+    [state, setFulfillmentType, addItem, removeItem, updateQuantity, clearCart, getCartTotal, lastAdded]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

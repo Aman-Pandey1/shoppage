@@ -50,11 +50,11 @@ export const ProductList: React.FC<{
         ← Back to categories
       </button>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20, alignItems: 'start' }}>
-        {products.map((p) => (
+        {products.map((p, idx) => (
           <div
             key={p._id}
             className="card animate-fadeInUp"
-            style={{ borderRadius: 'var(--radius)', padding: 12 }}
+            style={{ borderRadius: 'var(--radius)', padding: 12, animationDelay: `${idx * 40}ms` }}
             onMouseEnter={(e) => {
               (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
               (e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-pop)';
@@ -69,13 +69,21 @@ export const ProductList: React.FC<{
             <div style={{ width: '100%', aspectRatio: '4 / 3', borderRadius: 'calc(var(--radius) - 6px)', overflow: 'hidden', background: 'linear-gradient(180deg, rgba(34,211,238,0.08), rgba(167,139,250,0.08))', marginBottom: 10 }}>
               {p.imageUrl ? (
                 <img src={p.imageUrl} alt={p.name} className="img-cover" />
-              ) : null}
+              ) : (
+                <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', fontSize: 42 }}>🍽️</div>
+              )}
             </div>
-            <div style={{ fontWeight: 800, letterSpacing: '.01em' }}>{p.name}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ fontSize: 18 }}>🍽️</div>
+              <div style={{ fontWeight: 800, letterSpacing: '.01em' }}>{p.name}</div>
+            </div>
             {p.description ? <div className="muted" style={{ fontSize: 14, marginTop: 4 }}>{p.description}</div> : null}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
               <div style={{ fontWeight: 700 }}>${p.price.toFixed(2)}</div>
-              <button onClick={() => onAdd(p)} className="primary-btn" style={{ padding: '10px 12px', borderRadius: 10 }}>Add to cart</button>
+              <button onClick={() => onAdd(p)} className="primary-btn" style={{ padding: '10px 12px', borderRadius: 10, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <span>🛒</span>
+                <span>Add to cart</span>
+              </button>
             </div>
           </div>
         ))}
