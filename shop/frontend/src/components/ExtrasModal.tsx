@@ -71,9 +71,12 @@ export const ExtrasModal: React.FC<{
           const min = group.minSelect ?? 0;
           const max = group.maxSelect ?? group.options.length;
           return (
-            <div key={group.groupKey} style={{ border: '1px solid var(--border)', borderRadius: 10, padding: 12, background: 'var(--panel-2)' }}>
-              <div style={{ fontWeight: 600, marginBottom: 8 }}>
-                {group.groupLabel} {min > 0 ? `(choose at least ${min})` : ''} {max > 0 ? `(up to ${max})` : ''}
+            <div key={group.groupKey} style={{ border: '1px solid var(--border)', borderRadius: 12, padding: 12, background: 'var(--panel-2)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <div style={{ fontSize: 18 }}>➕</div>
+                <div style={{ fontWeight: 700 }}>
+                  {group.groupLabel} {min > 0 ? `(choose at least ${min})` : ''} {max > 0 ? `(up to ${max})` : ''}
+                </div>
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
                 {group.options.map((opt) => {
@@ -83,14 +86,16 @@ export const ExtrasModal: React.FC<{
                       key={opt.key}
                       onClick={() => toggle(gIdx, opt.key)}
                       style={{
-                        padding: '8px 10px',
-                        borderRadius: 6,
+                        padding: '10px 12px',
+                        borderRadius: 10,
                         border: active ? '2px solid var(--primary-600)' : '1px solid var(--border)',
                         background: active ? 'rgba(14,165,233,0.12)' : 'var(--panel)',
                         cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: 8
                       }}
                     >
-                      {opt.label}{opt.priceDelta ? ` (+$${opt.priceDelta.toFixed(2)})` : ''}
+                      <span>✨</span>
+                      <span>{opt.label}{opt.priceDelta ? ` (+$${opt.priceDelta.toFixed(2)})` : ''}</span>
                     </button>
                   );
                 })}

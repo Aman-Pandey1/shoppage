@@ -7,9 +7,8 @@ import { PrivacyPolicyModal } from './components/PrivacyPolicyModal';
 import { FulfillmentModal } from './components/FulfillmentModal';
 import { SpiceModal } from './components/SpiceModal';
 import { ExtrasModal } from './components/ExtrasModal';
-import { LoginModal } from './components/LoginModal';
-import { AdminDashboard } from './components/AdminDashboard';
-import { clearAuthToken } from './lib/api';
+import { Link } from 'react-router-dom';
+import { AddToCartToast } from './components/AddToCartToast';
 import type { Category, Product, SelectedOption } from './types';
 
 const Main: React.FC = () => {
@@ -82,13 +81,7 @@ const Main: React.FC = () => {
     setPendingSpice(undefined);
   }
 
-  const [isAdmin, setIsAdmin] = useState<boolean>(() => !!localStorage.getItem('auth_token'));
-  const [loginOpen, setLoginOpen] = useState(false);
-
   const content = useMemo(() => {
-    if (isAdmin) {
-      return <AdminDashboard />;
-    }
     if (selectedCategory) {
       return (
         <ProductList
@@ -99,7 +92,7 @@ const Main: React.FC = () => {
       );
     }
     return <CategoryGrid onSelect={setSelectedCategory} />;
-  }, [selectedCategory, isAdmin]);
+  }, [selectedCategory]);
 
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
 
@@ -111,13 +104,9 @@ const Main: React.FC = () => {
       <CartSidebar open={mobileCartOpen} onClose={() => setMobileCartOpen(false)} />
       <main className="content">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-          <h2 style={{ marginTop: 0 }}>{isAdmin ? 'Admin Dashboard' : 'Shop'}</h2>
+          <h2 style={{ marginTop: 0 }}>Shop</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {!isAdmin ? (
-              <button onClick={() => setLoginOpen(true)}>Login</button>
-            ) : (
-              <button onClick={() => { clearAuthToken(); setIsAdmin(false); }}>Logout</button>
-            )}
+            <Link to="/login">Admin Login</Link>
             <div className="hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
               <span>Items: {state.items.length}</span>
             </div>
@@ -136,7 +125,9 @@ const Main: React.FC = () => {
       <FulfillmentModal open={fulfillmentOpen} onChoose={handleChooseFulfillment} />
       <SpiceModal open={spiceOpen} spiceLevels={pendingProduct?.spiceLevels} onCancel={() => setSpiceOpen(false)} onConfirm={confirmSpice} />
       <ExtrasModal open={extrasOpen} groups={pendingProduct?.extraOptionGroups} onCancel={() => setExtrasOpen(false)} onConfirm={confirmExtras} />
-      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} onSuccess={() => setIsAdmin(true)} />
+      {/* Toast for add-to-cart */}
+      <AddToCartToast />
+      {/* Login moved to dedicated /login route */}
     </div>
   );
 };

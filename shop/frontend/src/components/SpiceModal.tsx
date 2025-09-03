@@ -13,21 +13,27 @@ export const SpiceModal: React.FC<{
   return (
     <Modal open={open} onClose={onCancel} title="Choose spice level">
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-        {levels.map((lvl) => (
-          <button
-            key={lvl}
-            onClick={() => setSelected(lvl)}
-            style={{
-              padding: '10px 12px',
-              borderRadius: 8,
-              border: selected === lvl ? '2px solid var(--primary-600)' : '1px solid var(--border)',
-              background: selected === lvl ? 'rgba(14,165,233,0.12)' : 'var(--panel-2)',
-              cursor: 'pointer',
-            }}
-          >
-            {lvl}
-          </button>
-        ))}
+        {levels.map((lvl) => {
+          const icon = lvl.toLowerCase().includes('hot') ? '🌶️🌶️' : lvl.toLowerCase().includes('medium') ? '🌶️' : '🫑';
+          const active = selected === lvl;
+          return (
+            <button
+              key={lvl}
+              onClick={() => setSelected(lvl)}
+              style={{
+                padding: '12px 14px',
+                borderRadius: 12,
+                border: active ? '2px solid var(--primary-600)' : '1px solid var(--border)',
+                background: active ? 'rgba(14,165,233,0.12)' : 'var(--panel-2)',
+                cursor: 'pointer',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 110
+              }}
+            >
+              <div style={{ fontSize: 22 }}>{icon}</div>
+              <div style={{ fontWeight: 700 }}>{lvl}</div>
+            </button>
+          );
+        })}
       </div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 16 }}>
         <button onClick={onCancel} style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--panel-2)' }}>Cancel</button>
