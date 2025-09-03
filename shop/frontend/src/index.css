@@ -16,6 +16,7 @@
   --danger: #ef4444;
   --border: #e5e7eb; /* gray-200 */
   --ring: rgba(14, 165, 233, 0.35);
+  --ring-strong: rgba(167, 139, 250, 0.35);
 
   /* Radii & shadows */
   --radius: 14px;
@@ -83,6 +84,18 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
+input, select, textarea {
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  padding: 0.55em 0.9em;
+  background: linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,255,255,0.4));
+  color: var(--text);
+}
+input:focus, select:focus, textarea:focus {
+  outline: 3px solid var(--ring-strong);
+  outline-offset: 2px;
+}
+
 /* Utility classes */
 .container {
   max-width: 1200px;
@@ -91,7 +104,7 @@ button:focus-visible {
 }
 
 .card {
-  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  background: linear-gradient(180deg, rgba(255,255,255,0.45), rgba(255,255,255,0.35));
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-soft);
@@ -107,11 +120,11 @@ button:focus-visible {
 
 .primary-btn {
   border: 1px solid var(--primary-600);
-  background: linear-gradient(180deg, rgba(34,211,238,0.2), rgba(34,211,238,0.1));
+  background: linear-gradient(180deg, rgba(34,211,238,0.22), rgba(34,211,238,0.12));
   color: #0e1726;
 }
 .primary-btn:hover {
-  background: linear-gradient(180deg, rgba(34,211,238,0.3), rgba(34,211,238,0.15));
+  background: linear-gradient(180deg, rgba(34,211,238,0.32), rgba(34,211,238,0.18));
 }
 
 .danger {
@@ -133,9 +146,15 @@ button:focus-visible {
   to { transform: translateX(0); opacity: 1; }
 }
 
+@keyframes slideInRight {
+  from { transform: translateX(12px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
 .animate-fadeInUp { animation: fadeInUp .35s cubic-bezier(.22,.7,.3,1) both; }
 .animate-popIn { animation: popIn .28s cubic-bezier(.22,.7,.3,1) both; }
 .animate-slideInLeft { animation: slideInLeft .25s ease-out both; }
+.animate-slideInRight { animation: slideInRight .25s ease-out both; }
 
 /* Image helpers */
 .img-cover {
@@ -147,22 +166,73 @@ button:focus-visible {
 
 /* Layout helpers */
 .content {
-  margin-left: 340px;
+  margin-right: 340px;
   padding: 20px;
 }
 
-/* Responsive layout adjustments */
+/* Responsive layout adjustments + mobile drawer behavior */
 @media (max-width: 1024px) {
-  .cart-sidebar {
-    position: static !important;
-    top: auto !important;
-    left: auto !important;
-    bottom: auto !important;
-    width: auto !important;
-    margin: 12px;
-  }
   .content {
-    margin-left: 0 !important;
+    margin-right: 0 !important;
     padding: 12px !important;
   }
+
+  .cart-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: auto !important;
+    width: min(92vw, 420px) !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    border-left: 1px solid var(--border) !important;
+    border-right: none !important;
+    transform: translateX(100%);
+    transition: transform .25s ease;
+    z-index: 40;
+  }
+  .cart-sidebar[data-open="true"] {
+    transform: translateX(0);
+  }
+
+  .cart-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(2, 6, 23, 0.45);
+    backdrop-filter: blur(2px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s ease;
+    z-index: 30;
+  }
+  .cart-backdrop[data-show="true"] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+/* FAB for opening cart on mobile */
+.cart-fab {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  border-radius: 9999px;
+  padding: 10px 14px;
+  box-shadow: var(--shadow-pop);
+  background: linear-gradient(180deg, rgba(34,211,238,0.25), rgba(34,211,238,0.12));
+  border: 1px solid var(--primary-600);
+}
+@media (max-width: 1024px) {
+  .cart-fab { display: inline-flex; }
+}
+
+/* Visibility helpers */
+.hide-desktop { display: none; }
+@media (max-width: 1024px) {
+  .hide-desktop { display: inline-flex; }
+  .hide-mobile { display: none; }
 }

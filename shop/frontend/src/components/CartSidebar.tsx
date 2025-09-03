@@ -1,27 +1,33 @@
 import React from 'react';
 import { useCart } from '../store/CartContext';
 
-export const CartSidebar: React.FC = () => {
+export const CartSidebar: React.FC<{ open?: boolean; onClose?: () => void }> = ({ open, onClose }) => {
   const { state, removeItem, updateQuantity, clearCart, getCartTotal } = useCart();
 
   return (
-    <aside style={{
-      position: 'fixed',
-      top: 16,
-      left: 16,
-      bottom: 16,
-      width: 320,
-      background: 'var(--panel)',
-      border: '1px solid var(--border)',
-      borderRadius: 'var(--radius)',
-      padding: 16,
-      overflowY: 'auto',
-      zIndex: 10,
-      boxShadow: 'var(--shadow-soft)'
-    }} className="animate-slideInLeft cart-sidebar">
+    <aside
+      style={{
+        position: 'fixed',
+        top: 16,
+        right: 16,
+        bottom: 16,
+        width: 320,
+        background: 'var(--panel)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius)',
+        padding: 16,
+        overflowY: 'auto',
+        boxShadow: 'var(--shadow-soft)'
+      }}
+      className="animate-slideInRight cart-sidebar"
+      data-open={open ? 'true' : 'false'}
+    >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <h3 style={{ margin: 0, letterSpacing: '.02em' }}>Cart</h3>
-        <button onClick={clearCart} className="primary-btn" style={{ padding: '6px 10px', borderRadius: 8 }}>Clear</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button onClick={clearCart} className="primary-btn" style={{ padding: '6px 10px', borderRadius: 8 }}>Clear</button>
+          <button onClick={onClose} aria-label="Close cart" title="Close" style={{ border: 'none', background: 'transparent', cursor: 'pointer' }} className="danger hide-desktop">✕</button>
+        </div>
       </div>
 
       {state.items.length === 0 ? (
