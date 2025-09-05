@@ -15,9 +15,10 @@ type DeliveryAddressModalProps = {
   siteSlug: string;
   onClose: () => void;
   onConfirmed: (deliveryId: string) => void;
+  manifest: { name: string; quantity: number; priceCents?: number; size?: 'small'|'medium'|'large' }[];
 };
 
-export const DeliveryAddressModal: React.FC<DeliveryAddressModalProps> = ({ open, siteSlug, onClose, onConfirmed }) => {
+export const DeliveryAddressModal: React.FC<DeliveryAddressModalProps> = ({ open, siteSlug, onClose, onConfirmed, manifest }) => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [addr1, setAddr1] = useState('');
@@ -28,10 +29,32 @@ export const DeliveryAddressModal: React.FC<DeliveryAddressModalProps> = ({ open
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const [quote, setQuote] = useState<any | null>(null);
+  const [tip, setTip] = useState<number>(0);
+
+  function isValidPostal(code: string) {
+    // Canadian postal code A1A 1A1
+    return /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/.test(code.trim());
+  }
+
+  function isValidPhone(ph: string) {
+    return /^\+?1[\d]{10}$/.test(ph.replace(/[^\d+]/g, ''));
+  }
+
+  function validate(): string | null {
+    if (!name.trim()) return 'Name is required';
+    if (!isValidPhone(phone)) return 'Enter phone as +1XXXXXXXXXX';
+    if (!addr1.trim()) return 'Address line 1 is required';
+    if (!city.trim()) return 'City is required';
+    if (!province.trim()) return 'Province is required';
+    if (!isValidPostal(postalCode)) return 'Postal code must be like A1A 1A1';
+    return null;
+  }
 
   async function getQuote() {
     setLoading(true); setError(undefined);
     try {
+      const invalid = validate();
+      if (invalid) { setError(invalid); setLoading(false); return; }
       const address: Address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country: 'CA' };
       const q = await postJson<any>(`/api/delivery/${siteSlug}/quote`, { dropoff: { name, phone, address } });
       setQuote(q);
@@ -47,7 +70,8 @@ export const DeliveryAddressModal: React.FC<DeliveryAddressModalProps> = ({ open
       const address: Address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country: 'CA' };
       const result = await postJson<any>(`/api/delivery/${siteSlug}/create`, {
         dropoff: { name, phone, address },
-        manifestItems: [],
+        manifestItems: manifest.map(m => ({ name: m.name, quantity: m.quantity, size: m.size || 'small', price: m.priceCents || 0 })),
+        tip: Math.round((tip || 0) * 100),
         externalId: `order-${Date.now()}`,
       });
       onConfirmed(result.id || result.delivery_id || '');
@@ -90,7 +114,12 @@ export const DeliveryAddressModal: React.FC<DeliveryAddressModalProps> = ({ open
           <input value={postalCode} onChange={(e) => setPostalCode(e.target.value)} placeholder="A1A 1A1" />
         </label>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 10 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginTop: 10, alignItems: 'center' }}>
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <span>Tip</span>
+          <input type="number" step="0.5" min={0} value={tip} onChange={(e) => setTip(Number(e.target.value))} style={{ width: 90 }} />
+        </label>
+        <div style={{ display: 'inline-flex', gap: 8, marginLeft: 'auto' }}>
         {!quote ? (
           <button className="primary-btn" disabled={loading} onClick={getQuote}>{loading ? 'Requesting…' : 'Get quote'}</button>
         ) : (
@@ -102,6 +131,7 @@ export const DeliveryAddressModal: React.FC<DeliveryAddressModalProps> = ({ open
             <button className="primary-btn" disabled={loading} onClick={createDelivery}>{loading ? 'Creating…' : 'Confirm delivery'}</button>
           </>
         )}
+        </div>
       </div>
     </Modal>
   );

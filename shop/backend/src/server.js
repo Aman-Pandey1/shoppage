@@ -11,6 +11,7 @@ import adminCategoriesRouter from './routes/adminCategories.js';
 import adminProductsRouter from './routes/adminProducts.js';
 import shopPublicRouter from './routes/shopPublic.js';
 import deliveryRouter from './routes/delivery.js';
+import adminUberRouter from './routes/adminUber.js';
 import Site from './models/Site.js';
 import Category from './models/Category.js';
 import Product from './models/Product.js';
@@ -127,6 +128,7 @@ app.use('/api/products', productsRouter);
 app.use('/api/admin/sites', adminSitesRouter);
 app.use('/api/admin/sites/:siteId/categories', adminCategoriesRouter);
 app.use('/api/admin/sites/:siteId/products', adminProductsRouter);
+app.use('/api/admin', adminUberRouter);
 // Public shop endpoints by site slug
 app.use('/api/shop', shopPublicRouter);
 // Delivery endpoints by site slug (Uber Direct)

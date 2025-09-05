@@ -197,7 +197,16 @@ export const AdminDashboard: React.FC = () => {
                   <span>Uber Customer ID</span>
                   <input value={uberCustomerId} onChange={(e) => setUberCustomerId(e.target.value)} />
                 </label>
-                <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+                  <button onClick={async () => {
+                    if (!site?._id) return;
+                    try {
+                      const res = await fetchJson<any>(`/api/admin/sites/${site._id}/health`);
+                      alert(res.ok ? `Uber OK. ETA: ${res.eta ? new Date(res.eta).toLocaleTimeString() : '—'}` : `Uber error: ${res.error}`);
+                    } catch (e: any) {
+                      alert(`Uber error: ${e.message}`);
+                    }
+                  }}>Test Uber</button>
                   {savedAt ? <div className="muted" style={{ alignSelf: 'center', fontSize: 12 }}>Saved {new Date(savedAt).toLocaleTimeString()}</div> : null}
                   <button className="primary-btn" disabled={saving} onClick={async () => {
                     setSaving(true);

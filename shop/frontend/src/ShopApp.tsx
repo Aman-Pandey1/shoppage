@@ -103,6 +103,15 @@ const Main: React.FC<{ siteSlug?: string }> = ({ siteSlug = 'default' }) => {
 
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
 
+  const manifest = useMemo(() => {
+    return state.items.map((it) => ({
+      name: it.name,
+      quantity: it.quantity,
+      priceCents: Math.round(it.basePrice * 100),
+      size: 'small',
+    }));
+  }, [state.items]);
+
   return (
     <div>
       {/* Backdrop for mobile drawer */}
@@ -135,6 +144,7 @@ const Main: React.FC<{ siteSlug?: string }> = ({ siteSlug = 'default' }) => {
         siteSlug={siteSlug}
         onClose={() => setDeliveryModalOpen(false)}
         onConfirmed={(id) => setLastDeliveryId(id)}
+        manifest={manifest}
       />
       <SpiceModal open={spiceOpen} spiceLevels={pendingProduct?.spiceLevels} onCancel={() => setSpiceOpen(false)} onConfirm={confirmSpice} />
       <ExtrasModal open={extrasOpen} groups={pendingProduct?.extraOptionGroups} onCancel={() => setExtrasOpen(false)} onConfirm={confirmExtras} />
