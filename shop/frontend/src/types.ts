@@ -30,6 +30,14 @@ export type Product = {
   extraOptionGroups?: ExtraOptionGroup[];
 };
 
+export type Site = {
+  _id: string;
+  name: string;
+  slug: string;
+  domains?: string[];
+  isActive: boolean;
+};
+
 export type FulfillmentType = 'pickup' | 'delivery';
 
 export type SelectedOption = {
