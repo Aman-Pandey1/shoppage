@@ -36,6 +36,18 @@ export type Site = {
   slug: string;
   domains?: string[];
   isActive: boolean;
+  uberCustomerId?: string;
+  pickup?: {
+    name?: string;
+    phone?: string;
+    address?: {
+      streetAddress: string[];
+      city: string;
+      province: string;
+      postalCode: string;
+      country?: string;
+    }
+  };
 };
 
 export type FulfillmentType = 'pickup' | 'delivery';

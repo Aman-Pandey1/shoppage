@@ -147,6 +147,84 @@ export const AdminDashboard: React.FC = () => {
       </aside>
 
       <section style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* Site settings */}
+        <div className="card" style={{ padding: 12 }}>
+          <div style={{ fontWeight: 800, marginBottom: 8 }}>Site Settings</div>
+          {(() => {
+            const site = sites.find(s => s._id === selectedSiteId);
+            if (!site) return <div className="muted">Select a site to configure.</div>;
+            const [pickupName, setPickupName] = React.useState(site.pickup?.name || '');
+            const [pickupPhone, setPickupPhone] = React.useState(site.pickup?.phone || '');
+            const [addr1, setAddr1] = React.useState(site.pickup?.address?.streetAddress?.[0] || '');
+            const [addr2, setAddr2] = React.useState(site.pickup?.address?.streetAddress?.[1] || '');
+            const [city, setCity] = React.useState(site.pickup?.address?.city || '');
+            const [province, setProvince] = React.useState(site.pickup?.address?.province || '');
+            const [postalCode, setPostalCode] = React.useState(site.pickup?.address?.postalCode || '');
+            const [uberCustomerId, setUberCustomerId] = React.useState(site.uberCustomerId || '');
+            const [saving, setSaving] = React.useState(false);
+            const [savedAt, setSavedAt] = React.useState<number | null>(null);
+            return (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span>Pickup name</span>
+                  <input value={pickupName} onChange={(e) => setPickupName(e.target.value)} />
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span>Pickup phone</span>
+                  <input value={pickupPhone} onChange={(e) => setPickupPhone(e.target.value)} placeholder="+1..." />
+                </label>
+                <label style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span>Address line 1</span>
+                  <input value={addr1} onChange={(e) => setAddr1(e.target.value)} />
+                </label>
+                <label style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span>Address line 2 (optional)</span>
+                  <input value={addr2} onChange={(e) => setAddr2(e.target.value)} />
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span>City</span>
+                  <input value={city} onChange={(e) => setCity(e.target.value)} />
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span>Province</span>
+                  <input value={province} onChange={(e) => setProvince(e.target.value)} placeholder="ON, BC, AB..." />
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span>Postal Code</span>
+                  <input value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
+                </label>
+                <label style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span>Uber Customer ID</span>
+                  <input value={uberCustomerId} onChange={(e) => setUberCustomerId(e.target.value)} />
+                </label>
+                <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                  {savedAt ? <div className="muted" style={{ alignSelf: 'center', fontSize: 12 }}>Saved {new Date(savedAt).toLocaleTimeString()}</div> : null}
+                  <button className="primary-btn" disabled={saving} onClick={async () => {
+                    setSaving(true);
+                    const payload: Partial<Site> = {
+                      uberCustomerId,
+                      pickup: {
+                        name: pickupName,
+                        phone: pickupPhone,
+                        address: {
+                          streetAddress: [addr1, ...(addr2 ? [addr2] : [])],
+                          city,
+                          province,
+                          postalCode,
+                          country: 'CA',
+                        }
+                      }
+                    } as any;
+                    const updated = await putJson<Site>(`/api/admin/sites/${selectedSiteId}`, payload);
+                    setSites(prev => prev.map(s => s._id === updated._id ? updated : s));
+                    setSaving(false);
+                    setSavedAt(Date.now());
+                  }}>{saving ? 'Saving…' : 'Save settings'}</button>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
         {editing ? (
           <div className="card animate-popIn" style={{ padding: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
