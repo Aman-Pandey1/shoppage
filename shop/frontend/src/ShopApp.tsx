@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CartProvider, useCart } from './store/CartContext';
+import { useCart } from './store/CartContext';
 import { CartSidebar } from './components/CartSidebar';
 import { CategoryGrid } from './components/CategoryGrid';
 import { ProductList } from './components/ProductList';
@@ -11,7 +11,7 @@ import { Link } from 'react-router-dom';
 import { AddToCartToast } from './components/AddToCartToast';
 import type { Category, Product, SelectedOption } from './types';
 
-const Main: React.FC = () => {
+const Main: React.FC<{ siteSlug?: string }> = ({ siteSlug = 'default' }) => {
   const { state, setFulfillmentType, addItem } = useCart();
   const [privacyOpen, setPrivacyOpen] = useState(true);
   const [fulfillmentOpen, setFulfillmentOpen] = useState(false);
@@ -86,13 +86,14 @@ const Main: React.FC = () => {
       return (
         <ProductList
           category={selectedCategory}
+          siteSlug={siteSlug}
           onAdd={startAddToCart}
           onBack={() => setSelectedCategory(null)}
         />
       );
     }
-    return <CategoryGrid onSelect={setSelectedCategory} />;
-  }, [selectedCategory]);
+    return <CategoryGrid onSelect={setSelectedCategory} siteSlug={siteSlug} />;
+  }, [selectedCategory, siteSlug]);
 
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
 
@@ -132,10 +133,6 @@ const Main: React.FC = () => {
   );
 };
 
-export const ShopApp: React.FC = () => {
-  return (
-    <CartProvider>
-      <Main />
-    </CartProvider>
-  );
+export const ShopApp: React.FC<{ siteSlug?: string }> = ({ siteSlug = 'default' }) => {
+  return <Main siteSlug={siteSlug} />;
 };

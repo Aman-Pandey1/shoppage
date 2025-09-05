@@ -8,7 +8,7 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<ShopApp />} />
+      <Route path="/" element={<Navigate to="/s/default" replace />} />
       <Route path="/s/:siteSlug" element={<ShopBySlugPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route
@@ -19,7 +19,7 @@ function App() {
           </ProtectedRoute>
         }
       />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<Navigate to="/s/default" replace />} />
     </Routes>
   )
 }

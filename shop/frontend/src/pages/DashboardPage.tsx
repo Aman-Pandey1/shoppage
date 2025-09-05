@@ -17,7 +17,7 @@ export const DashboardPage: React.FC = () => {
           <h2 style={{ margin: 0 }}>Admin Dashboard</h2>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Link to="/">← Back to shop</Link>
+          <Link to={`/s/${localStorage.getItem('admin_selected_site_slug') || 'default'}`}>← Back to shop</Link>
           <button onClick={handleLogout}>Logout</button>
         </div>
       </div>
