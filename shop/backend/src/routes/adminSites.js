@@ -15,9 +15,9 @@ router.get('/', requireAuth, async (_req, res) => {
 
 router.post('/', requireAuth, async (req, res) => {
 	try {
-		const { name, slug, domains } = req.body || {};
+		const { name, slug, domains, uberCustomerId, pickup } = req.body || {};
 		if (!name || !slug) return res.status(400).json({ error: 'name and slug are required' });
-		const site = await Site.create({ name, slug, domains: domains || [], isActive: true });
+		const site = await Site.create({ name, slug, domains: domains || [], uberCustomerId, pickup, isActive: true });
 		res.status(201).json(site);
 	} catch (err) {
 		res.status(400).json({ error: err.message });
@@ -27,8 +27,8 @@ router.post('/', requireAuth, async (req, res) => {
 router.patch('/:siteId', requireAuth, async (req, res) => {
 	try {
 		const { siteId } = req.params;
-		const { name, slug, domains, isActive } = req.body || {};
-		const site = await Site.findByIdAndUpdate(siteId, { name, slug, domains, isActive }, { new: true });
+		const { name, slug, domains, isActive, uberCustomerId, pickup } = req.body || {};
+		const site = await Site.findByIdAndUpdate(siteId, { name, slug, domains, isActive, uberCustomerId, pickup }, { new: true });
 		if (!site) return res.status(404).json({ error: 'Not found' });
 		res.json(site);
 	} catch (err) {
