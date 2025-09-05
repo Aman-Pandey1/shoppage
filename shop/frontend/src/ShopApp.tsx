@@ -9,6 +9,7 @@ import { SpiceModal } from './components/SpiceModal';
 import { ExtrasModal } from './components/ExtrasModal';
 import { Link } from 'react-router-dom';
 import { AddToCartToast } from './components/AddToCartToast';
+import { DeliveryAddressModal } from './components/DeliveryAddressModal';
 import type { Category, Product, SelectedOption } from './types';
 
 const Main: React.FC<{ siteSlug?: string }> = ({ siteSlug = 'default' }) => {
@@ -22,6 +23,8 @@ const Main: React.FC<{ siteSlug?: string }> = ({ siteSlug = 'default' }) => {
   const [spiceOpen, setSpiceOpen] = useState(false);
   const [extrasOpen, setExtrasOpen] = useState(false);
   const [pendingSpice, setPendingSpice] = useState<string | undefined>(undefined);
+  const [deliveryModalOpen, setDeliveryModalOpen] = useState(false);
+  const [lastDeliveryId, setLastDeliveryId] = useState<string | null>(null);
 
   useEffect(() => {
     const privacyAccepted = localStorage.getItem('privacyAccepted_v1');
@@ -46,6 +49,9 @@ const Main: React.FC<{ siteSlug?: string }> = ({ siteSlug = 'default' }) => {
   function handleChooseFulfillment(type: 'pickup' | 'delivery') {
     setFulfillmentType(type);
     setFulfillmentOpen(false);
+    if (type === 'delivery') {
+      setDeliveryModalOpen(true);
+    }
   }
 
   function startAddToCart(product: Product) {
@@ -124,6 +130,12 @@ const Main: React.FC<{ siteSlug?: string }> = ({ siteSlug = 'default' }) => {
 
       <PrivacyPolicyModal open={privacyOpen} onAccept={handleAcceptPrivacy} />
       <FulfillmentModal open={fulfillmentOpen} onChoose={handleChooseFulfillment} />
+      <DeliveryAddressModal
+        open={deliveryModalOpen}
+        siteSlug={siteSlug}
+        onClose={() => setDeliveryModalOpen(false)}
+        onConfirmed={(id) => setLastDeliveryId(id)}
+      />
       <SpiceModal open={spiceOpen} spiceLevels={pendingProduct?.spiceLevels} onCancel={() => setSpiceOpen(false)} onConfirm={confirmSpice} />
       <ExtrasModal open={extrasOpen} groups={pendingProduct?.extraOptionGroups} onCancel={() => setExtrasOpen(false)} onConfirm={confirmExtras} />
       {/* Toast for add-to-cart */}

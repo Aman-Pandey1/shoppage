@@ -10,6 +10,7 @@ import adminSitesRouter from './routes/adminSites.js';
 import adminCategoriesRouter from './routes/adminCategories.js';
 import adminProductsRouter from './routes/adminProducts.js';
 import shopPublicRouter from './routes/shopPublic.js';
+import deliveryRouter from './routes/delivery.js';
 import Site from './models/Site.js';
 import Category from './models/Category.js';
 import Product from './models/Product.js';
@@ -128,6 +129,8 @@ app.use('/api/admin/sites/:siteId/categories', adminCategoriesRouter);
 app.use('/api/admin/sites/:siteId/products', adminProductsRouter);
 // Public shop endpoints by site slug
 app.use('/api/shop', shopPublicRouter);
+// Delivery endpoints by site slug (Uber Direct)
+app.use('/api/delivery', deliveryRouter);
 
 async function start() {
 	if (!USE_MOCK_DATA && MONGO_URI) {
