@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { ShopApp } from './ShopApp'
+// import { ShopApp } from './ShopApp'
 import { ShopBySlugPage } from './pages/ShopBySlugPage'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
