@@ -6,14 +6,15 @@ export const ProductList: React.FC<{
   category: Category;
   onAdd: (product: Product) => void;
   onBack: () => void;
-}> = ({ category, onAdd, onBack }) => {
+  siteSlug?: string;
+}> = ({ category, onAdd, onBack, siteSlug = 'default' }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
 
   useEffect(() => {
     let mounted = true;
-    fetchJson<Product[]>(`/api/products?categoryId=${category._id}`)
+    fetchJson<Product[]>(`/api/shop/${siteSlug}/products?categoryId=${category._id}`)
       .then((data) => {
         if (mounted) {
           setProducts(data);
@@ -29,7 +30,7 @@ export const ProductList: React.FC<{
     return () => {
       mounted = false;
     };
-  }, [category._id]);
+  }, [category._id, siteSlug]);
 
   if (loading) return <div>Loading products...</div>;
   if (error) return <div style={{ color: 'red' }}>Failed to load products: {error}</div>;

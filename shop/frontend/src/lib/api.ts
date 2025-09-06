@@ -17,7 +17,10 @@ export function clearAuthToken() {
 }
 
 export async function fetchJson<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`);
+  const token = getAuthToken();
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await fetch(`${API_BASE_URL}${path}`, { headers });
   if (!response.ok) {
     throw new Error(`Request failed: ${response.status}`);
   }

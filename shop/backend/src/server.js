@@ -6,6 +6,15 @@ import morgan from 'morgan';
 import categoriesRouter from './routes/categories.js';
 import productsRouter from './routes/products.js';
 import authRouter from './routes/auth.js';
+import adminSitesRouter from './routes/adminSites.js';
+import adminCategoriesRouter from './routes/adminCategories.js';
+import adminProductsRouter from './routes/adminProducts.js';
+import shopPublicRouter from './routes/shopPublic.js';
+import deliveryRouter from './routes/delivery.js';
+import adminUberRouter from './routes/adminUber.js';
+import Site from './models/Site.js';
+import Category from './models/Category.js';
+import Product from './models/Product.js';
 
 dotenv.config();
 
@@ -112,14 +121,35 @@ if (USE_MOCK_DATA) {
 
 app.get('/health', (_req, res) => res.json({ ok: true, mock: !!app.locals.mockData }));
 app.use('/api/auth', authRouter);
+// Legacy non-tenant endpoints (kept for mock and backwards-compat):
 app.use('/api/categories', categoriesRouter);
 app.use('/api/products', productsRouter);
+// Admin multi-tenant endpoints
+app.use('/api/admin/sites', adminSitesRouter);
+app.use('/api/admin/sites/:siteId/categories', adminCategoriesRouter);
+app.use('/api/admin/sites/:siteId/products', adminProductsRouter);
+app.use('/api/admin', adminUberRouter);
+// Public shop endpoints by site slug
+app.use('/api/shop', shopPublicRouter);
+// Delivery endpoints by site slug (Uber Direct)
+app.use('/api/delivery', deliveryRouter);
 
 async function start() {
 	if (!USE_MOCK_DATA && MONGO_URI) {
 		try {
 			await mongoose.connect(MONGO_URI);
 			console.log('MongoDB connected');
+			// Ensure default site and backfill existing data without site
+			let defaultSite = await Site.findOne({ slug: 'default' });
+			if (!defaultSite) {
+				defaultSite = await Site.create({ name: 'Default Site', slug: 'default', isActive: true });
+				console.log('Created default site');
+			}
+			const backfillCategories = await Category.updateMany({ site: { $exists: false } }, { $set: { site: defaultSite._id } });
+			const backfillProducts = await Product.updateMany({ site: { $exists: false } }, { $set: { site: defaultSite._id } });
+			if (backfillCategories.modifiedCount || backfillProducts.modifiedCount) {
+				console.log(`Backfilled site on categories: ${backfillCategories.modifiedCount}, products: ${backfillProducts.modifiedCount}`);
+			}
 		} catch (err) {
 			console.error('MongoDB connection error:', err);
 			process.exit(1);

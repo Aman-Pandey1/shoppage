@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { CartItem, CartState, FulfillmentType, Product, SelectedOption } from '../types';
 
-const STORAGE_KEY = 'shop_cart_state_v1';
+const DEFAULT_STORAGE_KEY = 'shop_cart_state_v1';
 
 type CartContextValue = {
   state: CartState;
@@ -34,25 +34,25 @@ function generateItemId(productId: string, spiceLevel?: string, selectedOptions?
   return `${productId}__${spiceLevel || ''}__${optsKey}`;
 }
 
-export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const CartProvider: React.FC<{ children: React.ReactNode; storageKey?: string }> = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => {
   const [state, setState] = useState<CartState>({ items: [] });
   const [lastAdded, setLastAdded] = useState<{ name: string; quantity: number } | null>(null);
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(storageKey);
       if (raw) {
         const parsed: CartState = JSON.parse(raw);
         setState(parsed);
       }
     } catch {}
-  }, []);
+  }, [storageKey]);
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      localStorage.setItem(storageKey, JSON.stringify(state));
     } catch {}
-  }, [state]);
+  }, [state, storageKey]);
 
   const setFulfillmentType = useCallback((type: FulfillmentType) => {
     setState((prev) => ({ ...prev, fulfillmentType: type }));

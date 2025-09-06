@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { ShopApp } from './ShopApp'
+import { ShopBySlugPage } from './pages/ShopBySlugPage'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { ProtectedRoute } from './components/ProtectedRoute'
@@ -7,7 +8,8 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<ShopApp />} />
+      <Route path="/" element={<Navigate to="/s/default" replace />} />
+      <Route path="/s/:siteSlug" element={<ShopBySlugPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route
         path="/dashboard"
@@ -17,7 +19,7 @@ function App() {
           </ProtectedRoute>
         }
       />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<Navigate to="/s/default" replace />} />
     </Routes>
   )
 }
