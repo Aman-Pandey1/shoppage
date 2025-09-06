@@ -106,7 +106,7 @@ const Main: React.FC = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
           <h2 style={{ marginTop: 0 }}>Shop</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Link to="/login">Admin Login</Link>
+            {/* <Link to="/login">Admin Login</Link> */}
             <div className="hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
               <span>Items: {state.items.length}</span>
             </div>
