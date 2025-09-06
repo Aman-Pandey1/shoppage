@@ -108,7 +108,7 @@ const Main: React.FC<{ siteSlug?: string }> = ({ siteSlug = 'default' }) => {
       name: it.name,
       quantity: it.quantity,
       priceCents: Math.round(it.basePrice * 100),
-      size: 'small',
+      size: 'small' as 'small',
     }));
   }, [state.items]);
 
@@ -146,6 +146,9 @@ const Main: React.FC<{ siteSlug?: string }> = ({ siteSlug = 'default' }) => {
         onConfirmed={(id) => setLastDeliveryId(id)}
         manifest={manifest}
       />
+      {lastDeliveryId ? (
+        <div className="muted" style={{ textAlign: 'center', marginTop: 10, fontSize: 12 }}>Last delivery ID: {lastDeliveryId}</div>
+      ) : null}
       <SpiceModal open={spiceOpen} spiceLevels={pendingProduct?.spiceLevels} onCancel={() => setSpiceOpen(false)} onConfirm={confirmSpice} />
       <ExtrasModal open={extrasOpen} groups={pendingProduct?.extraOptionGroups} onCancel={() => setExtrasOpen(false)} onConfirm={confirmExtras} />
       {/* Toast for add-to-cart */}
