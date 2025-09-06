@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { login } from '../lib/api';
+import { Lock } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -29,7 +30,7 @@ export const LoginPage: React.FC = () => {
     <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: 16 }}>
       <div className="card animate-popIn" style={{ width: 'min(92vw, 440px)', padding: 18, borderRadius: 'var(--radius)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-          <div style={{ fontSize: 26 }}>🔐</div>
+          <Lock size={24} />
           <h2 style={{ margin: 0 }}>Admin Login</h2>
         </div>
         {error ? <div style={{ color: 'var(--danger)', marginBottom: 8 }}>{error}</div> : null}
