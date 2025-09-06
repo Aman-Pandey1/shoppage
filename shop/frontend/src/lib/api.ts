@@ -59,6 +59,22 @@ export async function putJson<T>(path: string, body: unknown): Promise<T> {
   return response.json();
 }
 
+export async function patchJson<T>(path: string, body: unknown): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(getAuthToken() ? { Authorization: `Bearer ${getAuthToken()}` } : {}),
+    },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Request failed: ${response.status} ${text}`);
+  }
+  return response.json();
+}
+
 export async function deleteJson(path: string): Promise<void> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: 'DELETE',
