@@ -2,6 +2,15 @@ import Site from '../models/Site.js';
 
 export async function tenantBySlug(req, res, next) {
 	try {
+		// Mock fallback: bypass DB when mock data is enabled
+		if (req.app?.locals?.mockData) {
+			const { slug } = req.params;
+			const resolvedSlug = slug || 'default';
+			req.site = { _id: 'mock-site', name: 'Default Site', slug: resolvedSlug, isActive: true };
+			req.siteId = req.site._id;
+			return next();
+		}
+
 		const { slug } = req.params;
 		if (!slug) return res.status(400).json({ error: 'Missing site slug' });
 		const site = await Site.findOne({ slug, isActive: true });
