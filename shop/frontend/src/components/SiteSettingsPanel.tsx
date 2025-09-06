@@ -19,6 +19,8 @@ export const SiteSettingsPanel: React.FC<Props> = ({ site, selectedSiteId, onSit
   const [uberCustomerId, setUberCustomerId] = React.useState(site?.uberCustomerId || '');
   const [saving, setSaving] = React.useState(false);
   const [savedAt, setSavedAt] = React.useState<number | null>(null);
+  const [testingUber, setTestingUber] = React.useState(false);
+  const [uberStatus, setUberStatus] = React.useState<{ ok: boolean; message: string } | null>(null);
 
   React.useEffect(() => {
     setPickupName(site?.pickup?.name || '');
@@ -68,14 +70,27 @@ export const SiteSettingsPanel: React.FC<Props> = ({ site, selectedSiteId, onSit
         <input value={uberCustomerId} onChange={(e) => setUberCustomerId(e.target.value)} />
       </label>
       <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
-        <button onClick={async () => {
-          try {
-            const res = await fetchJson<any>(`/api/admin/sites/${site._id}/health`);
-            alert(res.ok ? `Uber OK. ETA: ${res.eta ? new Date(res.eta).toLocaleTimeString() : '—'}` : `Uber error: ${res.error}`);
-          } catch (e: any) {
-            alert(`Uber error: ${e.message}`);
-          }
-        }}>Test Uber</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button disabled={testingUber} onClick={async () => {
+            setTestingUber(true);
+            setUberStatus(null);
+            try {
+              const res = await fetchJson<any>(`/api/admin/sites/${site._id}/health`);
+              if (res.ok) {
+                setUberStatus({ ok: true, message: `Uber OK${res.eta ? ` · ETA ${new Date(res.eta).toLocaleTimeString()}` : ''}` });
+              } else {
+                setUberStatus({ ok: false, message: `Uber error: ${res.error}` });
+              }
+            } catch (e: any) {
+              setUberStatus({ ok: false, message: `Uber error: ${e.message}` });
+            } finally {
+              setTestingUber(false);
+            }
+          }}>{testingUber ? 'Testing…' : 'Test Uber'}</button>
+          {uberStatus ? (
+            <div style={{ fontSize: 12, color: uberStatus.ok ? 'var(--green-600)' : 'var(--red-600)' }}>{uberStatus.message}</div>
+          ) : null}
+        </div>
         {savedAt ? <div className="muted" style={{ alignSelf: 'center', fontSize: 12 }}>Saved {new Date(savedAt).toLocaleTimeString()}</div> : null}
         <button className="primary-btn" disabled={saving} onClick={async () => {
           setSaving(true);
