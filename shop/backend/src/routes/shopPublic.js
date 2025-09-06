@@ -1,9 +1,19 @@
 import { Router } from 'express';
-import { tenantBySlug } from '../middleware/tenant.js';
+import { tenantBySlug, tenantByHost } from '../middleware/tenant.js';
 import Category from '../models/Category.js';
 import Product from '../models/Product.js';
 
 const router = Router();
+
+// Resolve by current request host -> return site basics
+router.get('/host-site', tenantByHost, async (req, res) => {
+	try {
+		const { site } = req;
+		return res.json({ siteId: req.siteId, slug: site.slug, name: site.name });
+	} catch (err) {
+		return res.status(400).json({ error: err.message });
+	}
+});
 
 // Resolve site by :slug for all below
 router.use('/:slug', tenantBySlug);

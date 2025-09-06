@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 // import { ShopApp } from './ShopApp'
 import { ShopBySlugPage } from './pages/ShopBySlugPage'
 import { LoginPage } from './pages/LoginPage'
@@ -8,7 +8,7 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/s/default" replace />} />
+      <Route path="/" element={<ShopBySlugPage />} />
       <Route path="/s/:siteSlug" element={<ShopBySlugPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route
@@ -19,7 +19,8 @@ function App() {
           </ProtectedRoute>
         }
       />
-      <Route path="*" element={<Navigate to="/s/default" replace />} />
+      {/* Catch-all: show shop for any path to support arbitrary endpoints under domain */}
+      <Route path="*" element={<ShopBySlugPage />} />
     </Routes>
   )
 }
