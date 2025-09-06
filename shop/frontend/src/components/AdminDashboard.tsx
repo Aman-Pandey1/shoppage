@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { deleteJson, fetchJson, postJson, putJson } from '../lib/api';
-import type { Category, Product } from '../types';
+import type { Category, Product, Site } from '../types';
 
 type EditableProduct = Partial<Product> & { _id?: string };
 
 export const AdminDashboard: React.FC = () => {
+  const [sites, setSites] = useState<Site[]>([]);
+  const [selectedSiteId, setSelectedSiteId] = useState<string>('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -15,12 +17,30 @@ export const AdminDashboard: React.FC = () => {
   async function loadAll() {
     try {
       setLoading(true);
+      // Load sites first
+      const sitesList = await fetchJson<Site[]>('/api/admin/sites');
+      setSites(sitesList);
+      let siteId = selectedSiteId;
+      if (!siteId) {
+        const saved = localStorage.getItem('admin_selected_site');
+        siteId = saved || sitesList[0]?._id || '';
+        setSelectedSiteId(siteId);
+      }
+      if (!siteId) {
+        setCategories([]);
+        setProducts([]);
+        return;
+      }
       const [cats, prods] = await Promise.all([
-        fetchJson<Category[]>('/api/categories'),
-        fetchJson<Product[]>('/api/products'),
+        fetchJson<Category[]>(`/api/admin/sites/${siteId}/categories`),
+        fetchJson<Product[]>(`/api/admin/sites/${siteId}/products`),
       ]);
       setCategories(cats);
       setProducts(prods);
+      const current = sitesList.find(s => s._id === siteId);
+      if (current) {
+        try { localStorage.setItem('admin_selected_site_slug', current.slug); } catch {}
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load');
     } finally {
@@ -28,7 +48,13 @@ export const AdminDashboard: React.FC = () => {
     }
   }
 
-  useEffect(() => { loadAll(); }, []);
+  useEffect(() => { loadAll(); }, [selectedSiteId]);
+
+  useEffect(() => {
+    if (selectedSiteId) {
+      try { localStorage.setItem('admin_selected_site', selectedSiteId); } catch {}
+    }
+  }, [selectedSiteId]);
 
   const filteredProducts = useMemo(() => {
     return filterCategory ? products.filter((p) => p.categoryId === filterCategory) : products;
@@ -54,10 +80,10 @@ export const AdminDashboard: React.FC = () => {
       extraOptionGroups: editing.extraOptionGroups || [],
     };
     if (editing._id) {
-      const updated = await putJson<Product>(`/api/products/${editing._id}`, payload);
+      const updated = await putJson<Product>(`/api/admin/sites/${selectedSiteId}/products/${editing._id}`, payload);
       setProducts((prev) => prev.map((p) => (p._id === updated._id ? updated : p)));
     } else {
-      const created = await postJson<Product>('/api/products', payload);
+      const created = await postJson<Product>(`/api/admin/sites/${selectedSiteId}/products`, payload);
       setProducts((prev) => [created, ...prev]);
     }
     setEditing(null);
@@ -65,7 +91,7 @@ export const AdminDashboard: React.FC = () => {
 
   async function deleteProduct(id: string) {
     if (!confirm('Delete this product?')) return;
-    await deleteJson(`/api/products/${id}`);
+    await deleteJson(`/api/admin/sites/${selectedSiteId}/products/${id}`);
     setProducts((prev) => prev.filter((p) => p._id !== id));
   }
 
@@ -77,6 +103,31 @@ export const AdminDashboard: React.FC = () => {
       <aside className="card" style={{ padding: 12, borderRadius: 'var(--radius)' }}>
         <div style={{ fontWeight: 800, marginBottom: 8 }}>Filters</div>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span>Site</span>
+          <select value={selectedSiteId} onChange={(e) => setSelectedSiteId(e.target.value)}>
+            {sites.map((s) => (
+              <option key={s._id} value={s._id}>{s.name} ({s.slug})</option>
+            ))}
+          </select>
+        </label>
+        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+          <button onClick={async () => {
+            const name = prompt('Site name?');
+            const slug = prompt('Site slug?');
+            if (!name || !slug) return;
+            const created = await postJson<Site>('/api/admin/sites', { name, slug });
+            setSites((prev) => [created, ...prev]);
+            setSelectedSiteId(created._id);
+          }}>+ New site</button>
+          <button onClick={async () => {
+            if (!selectedSiteId) return;
+            const newName = prompt('Rename site to?');
+            if (!newName) return;
+            const updated = await putJson<Site>(`/api/admin/sites/${selectedSiteId}`, { name: newName });
+            setSites((prev) => prev.map((s) => s._id === updated._id ? updated : s));
+          }}>Rename</button>
+        </div>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <span>Category</span>
           <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
             <option value="">All</option>
@@ -85,10 +136,104 @@ export const AdminDashboard: React.FC = () => {
             ))}
           </select>
         </label>
+        <button onClick={async () => {
+          const name = prompt('New category name?');
+          const imageUrl = prompt('Category image URL?') || '';
+          if (!name) return;
+          const created = await postJson<Category>(`/api/admin/sites/${selectedSiteId}/categories`, { name, imageUrl });
+          setCategories((prev) => [created, ...prev]);
+        }}>+ New category</button>
         <button className="primary-btn" style={{ marginTop: 12 }} onClick={startCreate}>+ New product</button>
       </aside>
 
       <section style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* Site settings */}
+        <div className="card" style={{ padding: 12 }}>
+          <div style={{ fontWeight: 800, marginBottom: 8 }}>Site Settings</div>
+          {(() => {
+            const site = sites.find(s => s._id === selectedSiteId);
+            if (!site) return <div className="muted">Select a site to configure.</div>;
+            const [pickupName, setPickupName] = React.useState(site.pickup?.name || '');
+            const [pickupPhone, setPickupPhone] = React.useState(site.pickup?.phone || '');
+            const [addr1, setAddr1] = React.useState(site.pickup?.address?.streetAddress?.[0] || '');
+            const [addr2, setAddr2] = React.useState(site.pickup?.address?.streetAddress?.[1] || '');
+            const [city, setCity] = React.useState(site.pickup?.address?.city || '');
+            const [province, setProvince] = React.useState(site.pickup?.address?.province || '');
+            const [postalCode, setPostalCode] = React.useState(site.pickup?.address?.postalCode || '');
+            const [uberCustomerId, setUberCustomerId] = React.useState(site.uberCustomerId || '');
+            const [saving, setSaving] = React.useState(false);
+            const [savedAt, setSavedAt] = React.useState<number | null>(null);
+            return (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span>Pickup name</span>
+                  <input value={pickupName} onChange={(e) => setPickupName(e.target.value)} />
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span>Pickup phone</span>
+                  <input value={pickupPhone} onChange={(e) => setPickupPhone(e.target.value)} placeholder="+1..." />
+                </label>
+                <label style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span>Address line 1</span>
+                  <input value={addr1} onChange={(e) => setAddr1(e.target.value)} />
+                </label>
+                <label style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span>Address line 2 (optional)</span>
+                  <input value={addr2} onChange={(e) => setAddr2(e.target.value)} />
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span>City</span>
+                  <input value={city} onChange={(e) => setCity(e.target.value)} />
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span>Province</span>
+                  <input value={province} onChange={(e) => setProvince(e.target.value)} placeholder="ON, BC, AB..." />
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span>Postal Code</span>
+                  <input value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
+                </label>
+                <label style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span>Uber Customer ID</span>
+                  <input value={uberCustomerId} onChange={(e) => setUberCustomerId(e.target.value)} />
+                </label>
+                <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+                  <button onClick={async () => {
+                    if (!site?._id) return;
+                    try {
+                      const res = await fetchJson<any>(`/api/admin/sites/${site._id}/health`);
+                      alert(res.ok ? `Uber OK. ETA: ${res.eta ? new Date(res.eta).toLocaleTimeString() : '—'}` : `Uber error: ${res.error}`);
+                    } catch (e: any) {
+                      alert(`Uber error: ${e.message}`);
+                    }
+                  }}>Test Uber</button>
+                  {savedAt ? <div className="muted" style={{ alignSelf: 'center', fontSize: 12 }}>Saved {new Date(savedAt).toLocaleTimeString()}</div> : null}
+                  <button className="primary-btn" disabled={saving} onClick={async () => {
+                    setSaving(true);
+                    const payload: Partial<Site> = {
+                      uberCustomerId,
+                      pickup: {
+                        name: pickupName,
+                        phone: pickupPhone,
+                        address: {
+                          streetAddress: [addr1, ...(addr2 ? [addr2] : [])],
+                          city,
+                          province,
+                          postalCode,
+                          country: 'CA',
+                        }
+                      }
+                    } as any;
+                    const updated = await putJson<Site>(`/api/admin/sites/${selectedSiteId}`, payload);
+                    setSites(prev => prev.map(s => s._id === updated._id ? updated : s));
+                    setSaving(false);
+                    setSavedAt(Date.now());
+                  }}>{saving ? 'Saving…' : 'Save settings'}</button>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
         {editing ? (
           <div className="card animate-popIn" style={{ padding: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

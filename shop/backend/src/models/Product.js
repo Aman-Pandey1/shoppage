@@ -7,6 +7,7 @@ const OptionSchema = new mongoose.Schema({
 }, { _id: false });
 
 const ProductSchema = new mongoose.Schema({
+	site: { type: mongoose.Schema.Types.ObjectId, ref: 'Site', required: true, index: true },
 	name: { type: String, required: true },
 	description: { type: String },
 	imageUrl: { type: String },
@@ -21,5 +22,7 @@ const ProductSchema = new mongoose.Schema({
 		options: [OptionSchema],
 	}],
 }, { timestamps: true });
+
+ProductSchema.index({ site: 1, categoryId: 1, name: 1 });
 
 export default mongoose.model('Product', ProductSchema);
