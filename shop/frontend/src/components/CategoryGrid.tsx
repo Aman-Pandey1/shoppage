@@ -4,14 +4,15 @@ import type { Category } from '../types';
 
 export const CategoryGrid: React.FC<{
   onSelect: (category: Category) => void;
-}> = ({ onSelect }) => {
+  siteSlug?: string;
+}> = ({ onSelect, siteSlug = 'default' }) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
 
   useEffect(() => {
     let mounted = true;
-    fetchJson<Category[]>('/api/categories')
+    fetchJson<Category[]>(`/api/shop/${siteSlug}/categories`)
       .then((data) => {
         if (mounted) {
           setCategories(data);
@@ -27,7 +28,7 @@ export const CategoryGrid: React.FC<{
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [siteSlug]);
 
   if (loading) return <div>Loading categories...</div>;
   if (error) return <div style={{ color: 'red' }}>Failed to load categories: {error}</div>;
