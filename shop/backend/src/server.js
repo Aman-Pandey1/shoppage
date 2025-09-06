@@ -27,7 +27,12 @@ const PORT = process.env.PORT || 4000;
 const MONGO_URI = process.env.MONGO_URI;
 const USE_MOCK_DATA = process.env.USE_MOCK_DATA === 'true';
 
+
 if (USE_MOCK_DATA) {
+	const mockSites = [
+		{ _id: 'mock-site', name: 'Default Site', slug: 'default', isActive: true },
+	];
+
 	const mockCategories = [
 		{ _id: 'c-1', name: 'Starters', imageUrl: 'https://picsum.photos/seed/starters/400/400', sortIndex: 1 },
 		{ _id: 'c-2', name: 'Mains', imageUrl: 'https://picsum.photos/seed/mains/400/400', sortIndex: 2 },
@@ -111,7 +116,11 @@ if (USE_MOCK_DATA) {
 		},
 	];
 
-	app.locals.mockData = { categories: mockCategories, products: mockProducts };
+	// Attach mock site to categories/products for admin filtering logic
+	const categoriesWithSite = mockCategories.map((c) => ({ ...c, site: 'mock-site' }));
+	const productsWithSite = mockProducts.map((p) => ({ ...p, site: 'mock-site' }));
+
+	app.locals.mockData = { sites: mockSites, categories: categoriesWithSite, products: productsWithSite };
 	console.log('Running with mock data. Set USE_MOCK_DATA=false to use MongoDB.');
 } else {
 	if (!MONGO_URI) {
