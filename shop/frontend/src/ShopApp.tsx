@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CartProvider, useCart } from './store/CartContext';
+import { useCart } from './store/CartContext';
 import { CartSidebar } from './components/CartSidebar';
 import { CategoryGrid } from './components/CategoryGrid';
 import { ProductList } from './components/ProductList';
@@ -9,9 +9,10 @@ import { SpiceModal } from './components/SpiceModal';
 import { ExtrasModal } from './components/ExtrasModal';
 import { Link } from 'react-router-dom';
 import { AddToCartToast } from './components/AddToCartToast';
+import { DeliveryAddressModal } from './components/DeliveryAddressModal';
 import type { Category, Product, SelectedOption } from './types';
 
-const Main: React.FC = () => {
+const Main: React.FC<{ siteSlug?: string }> = ({ siteSlug = 'default' }) => {
   const { state, setFulfillmentType, addItem } = useCart();
   const [privacyOpen, setPrivacyOpen] = useState(true);
   const [fulfillmentOpen, setFulfillmentOpen] = useState(false);
@@ -22,6 +23,8 @@ const Main: React.FC = () => {
   const [spiceOpen, setSpiceOpen] = useState(false);
   const [extrasOpen, setExtrasOpen] = useState(false);
   const [pendingSpice, setPendingSpice] = useState<string | undefined>(undefined);
+  const [deliveryModalOpen, setDeliveryModalOpen] = useState(false);
+  const [lastDeliveryId, setLastDeliveryId] = useState<string | null>(null);
 
   useEffect(() => {
     const privacyAccepted = localStorage.getItem('privacyAccepted_v1');
@@ -46,6 +49,9 @@ const Main: React.FC = () => {
   function handleChooseFulfillment(type: 'pickup' | 'delivery') {
     setFulfillmentType(type);
     setFulfillmentOpen(false);
+    if (type === 'delivery') {
+      setDeliveryModalOpen(true);
+    }
   }
 
   function startAddToCart(product: Product) {
@@ -86,15 +92,25 @@ const Main: React.FC = () => {
       return (
         <ProductList
           category={selectedCategory}
+          siteSlug={siteSlug}
           onAdd={startAddToCart}
           onBack={() => setSelectedCategory(null)}
         />
       );
     }
-    return <CategoryGrid onSelect={setSelectedCategory} />;
-  }, [selectedCategory]);
+    return <CategoryGrid onSelect={setSelectedCategory} siteSlug={siteSlug} />;
+  }, [selectedCategory, siteSlug]);
 
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
+
+  const manifest = useMemo(() => {
+    return state.items.map((it) => ({
+      name: it.name,
+      quantity: it.quantity,
+      priceCents: Math.round(it.basePrice * 100),
+      size: 'small',
+    }));
+  }, [state.items]);
 
   return (
     <div>
@@ -123,6 +139,13 @@ const Main: React.FC = () => {
 
       <PrivacyPolicyModal open={privacyOpen} onAccept={handleAcceptPrivacy} />
       <FulfillmentModal open={fulfillmentOpen} onChoose={handleChooseFulfillment} />
+      <DeliveryAddressModal
+        open={deliveryModalOpen}
+        siteSlug={siteSlug}
+        onClose={() => setDeliveryModalOpen(false)}
+        onConfirmed={(id) => setLastDeliveryId(id)}
+        manifest={manifest}
+      />
       <SpiceModal open={spiceOpen} spiceLevels={pendingProduct?.spiceLevels} onCancel={() => setSpiceOpen(false)} onConfirm={confirmSpice} />
       <ExtrasModal open={extrasOpen} groups={pendingProduct?.extraOptionGroups} onCancel={() => setExtrasOpen(false)} onConfirm={confirmExtras} />
       {/* Toast for add-to-cart */}
@@ -132,10 +155,6 @@ const Main: React.FC = () => {
   );
 };
 
-export const ShopApp: React.FC = () => {
-  return (
-    <CartProvider>
-      <Main />
-    </CartProvider>
-  );
+export const ShopApp: React.FC<{ siteSlug?: string }> = ({ siteSlug = 'default' }) => {
+  return <Main siteSlug={siteSlug} />;
 };
