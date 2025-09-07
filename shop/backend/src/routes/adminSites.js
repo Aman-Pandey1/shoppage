@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import Site from '../models/Site.js';
+import { saveMockData } from '../utils/mockStore.js';
 
 const router = Router();
 
@@ -25,6 +26,7 @@ router.post('/', requireAuth, async (req, res) => {
 		if (mock) {
 			const created = { _id: `site-${Date.now()}`, name, slug, domains: domains || [], uberCustomerId, pickup, isActive: true };
 			mock.sites.unshift(created);
+			try { saveMockData(req.app.locals.mockData); } catch {}
 			return res.status(201).json(created);
 		}
 		const site = await Site.create({ name, slug, domains: domains || [], uberCustomerId, pickup, isActive: true });
@@ -44,6 +46,7 @@ router.patch('/:siteId', requireAuth, async (req, res) => {
 			if (idx === -1) return res.status(404).json({ error: 'Not found' });
 			const updated = { ...mock.sites[idx], ...(name !== undefined ? { name } : {}), ...(slug !== undefined ? { slug } : {}), ...(domains !== undefined ? { domains } : {}), ...(isActive !== undefined ? { isActive } : {}), ...(uberCustomerId !== undefined ? { uberCustomerId } : {}), ...(pickup !== undefined ? { pickup } : {}) };
 			mock.sites[idx] = updated;
+			try { saveMockData(req.app.locals.mockData); } catch {}
 			return res.json(updated);
 		}
 		const site = await Site.findByIdAndUpdate(siteId, { name, slug, domains, isActive, uberCustomerId, pickup }, { new: true });
@@ -64,6 +67,7 @@ router.delete('/:siteId', requireAuth, async (req, res) => {
 			if (mock.sites.length === before) return res.status(404).json({ error: 'Not found' });
 			mock.categories = mock.categories.filter((c) => c.site !== siteId);
 			mock.products = mock.products.filter((p) => p.site !== siteId);
+			try { saveMockData(req.app.locals.mockData); } catch {}
 			return res.status(204).end();
 		}
 		await Site.findByIdAndDelete(siteId);
