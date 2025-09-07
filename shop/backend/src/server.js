@@ -15,6 +15,7 @@ import adminUberRouter from './routes/adminUber.js';
 import Site from './models/Site.js';
 import Category from './models/Category.js';
 import Product from './models/Product.js';
+import { loadMockData, saveMockData } from './utils/mockStore.js';
 
 dotenv.config();
 
@@ -29,6 +30,11 @@ const USE_MOCK_DATA = process.env.USE_MOCK_DATA === 'true';
 
 
 if (USE_MOCK_DATA) {
+	const persisted = (typeof loadMockData === 'function') ? loadMockData() : null;
+	if (persisted) {
+		app.locals.mockData = persisted;
+		console.log('Running with mock data (persisted). Set USE_MOCK_DATA=false to use MongoDB.');
+	} else {
 	const mockSites = [
 		{ _id: 'mock-site', name: 'Default Site', slug: 'default', isActive: true },
 	];
@@ -122,6 +128,8 @@ if (USE_MOCK_DATA) {
 
 	app.locals.mockData = { sites: mockSites, categories: categoriesWithSite, products: productsWithSite };
 	console.log('Running with mock data. Set USE_MOCK_DATA=false to use MongoDB.');
+		if (typeof saveMockData === 'function') saveMockData(app.locals.mockData);
+	}
 } else {
 	if (!MONGO_URI) {
 		console.warn('No MONGO_URI set. To run without Mongo, set USE_MOCK_DATA=true.');
