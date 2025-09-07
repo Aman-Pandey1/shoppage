@@ -10,9 +10,12 @@ import { ExtrasModal } from './components/ExtrasModal';
 import { Link } from 'react-router-dom';
 import { AddToCartToast } from './components/AddToCartToast';
 import { DeliveryAddressModal } from './components/DeliveryAddressModal';
+import { fetchJson } from './lib/api';
 import type { Category, Product, SelectedOption } from './types';
 
-const Main: React.FC<{ siteSlug?: string }> = ({ siteSlug = 'default' }) => {
+const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
+  { siteSlug = 'default', initialCategoryId }: { siteSlug?: string; initialCategoryId?: string }
+) => {
   const { state, setFulfillmentType, addItem } = useCart();
   const [privacyOpen, setPrivacyOpen] = useState(true);
   const [fulfillmentOpen, setFulfillmentOpen] = useState(false);
@@ -87,6 +90,22 @@ const Main: React.FC<{ siteSlug?: string }> = ({ siteSlug = 'default' }) => {
     setPendingSpice(undefined);
   }
 
+  // Preselect a category if provided via route
+  useEffect(() => {
+    let cancelled = false;
+    async function preselect() {
+      if (!initialCategoryId) return;
+      try {
+        const cats = await fetchJson<Category[]>(`/api/shop/${siteSlug}/categories`);
+        if (cancelled) return;
+        const found = cats.find((c) => String(c._id) === String(initialCategoryId));
+        if (found) setSelectedCategory(found);
+      } catch {}
+    }
+    preselect();
+    return () => { cancelled = true; };
+  }, [initialCategoryId, siteSlug]);
+
   const content = useMemo(() => {
     if (selectedCategory) {
       return (
@@ -143,7 +162,7 @@ const Main: React.FC<{ siteSlug?: string }> = ({ siteSlug = 'default' }) => {
         open={deliveryModalOpen}
         siteSlug={siteSlug}
         onClose={() => setDeliveryModalOpen(false)}
-        onConfirmed={(id) => setLastDeliveryId(id)}
+        onConfirmed={(id: string) => setLastDeliveryId(id)}
         manifest={manifest}
       />
       {lastDeliveryId ? (
@@ -158,6 +177,8 @@ const Main: React.FC<{ siteSlug?: string }> = ({ siteSlug = 'default' }) => {
   );
 };
 
-export const ShopApp: React.FC<{ siteSlug?: string }> = ({ siteSlug = 'default' }) => {
-  return <Main siteSlug={siteSlug} />;
+export const ShopApp: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
+  { siteSlug = 'default', initialCategoryId }: { siteSlug?: string; initialCategoryId?: string }
+) => {
+  return <Main siteSlug={siteSlug} initialCategoryId={initialCategoryId} />;
 };
