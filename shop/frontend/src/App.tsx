@@ -10,6 +10,8 @@ function App() {
     <Routes>
       <Route path="/" element={<ShopBySlugPage />} />
       <Route path="/s/:siteSlug" element={<ShopBySlugPage />} />
+      <Route path="/s/:siteSlug/c/:categoryId" element={<ShopBySlugPage />} />
+      <Route path="/c/:categoryId" element={<ShopBySlugPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route
         path="/dashboard"

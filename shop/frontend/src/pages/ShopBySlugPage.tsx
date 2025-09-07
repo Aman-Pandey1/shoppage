@@ -7,6 +7,7 @@ import { fetchJson } from '../lib/api';
 export const ShopBySlugPage: React.FC = () => {
   const params = useParams();
   const paramSlug = params.siteSlug;
+  const paramCategoryId = params.categoryId as string | undefined;
   const [resolvedSlug, setResolvedSlug] = React.useState<string | undefined>(paramSlug);
   const [loading, setLoading] = React.useState<boolean>(!paramSlug);
   const [error, setError] = React.useState<string | undefined>();
@@ -44,7 +45,7 @@ export const ShopBySlugPage: React.FC = () => {
   const storageKey = `shop_cart_state_v1:${slug}`;
   return (
     <CartProvider storageKey={storageKey}>
-      <ShopApp siteSlug={slug} />
+      <ShopApp siteSlug={slug} initialCategoryId={paramCategoryId} />
     </CartProvider>
   );
 };
