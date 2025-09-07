@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import Category from '../models/Category.js';
+import { saveMockData } from '../utils/mockStore.js';
 
 const router = Router({ mergeParams: true });
 
@@ -26,6 +27,7 @@ router.post('/', requireAuth, async (req, res) => {
 		if (mock) {
 			const created = { _id: `c-${Date.now()}`, ...req.body, site: siteId };
 			mock.categories.unshift(created);
+			try { saveMockData(req.app.locals.mockData); } catch {}
 			return res.status(201).json(created);
 		}
 		const payload = { ...req.body, site: siteId };
@@ -45,6 +47,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
 			if (idx === -1) return res.status(404).json({ error: 'Not found' });
 			const updated = { ...mock.categories[idx], ...req.body };
 			mock.categories[idx] = updated;
+			try { saveMockData(req.app.locals.mockData); } catch {}
 			return res.json(updated);
 		}
 		const updated = await Category.findOneAndUpdate({ _id: id, site: siteId }, req.body, { new: true });
@@ -63,6 +66,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
 			const before = mock.categories.length;
 			mock.categories = mock.categories.filter((c) => !(c._id === id && c.site === siteId));
 			if (mock.categories.length === before) return res.status(404).json({ error: 'Not found' });
+			try { saveMockData(req.app.locals.mockData); } catch {}
 			return res.status(204).end();
 		}
 		const result = await Category.findOneAndDelete({ _id: id, site: siteId });
