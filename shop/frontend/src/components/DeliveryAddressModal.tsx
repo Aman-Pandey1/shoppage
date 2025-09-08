@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Modal } from './Modal';
-import { postJson } from '../lib/api';
+import { fetchJson, postJson } from '../lib/api';
 
 type Address = {
   streetAddress: string[];
@@ -30,6 +30,19 @@ export const DeliveryAddressModal: React.FC<DeliveryAddressModalProps> = ({ open
   const [error, setError] = useState<string | undefined>();
   const [quote, setQuote] = useState<any | null>(null);
   const [tip, setTip] = useState<number>(0);
+  const [siteName, setSiteName] = useState<string>('');
+
+  React.useEffect(() => {
+    let cancelled = false;
+    async function loadSite() {
+      try {
+        const data = await fetchJson<{ name: string }>(`/api/shop/${siteSlug}/site`);
+        if (!cancelled) setSiteName(data.name || '');
+      } catch {}
+    }
+    loadSite();
+    return () => { cancelled = true; };
+  }, [siteSlug]);
 
   function isValidPostal(code: string) {
     // Canadian postal code A1A 1A1
@@ -72,7 +85,7 @@ export const DeliveryAddressModal: React.FC<DeliveryAddressModalProps> = ({ open
         dropoff: { name, phone, address },
         manifestItems: manifest.map(m => ({ name: m.name, quantity: m.quantity, size: m.size || 'small', price: m.priceCents || 0 })),
         tip: Math.round((tip || 0) * 100),
-        externalId: `order-${Date.now()}`,
+        externalId: `${siteName ? siteName.replace(/\s+/g, '-') : siteSlug}-order-${Date.now()}`,
       });
       onConfirmed(result.id || result.delivery_id || '');
       onClose();
