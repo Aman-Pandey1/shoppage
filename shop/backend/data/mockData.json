@@ -1,6 +1,13 @@
 {
   "sites": [
     {
+      "_id": "site-1757304649439",
+      "name": "new assian",
+      "slug": "assian",
+      "domains": [],
+      "isActive": true
+    },
+    {
       "_id": "site-1757302179979",
       "name": "web",
       "slug": "website1",
@@ -24,6 +31,18 @@
     }
   ],
   "categories": [
+    {
+      "_id": "c-1757304677239",
+      "name": "drinks",
+      "imageUrl": "",
+      "site": "site-1757304649439"
+    },
+    {
+      "_id": "c-1757304669157",
+      "name": "food",
+      "imageUrl": "",
+      "site": "site-1757304649439"
+    },
     {
       "_id": "c-1757302197026",
       "name": "starter",
@@ -59,6 +78,19 @@
     }
   ],
   "products": [
+    {
+      "_id": "p-1757304717824",
+      "name": "p1",
+      "description": "this",
+      "imageUrl": "",
+      "price": 55,
+      "categoryId": "c-1757304669157",
+      "spiceLevels": [
+        "diewhdijew"
+      ],
+      "extraOptionGroups": [],
+      "site": "site-1757304649439"
+    },
     {
       "_id": "p-1757302221680",
       "name": "p1",
