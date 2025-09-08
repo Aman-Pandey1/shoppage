@@ -9,6 +9,9 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<ShopBySlugPage />} />
+      {/* Root-level site slug: e.g. /website1 */}
+      <Route path=":siteSlug" element={<ShopBySlugPage />} />
+      <Route path=":siteSlug/c/:categoryId" element={<ShopBySlugPage />} />
       <Route path="/s/:siteSlug" element={<ShopBySlugPage />} />
       <Route path="/s/:siteSlug/c/:categoryId" element={<ShopBySlugPage />} />
       <Route path="/c/:categoryId" element={<ShopBySlugPage />} />
