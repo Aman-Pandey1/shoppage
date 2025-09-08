@@ -32,12 +32,15 @@ export async function requestQuote({ customerId, pickup, dropoff }) {
 	const token = await getAccessToken();
 	const url = `${UBER_BASE}/${encodeURIComponent(customerId)}/delivery_quotes`; // POST
 	const payload = {
-		pickup_address: JSON.stringify(mapAddress(pickup.address)),
-		dropoff_address: JSON.stringify(mapAddress(dropoff.address)),
+		pickup_address: mapAddress(pickup.address),
+		dropoff_address: mapAddress(dropoff.address),
 		pickup_ready_dt: new Date().toISOString(),
 	};
 	const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
-	if (!res.ok) throw new Error(`Uber quote error ${res.status}`);
+	if (!res.ok) {
+		const text = await safeText(res);
+		throw new Error(`Uber quote error ${res.status} ${text}`);
+	}
 	return res.json();
 }
 
@@ -47,16 +50,19 @@ export async function createDelivery({ customerId, pickup, dropoff, manifestItem
 	const payload = {
 		pickup_name: pickup.name,
 		pickup_phone_number: pickup.phone,
-		pickup_address: JSON.stringify(mapAddress(pickup.address)),
+		pickup_address: mapAddress(pickup.address),
 		dropoff_name: dropoff.name,
 		dropoff_phone_number: dropoff.phone,
-		dropoff_address: JSON.stringify(mapAddress(dropoff.address)),
+		dropoff_address: mapAddress(dropoff.address),
 		manifest_items: manifestItems,
 		tip_by_customer: tip || 0,
 		external_id: externalId,
 	};
 	const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
-	if (!res.ok) throw new Error(`Uber create error ${res.status}`);
+	if (!res.ok) {
+		const text = await safeText(res);
+		throw new Error(`Uber create error ${res.status} ${text}`);
+	}
 	return res.json();
 }
 
@@ -68,5 +74,14 @@ function mapAddress(addr) {
 		zip_code: addr.postalCode,
 		country: addr.country || 'CA',
 	};
+}
+
+async function safeText(res) {
+  try {
+    const text = await res.text();
+    return text?.slice(0, 500) || '';
+  } catch {
+    return '';
+  }
 }
 
