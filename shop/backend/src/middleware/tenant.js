@@ -6,8 +6,14 @@ export async function tenantBySlug(req, res, next) {
 		if (req.app?.locals?.mockData) {
 			const { slug } = req.params;
 			const resolvedSlug = slug || 'default';
-			req.site = { _id: 'mock-site', name: 'Default Site', slug: resolvedSlug, isActive: true };
-			req.siteId = req.site._id;
+			const mock = req.app.locals.mockData;
+			let site = mock.sites.find((s) => s.slug === resolvedSlug);
+			if (!site && resolvedSlug !== 'default') {
+				site = mock.sites.find((s) => s.slug === 'default');
+			}
+			if (!site) return res.status(404).json({ error: 'Site not found' });
+			req.site = site;
+			req.siteId = site._id;
 			return next();
 		}
 
