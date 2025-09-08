@@ -1,7 +1,10 @@
 import fetch from 'node-fetch';
 
 const UBER_TOKEN_URL = 'https://login.uber.com/oauth/v2/token';
-const UBER_BASE = 'https://api.uber.com/v1/customers';
+const UBER_ENV = (process.env.UBER_ENV || 'production').toLowerCase();
+const UBER_BASE = UBER_ENV === 'sandbox'
+  ? 'https://sandbox-api.uber.com/v1/customers'
+  : 'https://api.uber.com/v1/customers';
 
 let cachedToken = null;
 let cachedExpiry = 0;

@@ -9,7 +9,13 @@ router.use('/:slug', tenantBySlug);
 
 router.post('/:slug/quote', async (req, res) => {
 	try {
-		const site = await Site.findById(req.siteId);
+		const mock = req.app.locals.mockData;
+		let site;
+		if (mock) {
+			site = mock.sites.find((s) => s._id === req.siteId);
+		} else {
+			site = await Site.findById(req.siteId);
+		}
 		if (!site?.uberCustomerId || !site?.pickup?.address) return res.status(400).json({ error: 'Site not configured for Uber Direct' });
 		const { dropoff } = req.body || {};
 		if (!dropoff?.address?.streetAddress) return res.status(400).json({ error: 'Invalid dropoff address' });
@@ -26,7 +32,13 @@ router.post('/:slug/quote', async (req, res) => {
 
 router.post('/:slug/create', async (req, res) => {
 	try {
-		const site = await Site.findById(req.siteId);
+		const mock = req.app.locals.mockData;
+		let site;
+		if (mock) {
+			site = mock.sites.find((s) => s._id === req.siteId);
+		} else {
+			site = await Site.findById(req.siteId);
+		}
 		if (!site?.uberCustomerId || !site?.pickup?.address) return res.status(400).json({ error: 'Site not configured for Uber Direct' });
 		const { dropoff, manifestItems, tip, externalId } = req.body || {};
 		const delivery = await createDelivery({
