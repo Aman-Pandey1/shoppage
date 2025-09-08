@@ -21,7 +21,21 @@
       "domains": [
         "aman"
       ],
-      "isActive": true
+      "isActive": true,
+      "uberCustomerId": "7fd4309c-1b51-4571-80c9-9d9ca31a73ff",
+      "pickup": {
+        "name": "MMJ",
+        "phone": "+919888421284",
+        "address": {
+          "streetAddress": [
+            "H. No. 27, Emaar Mohali Hills Sector 99"
+          ],
+          "city": "Mohali",
+          "province": "Punjab",
+          "postalCode": "140306",
+          "country": "CA"
+        }
+      }
     },
     {
       "_id": "mock-site",
