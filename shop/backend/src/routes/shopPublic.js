@@ -18,6 +18,16 @@ router.get('/host-site', tenantByHost, async (req, res) => {
 // Resolve site by :slug for all below
 router.use('/:slug', tenantBySlug);
 
+// Site basics by slug (for UI display or tagging external refs)
+router.get('/:slug/site', async (req, res) => {
+  try {
+    const { site } = req;
+    return res.json({ siteId: req.siteId, slug: site.slug, name: site.name });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+});
+
 router.get('/:slug/categories', async (req, res) => {
 	try {
 		const mock = req.app.locals.mockData;
