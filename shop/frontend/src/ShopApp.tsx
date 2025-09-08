@@ -136,7 +136,16 @@ const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
       {/* Backdrop for mobile drawer */}
       <div className="cart-backdrop hide-desktop" data-show={mobileCartOpen ? 'true' : 'false'} onClick={() => setMobileCartOpen(false)} />
 
-      <CartSidebar open={mobileCartOpen} onClose={() => setMobileCartOpen(false)} />
+      <CartSidebar
+        open={mobileCartOpen}
+        onClose={() => setMobileCartOpen(false)}
+        onCheckout={() => {
+          if (!state.fulfillmentType) setFulfillmentOpen(true);
+          // Auto-select delivery for checkout
+          setFulfillmentType('delivery');
+          setDeliveryModalOpen(true);
+        }}
+      />
       <main className="content">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
           <h2 style={{ marginTop: 0 }}>Shop</h2>
@@ -146,6 +155,18 @@ const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
               <span>Items: {state.items.length}</span>
             </div>
           </div>
+        </div>
+        <div className="hide-desktop" style={{ marginBottom: 10 }}>
+          <button
+            className="primary-btn"
+            onClick={() => {
+              if (!state.fulfillmentType) setFulfillmentOpen(true);
+              setFulfillmentType('delivery');
+              setDeliveryModalOpen(true);
+            }}
+          >
+            Checkout
+          </button>
         </div>
         {content}
       </main>

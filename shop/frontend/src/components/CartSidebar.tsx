@@ -1,7 +1,9 @@
 import React from 'react';
 import { useCart } from '../store/CartContext';
 
-export const CartSidebar: React.FC<{ open?: boolean; onClose?: () => void }> = ({ open, onClose }) => {
+type Props = { open?: boolean; onClose?: () => void; onCheckout?: () => void };
+
+export const CartSidebar: React.FC<Props> = ({ open, onClose, onCheckout }) => {
   const { state, removeItem, updateQuantity, clearCart, getCartTotal } = useCart();
 
   return (
@@ -73,9 +75,19 @@ export const CartSidebar: React.FC<{ open?: boolean; onClose?: () => void }> = (
         </div>
       )}
 
-      <div className="card" style={{ marginTop: 12, borderRadius: 'var(--radius-sm)', padding: 12, display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
-        <span>Total</span>
-        <span>${getCartTotal().toFixed(2)}</span>
+      <div className="card" style={{ marginTop: 12, borderRadius: 'var(--radius-sm)', padding: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, marginBottom: 10 }}>
+          <span>Total</span>
+          <span>${getCartTotal().toFixed(2)}</span>
+        </div>
+        <button
+          className="primary-btn"
+          style={{ width: '100%' }}
+          disabled={state.items.length === 0}
+          onClick={onCheckout}
+        >
+          Checkout
+        </button>
       </div>
     </aside>
   );
