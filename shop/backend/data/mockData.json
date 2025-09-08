@@ -1,6 +1,13 @@
 {
   "sites": [
     {
+      "_id": "site-1757302179979",
+      "name": "web",
+      "slug": "website1",
+      "domains": [],
+      "isActive": true
+    },
+    {
       "_id": "site-1757247910961",
       "name": "aman",
       "slug": "aman",
@@ -17,6 +24,12 @@
     }
   ],
   "categories": [
+    {
+      "_id": "c-1757302197026",
+      "name": "starter",
+      "imageUrl": "",
+      "site": "site-1757302179979"
+    },
     {
       "_id": "c-1757247941343",
       "name": "test",
@@ -46,6 +59,19 @@
     }
   ],
   "products": [
+    {
+      "_id": "p-1757302221680",
+      "name": "p1",
+      "description": "weiedheiwhdew",
+      "imageUrl": "",
+      "price": 55,
+      "categoryId": "c-1757302197026",
+      "spiceLevels": [
+        "hotmediu"
+      ],
+      "extraOptionGroups": [],
+      "site": "site-1757302179979"
+    },
     {
       "_id": "p-1757247958478",
       "name": "test",
