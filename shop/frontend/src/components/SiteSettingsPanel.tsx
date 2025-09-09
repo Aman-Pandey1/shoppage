@@ -1,5 +1,5 @@
 import React from 'react';
-import { fetchJson, patchJson } from '../lib/api';
+import { fetchJsonAllowError, patchJson } from '../lib/api';
 import type { Site } from '../types';
 
 type Props = {
@@ -75,14 +75,14 @@ export const SiteSettingsPanel: React.FC<Props> = ({ site, selectedSiteId, onSit
             setTestingUber(true);
             setUberStatus(null);
             try {
-              const res = await fetchJson<any>(`/api/admin/sites/${site._id}/health`);
+              const res = await fetchJsonAllowError<any>(`/api/admin/sites/${site._id}/health`);
               if (res.ok) {
                 setUberStatus({ ok: true, message: `Uber OK${res.eta ? ` · ETA ${new Date(res.eta).toLocaleTimeString()}` : ''}` });
               } else {
                 setUberStatus({ ok: false, message: `Uber error: ${res.error}` });
               }
             } catch (e: any) {
-              setUberStatus({ ok: false, message: `Uber error: ${e.message}` });
+              setUberStatus({ ok: false, message: e?.message || 'Uber error' });
             } finally {
               setTestingUber(false);
             }
