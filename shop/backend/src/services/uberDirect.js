@@ -32,8 +32,8 @@ export async function requestQuote({ customerId, pickup, dropoff }) {
 	const token = await getAccessToken();
 	const url = `${UBER_BASE}/${encodeURIComponent(customerId)}/delivery_quotes`; // POST
 	const payload = {
-		pickup_address: mapAddress(pickup.address),
-		dropoff_address: mapAddress(dropoff.address),
+		pickup_address: formatAddress(pickup.address),
+		dropoff_address: formatAddress(dropoff.address),
 		pickup_ready_dt: new Date().toISOString(),
 	};
 	const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
@@ -50,10 +50,10 @@ export async function createDelivery({ customerId, pickup, dropoff, manifestItem
 	const payload = {
 		pickup_name: pickup.name,
 		pickup_phone_number: pickup.phone,
-		pickup_address: mapAddress(pickup.address),
+		pickup_address: formatAddress(pickup.address),
 		dropoff_name: dropoff.name,
 		dropoff_phone_number: dropoff.phone,
-		dropoff_address: mapAddress(dropoff.address),
+		dropoff_address: formatAddress(dropoff.address),
 		manifest_items: manifestItems,
 		tip_by_customer: tip || 0,
 		external_id: externalId,
@@ -66,14 +66,16 @@ export async function createDelivery({ customerId, pickup, dropoff, manifestItem
 	return res.json();
 }
 
-function mapAddress(addr) {
-	return {
-		street_address: addr.streetAddress,
-		city: addr.city,
-		state: addr.province,
-		zip_code: addr.postalCode,
-		country: addr.country || 'CA',
-	};
+function formatAddress(addr) {
+	const lines = Array.isArray(addr.streetAddress) ? addr.streetAddress : [addr.streetAddress];
+	const parts = [
+		...lines.filter(Boolean),
+		addr.city,
+		addr.province,
+		addr.postalCode,
+		addr.country || 'CA',
+	].filter(Boolean);
+	return parts.join(', ');
 }
 
 async function safeText(res) {
