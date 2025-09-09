@@ -27,6 +27,20 @@ export async function fetchJson<T>(path: string): Promise<T> {
   return response.json();
 }
 
+// Same as fetchJson but returns server error text in the exception message
+export async function fetchJsonAllowError<T>(path: string): Promise<T> {
+  const token = getAuthToken();
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await fetch(`${API_BASE_URL}${path}`, { headers });
+  if (!response.ok) {
+    let text = '';
+    try { text = await response.text(); } catch {}
+    throw new Error(`Request failed: ${response.status} ${text}`);
+  }
+  return response.json();
+}
+
 export async function postJson<T>(path: string, body: unknown): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: 'POST',
