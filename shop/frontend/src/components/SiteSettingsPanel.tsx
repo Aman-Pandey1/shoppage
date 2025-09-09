@@ -16,6 +16,7 @@ export const SiteSettingsPanel: React.FC<Props> = ({ site, selectedSiteId, onSit
   const [city, setCity] = React.useState(site?.pickup?.address?.city || '');
   const [province, setProvince] = React.useState(site?.pickup?.address?.province || '');
   const [postalCode, setPostalCode] = React.useState(site?.pickup?.address?.postalCode || '');
+  const [country, setCountry] = React.useState(site?.pickup?.address?.country || 'CA');
   const [uberCustomerId, setUberCustomerId] = React.useState(site?.uberCustomerId || '');
   const [saving, setSaving] = React.useState(false);
   const [savedAt, setSavedAt] = React.useState<number | null>(null);
@@ -30,6 +31,7 @@ export const SiteSettingsPanel: React.FC<Props> = ({ site, selectedSiteId, onSit
     setCity(site?.pickup?.address?.city || '');
     setProvince(site?.pickup?.address?.province || '');
     setPostalCode(site?.pickup?.address?.postalCode || '');
+    setCountry(site?.pickup?.address?.country || 'CA');
     setUberCustomerId(site?.uberCustomerId || '');
   }, [site?._id]);
 
@@ -58,12 +60,22 @@ export const SiteSettingsPanel: React.FC<Props> = ({ site, selectedSiteId, onSit
         <input value={city} onChange={(e) => setCity(e.target.value)} />
       </label>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <span>Province</span>
+        <span>State/Province</span>
         <input value={province} onChange={(e) => setProvince(e.target.value)} placeholder="ON, BC, AB..." />
       </label>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span>Postal Code</span>
         <input value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
+      </label>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span>Country</span>
+        <select value={country} onChange={(e) => setCountry(e.target.value)}>
+          <option value="CA">Canada (CA)</option>
+          <option value="US">United States (US)</option>
+          <option value="IN">India (IN)</option>
+          <option value="GB">United Kingdom (GB)</option>
+          <option value="AU">Australia (AU)</option>
+        </select>
       </label>
       <label style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span>Uber Customer ID</span>
@@ -104,7 +116,7 @@ export const SiteSettingsPanel: React.FC<Props> = ({ site, selectedSiteId, onSit
                 city,
                 province,
                 postalCode,
-                country: 'CA',
+                country,
               }
             }
           } as any;
