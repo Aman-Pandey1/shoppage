@@ -24,15 +24,15 @@
       "isActive": true,
       "uberCustomerId": "7fd4309c-1b51-4571-80c9-9d9ca31a73ff",
       "pickup": {
-        "name": "MMJ",
-        "phone": "+919888421284",
+        "name": "aaaa",
+        "phone": "+1 (587) 710-4641",
         "address": {
           "streetAddress": [
-            "H. No. 27, Emaar Mohali Hills Sector 99"
+            "100 Queen St W"
           ],
-          "city": "Mohali",
-          "province": "Punjab",
-          "postalCode": "140306",
+          "city": "Toronto",
+          "province": "ON   ",
+          "postalCode": "M5H 2N2",
           "country": "CA"
         }
       }
