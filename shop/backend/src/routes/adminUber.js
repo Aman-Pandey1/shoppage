@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAdmin } from '../middleware/auth.js';
 import { tenantBySlug } from '../middleware/tenant.js';
 import Site from '../models/Site.js';
 import { requestQuote } from '../services/uberDirect.js';
@@ -7,7 +7,7 @@ import { requestQuote } from '../services/uberDirect.js';
 const router = Router();
 
 // Quick health check: try a lightweight quote using site pickup to itself
-router.get('/sites/:siteId/health', requireAuth, async (req, res) => {
+router.get('/sites/:siteId/health', requireAdmin, async (req, res) => {
 	try {
 		const mock = req.app.locals.mockData;
 		let site;
