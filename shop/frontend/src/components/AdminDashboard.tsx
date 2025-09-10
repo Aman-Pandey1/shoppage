@@ -255,13 +255,36 @@ export const AdminDashboard: React.FC = () => {
                     <span>Description</span>
                     <textarea rows={3} value={editing.description || ''} onChange={(e) => setEditing({ ...editing, description: e.target.value })} />
                   </label>
-                  <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <span>Spice levels (comma separated)</span>
-                    <input
-                      value={(editing.spiceLevels || []).join(', ')}
-                      onChange={(e) => setEditing({ ...editing, spiceLevels: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
-                    />
-                  </label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <span>Spice levels</span>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {['Mild','Medium','Hot','Extra Hot'].map((lvl) => (
+                        <label key={lvl} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)', padding: '6px 10px', borderRadius: 8 }}>
+                          <input type="checkbox" checked={(editing.spiceLevels || []).includes(lvl)} onChange={(e) => {
+                            const set = new Set(editing.spiceLevels || []);
+                            if (e.target.checked) set.add(lvl); else set.delete(lvl);
+                            setEditing({ ...editing, spiceLevels: Array.from(set) });
+                          }} />
+                          <span>{lvl}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span className="muted" style={{ fontSize: 12 }}>Custom:</span>
+                      <input placeholder="e.g. No Spice" onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          const value = (e.currentTarget as HTMLInputElement).value.trim();
+                          if (value) {
+                            const set = new Set(editing.spiceLevels || []);
+                            set.add(value);
+                            setEditing({ ...editing, spiceLevels: Array.from(set) });
+                            (e.currentTarget as HTMLInputElement).value = '';
+                          }
+                          e.preventDefault();
+                        }
+                      }} />
+                    </label>
+                  </div>
                   <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <span>Extra option groups (JSON)</span>
                     <textarea
