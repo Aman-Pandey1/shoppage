@@ -17,6 +17,7 @@ export function loadMockData() {
 		if (!Array.isArray(data.sites) || !Array.isArray(data.categories) || !Array.isArray(data.products)) {
 			return null;
 		}
+		if (!Array.isArray(data.orders)) data.orders = [];
 		return data;
 	} catch (_err) {
 		return null;

@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { tenantBySlug } from '../middleware/tenant.js';
+import { requireUser } from '../middleware/auth.js';
+import Order from '../models/Order.js';
 import Site from '../models/Site.js';
 import { requestQuote, createDelivery } from '../services/uberDirect.js';
 
@@ -30,7 +32,7 @@ router.post('/:slug/quote', async (req, res) => {
 	}
 });
 
-router.post('/:slug/create', async (req, res) => {
+router.post('/:slug/create', requireUser, async (req, res) => {
 	try {
 		const mock = req.app.locals.mockData;
 		let site;
@@ -49,6 +51,25 @@ router.post('/:slug/create', async (req, res) => {
 			tip,
 			externalId,
 		});
+		// Record order
+		const totalCents = (manifestItems || []).reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 1), 0) + (Number(tip) || 0);
+		const orderPayload = {
+			site: req.siteId,
+			userId: req.user?.userId,
+			userEmail: req.user?.email,
+			items: (manifestItems || []).map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.price, size: m.size })),
+			totalCents,
+			tipCents: Number(tip) || 0,
+			externalId,
+			uberDeliveryId: delivery?.id || delivery?.delivery_id,
+			dropoff,
+		};
+		if (req.app.locals.mockData) {
+			if (!Array.isArray(req.app.locals.mockData.orders)) req.app.locals.mockData.orders = [];
+			req.app.locals.mockData.orders.unshift({ _id: `o-${Date.now()}`, ...orderPayload });
+		} else {
+			await Order.create(orderPayload);
+		}
 		res.status(201).json(delivery);
 	} catch (err) {
 		res.status(400).json({ error: err.message });
