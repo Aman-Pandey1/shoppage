@@ -15,7 +15,8 @@ export const AdminDashboard: React.FC = () => {
   const [error, setError] = useState<string | undefined>();
   const [filterCategory, setFilterCategory] = useState<string>('');
   const [editing, setEditing] = useState<EditableProduct | null>(null);
-  const [activeTab, setActiveTab] = useState<'links' | 'settings' | 'products'>('links');
+  const [activeTab, setActiveTab] = useState<'links' | 'settings' | 'products' | 'billing'>('links');
+  const [billing, setBilling] = useState<{ weekTotalCents: number; monthTotalCents: number } | null>(null);
 
   type SiteFormData = { id?: string; name: string; slug: string; domainsText: string };
   const [isSiteFormOpen, setIsSiteFormOpen] = useState(false);
@@ -62,6 +63,19 @@ export const AdminDashboard: React.FC = () => {
   }
 
   useEffect(() => { loadAll(); }, [selectedSiteId]);
+
+  useEffect(() => {
+    async function loadBilling() {
+      if (!selectedSiteId) return setBilling(null);
+      try {
+        const data = await fetchJson<{ weekTotalCents: number; monthTotalCents: number }>(`/api/admin/sites/${selectedSiteId}/billing`);
+        setBilling(data);
+      } catch {
+        setBilling(null);
+      }
+    }
+    loadBilling();
+  }, [selectedSiteId, activeTab]);
 
   useEffect(() => {
     if (selectedSiteId) {
@@ -155,7 +169,24 @@ export const AdminDashboard: React.FC = () => {
           <button className={activeTab === 'links' ? 'primary-btn' : ''} onClick={() => setActiveTab('links')}>Links</button>
           <button className={activeTab === 'settings' ? 'primary-btn' : ''} onClick={() => setActiveTab('settings')}>Settings</button>
           <button className={activeTab === 'products' ? 'primary-btn' : ''} onClick={() => setActiveTab('products')}>Products</button>
+          <button className={activeTab === 'billing' ? 'primary-btn' : ''} onClick={() => setActiveTab('billing')}>Billing</button>
         </div>
+        {activeTab === 'billing' ? (
+          <div className="card" style={{ padding: 12 }}>
+            <div style={{ fontWeight: 800, marginBottom: 8 }}>Billing (Weekly / Monthly)</div>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <div className="card" style={{ padding: 12, minWidth: 220 }}>
+                <div className="muted" style={{ fontSize: 12 }}>This week</div>
+                <div style={{ fontWeight: 900, fontSize: 22 }}>${((billing?.weekTotalCents || 0)/100).toFixed(2)}</div>
+              </div>
+              <div className="card" style={{ padding: 12, minWidth: 220 }}>
+                <div className="muted" style={{ fontSize: 12 }}>This month</div>
+                <div style={{ fontWeight: 900, fontSize: 22 }}>${((billing?.monthTotalCents || 0)/100).toFixed(2)}</div>
+              </div>
+            </div>
+            <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>Totals include item prices plus tip.</div>
+          </div>
+        ) : null}
 
         {activeTab === 'links' ? (
           <div className="card" style={{ padding: 12 }}>
