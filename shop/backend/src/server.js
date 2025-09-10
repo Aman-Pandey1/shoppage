@@ -5,11 +5,12 @@ import cors from 'cors';
 import morgan from 'morgan';
 import categoriesRouter from './routes/categories.js';
 import productsRouter from './routes/products.js';
-import authRouter from './routes/auth.js';
+import authRouter, { userAuthRouter } from './routes/auth.js';
 import adminSitesRouter from './routes/adminSites.js';
 import adminCategoriesRouter from './routes/adminCategories.js';
 import adminProductsRouter from './routes/adminProducts.js';
 import shopPublicRouter from './routes/shopPublic.js';
+import shopOrdersRouter from './routes/shopOrders.js';
 import deliveryRouter from './routes/delivery.js';
 import adminUberRouter from './routes/adminUber.js';
 import Site from './models/Site.js';
@@ -138,6 +139,7 @@ if (USE_MOCK_DATA) {
 
 app.get('/health', (_req, res) => res.json({ ok: true, mock: !!app.locals.mockData }));
 app.use('/api/auth', authRouter);
+app.use('/api/user', userAuthRouter);
 // Legacy non-tenant endpoints (kept for mock and backwards-compat):
 app.use('/api/categories', categoriesRouter);
 app.use('/api/products', productsRouter);
@@ -148,6 +150,8 @@ app.use('/api/admin/sites/:siteId/products', adminProductsRouter);
 app.use('/api/admin', adminUberRouter);
 // Public shop endpoints by site slug
 app.use('/api/shop', shopPublicRouter);
+// Orders (user)
+app.use('/api/shop', shopOrdersRouter);
 // Delivery endpoints by site slug (Uber Direct)
 app.use('/api/delivery', deliveryRouter);
 
