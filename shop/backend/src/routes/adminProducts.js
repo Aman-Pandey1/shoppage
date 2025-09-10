@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAdmin } from '../middleware/auth.js';
 import Product from '../models/Product.js';
 import Category from '../models/Category.js';
 import { saveMockData } from '../utils/mockStore.js';
 
 const router = Router({ mergeParams: true });
 
-router.get('/', requireAuth, async (req, res) => {
+router.get('/', requireAdmin, async (req, res) => {
 	try {
 		const { siteId } = req.params;
 		const { categoryId } = req.query;
@@ -26,7 +26,7 @@ router.get('/', requireAuth, async (req, res) => {
 	}
 });
 
-router.post('/', requireAuth, async (req, res) => {
+router.post('/', requireAdmin, async (req, res) => {
 	try {
 		const { siteId } = req.params;
 		const mock = req.app.locals.mockData;
@@ -49,7 +49,7 @@ router.post('/', requireAuth, async (req, res) => {
 	}
 });
 
-router.put('/:id', requireAuth, async (req, res) => {
+router.put('/:id', requireAdmin, async (req, res) => {
 	try {
 		const { siteId, id } = req.params;
 		const mock = req.app.locals.mockData;
@@ -79,7 +79,7 @@ router.put('/:id', requireAuth, async (req, res) => {
 	}
 });
 
-router.delete('/:id', requireAuth, async (req, res) => {
+router.delete('/:id', requireAdmin, async (req, res) => {
 	try {
 		const { siteId, id } = req.params;
 		const mock = req.app.locals.mockData;

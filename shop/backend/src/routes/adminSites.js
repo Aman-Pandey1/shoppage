@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAdmin } from '../middleware/auth.js';
 import Site from '../models/Site.js';
 import { saveMockData } from '../utils/mockStore.js';
 
 const router = Router();
 
-router.get('/', requireAuth, async (_req, res) => {
+router.get('/', requireAdmin, async (_req, res) => {
 	try {
 		const mock = _req.app.locals.mockData;
 		if (mock) {
@@ -18,7 +18,7 @@ router.get('/', requireAuth, async (_req, res) => {
 	}
 });
 
-router.post('/', requireAuth, async (req, res) => {
+router.post('/', requireAdmin, async (req, res) => {
 	try {
 		const { name, slug, domains, uberCustomerId, pickup } = req.body || {};
 		if (!name || !slug) return res.status(400).json({ error: 'name and slug are required' });
@@ -36,7 +36,7 @@ router.post('/', requireAuth, async (req, res) => {
 	}
 });
 
-router.patch('/:siteId', requireAuth, async (req, res) => {
+router.patch('/:siteId', requireAdmin, async (req, res) => {
 	try {
 		const { siteId } = req.params;
 		const { name, slug, domains, isActive, uberCustomerId, pickup } = req.body || {};
@@ -57,7 +57,7 @@ router.patch('/:siteId', requireAuth, async (req, res) => {
 	}
 });
 
-router.delete('/:siteId', requireAuth, async (req, res) => {
+router.delete('/:siteId', requireAdmin, async (req, res) => {
 	try {
 		const { siteId } = req.params;
 		const mock = req.app.locals.mockData;
