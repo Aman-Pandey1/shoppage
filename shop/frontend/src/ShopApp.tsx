@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useCart } from './store/CartContext';
 import { CartSidebar } from './components/CartSidebar';
 import { CategoryGrid } from './components/CategoryGrid';
+import { StoreHeader } from './components/StoreHeader';
 import { ProductList } from './components/ProductList';
 import { PrivacyPolicyModal } from './components/PrivacyPolicyModal';
 import { FulfillmentModal } from './components/FulfillmentModal';
@@ -147,6 +148,7 @@ const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
         }}
       />
       <main className="content">
+        <StoreHeader siteSlug={siteSlug} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
           <h2 style={{ marginTop: 0 }}>Shop</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
