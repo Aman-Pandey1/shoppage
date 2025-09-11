@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { tenantBySlug } from '../middleware/tenant.js';
 import { requireAuth } from '../middleware/auth.js';
 import Order from '../models/Order.js';
+import { saveMockData } from '../utils/mockStore.js';
 import Site from '../models/Site.js';
 import { requestQuote, createDelivery } from '../services/uberDirect.js';
 
@@ -66,7 +67,9 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 		};
 		if (req.app.locals.mockData) {
 			if (!Array.isArray(req.app.locals.mockData.orders)) req.app.locals.mockData.orders = [];
-			req.app.locals.mockData.orders.unshift({ _id: `o-${Date.now()}`, ...orderPayload });
+			const createdAt = new Date().toISOString();
+			req.app.locals.mockData.orders.unshift({ _id: `o-${Date.now()}`, createdAt, ...orderPayload });
+			try { saveMockData(req.app.locals.mockData); } catch {}
 		} else {
 			await Order.create(orderPayload);
 		}
