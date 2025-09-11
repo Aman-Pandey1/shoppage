@@ -15,7 +15,8 @@ export const AdminDashboard: React.FC = () => {
   const [error, setError] = useState<string | undefined>();
   const [filterCategory, setFilterCategory] = useState<string>('');
   const [editing, setEditing] = useState<EditableProduct | null>(null);
-  const [activeTab, setActiveTab] = useState<'links' | 'settings' | 'products'>('links');
+  const [activeTab, setActiveTab] = useState<'links' | 'settings' | 'products' | 'billing'>('links');
+  const [billing, setBilling] = useState<{ weekTotalCents: number; monthTotalCents: number } | null>(null);
 
   type SiteFormData = { id?: string; name: string; slug: string; domainsText: string };
   const [isSiteFormOpen, setIsSiteFormOpen] = useState(false);
@@ -62,6 +63,19 @@ export const AdminDashboard: React.FC = () => {
   }
 
   useEffect(() => { loadAll(); }, [selectedSiteId]);
+
+  useEffect(() => {
+    async function loadBilling() {
+      if (!selectedSiteId) return setBilling(null);
+      try {
+        const data = await fetchJson<{ weekTotalCents: number; monthTotalCents: number }>(`/api/admin/sites/${selectedSiteId}/billing`);
+        setBilling(data);
+      } catch {
+        setBilling(null);
+      }
+    }
+    loadBilling();
+  }, [selectedSiteId, activeTab]);
 
   useEffect(() => {
     if (selectedSiteId) {
@@ -155,7 +169,24 @@ export const AdminDashboard: React.FC = () => {
           <button className={activeTab === 'links' ? 'primary-btn' : ''} onClick={() => setActiveTab('links')}>Links</button>
           <button className={activeTab === 'settings' ? 'primary-btn' : ''} onClick={() => setActiveTab('settings')}>Settings</button>
           <button className={activeTab === 'products' ? 'primary-btn' : ''} onClick={() => setActiveTab('products')}>Products</button>
+          <button className={activeTab === 'billing' ? 'primary-btn' : ''} onClick={() => setActiveTab('billing')}>Billing</button>
         </div>
+        {activeTab === 'billing' ? (
+          <div className="card" style={{ padding: 12 }}>
+            <div style={{ fontWeight: 800, marginBottom: 8 }}>Billing (Weekly / Monthly)</div>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <div className="card" style={{ padding: 12, minWidth: 220 }}>
+                <div className="muted" style={{ fontSize: 12 }}>This week</div>
+                <div style={{ fontWeight: 900, fontSize: 22 }}>${((billing?.weekTotalCents || 0)/100).toFixed(2)}</div>
+              </div>
+              <div className="card" style={{ padding: 12, minWidth: 220 }}>
+                <div className="muted" style={{ fontSize: 12 }}>This month</div>
+                <div style={{ fontWeight: 900, fontSize: 22 }}>${((billing?.monthTotalCents || 0)/100).toFixed(2)}</div>
+              </div>
+            </div>
+            <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>Totals include item prices plus tip.</div>
+          </div>
+        ) : null}
 
         {activeTab === 'links' ? (
           <div className="card" style={{ padding: 12 }}>
@@ -224,13 +255,36 @@ export const AdminDashboard: React.FC = () => {
                     <span>Description</span>
                     <textarea rows={3} value={editing.description || ''} onChange={(e) => setEditing({ ...editing, description: e.target.value })} />
                   </label>
-                  <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <span>Spice levels (comma separated)</span>
-                    <input
-                      value={(editing.spiceLevels || []).join(', ')}
-                      onChange={(e) => setEditing({ ...editing, spiceLevels: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
-                    />
-                  </label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <span>Spice levels</span>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {['Mild','Medium','Hot','Extra Hot'].map((lvl) => (
+                        <label key={lvl} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)', padding: '6px 10px', borderRadius: 8 }}>
+                          <input type="checkbox" checked={(editing.spiceLevels || []).includes(lvl)} onChange={(e) => {
+                            const set = new Set(editing.spiceLevels || []);
+                            if (e.target.checked) set.add(lvl); else set.delete(lvl);
+                            setEditing({ ...editing, spiceLevels: Array.from(set) });
+                          }} />
+                          <span>{lvl}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span className="muted" style={{ fontSize: 12 }}>Custom:</span>
+                      <input placeholder="e.g. No Spice" onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          const value = (e.currentTarget as HTMLInputElement).value.trim();
+                          if (value) {
+                            const set = new Set(editing.spiceLevels || []);
+                            set.add(value);
+                            setEditing({ ...editing, spiceLevels: Array.from(set) });
+                            (e.currentTarget as HTMLInputElement).value = '';
+                          }
+                          e.preventDefault();
+                        }
+                      }} />
+                    </label>
+                  </div>
                   <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <span>Extra option groups (JSON)</span>
                     <textarea

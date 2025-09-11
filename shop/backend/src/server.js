@@ -1,22 +1,22 @@
-import dotenv from "dotenv";
-import express from "express";
-import mongoose from "mongoose";
-import cors from "cors";
-import morgan from "morgan";
-import categoriesRouter from "./routes/categories.js";
-import productsRouter from "./routes/products.js";
-import authRouter, { userAuthRouter } from "./routes/auth.js";
-import adminSitesRouter from "./routes/adminSites.js";
-import adminCategoriesRouter from "./routes/adminCategories.js";
-import adminProductsRouter from "./routes/adminProducts.js";
-import shopPublicRouter from "./routes/shopPublic.js";
-import shopOrdersRouter from "./routes/shopOrders.js";
-import deliveryRouter from "./routes/delivery.js";
-import adminUberRouter from "./routes/adminUber.js";
-import Site from "./models/Site.js";
-import Category from "./models/Category.js";
-import Product from "./models/Product.js";
-import { loadMockData, saveMockData } from "./utils/mockStore.js";
+import dotenv from 'dotenv';
+import express from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import morgan from 'morgan';
+import categoriesRouter from './routes/categories.js';
+import productsRouter from './routes/products.js';
+import authRouter, { userAuthRouter } from './routes/auth.js';
+import adminSitesRouter, { adminBillingRouter } from './routes/adminSites.js';
+import adminCategoriesRouter from './routes/adminCategories.js';
+import adminProductsRouter from './routes/adminProducts.js';
+import shopPublicRouter from './routes/shopPublic.js';
+import shopOrdersRouter from './routes/shopOrders.js';
+import deliveryRouter from './routes/delivery.js';
+import adminUberRouter from './routes/adminUber.js';
+import Site from './models/Site.js';
+import Category from './models/Category.js';
+import Product from './models/Product.js';
+import { loadMockData, saveMockData } from './utils/mockStore.js';
 
 dotenv.config();
 
@@ -181,10 +181,11 @@ app.use("/api/user", userAuthRouter);
 app.use("/api/categories", categoriesRouter);
 app.use("/api/products", productsRouter);
 // Admin multi-tenant endpoints
-app.use("/api/admin/sites", adminSitesRouter);
-app.use("/api/admin/sites/:siteId/categories", adminCategoriesRouter);
-app.use("/api/admin/sites/:siteId/products", adminProductsRouter);
-app.use("/api/admin", adminUberRouter);
+app.use('/api/admin/sites', adminSitesRouter);
+app.use('/api/admin', adminBillingRouter);
+app.use('/api/admin/sites/:siteId/categories', adminCategoriesRouter);
+app.use('/api/admin/sites/:siteId/products', adminProductsRouter);
+app.use('/api/admin', adminUberRouter);
 // Public shop endpoints by site slug
 app.use("/api/shop", shopPublicRouter);
 // Orders (user)
