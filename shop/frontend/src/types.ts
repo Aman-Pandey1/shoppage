@@ -36,6 +36,7 @@ export type Site = {
   slug: string;
   domains?: string[];
   isActive: boolean;
+  brandColor?: string;
   uberCustomerId?: string;
   pickup?: {
     name?: string;

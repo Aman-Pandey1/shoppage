@@ -5,6 +5,7 @@ const SiteSchema = new mongoose.Schema({
 	slug: { type: String, required: true, unique: true, index: true },
 	domains: [{ type: String }],
 	isActive: { type: Boolean, default: true },
+	brandColor: { type: String, default: '#0ea5e9' },
 	uberCustomerId: { type: String },
 	pickup: {
 		name: { type: String },

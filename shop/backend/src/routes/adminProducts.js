@@ -3,8 +3,11 @@ import { requireAdmin } from '../middleware/auth.js';
 import Product from '../models/Product.js';
 import Category from '../models/Category.js';
 import { saveMockData } from '../utils/mockStore.js';
+import multer from 'multer';
+import xlsx from 'xlsx';
 
 const router = Router({ mergeParams: true });
+const upload = multer({ storage: multer.memoryStorage() });
 
 router.get('/', requireAdmin, async (req, res) => {
 	try {
@@ -96,6 +99,71 @@ router.delete('/:id', requireAdmin, async (req, res) => {
 	} catch (err) {
 		res.status(400).json({ error: err.message });
 	}
+});
+
+// Download Excel template
+router.get('/template.xlsx', requireAdmin, async (_req, res) => {
+  const wb = xlsx.utils.book_new();
+  const ws = xlsx.utils.aoa_to_sheet([
+    ['name','description','price','imageUrl','categoryName','spiceLevels'],
+    ['Butter Chicken','Rich creamy gravy', '12.99','https://...','Mains','Mild,Medium,Hot']
+  ]);
+  xlsx.utils.book_append_sheet(wb, ws, 'Products');
+  const buf = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', 'attachment; filename="product_template.xlsx"');
+  res.send(buf);
+});
+
+// Bulk upload via Excel
+router.post('/bulk', requireAdmin, upload.single('file'), async (req, res) => {
+  try {
+    const { siteId } = req.params;
+    if (!req.file) return res.status(400).json({ error: 'Missing file' });
+    const wb = xlsx.read(req.file.buffer, { type: 'buffer' });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const rows = xlsx.utils.sheet_to_json(sheet, { defval: '' });
+    const mock = req.app.locals.mockData;
+    const created = [];
+    for (const r of rows) {
+      const name = r.name || r.Name;
+      if (!name) continue;
+      const price = parseFloat(String(r.price || r.Price || 0));
+      const description = r.description || r.Description || '';
+      const imageUrl = r.imageUrl || r.ImageUrl || '';
+      const categoryName = r.categoryName || r.Category || '';
+      const spiceLevels = String(r.spiceLevels || r.SpiceLevels || '').split(',').map((s) => String(s).trim()).filter(Boolean);
+
+      // Resolve or create category by name
+      let categoryId = null;
+      if (mock) {
+        let cat = (mock.categories || []).find((c) => c.site === siteId && String(c.name).toLowerCase() === String(categoryName).toLowerCase());
+        if (!cat) {
+          cat = { _id: `c-${Date.now()}-${Math.random().toString(36).slice(2,6)}`, name: categoryName || 'Uncategorized', imageUrl: '', sortIndex: 0, site: siteId };
+          mock.categories.unshift(cat);
+        }
+        categoryId = cat._id;
+      } else {
+        let cat = await Category.findOne({ site: siteId, name: categoryName });
+        if (!cat) cat = await Category.create({ site: siteId, name: categoryName || 'Uncategorized', imageUrl: '', sortIndex: 0 });
+        categoryId = cat._id;
+      }
+
+      const payload = { site: siteId, name, description, imageUrl, price, categoryId, spiceLevels, extraOptionGroups: [] };
+      if (mock) {
+        const p = { _id: `p-${Date.now()}-${Math.random().toString(36).slice(2,6)}`, ...payload };
+        mock.products.unshift(p);
+        created.push(p);
+      } else {
+        const p = await Product.create(payload);
+        created.push(p);
+      }
+    }
+    try { if (req.app.locals.mockData) saveMockData(req.app.locals.mockData); } catch {}
+    res.json({ created: created.length });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
 export default router;
