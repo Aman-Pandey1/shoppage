@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { requireAdmin } from '../middleware/auth.js';
 import Site from '../models/Site.js';
 import { saveMockData } from '../utils/mockStore.js';
+import Order from '../models/Order.js';
 
 const router = Router();
 
@@ -78,4 +79,42 @@ router.delete('/:siteId', requireAdmin, async (req, res) => {
 });
 
 export default router;
+
+// Billing (weekly/monthly totals) for a site
+export const adminBillingRouter = Router();
+
+adminBillingRouter.get('/sites/:siteId/billing', requireAdmin, async (req, res) => {
+  try {
+    const { siteId } = req.params;
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - ((now.getDay() + 6) % 7)); // Monday as start
+    startOfWeek.setHours(0,0,0,0);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const mock = req.app.locals.mockData;
+    if (mock) {
+      const orders = (mock.orders || []).filter((o) => o.site === siteId);
+      const weekTotal = orders
+        .filter((o) => new Date(o.createdAt || 0) >= startOfWeek)
+        .reduce((s, o) => s + (Number(o.totalCents) || 0), 0);
+      const monthTotal = orders
+        .filter((o) => new Date(o.createdAt || 0) >= startOfMonth)
+        .reduce((s, o) => s + (Number(o.totalCents) || 0), 0);
+      return res.json({ weekTotalCents: weekTotal, monthTotalCents: monthTotal });
+    }
+
+    const [weekAgg] = await Order.aggregate([
+      { $match: { site: new Site({ _id: siteId })._id, createdAt: { $gte: startOfWeek } } },
+      { $group: { _id: null, total: { $sum: '$totalCents' } } },
+    ]);
+    const [monthAgg] = await Order.aggregate([
+      { $match: { site: new Site({ _id: siteId })._id, createdAt: { $gte: startOfMonth } } },
+      { $group: { _id: null, total: { $sum: '$totalCents' } } },
+    ]);
+    res.json({ weekTotalCents: weekAgg?.total || 0, monthTotalCents: monthAgg?.total || 0 });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
 

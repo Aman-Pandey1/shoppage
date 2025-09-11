@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useCart } from './store/CartContext';
 import { CartSidebar } from './components/CartSidebar';
 import { CategoryGrid } from './components/CategoryGrid';
+import { StoreHeader } from './components/StoreHeader';
 import { ProductList } from './components/ProductList';
 import { PrivacyPolicyModal } from './components/PrivacyPolicyModal';
 import { FulfillmentModal } from './components/FulfillmentModal';
@@ -12,6 +13,7 @@ import { AddToCartToast } from './components/AddToCartToast';
 import { DeliveryAddressModal } from './components/DeliveryAddressModal';
 import { fetchJson } from './lib/api';
 import type { Category, Product, SelectedOption } from './types';
+import { CategoryChips } from './components/CategoryChips';
 
 const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
   { siteSlug = 'default', initialCategoryId }: { siteSlug?: string; initialCategoryId?: string }
@@ -21,6 +23,7 @@ const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
   const [fulfillmentOpen, setFulfillmentOpen] = useState(false);
 
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [allCategories, setAllCategories] = useState<Category[]>([]);
 
   const [pendingProduct, setPendingProduct] = useState<Product | null>(null);
   const [spiceOpen, setSpiceOpen] = useState(false);
@@ -90,16 +93,18 @@ const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
     setPendingSpice(undefined);
   }
 
-  // Preselect a category if provided via route
+  // Load categories and preselect a category if provided via route
   useEffect(() => {
     let cancelled = false;
     async function preselect() {
-      if (!initialCategoryId) return;
       try {
         const cats = await fetchJson<Category[]>(`/api/shop/${siteSlug}/categories`);
         if (cancelled) return;
-        const found = cats.find((c) => String(c._id) === String(initialCategoryId));
-        if (found) setSelectedCategory(found);
+        setAllCategories(cats);
+        if (initialCategoryId) {
+          const found = cats.find((c) => String(c._id) === String(initialCategoryId));
+          if (found) setSelectedCategory(found);
+        }
       } catch {}
     }
     preselect();
@@ -147,6 +152,7 @@ const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
         }}
       />
       <main className="content">
+        <StoreHeader siteSlug={siteSlug} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
           <h2 style={{ marginTop: 0 }}>Shop</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -156,6 +162,13 @@ const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
             </div>
           </div>
         </div>
+        <section className="card" style={{ padding: 10, marginBottom: 10 }}>
+          <CategoryChips
+            categories={allCategories}
+            currentId={selectedCategory?._id}
+            onSelect={(c) => setSelectedCategory(c)}
+          />
+        </section>
         <div className="hide-desktop" style={{ marginBottom: 10 }}>
           <button
             className="primary-btn"
