@@ -22,7 +22,7 @@
         "aman"
       ],
       "isActive": true,
-      "uberCustomerId": "7fd4309c-1b51-4571-80c9-9d9ca31a73ff",
+      "uberCustomerId": "e17d4989-135a-5753-8721-deea80593053",
       "pickup": {
         "name": "aaaa",
         "phone": "+1 (587) 710-4641",
@@ -255,5 +255,6 @@
       ],
       "site": "mock-site"
     }
-  ]
+  ],
+  "orders": []
 }
