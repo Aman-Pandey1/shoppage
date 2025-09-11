@@ -117,3 +117,34 @@ export async function login(email: string, password: string): Promise<string> {
   setAuthToken(token);
   return token;
 }
+
+export async function download(path: string): Promise<Blob> {
+  const token = getAuthToken();
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Request failed: ${response.status} ${text}`);
+  }
+  return response.blob();
+}
+
+export async function postFile<T>(path: string, file: File, fieldName = 'file'): Promise<T> {
+  const form = new FormData();
+  form.append(fieldName, file);
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    headers: {
+      ...(getAuthToken() ? { Authorization: `Bearer ${getAuthToken()}` } : {}),
+    },
+    body: form,
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Request failed: ${response.status} ${text}`);
+  }
+  return response.json();
+}

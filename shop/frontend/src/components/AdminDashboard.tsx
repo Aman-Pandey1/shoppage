@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { deleteJson, fetchJson, postJson, putJson, patchJson } from '../lib/api';
+import { deleteJson, fetchJson, postJson, putJson, patchJson, download, postFile } from '../lib/api';
 import type { Category, Product, Site } from '../types';
 import { SiteSettingsPanel } from './SiteSettingsPanel';
 import { Modal } from './Modal';
@@ -16,6 +16,7 @@ export const AdminDashboard: React.FC = () => {
   const [filterCategory, setFilterCategory] = useState<string>('');
   const [editing, setEditing] = useState<EditableProduct | null>(null);
   const [activeTab, setActiveTab] = useState<'links' | 'settings' | 'products' | 'billing'>('links');
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [billing, setBilling] = useState<{ weekTotalCents: number; monthTotalCents: number } | null>(null);
 
   type SiteFormData = { id?: string; name: string; slug: string; domainsText: string };
@@ -306,6 +307,25 @@ export const AdminDashboard: React.FC = () => {
               </div>
             ) : null}
 
+            <div style={{ display: 'flex', gap: 8, margin: '6px 0 8px' }}>
+              <button onClick={async () => {
+                if (!selectedSiteId) return;
+                const blob = await download(`/api/admin/sites/${selectedSiteId}/products/template.xlsx`);
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = 'product_template.xlsx'; a.click();
+                URL.revokeObjectURL(url);
+              }}>Download template</button>
+              <input ref={fileInputRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file || !selectedSiteId) return;
+                const res = await postFile<{ created: number }>(`/api/admin/sites/${selectedSiteId}/products/bulk`, file);
+                await loadAll();
+                alert(`Imported ${res.created} products`);
+                e.currentTarget.value = '';
+              }} />
+              <button onClick={() => fileInputRef.current?.click()}>Upload Excel</button>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
               {filteredProducts.map((p) => (
                 <div key={p._id} className="card" style={{ padding: 12 }}>
