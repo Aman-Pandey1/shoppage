@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { tenantBySlug } from '../middleware/tenant.js';
-import { requireUser } from '../middleware/auth.js';
+import { requireAuth } from '../middleware/auth.js';
 import Order from '../models/Order.js';
 import Site from '../models/Site.js';
 import { requestQuote, createDelivery } from '../services/uberDirect.js';
@@ -32,7 +32,7 @@ router.post('/:slug/quote', async (req, res) => {
 	}
 });
 
-router.post('/:slug/create', requireUser, async (req, res) => {
+router.post('/:slug/create', requireAuth, async (req, res) => {
 	try {
 		const mock = req.app.locals.mockData;
 		let site;
