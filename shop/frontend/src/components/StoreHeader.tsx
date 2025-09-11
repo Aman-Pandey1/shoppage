@@ -3,14 +3,22 @@ import { fetchJson } from '../lib/api';
 
 export const StoreHeader: React.FC<{ siteSlug: string }> = ({ siteSlug }) => {
   const [name, setName] = React.useState<string>('');
+  const [brandColor, setBrandColor] = React.useState<string>('#0ea5e9');
   const [loading, setLoading] = React.useState<boolean>(true);
   React.useEffect(() => {
     let cancelled = false;
     async function load() {
       try {
         setLoading(true);
-        const data = await fetchJson<{ name: string }>(`/api/shop/${siteSlug}/site`);
-        if (!cancelled) setName(data.name || '');
+        const data = await fetchJson<{ name: string; brandColor?: string }>(`/api/shop/${siteSlug}/site`);
+        if (!cancelled) {
+          setName(data.name || '');
+          if (data.brandColor) setBrandColor(data.brandColor);
+          try {
+            document.documentElement.style.setProperty('--primary', data.brandColor || '#0ea5e9');
+            document.documentElement.style.setProperty('--primary-600', data.brandColor || '#0284c7');
+          } catch {}
+        }
       } catch {
       } finally {
         if (!cancelled) setLoading(false);
@@ -38,7 +46,7 @@ export const StoreHeader: React.FC<{ siteSlug: string }> = ({ siteSlug }) => {
         }}
       />
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 14 }}>
-        <div style={{ width: 56, height: 56, borderRadius: 12, background: '#fff', display: 'grid', placeItems: 'center', border: '1px solid var(--border)' }}>
+        <div style={{ width: 56, height: 56, borderRadius: 12, background: '#fff', display: 'grid', placeItems: 'center', border: '2px solid var(--primary)' }}>
           <span style={{ fontSize: 26 }}>🛍️</span>
         </div>
         <div>
