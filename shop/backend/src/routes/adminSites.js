@@ -3,6 +3,7 @@ import { requireAdmin } from '../middleware/auth.js';
 import Site from '../models/Site.js';
 import { saveMockData } from '../utils/mockStore.js';
 import Order from '../models/Order.js';
+import mongoose from 'mongoose';
 
 const router = Router();
 
@@ -105,11 +106,11 @@ adminBillingRouter.get('/sites/:siteId/billing', requireAdmin, async (req, res) 
     }
 
     const [weekAgg] = await Order.aggregate([
-      { $match: { site: new Site({ _id: siteId })._id, createdAt: { $gte: startOfWeek } } },
+      { $match: { site: new mongoose.Types.ObjectId(siteId), createdAt: { $gte: startOfWeek } } },
       { $group: { _id: null, total: { $sum: '$totalCents' } } },
     ]);
     const [monthAgg] = await Order.aggregate([
-      { $match: { site: new Site({ _id: siteId })._id, createdAt: { $gte: startOfMonth } } },
+      { $match: { site: new mongoose.Types.ObjectId(siteId), createdAt: { $gte: startOfMonth } } },
       { $group: { _id: null, total: { $sum: '$totalCents' } } },
     ]);
     res.json({ weekTotalCents: weekAgg?.total || 0, monthTotalCents: monthAgg?.total || 0 });
