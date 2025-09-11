@@ -4,6 +4,7 @@ import { ShopBySlugPage } from './pages/ShopBySlugPage'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { MyOrdersPage } from './pages/MyOrdersPage'
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
       <Route path=":siteSlug/c/:categoryId" element={<ShopBySlugPage />} />
       <Route path="/s/:siteSlug" element={<ShopBySlugPage />} />
       <Route path="/s/:siteSlug/c/:categoryId" element={<ShopBySlugPage />} />
+      <Route path="/s/:siteSlug/orders" element={<MyOrdersPage />} />
       <Route path="/c/:categoryId" element={<ShopBySlugPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route
