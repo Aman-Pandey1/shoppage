@@ -93,7 +93,7 @@ export const CategoryGrid: React.FC<{
               aspectRatio: '1 / 1',
               borderRadius: 'calc(var(--radius) - 6px)',
               overflow: 'hidden',
-              background: 'linear-gradient(180deg, rgba(34,211,238,0.08), rgba(167,139,250,0.08))',
+              background: 'linear-gradient(180deg, var(--primary-alpha-08), rgba(167,139,250,0.08))',
               marginBottom: 10,
               position: 'relative',
             }}

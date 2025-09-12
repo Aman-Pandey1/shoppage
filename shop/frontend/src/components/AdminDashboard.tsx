@@ -176,11 +176,11 @@ export const AdminDashboard: React.FC = () => {
           <div className="card" style={{ padding: 12 }}>
             <div style={{ fontWeight: 800, marginBottom: 8 }}>Billing (Weekly / Monthly)</div>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <div className="card" style={{ padding: 12, minWidth: 220 }}>
+              <div className="card" style={{ padding: 12, minWidth: 220, borderTop: '3px solid var(--primary)' }}>
                 <div className="muted" style={{ fontSize: 12 }}>This week</div>
                 <div style={{ fontWeight: 900, fontSize: 22 }}>${((billing?.weekTotalCents || 0)/100).toFixed(2)}</div>
               </div>
-              <div className="card" style={{ padding: 12, minWidth: 220 }}>
+              <div className="card" style={{ padding: 12, minWidth: 220, borderTop: '3px solid var(--primary)' }}>
                 <div className="muted" style={{ fontSize: 12 }}>This month</div>
                 <div style={{ fontWeight: 900, fontSize: 22 }}>${((billing?.monthTotalCents || 0)/100).toFixed(2)}</div>
               </div>
