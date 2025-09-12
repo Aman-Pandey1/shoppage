@@ -18,6 +18,7 @@ export const SiteSettingsPanel: React.FC<Props> = ({ site, selectedSiteId, onSit
   const [postalCode, setPostalCode] = React.useState(site?.pickup?.address?.postalCode || '');
   const [country, setCountry] = React.useState(site?.pickup?.address?.country || 'CA');
   const [uberCustomerId, setUberCustomerId] = React.useState(site?.uberCustomerId || '');
+  const [brandColor, setBrandColor] = React.useState(site?.brandColor || '#0ea5e9');
   const [saving, setSaving] = React.useState(false);
   const [savedAt, setSavedAt] = React.useState<number | null>(null);
   const [testingUber, setTestingUber] = React.useState(false);
@@ -33,6 +34,7 @@ export const SiteSettingsPanel: React.FC<Props> = ({ site, selectedSiteId, onSit
     setPostalCode(site?.pickup?.address?.postalCode || '');
     setCountry(site?.pickup?.address?.country || 'CA');
     setUberCustomerId(site?.uberCustomerId || '');
+    setBrandColor(site?.brandColor || '#0ea5e9');
   }, [site?._id]);
 
   if (!site) return <div className="muted">Select a site to configure.</div>;
@@ -81,6 +83,10 @@ export const SiteSettingsPanel: React.FC<Props> = ({ site, selectedSiteId, onSit
         <span>Uber Customer ID</span>
         <input value={uberCustomerId} onChange={(e) => setUberCustomerId(e.target.value)} />
       </label>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span>Brand color</span>
+        <input type="color" value={brandColor} onChange={(e) => setBrandColor(e.target.value)} />
+      </label>
       <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button disabled={testingUber} onClick={async () => {
@@ -108,6 +114,7 @@ export const SiteSettingsPanel: React.FC<Props> = ({ site, selectedSiteId, onSit
           setSaving(true);
           const payload: Partial<Site> = {
             uberCustomerId,
+            brandColor,
             pickup: {
               name: pickupName,
               phone: pickupPhone,

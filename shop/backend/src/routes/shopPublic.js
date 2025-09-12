@@ -22,7 +22,7 @@ router.use('/:slug', tenantBySlug);
 router.get('/:slug/site', async (req, res) => {
   try {
     const { site } = req;
-    return res.json({ siteId: req.siteId, slug: site.slug, name: site.name });
+    return res.json({ siteId: req.siteId, slug: site.slug, name: site.name, brandColor: site.brandColor });
   } catch (err) {
     return res.status(400).json({ error: err.message });
   }
