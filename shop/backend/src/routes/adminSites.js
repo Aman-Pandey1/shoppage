@@ -22,16 +22,16 @@ router.get('/', requireAdmin, async (_req, res) => {
 
 router.post('/', requireAdmin, async (req, res) => {
 	try {
-		const { name, slug, domains, uberCustomerId, pickup } = req.body || {};
+		const { name, slug, domains, uberCustomerId, pickup, brandColor } = req.body || {};
 		if (!name || !slug) return res.status(400).json({ error: 'name and slug are required' });
 		const mock = req.app.locals.mockData;
 		if (mock) {
-			const created = { _id: `site-${Date.now()}`, name, slug, domains: domains || [], uberCustomerId, pickup, isActive: true };
+			const created = { _id: `site-${Date.now()}`, name, slug, domains: domains || [], uberCustomerId, pickup, brandColor: brandColor || '#0ea5e9', isActive: true };
 			mock.sites.unshift(created);
 			try { saveMockData(req.app.locals.mockData); } catch {}
 			return res.status(201).json(created);
 		}
-		const site = await Site.create({ name, slug, domains: domains || [], uberCustomerId, pickup, isActive: true });
+		const site = await Site.create({ name, slug, domains: domains || [], uberCustomerId, pickup, brandColor: brandColor || '#0ea5e9', isActive: true });
 		res.status(201).json(site);
 	} catch (err) {
 		res.status(400).json({ error: err.message });
@@ -41,17 +41,17 @@ router.post('/', requireAdmin, async (req, res) => {
 router.patch('/:siteId', requireAdmin, async (req, res) => {
 	try {
 		const { siteId } = req.params;
-		const { name, slug, domains, isActive, uberCustomerId, pickup } = req.body || {};
+		const { name, slug, domains, isActive, uberCustomerId, pickup, brandColor } = req.body || {};
 		const mock = req.app.locals.mockData;
 		if (mock) {
 			const idx = mock.sites.findIndex((s) => s._id === siteId);
 			if (idx === -1) return res.status(404).json({ error: 'Not found' });
-			const updated = { ...mock.sites[idx], ...(name !== undefined ? { name } : {}), ...(slug !== undefined ? { slug } : {}), ...(domains !== undefined ? { domains } : {}), ...(isActive !== undefined ? { isActive } : {}), ...(uberCustomerId !== undefined ? { uberCustomerId } : {}), ...(pickup !== undefined ? { pickup } : {}) };
+			const updated = { ...mock.sites[idx], ...(name !== undefined ? { name } : {}), ...(slug !== undefined ? { slug } : {}), ...(domains !== undefined ? { domains } : {}), ...(isActive !== undefined ? { isActive } : {}), ...(uberCustomerId !== undefined ? { uberCustomerId } : {}), ...(pickup !== undefined ? { pickup } : {}), ...(brandColor !== undefined ? { brandColor } : {}) };
 			mock.sites[idx] = updated;
 			try { saveMockData(req.app.locals.mockData); } catch {}
 			return res.json(updated);
 		}
-		const site = await Site.findByIdAndUpdate(siteId, { name, slug, domains, isActive, uberCustomerId, pickup }, { new: true });
+		const site = await Site.findByIdAndUpdate(siteId, { name, slug, domains, isActive, uberCustomerId, pickup, brandColor }, { new: true });
 		if (!site) return res.status(404).json({ error: 'Not found' });
 		res.json(site);
 	} catch (err) {
