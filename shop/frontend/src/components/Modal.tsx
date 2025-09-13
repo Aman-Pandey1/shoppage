@@ -11,28 +11,28 @@ type ModalProps = {
 const overlayStyle: React.CSSProperties = {
   position: 'fixed',
   inset: 0,
-  background: 'rgba(2,6,23,0.35)',
+  background: 'rgba(0,0,0,0.55)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   zIndex: 1000,
-  backdropFilter: 'blur(4px)'
+  backdropFilter: 'blur(2px)'
 };
 
 const panelStyle: React.CSSProperties = {
   width: 'min(92vw, 640px)',
   background: 'var(--panel)',
-  borderRadius: 12,
+  borderRadius: 16,
   border: '1px solid var(--border)',
-  boxShadow: 'var(--shadow-soft)',
+  boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
   overflow: 'hidden',
 };
 
 const headerStyle: React.CSSProperties = {
   padding: '16px 20px',
   borderBottom: '1px solid var(--border)',
-  fontWeight: 700,
-  fontSize: 18,
+  fontWeight: 800,
+  fontSize: 20,
   color: 'var(--text)'
 };
 
@@ -51,9 +51,9 @@ const footerStyle: React.CSSProperties = {
 
 const buttonStyle: React.CSSProperties = {
   padding: '10px 14px',
-  borderRadius: 8,
+  borderRadius: 10,
   border: '1px solid var(--primary-600)',
-  background: 'linear-gradient(180deg, rgba(14,165,233,0.16), rgba(14,165,233,0.10))',
+  background: 'linear-gradient(180deg, var(--primary-alpha-22), var(--primary-alpha-12))',
   color: 'var(--text)',
   cursor: 'pointer',
 };

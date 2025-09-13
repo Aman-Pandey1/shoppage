@@ -67,7 +67,7 @@ export const ProductList: React.FC<{
               (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border)';
             }}
           >
-            <div style={{ width: '100%', aspectRatio: '4 / 3', borderRadius: 'calc(var(--radius) - 6px)', overflow: 'hidden', background: 'linear-gradient(180deg, rgba(34,211,238,0.08), rgba(167,139,250,0.08))', marginBottom: 10 }}>
+            <div style={{ width: '100%', aspectRatio: '4 / 3', borderRadius: 'calc(var(--radius) - 6px)', overflow: 'hidden', background: 'linear-gradient(180deg, var(--primary-alpha-08), rgba(167,139,250,0.08))', marginBottom: 10 }}>
               {p.imageUrl ? (
                 <img src={p.imageUrl} alt={p.name} className="img-cover" />
               ) : (
