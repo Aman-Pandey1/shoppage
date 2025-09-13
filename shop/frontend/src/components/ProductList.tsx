@@ -55,7 +55,7 @@ export const ProductList: React.FC<{
           <div
             key={p._id}
             className="card animate-fadeInUp"
-            style={{ borderRadius: 'var(--radius)', padding: 12, animationDelay: `${idx * 40}ms` }}
+            style={{ borderRadius: 'var(--radius)', padding: 12, animationDelay: `${idx * 40}ms`, border: '1px solid var(--border)', background: '#fff' }}
             onMouseEnter={(e) => {
               (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
               (e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-pop)';
