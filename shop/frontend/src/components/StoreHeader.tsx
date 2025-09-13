@@ -15,8 +15,25 @@ export const StoreHeader: React.FC<{ siteSlug: string }> = ({ siteSlug }) => {
           setName(data.name || '');
           if (data.brandColor) setBrandColor(data.brandColor);
           try {
-            document.documentElement.style.setProperty('--primary', data.brandColor || '#0ea5e9');
-            document.documentElement.style.setProperty('--primary-600', data.brandColor || '#0284c7');
+            const base = data.brandColor || '#0ea5e9';
+            document.documentElement.style.setProperty('--primary', base);
+            document.documentElement.style.setProperty('--primary-600', base);
+            // Compute alpha variants via CSS color-mix fallback using rgba
+            // Simple approach: reuse base with fixed alphas by setting vars
+            const rgba = (hex: string, a: number) => {
+              const h = hex.replace('#','');
+              const bigint = parseInt(h, 16);
+              const r = (bigint >> 16) & 255;
+              const g = (bigint >> 8) & 255;
+              const b = bigint & 255;
+              return `rgba(${r},${g},${b},${a})`;
+            };
+            document.documentElement.style.setProperty('--primary-alpha-04', rgba(base, 0.04));
+            document.documentElement.style.setProperty('--primary-alpha-08', rgba(base, 0.08));
+            document.documentElement.style.setProperty('--primary-alpha-12', rgba(base, 0.12));
+            document.documentElement.style.setProperty('--primary-alpha-18', rgba(base, 0.18));
+            document.documentElement.style.setProperty('--primary-alpha-22', rgba(base, 0.22));
+            document.documentElement.style.setProperty('--primary-alpha-25', rgba(base, 0.25));
           } catch {}
         }
       } catch {
