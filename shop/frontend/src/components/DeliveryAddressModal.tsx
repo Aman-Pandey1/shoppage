@@ -100,7 +100,7 @@ export const DeliveryAddressModal: React.FC<DeliveryAddressModalProps> = ({ open
   return (
     <Modal open={open} onClose={onClose} title="Delivery details">
       {error ? <div style={{ color: 'var(--danger)', marginBottom: 8 }}>{error}</div> : null}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <span>Name</span>
           <input value={name} onChange={(e) => setName(e.target.value)} />
@@ -140,21 +140,21 @@ export const DeliveryAddressModal: React.FC<DeliveryAddressModalProps> = ({ open
           </select>
         </label>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginTop: 10, alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 14, alignItems: 'center' }}>
         <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <span>Tip</span>
           <input type="number" step="0.5" min={0} value={tip} onChange={(e) => setTip(Number(e.target.value))} style={{ width: 90 }} />
         </label>
-        <div style={{ display: 'inline-flex', gap: 8, marginLeft: 'auto' }}>
+        <div style={{ display: 'inline-flex', gap: 10, marginLeft: 'auto' }}>
         {!quote ? (
-          <button className="primary-btn" disabled={loading} onClick={getQuote}>{loading ? 'Requesting…' : 'Get quote'}</button>
+          <button className="primary-btn" disabled={loading} onClick={getQuote} style={{ padding: '12px 16px', borderRadius: 12 }}>{loading ? 'Requesting…' : 'Get quote'}</button>
         ) : (
           <>
             <div style={{ marginRight: 'auto' }}>
               <div style={{ fontWeight: 700 }}>Estimated: {quote?.fee?.amount ? `$${(quote.fee.amount / 100).toFixed(2)}` : '—'}</div>
               {quote?.dropoff_estimated_dt ? <div className="muted" style={{ fontSize: 12 }}>ETA: {new Date(quote.dropoff_estimated_dt).toLocaleTimeString()}</div> : null}
             </div>
-            <button className="primary-btn" disabled={loading} onClick={createDelivery}>{loading ? 'Creating…' : 'Confirm delivery'}</button>
+            <button className="primary-btn" disabled={loading} onClick={createDelivery} style={{ padding: '12px 16px', borderRadius: 12 }}>{loading ? 'Creating…' : 'Confirm delivery'}</button>
           </>
         )}
         </div>
