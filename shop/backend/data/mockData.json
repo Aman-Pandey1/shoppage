@@ -5,7 +5,22 @@
       "name": "new assian",
       "slug": "assian",
       "domains": [],
-      "isActive": true
+      "isActive": true,
+      "uberCustomerId": "",
+      "pickup": {
+        "name": "",
+        "phone": "",
+        "address": {
+          "streetAddress": [
+            ""
+          ],
+          "city": "",
+          "province": "",
+          "postalCode": "",
+          "country": "CA"
+        }
+      },
+      "brandColor": "#e7e00d"
     },
     {
       "_id": "site-1757302179979",
@@ -18,9 +33,7 @@
       "_id": "site-1757247910961",
       "name": "aman",
       "slug": "aman",
-      "domains": [
-        "aman"
-      ],
+      "domains": [],
       "isActive": true,
       "uberCustomerId": "e17d4989-135a-5753-8721-deea80593053",
       "pickup": {
@@ -35,7 +48,8 @@
           "postalCode": "M5H 2N2",
           "country": "CA"
         }
-      }
+      },
+      "brandColor": "#d50b77"
     },
     {
       "_id": "mock-site",
@@ -45,6 +59,20 @@
     }
   ],
   "categories": [
+    {
+      "_id": "c-1757649315072-8ekx",
+      "name": "Mains",
+      "imageUrl": "",
+      "sortIndex": 0,
+      "site": "site-1757304649439"
+    },
+    {
+      "_id": "c-1757648623951-k2le",
+      "name": "Mains",
+      "imageUrl": "",
+      "sortIndex": 0,
+      "site": "site-1757247910961"
+    },
     {
       "_id": "c-1757304677239",
       "name": "drinks",
@@ -92,6 +120,52 @@
     }
   ],
   "products": [
+    {
+      "_id": "p-1757649373273",
+      "name": "p2",
+      "description": "test",
+      "imageUrl": "",
+      "price": 55,
+      "categoryId": "c-1757304669157",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot",
+        "Extra Hot"
+      ],
+      "extraOptionGroups": [],
+      "site": "site-1757304649439"
+    },
+    {
+      "_id": "p-1757649315072-0rga",
+      "site": "site-1757304649439",
+      "name": "Butter Chicken",
+      "description": "Rich creamy gravy",
+      "imageUrl": "https://...",
+      "price": 12.99,
+      "categoryId": "c-1757649315072-8ekx",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1757648623951-0o7t",
+      "site": "site-1757247910961",
+      "name": "Butter Chicken",
+      "description": "Rich creamy gravy",
+      "imageUrl": "https://...",
+      "price": 12.99,
+      "categoryId": "c-1757648623951-k2le",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "extraOptionGroups": []
+    },
     {
       "_id": "p-1757304717824",
       "name": "p1",
