@@ -15,7 +15,7 @@ export const CategoryChips: React.FC<{
             key={c._id}
             onClick={() => onSelect(c)}
             className={active ? 'primary-btn' : ''}
-            style={{ whiteSpace: 'nowrap' }}
+            style={{ whiteSpace: 'nowrap', borderRadius: 999, padding: '10px 14px' }}
           >
             {c.name}
           </button>
