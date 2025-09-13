@@ -14,12 +14,12 @@ export const CartSidebar: React.FC<Props> = ({ open, onClose, onCheckout }) => {
         right: 16,
         bottom: 16,
         width: 320,
-        background: 'var(--panel)',
+        background: '#fff',
         border: '1px solid var(--border)',
         borderRadius: 'var(--radius)',
         padding: 16,
         overflowY: 'auto',
-        boxShadow: 'var(--shadow-soft)'
+        boxShadow: '0 14px 40px rgba(0,0,0,0.18)'
       }}
       className="animate-slideInRight cart-sidebar"
       data-open={open ? 'true' : 'false'}
@@ -82,7 +82,7 @@ export const CartSidebar: React.FC<Props> = ({ open, onClose, onCheckout }) => {
         </div>
         <button
           className="primary-btn"
-          style={{ width: '100%' }}
+          style={{ width: '100%', padding: '12px 16px', borderRadius: 12 }}
           disabled={state.items.length === 0}
           onClick={onCheckout}
         >
