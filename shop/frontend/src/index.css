@@ -163,6 +163,13 @@ input:focus, select:focus, textarea:focus {
 .animate-slideInLeft { animation: slideInLeft .25s ease-out both; }
 .animate-slideInRight { animation: slideInRight .25s ease-out both; }
 
+/* Tiny utility for subtle floating hover */
+.hover-float:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
+
+/* Progress bar utility (used in toast) */
+.progress-track { height: 3px; background: rgba(2,6,23,0.10); border-radius: 9999px; overflow: hidden; }
+.progress-bar { height: 100%; background: linear-gradient(90deg, var(--primary-alpha-25), var(--primary-alpha-12)); }
+
 /* Image helpers */
 .img-cover {
   width: 100%;
