@@ -12,7 +12,7 @@ type CartContextValue = {
     spiceLevel?: string;
     selectedOptions?: SelectedOption[];
   }) => void;
-  lastAdded?: { name: string; quantity: number } | null;
+  lastAdded?: { name: string; quantity: number; price: number; imageUrl?: string } | null;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
@@ -36,7 +36,7 @@ function generateItemId(productId: string, spiceLevel?: string, selectedOptions?
 
 export const CartProvider: React.FC<{ children: React.ReactNode; storageKey?: string }> = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => {
   const [state, setState] = useState<CartState>({ items: [] });
-  const [lastAdded, setLastAdded] = useState<{ name: string; quantity: number } | null>(null);
+  const [lastAdded, setLastAdded] = useState<{ name: string; quantity: number; price: number; imageUrl?: string } | null>(null);
 
   useEffect(() => {
     try {
@@ -90,7 +90,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode; storageKey?: st
       }
       return { ...prev, items: [...prev.items, newItem] };
     });
-    setLastAdded({ name: product.name, quantity });
+    setLastAdded({ name: product.name, quantity, price: (product.price + extraCost), imageUrl: product.imageUrl });
   }, []);
 
   const removeItem = useCallback((id: string) => {
