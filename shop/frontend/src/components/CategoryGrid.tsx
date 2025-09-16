@@ -99,7 +99,7 @@ export const CategoryGrid: React.FC<{
             }}
           >
             {cat.imageUrl ? (
-              <img src={cat.imageUrl} alt={cat.name} className="img-cover animate-popIn" />
+              <img src={cat.imageUrl} alt={cat.name} className="img-cover animate-popIn" loading="lazy" />
             ) : (
               <div style={{
                 width: '100%', height: '100%', display: 'grid', placeItems: 'center',
