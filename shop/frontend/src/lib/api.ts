@@ -144,6 +144,22 @@ export async function login(email: string, password: string): Promise<string> {
   return token;
 }
 
+export async function loginUser(email: string, password: string): Promise<string> {
+  const response = await fetch(`${API_BASE_URL}/api/user/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Login failed: ${response.status} ${text}`);
+  }
+  const data = await response.json();
+  const token = data.token as string;
+  setAuthToken(token);
+  return token;
+}
+
 export async function download(path: string): Promise<Blob> {
   const token = getAuthToken();
   const response = await fetch(`${API_BASE_URL}${path}`, {

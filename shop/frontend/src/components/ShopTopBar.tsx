@@ -1,8 +1,10 @@
 import React from 'react';
 
 export const ShopTopBar: React.FC<{
+  vegFilter?: 'all' | 'veg' | 'nonveg';
+  onVegChange?: (value: 'all' | 'veg' | 'nonveg') => void;
   onSearch?: (q: string) => void;
-}> = ({ onSearch }) => {
+}> = ({ onSearch, vegFilter = 'all', onVegChange }) => {
   const [query, setQuery] = React.useState('');
   React.useEffect(() => {
     const t = setTimeout(() => onSearch && onSearch(query), 250);
@@ -11,21 +13,23 @@ export const ShopTopBar: React.FC<{
   return (
     <div className="card" style={{ padding: 8, borderRadius: 12, marginBottom: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <select defaultValue="all" style={{ padding: '10px 12px' }}>
-          <option value="all">Order details</option>
-          <option value="veg">Veg</option>
-          <option value="nonveg">Non-Veg</option>
+        <select
+          value={vegFilter}
+          onChange={(e) => onVegChange && onVegChange(e.target.value as 'all' | 'veg' | 'nonveg')}
+          style={{ padding: '10px 12px' }}
+          aria-label="Filter by veg or non-veg"
+        >
+          <option value="all">All</option>
+          <option value="veg">🟢 Veg</option>
+          <option value="nonveg">🔴 Non-Veg</option>
         </select>
         <input
-          placeholder="Select an order type"
+          placeholder="Search dishes..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           style={{ flex: 1 }}
         />
-        <select defaultValue="today" style={{ padding: '10px 12px' }}>
-          <option value="today">Today</option>
-          <option value="tomorrow">Tomorrow</option>
-        </select>
+        <div className="muted" style={{ fontSize: 12 }}>Filters</div>
       </div>
     </div>
   );
