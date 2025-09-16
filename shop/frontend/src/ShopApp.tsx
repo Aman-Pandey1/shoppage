@@ -15,6 +15,7 @@ import type { Category, Product, SelectedOption } from './types';
 import { CategoryChips } from './components/CategoryChips';
 import { ShopTopBar } from './components/ShopTopBar';
 import { LoginModal } from './components/LoginModal';
+import { StoreBanner } from './components/StoreBanner';
 
 const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
   { siteSlug = 'default', initialCategoryId }: { siteSlug?: string; initialCategoryId?: string }
@@ -161,6 +162,13 @@ const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
       />
       <main className="content">
         <StoreHeader siteSlug={siteSlug} />
+        <StoreBanner
+          siteSlug={siteSlug}
+          onCta={() => {
+            if (!state.fulfillmentType) setFulfillmentOpen(true);
+            else if (state.fulfillmentType === 'delivery') setDeliveryModalOpen(true);
+          }}
+        />
         <ShopTopBar vegFilter={vegFilter} onVegChange={setVegFilter} />
         <section className="card" style={{ padding: 10, marginBottom: 10 }}>
           <CategoryChips
