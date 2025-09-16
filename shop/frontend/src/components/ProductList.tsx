@@ -73,7 +73,7 @@ export const ProductList: React.FC<{
           >
             <div style={{ width: '100%', aspectRatio: '4 / 3', borderRadius: 'calc(var(--radius) - 6px)', overflow: 'hidden', background: 'linear-gradient(180deg, var(--primary-alpha-08), rgba(167,139,250,0.08))', marginBottom: 10 }}>
               {p.imageUrl ? (
-                <img src={p.imageUrl} alt={p.name} className="img-cover" />
+                <img src={p.imageUrl} alt={p.name} className="img-cover" loading="lazy" />
               ) : (
                 <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', fontSize: 42 }}>🍽️</div>
               )}
