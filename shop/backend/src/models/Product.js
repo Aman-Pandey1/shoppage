@@ -13,6 +13,7 @@ const ProductSchema = new mongoose.Schema({
 	imageUrl: { type: String },
 	price: { type: Number, required: true },
 	categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
+	isVeg: { type: Boolean, default: true },
 	spiceLevels: [{ type: String }],
 	extraOptionGroups: [{
 		groupKey: { type: String, required: true },

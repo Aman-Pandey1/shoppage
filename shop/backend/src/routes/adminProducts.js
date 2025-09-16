@@ -12,16 +12,34 @@ const upload = multer({ storage: multer.memoryStorage() });
 router.get('/', requireAdmin, async (req, res) => {
 	try {
 		const { siteId } = req.params;
-		const { categoryId } = req.query;
+		const { categoryId, veg, isVeg } = req.query;
 		const mock = req.app.locals.mockData;
 		if (mock) {
 			let list = mock.products.filter((p) => p.site === siteId);
 			if (categoryId) list = list.filter((p) => String(p.categoryId) === String(categoryId));
+			let vegFilter = null;
+			if (typeof veg === 'string') {
+				if (veg.toLowerCase() === 'veg') vegFilter = true;
+				if (veg.toLowerCase() === 'nonveg') vegFilter = false;
+			}
+			if (typeof isVeg === 'string') {
+				if (isVeg.toLowerCase() === 'true') vegFilter = true;
+				if (isVeg.toLowerCase() === 'false') vegFilter = false;
+			}
+			if (vegFilter !== null) list = list.filter((p) => (typeof p.isVeg === 'boolean' ? p.isVeg : true) === vegFilter);
 			list.sort((a, b) => a.name.localeCompare(b.name));
 			return res.json(list);
 		}
 		const filter = { site: siteId };
 		if (categoryId) filter.categoryId = categoryId;
+		if (typeof veg === 'string') {
+			if (veg.toLowerCase() === 'veg') filter.isVeg = true;
+			if (veg.toLowerCase() === 'nonveg') filter.isVeg = false;
+		}
+		if (typeof isVeg === 'string') {
+			if (isVeg.toLowerCase() === 'true') filter.isVeg = true;
+			if (isVeg.toLowerCase() === 'false') filter.isVeg = false;
+		}
 		const products = await Product.find(filter).sort({ name: 1 });
 		res.json(products);
 	} catch (err) {
@@ -105,8 +123,8 @@ router.delete('/:id', requireAdmin, async (req, res) => {
 router.get('/template.xlsx', requireAdmin, async (_req, res) => {
   const wb = xlsx.utils.book_new();
   const ws = xlsx.utils.aoa_to_sheet([
-    ['name','description','price','imageUrl','categoryName','spiceLevels'],
-    ['Butter Chicken','Rich creamy gravy', '12.99','https://...','Mains','Mild,Medium,Hot']
+    ['name','description','price','imageUrl','categoryName','spiceLevels','isVeg'],
+    ['Butter Chicken','Rich creamy gravy', '12.99','https://...','Mains','Mild,Medium,Hot','false']
   ]);
   xlsx.utils.book_append_sheet(wb, ws, 'Products');
   const buf = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
@@ -133,6 +151,8 @@ router.post('/bulk', requireAdmin, upload.single('file'), async (req, res) => {
       const imageUrl = r.imageUrl || r.ImageUrl || '';
       const categoryName = r.categoryName || r.Category || '';
       const spiceLevels = String(r.spiceLevels || r.SpiceLevels || '').split(',').map((s) => String(s).trim()).filter(Boolean);
+      const isVegCell = r.isVeg ?? r.IsVeg ?? r.veg ?? r.Veg;
+      const isVeg = typeof isVegCell === 'string' ? /^(1|true|yes|veg)$/i.test(isVegCell) : !!isVegCell;
 
       // Resolve or create category by name
       let categoryId = null;
@@ -149,7 +169,7 @@ router.post('/bulk', requireAdmin, upload.single('file'), async (req, res) => {
         categoryId = cat._id;
       }
 
-      const payload = { site: siteId, name, description, imageUrl, price, categoryId, spiceLevels, extraOptionGroups: [] };
+      const payload = { site: siteId, name, description, imageUrl, price, categoryId, spiceLevels, isVeg, extraOptionGroups: [] };
       if (mock) {
         const p = { _id: `p-${Date.now()}-${Math.random().toString(36).slice(2,6)}`, ...payload };
         mock.products.unshift(p);

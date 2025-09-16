@@ -84,9 +84,14 @@ export const AdminDashboard: React.FC = () => {
     }
   }, [selectedSiteId]);
 
+  const [vegFilter, setVegFilter] = useState<'all' | 'veg' | 'nonveg'>('all');
+
   const filteredProducts = useMemo(() => {
-    return filterCategory ? products.filter((p) => p.categoryId === filterCategory) : products;
-  }, [products, filterCategory]);
+    let list = filterCategory ? products.filter((p) => p.categoryId === filterCategory) : products;
+    if (vegFilter === 'veg') list = list.filter((p) => p.isVeg !== false);
+    if (vegFilter === 'nonveg') list = list.filter((p) => p.isVeg === false);
+    return list;
+  }, [products, filterCategory, vegFilter]);
 
   function startCreate() {
     setEditing({ name: '', price: 0, categoryId: categories[0]?._id || '', description: '', imageUrl: '', spiceLevels: [], extraOptionGroups: [] });
@@ -156,6 +161,14 @@ export const AdminDashboard: React.FC = () => {
             {categories.map((c) => (
               <option key={c._id} value={c._id}>{c.name}</option>
             ))}
+          </select>
+        </label>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span>Veg / Non-Veg</span>
+          <select value={vegFilter} onChange={(e) => setVegFilter(e.target.value as any)}>
+            <option value="all">All</option>
+            <option value="veg">🟢 Veg</option>
+            <option value="nonveg">🔴 Non-Veg</option>
           </select>
         </label>
         <button onClick={() => {
@@ -241,6 +254,14 @@ export const AdminDashboard: React.FC = () => {
                   <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <span>Price</span>
                     <input type="number" step="0.01" value={editing.price as number} onChange={(e) => setEditing({ ...editing, price: Number(e.target.value) })} />
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <input
+                      type="checkbox"
+                      checked={editing.isVeg !== false}
+                      onChange={(e) => setEditing({ ...editing, isVeg: e.target.checked })}
+                    />
+                    <span>Veg (unchecked = Non-Veg)</span>
                   </label>
                   <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <span>Category</span>
@@ -332,7 +353,10 @@ export const AdminDashboard: React.FC = () => {
                   <div style={{ width: '100%', aspectRatio: '4 / 3', borderRadius: 'var(--radius-sm)', overflow: 'hidden', background: 'linear-gradient(180deg, rgba(34,211,238,0.08), rgba(167,139,250,0.08))', marginBottom: 10 }}>
                     {p.imageUrl ? <img src={p.imageUrl} alt={p.name} className="img-cover" /> : null}
                   </div>
-                  <div style={{ fontWeight: 800 }}>{p.name}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ fontWeight: 800 }}>{p.name}</div>
+                    <div title={p.isVeg === false ? 'Non-Veg' : 'Veg'}>{p.isVeg === false ? '🔴' : '🟢'}</div>
+                  </div>
                   <div className="muted" style={{ fontSize: 13, margin: '4px 0 8px' }}>{p.description}</div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ fontWeight: 700 }}>${p.price.toFixed(2)}</div>
