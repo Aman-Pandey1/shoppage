@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { login } from '../lib/api';
+import { login, loginUser } from '../lib/api';
 
 export const LoginModal: React.FC<{
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
-}> = ({ open, onClose, onSuccess }) => {
+  mode?: 'admin' | 'user';
+}> = ({ open, onClose, onSuccess, mode = 'user' }) => {
   const [email, setEmail] = useState('admin@example.com');
   const [password, setPassword] = useState('admin123');
   const [loading, setLoading] = useState(false);
@@ -18,7 +19,11 @@ export const LoginModal: React.FC<{
     setLoading(true);
     setError(undefined);
     try {
-      await login(email, password);
+      if (mode === 'admin') {
+        await login(email, password);
+      } else {
+        await loginUser(email, password);
+      }
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -43,7 +48,7 @@ export const LoginModal: React.FC<{
         padding: 16,
         boxShadow: 'var(--shadow-pop)'
       }} className="animate-popIn">
-        <h3 style={{ marginTop: 0 }}>Admin Login</h3>
+        <h3 style={{ marginTop: 0 }}>{mode === 'admin' ? 'Admin Login' : 'Login'}</h3>
         {error ? <div style={{ color: 'var(--danger)', marginBottom: 8 }}>{error}</div> : null}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -61,9 +66,11 @@ export const LoginModal: React.FC<{
             </button>
           </div>
         </form>
-        <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>
-          Default admin: admin@example.com / admin123
-        </div>
+        {mode === 'admin' ? (
+          <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>
+            Default admin: admin@example.com / admin123
+          </div>
+        ) : null}
       </div>
     </div>
   );
