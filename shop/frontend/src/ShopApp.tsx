@@ -10,10 +10,11 @@ import { SpiceModal } from './components/SpiceModal';
 import { ExtrasModal } from './components/ExtrasModal';
 import { AddToCartToast } from './components/AddToCartToast';
 import { DeliveryAddressModal } from './components/DeliveryAddressModal';
-import { fetchJson } from './lib/api';
+import { fetchJson, getAuthToken } from './lib/api';
 import type { Category, Product, SelectedOption } from './types';
 import { CategoryChips } from './components/CategoryChips';
 import { ShopTopBar } from './components/ShopTopBar';
+import { LoginModal } from './components/LoginModal';
 
 const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
   { siteSlug = 'default', initialCategoryId }: { siteSlug?: string; initialCategoryId?: string }
@@ -30,6 +31,8 @@ const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
   const [extrasOpen, setExtrasOpen] = useState(false);
   const [pendingSpice, setPendingSpice] = useState<string | undefined>(undefined);
   const [deliveryModalOpen, setDeliveryModalOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [vegFilter, setVegFilter] = useState<'all' | 'veg' | 'nonveg'>('all');
   const [lastDeliveryId, setLastDeliveryId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -119,11 +122,12 @@ const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
           siteSlug={siteSlug}
           onAdd={startAddToCart}
           onBack={() => setSelectedCategory(null)}
+          vegFilter={vegFilter}
         />
       );
     }
     return <CategoryGrid onSelect={setSelectedCategory} siteSlug={siteSlug} />;
-  }, [selectedCategory, siteSlug]);
+  }, [selectedCategory, siteSlug, vegFilter]);
 
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
 
@@ -145,15 +149,19 @@ const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
         open={mobileCartOpen}
         onClose={() => setMobileCartOpen(false)}
         onCheckout={() => {
+          const hasToken = !!getAuthToken();
+          if (!hasToken) {
+            setLoginOpen(true);
+            return;
+          }
           if (!state.fulfillmentType) setFulfillmentOpen(true);
-          // Auto-select delivery for checkout
           setFulfillmentType('delivery');
           setDeliveryModalOpen(true);
         }}
       />
       <main className="content">
         <StoreHeader siteSlug={siteSlug} />
-        <ShopTopBar />
+        <ShopTopBar vegFilter={vegFilter} onVegChange={setVegFilter} />
         <section className="card" style={{ padding: 10, marginBottom: 10 }}>
           <CategoryChips
             categories={allCategories}
@@ -165,6 +173,8 @@ const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
           <button
             className="primary-btn"
             onClick={() => {
+              const hasToken = !!getAuthToken();
+              if (!hasToken) { setLoginOpen(true); return; }
               if (!state.fulfillmentType) setFulfillmentOpen(true);
               setFulfillmentType('delivery');
               setDeliveryModalOpen(true);
@@ -199,6 +209,12 @@ const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
       {/* Toast for add-to-cart */}
       <AddToCartToast />
       {/* Login moved to dedicated /login route */}
+      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} onSuccess={() => {
+        setLoginOpen(false);
+        if (!state.fulfillmentType) setFulfillmentOpen(true);
+        setFulfillmentType('delivery');
+        setDeliveryModalOpen(true);
+      }} mode="user" />
     </div>
   );
 };

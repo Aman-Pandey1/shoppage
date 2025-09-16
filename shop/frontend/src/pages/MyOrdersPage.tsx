@@ -1,6 +1,7 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import { fetchJson } from '../lib/api';
+import { fetchJson, getAuthToken } from '../lib/api';
+import { LoginModal } from '../components/LoginModal';
 
 type Order = {
   _id: string;
@@ -15,16 +16,31 @@ export const MyOrdersPage: React.FC = () => {
   const [orders, setOrders] = React.useState<Order[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | undefined>();
+  const [query, setQuery] = React.useState('');
+  const [loginOpen, setLoginOpen] = React.useState(false);
 
   React.useEffect(() => {
     let mounted = true;
     (async () => {
       try {
         setLoading(true);
+        if (!getAuthToken()) {
+          setLoginOpen(true);
+          setLoading(false);
+          return;
+        }
         const data = await fetchJson<Order[]>(`/api/shop/${siteSlug}/orders/mine`);
         if (mounted) setOrders(data);
       } catch (e: any) {
-        if (mounted) setError(e.message || 'Failed to load orders');
+        const msg = String(e?.message || '');
+        if (/401|403/.test(msg)) {
+          if (mounted) {
+            setLoginOpen(true);
+            setError(undefined);
+          }
+        } else {
+          if (mounted) setError(e.message || 'Failed to load orders');
+        }
       } finally {
         if (mounted) setLoading(false);
       }
@@ -35,14 +51,26 @@ export const MyOrdersPage: React.FC = () => {
   if (loading) return <div>Loading orders…</div>;
   if (error) return <div style={{ color: 'red' }}>{error}</div>;
 
+  const filtered = React.useMemo(() => {
+    if (!query.trim()) return orders;
+    const q = query.toLowerCase();
+    return orders.filter((o) =>
+      o._id.toLowerCase().includes(q) ||
+      o.items.some((it) => it.name.toLowerCase().includes(q))
+    );
+  }, [orders, query]);
+
   return (
     <div className="container" style={{ paddingTop: 20 }}>
       <h2 style={{ marginTop: 0 }}>My Orders</h2>
-      {orders.length === 0 ? (
+      <div className="card" style={{ padding: 8, borderRadius: 12, marginBottom: 10 }}>
+        <input placeholder="Search my orders by item or order #" value={query} onChange={(e) => setQuery(e.target.value)} />
+      </div>
+      {filtered.length === 0 ? (
         <div className="muted">No orders yet.</div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
-          {orders.map((o) => (
+          {filtered.map((o) => (
             <div key={o._id} className="card" style={{ padding: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <div style={{ fontWeight: 800 }}>#{o._id.slice(-6)}</div>
@@ -58,6 +86,7 @@ export const MyOrdersPage: React.FC = () => {
           ))}
         </div>
       )}
+      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} onSuccess={() => { setLoginOpen(false); }} mode="user" />
     </div>
   );
 };

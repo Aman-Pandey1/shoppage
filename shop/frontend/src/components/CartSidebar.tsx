@@ -19,7 +19,7 @@ export const CartSidebar: React.FC<Props> = ({ open, onClose, onCheckout }) => {
         borderRadius: 'var(--radius)',
         padding: 16,
         overflowY: 'auto',
-        boxShadow: '0 14px 40px rgba(0,0,0,0.18)'
+        // removed heavy drop shadow to match other pages
       }}
       className="animate-slideInRight cart-sidebar"
       data-open={open ? 'true' : 'false'}

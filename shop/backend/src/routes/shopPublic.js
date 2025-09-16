@@ -45,15 +45,34 @@ router.get('/:slug/categories', async (req, res) => {
 router.get('/:slug/products', async (req, res) => {
 	try {
 		const mock = req.app.locals.mockData;
-		const { categoryId } = req.query;
+		const { categoryId, veg, isVeg } = req.query;
 		if (mock) {
 			let list = mock.products.filter((p) => p.site === req.siteId);
 			if (categoryId) list = list.filter((p) => String(p.categoryId) === String(categoryId));
+			// veg filter: veg=veg|nonveg or isVeg=true|false
+			let vegFilter = null;
+			if (typeof veg === 'string') {
+				if (veg.toLowerCase() === 'veg') vegFilter = true;
+				if (veg.toLowerCase() === 'nonveg') vegFilter = false;
+			}
+			if (typeof isVeg === 'string') {
+				if (isVeg.toLowerCase() === 'true') vegFilter = true;
+				if (isVeg.toLowerCase() === 'false') vegFilter = false;
+			}
+			if (vegFilter !== null) list = list.filter((p) => (typeof p.isVeg === 'boolean' ? p.isVeg : true) === vegFilter);
 			list.sort((a, b) => a.name.localeCompare(b.name));
 			return res.json(list);
 		}
 		const filter = { site: req.siteId };
 		if (categoryId) filter.categoryId = categoryId;
+		if (typeof veg === 'string') {
+			if (veg.toLowerCase() === 'veg') filter.isVeg = true;
+			if (veg.toLowerCase() === 'nonveg') filter.isVeg = false;
+		}
+		if (typeof isVeg === 'string') {
+			if (isVeg.toLowerCase() === 'true') filter.isVeg = true;
+			if (isVeg.toLowerCase() === 'false') filter.isVeg = false;
+		}
 		const products = await Product.find(filter).sort({ name: 1 });
 		res.json(products);
 	} catch (err) {
