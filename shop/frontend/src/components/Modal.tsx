@@ -11,21 +11,25 @@ type ModalProps = {
 const overlayStyle: React.CSSProperties = {
   position: 'fixed',
   inset: 0,
-  background: 'rgba(0,0,0,0.55)',
+  background:
+    'radial-gradient(800px 500px at 10% -10%, rgba(167,139,250,0.22), transparent 40%),\
+     radial-gradient(800px 600px at 110% 10%, rgba(14,165,233,0.22), transparent 46%),\
+     rgba(2,6,23,0.55)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   zIndex: 1000,
-  backdropFilter: 'blur(2px)'
+  backdropFilter: 'blur(4px)'
 };
 
 const panelStyle: React.CSSProperties = {
   width: 'min(92vw, 640px)',
-  background: 'var(--panel)',
-  borderRadius: 16,
+  background: 'linear-gradient(180deg, rgba(255,255,255,0.80), rgba(255,255,255,0.65))',
+  borderRadius: 20,
   border: '1px solid var(--border)',
-  boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+  boxShadow: '0 24px 80px rgba(2,6,23,0.30), 0 0 0 1px rgba(255,255,255,0.6) inset',
   overflow: 'hidden',
+  backdropFilter: 'saturate(160%) blur(12px)'
 };
 
 const headerStyle: React.CSSProperties = {
