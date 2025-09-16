@@ -1,6 +1,6 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
-function getAuthToken(): string | null {
+export function getAuthToken(): string | null {
   try {
     return localStorage.getItem('auth_token');
   } catch {
@@ -14,6 +14,32 @@ export function setAuthToken(token: string) {
 
 export function clearAuthToken() {
   try { localStorage.removeItem('auth_token'); } catch {}
+}
+
+type AuthUser = { role?: 'user' | 'admin'; email?: string; userId?: string };
+
+function decodeJwt(token: string): any | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const json = atob(payload);
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+
+export function getCurrentUser(): AuthUser | null {
+  const token = getAuthToken();
+  if (!token) return null;
+  const payload = decodeJwt(token);
+  if (!payload) return null;
+  return { role: payload.role, email: payload.email, userId: payload.userId } as AuthUser;
+}
+
+export function logout() {
+  clearAuthToken();
 }
 
 export async function fetchJson<T>(path: string): Promise<T> {
