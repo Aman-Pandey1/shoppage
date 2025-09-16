@@ -13,7 +13,7 @@ export const CartSidebar: React.FC<Props> = ({ open, onClose, onCheckout }) => {
         top: 16,
         right: 16,
         bottom: 16,
-        width: 320,
+        width: 340,
         background: '#fff',
         border: '1px solid var(--border)',
         borderRadius: 'var(--radius)',
@@ -24,10 +24,26 @@ export const CartSidebar: React.FC<Props> = ({ open, onClose, onCheckout }) => {
       className="animate-slideInRight cart-sidebar"
       data-open={open ? 'true' : 'false'}
     >
+      <div className="card" style={{ padding: 10, borderRadius: 12, marginBottom: 10 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontSize: 12 }} className="muted">ORDER ESTIMATE</div>
+            <div style={{ fontWeight: 800 }}>10:00 AM</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 12 }} className="muted">COUPON</div>
+            <div style={{ fontWeight: 800 }}>—</div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 12 }} className="muted">TOTAL</div>
+            <div style={{ fontWeight: 800 }}>${getCartTotal().toFixed(2)}</div>
+          </div>
+        </div>
+      </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <h3 style={{ margin: 0, letterSpacing: '.02em' }}>Cart</h3>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button onClick={clearCart} className="primary-btn" style={{ padding: '6px 10px', borderRadius: 8 }}>Clear</button>
+          {state.items.length > 0 ? <button onClick={clearCart} className="primary-btn" style={{ padding: '6px 10px', borderRadius: 8 }}>Clear</button> : null}
           <button onClick={onClose} aria-label="Close cart" title="Close" style={{ border: 'none', background: 'transparent', cursor: 'pointer' }} className="danger hide-desktop">✕</button>
         </div>
       </div>
