@@ -8,12 +8,12 @@ import { PrivacyPolicyModal } from './components/PrivacyPolicyModal';
 import { FulfillmentModal } from './components/FulfillmentModal';
 import { SpiceModal } from './components/SpiceModal';
 import { ExtrasModal } from './components/ExtrasModal';
-import { Link } from 'react-router-dom';
 import { AddToCartToast } from './components/AddToCartToast';
 import { DeliveryAddressModal } from './components/DeliveryAddressModal';
 import { fetchJson } from './lib/api';
 import type { Category, Product, SelectedOption } from './types';
 import { CategoryChips } from './components/CategoryChips';
+import { ShopTopBar } from './components/ShopTopBar';
 
 const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
   { siteSlug = 'default', initialCategoryId }: { siteSlug?: string; initialCategoryId?: string }
@@ -153,15 +153,7 @@ const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
       />
       <main className="content">
         <StoreHeader siteSlug={siteSlug} />
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-          <h2 style={{ marginTop: 0 }}>Shop</h2>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {/* <Link to="/login">Admin Login</Link> */}
-            <div className="hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
-              <span>Items: {state.items.length}</span>
-            </div>
-          </div>
-        </div>
+        <ShopTopBar />
         <section className="card" style={{ padding: 10, marginBottom: 10 }}>
           <CategoryChips
             categories={allCategories}
