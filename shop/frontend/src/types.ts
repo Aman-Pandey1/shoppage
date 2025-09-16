@@ -26,6 +26,7 @@ export type Product = {
   imageUrl?: string;
   price: number;
   categoryId: string;
+  isVeg?: boolean;
   spiceLevels?: string[];
   extraOptionGroups?: ExtraOptionGroup[];
 };

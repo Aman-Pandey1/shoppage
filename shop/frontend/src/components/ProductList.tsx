@@ -7,14 +7,18 @@ export const ProductList: React.FC<{
   onAdd: (product: Product) => void;
   onBack: () => void;
   siteSlug?: string;
-}> = ({ category, onAdd, onBack, siteSlug = 'default' }) => {
+  vegFilter?: 'all' | 'veg' | 'nonveg';
+}> = ({ category, onAdd, onBack, siteSlug = 'default', vegFilter = 'all' }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
 
   useEffect(() => {
     let mounted = true;
-    fetchJson<Product[]>(`/api/shop/${siteSlug}/products?categoryId=${category._id}`)
+    const params = new URLSearchParams({ categoryId: String(category._id) });
+    if (vegFilter === 'veg') params.set('veg', 'veg');
+    if (vegFilter === 'nonveg') params.set('veg', 'nonveg');
+    fetchJson<Product[]>(`/api/shop/${siteSlug}/products?${params.toString()}`)
       .then((data) => {
         if (mounted) {
           setProducts(data);
@@ -30,7 +34,7 @@ export const ProductList: React.FC<{
     return () => {
       mounted = false;
     };
-  }, [category._id, siteSlug]);
+  }, [category._id, siteSlug, vegFilter]);
 
   if (loading) return <div>Loading products...</div>;
   if (error) return <div style={{ color: 'red' }}>Failed to load products: {error}</div>;
@@ -74,9 +78,12 @@ export const ProductList: React.FC<{
                 <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', fontSize: 42 }}>🍽️</div>
               )}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ fontSize: 18 }}>🍽️</div>
-              <div style={{ fontWeight: 800, letterSpacing: '.01em' }}>{p.name}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ fontSize: 18 }}>{p.isVeg === false ? '🔴' : '🟢'}</div>
+                <div style={{ fontWeight: 800, letterSpacing: '.01em' }}>{p.name}</div>
+              </div>
+              <div className="muted" style={{ fontSize: 12 }}>{p.isVeg === false ? 'Non-Veg' : 'Veg'}</div>
             </div>
             {p.description ? <div className="muted" style={{ fontSize: 14, marginTop: 4 }}>{p.description}</div> : null}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
