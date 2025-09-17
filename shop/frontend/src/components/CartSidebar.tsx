@@ -13,26 +13,22 @@ export const CartSidebar: React.FC<Props> = ({ open, onClose, onCheckout }) => {
         top: 16,
         right: 16,
         bottom: 16,
-        width: 340,
+        width: 360,
         background: '#fff',
         border: '1px solid var(--border)',
         borderRadius: 'var(--radius)',
         padding: 16,
         overflowY: 'auto',
-        // removed heavy drop shadow to match other pages
       }}
       className="animate-slideInRight cart-sidebar"
       data-open={open ? 'true' : 'false'}
     >
-      <div className="card" style={{ padding: 10, borderRadius: 12, marginBottom: 10 }}>
+      <div className="card" style={{ padding: 14, borderRadius: 12, marginBottom: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <div style={{ fontSize: 12 }} className="muted">ORDER ESTIMATE</div>
-            <div style={{ fontWeight: 800 }}>10:00 AM</div>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 12 }} className="muted">COUPON</div>
-            <div style={{ fontWeight: 800 }}>—</div>
+            <div style={{ fontSize: 12 }} className="muted">ORDER READY FOR</div>
+            <div style={{ fontWeight: 800, fontSize: 20 }}>10:00 AM</div>
+            <div style={{ fontSize: 12 }} className="muted">(in 5 hours)</div>
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: 12 }} className="muted">TOTAL</div>
@@ -41,7 +37,7 @@ export const CartSidebar: React.FC<Props> = ({ open, onClose, onCheckout }) => {
         </div>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <h3 style={{ margin: 0, letterSpacing: '.02em' }}>Cart</h3>
+        <h3 style={{ margin: 0, letterSpacing: '.02em' }}>Your order</h3>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {state.items.length > 0 ? <button onClick={clearCart} className="primary-btn" style={{ padding: '6px 10px', borderRadius: 8 }}>Clear</button> : null}
           <button onClick={onClose} aria-label="Close cart" title="Close" style={{ border: 'none', background: 'transparent', cursor: 'pointer' }} className="danger hide-desktop">✕</button>
@@ -49,17 +45,9 @@ export const CartSidebar: React.FC<Props> = ({ open, onClose, onCheckout }) => {
       </div>
 
       {state.items.length === 0 ? (
-        <div className="card animate-fadeInUp" style={{
-          textAlign: 'center',
-          padding: 18,
-          borderRadius: 'var(--radius)',
-          border: '1px dashed var(--border)',
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))',
-          color: 'var(--muted)'
-        }}>
-          <div style={{ fontSize: 36, marginBottom: 6, color: 'var(--accent)' }}>🛒</div>
-          <div style={{ fontWeight: 700, marginBottom: 4 }}>Your cart is empty</div>
-          <div style={{ fontSize: 13 }}>Browse categories and add delicious items!</div>
+        <div className="card animate-fadeInUp" style={{ textAlign: 'center', padding: 22, borderRadius: 'var(--radius)', border: '1px dashed var(--border)', background: '#fff', color: 'var(--muted)' }}>
+          <div style={{ fontSize: 36, marginBottom: 6, color: 'var(--accent)' }}>🧾</div>
+          <div style={{ fontWeight: 700, marginBottom: 4 }}>Your order is empty</div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -102,7 +90,7 @@ export const CartSidebar: React.FC<Props> = ({ open, onClose, onCheckout }) => {
           disabled={state.items.length === 0}
           onClick={onCheckout}
         >
-          Checkout
+          Confirm →
         </button>
       </div>
     </aside>
