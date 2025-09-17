@@ -1,20 +1,15 @@
 import React, { useState } from 'react';
 import { login, loginUser } from '../lib/api';
 
-export const LoginModal: React.FC<{
-  open: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
-  mode?: 'admin' | 'user';
-}> = ({ open, onClose, onSuccess, mode = 'user' }) => {
+export const LoginModal = ({ open, onClose, onSuccess, mode = 'user' }) => {
   const [email, setEmail] = useState('admin@example.com');
   const [password, setPassword] = useState('admin123');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | undefined>();
+  const [error, setError] = useState();
 
   if (!open) return null;
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);
     setError(undefined);
@@ -26,7 +21,7 @@ export const LoginModal: React.FC<{
       }
       onSuccess();
       onClose();
-    } catch (err: any) {
+    } catch (err) {
       setError(err.message || 'Login failed');
     } finally {
       setLoading(false);

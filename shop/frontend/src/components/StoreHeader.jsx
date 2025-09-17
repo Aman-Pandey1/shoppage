@@ -1,24 +1,22 @@
 import React from 'react';
 import { fetchJson } from '../lib/api';
 
-export const StoreHeader: React.FC<{ siteSlug: string }> = ({ siteSlug }) => {
-  const [name, setName] = React.useState<string>('');
-  const [loading, setLoading] = React.useState<boolean>(true);
+export const StoreHeader = ({ siteSlug }) => {
+  const [name, setName] = React.useState('');
+  const [loading, setLoading] = React.useState(true);
   React.useEffect(() => {
     let cancelled = false;
     async function load() {
       try {
         setLoading(true);
-        const data = await fetchJson<{ name: string; brandColor?: string }>(`/api/shop/${siteSlug}/site`);
+        const data = await fetchJson(`/api/shop/${siteSlug}/site`);
         if (!cancelled) {
           setName(data.name || '');
           try {
             const base = data.brandColor || '#0ea5e9';
             document.documentElement.style.setProperty('--primary', base);
             document.documentElement.style.setProperty('--primary-600', base);
-            // Compute alpha variants via CSS color-mix fallback using rgba
-            // Simple approach: reuse base with fixed alphas by setting vars
-            const rgba = (hex: string, a: number) => {
+            const rgba = (hex, a) => {
               const h = hex.replace('#','');
               const bigint = parseInt(h, 16);
               const r = (bigint >> 16) & 255;
