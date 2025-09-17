@@ -36,6 +36,10 @@ const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
   const [vegFilter, setVegFilter] = useState<'all' | 'veg' | 'nonveg'>('all');
   const [lastDeliveryId, setLastDeliveryId] = useState<string | null>(null);
 
+  // State for order type selection
+  const [orderType, setOrderType] = useState<'pickup' | 'delivery'>('pickup');
+  const [pickupTime, setPickupTime] = useState('10:00 AM');
+
   useEffect(() => {
     const privacyAccepted = localStorage.getItem('privacyAccepted_v1');
     if (privacyAccepted) {
@@ -58,6 +62,7 @@ const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
 
   function handleChooseFulfillment(type: 'pickup' | 'delivery') {
     setFulfillmentType(type);
+    setOrderType(type);
     setFulfillmentOpen(false);
     if (type === 'delivery') {
       setDeliveryModalOpen(true);
@@ -141,8 +146,56 @@ const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
     }));
   }, [state.items]);
 
+  // Order Type Selection Component
+  const OrderTypeSelection = () => (
+    <div className="order-type-section">
+      <div className="section-header">
+        <h2>Order details</h2>
+        <p>Select an order type</p>
+      </div>
+      
+      <div className="order-options">
+        <div className="order-option">
+          <h3>Vegetarian Slatter</h3>
+          <p>11 products</p>
+        </div>
+        
+        <div className="order-option">
+          <h3>Non-Veg Slatter</h3>
+          <p>14 products</p>
+        </div>
+        
+        <div className="order-option">
+          <h3>Soup</h3>
+          <p>6 products</p>
+        </div>
+        
+        <div className="order-option">
+          <h3>Main Vegetarian</h3>
+          <p>28 products</p>
+        </div>
+      </div>
+      
+      <div className="pickup-time">
+        <h3>Pickup time</h3>
+        <div className="time-option">
+          <strong>Today</strong>
+          <span>{pickupTime}</span>
+        </div>
+      </div>
+      
+      <div className="order-ready">
+        <h3>ORDER READY FOR</h3>
+        <div className="ready-time">
+          <strong>{pickupTime}</strong>
+          <span>(In an hour)</span>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <div>
+    <div className="online-ordering-container">
       {/* Backdrop for mobile drawer */}
       <div className="cart-backdrop hide-desktop" data-show={mobileCartOpen ? 'true' : 'false'} onClick={() => setMobileCartOpen(false)} />
 
@@ -162,6 +215,12 @@ const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
       />
       <main className="content">
         <StoreHeader siteSlug={siteSlug} />
+        
+        {/* Order Type Selection Section */}
+        <div className="card order-type-card">
+          <OrderTypeSelection />
+        </div>
+        
         <StoreBanner
           siteSlug={siteSlug}
           onCta={() => {
@@ -169,14 +228,20 @@ const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
             else if (state.fulfillmentType === 'delivery') setDeliveryModalOpen(true);
           }}
         />
-        <ShopTopBar vegFilter={vegFilter} onVegChange={setVegFilter} />
-        <section className="card" style={{ padding: 10, marginBottom: 10 }}>
-          <CategoryChips
-            categories={allCategories}
-            currentId={selectedCategory?._id}
-            onSelect={(c) => setSelectedCategory(c)}
-          />
-        </section>
+        
+        {selectedCategory && (
+          <>
+            <ShopTopBar vegFilter={vegFilter} onVegChange={setVegFilter} />
+            <section className="card" style={{ padding: 10, marginBottom: 10 }}>
+              <CategoryChips
+                categories={allCategories}
+                currentId={selectedCategory?._id}
+                onSelect={(c) => setSelectedCategory(c)}
+              />
+            </section>
+          </>
+        )}
+        
         <div className="hide-desktop" style={{ marginBottom: 10 }}>
           <button
             className="primary-btn"
@@ -193,6 +258,31 @@ const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
         </div>
         {content}
       </main>
+
+      {/* Order Summary Bar (Fixed at bottom) */}
+      <div className="order-summary-bar">
+        <div className="order-empty">
+          {state.items.length === 0 ? 'Your order is empty' : `${state.items.length} items in cart`}
+        </div>
+        <div className="order-total">
+          <div className="total-label">Subtotal</div>
+          <div className="total-amount">${(state.total || 0).toFixed(2)}</div>
+        </div>
+        <button 
+          className="confirm-btn"
+          disabled={state.items.length === 0}
+          onClick={() => {
+            const hasToken = !!getAuthToken();
+            if (!hasToken) {
+              setLoginOpen(true);
+              return;
+            }
+            if (!state.fulfillmentType) setFulfillmentOpen(true);
+          }}
+        >
+          Confirm →
+        </button>
+      </div>
 
       {/* Mobile FAB */}
       <button className="cart-fab hide-desktop" onClick={() => setMobileCartOpen(true)}>
