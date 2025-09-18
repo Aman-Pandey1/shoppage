@@ -1,12 +1,7 @@
 import React from 'react';
 import { Modal } from './Modal';
 
-type PrivacyPolicyModalProps = {
-  open: boolean;
-  onAccept: () => void;
-};
-
-export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({ open, onAccept }) => {
+export const PrivacyPolicyModal = ({ open, onAccept }) => {
   return (
     <Modal open={open} onClose={() => {}} title="We respect your privacy">
       <div style={{ display: 'grid', gap: 14 }}>
@@ -30,3 +25,4 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({ open, on
     </Modal>
   );
 };
+

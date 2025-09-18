@@ -1,10 +1,6 @@
 import React from 'react';
 
-export const ShopTopBar: React.FC<{
-  vegFilter?: 'all' | 'veg' | 'nonveg';
-  onVegChange?: (value: 'all' | 'veg' | 'nonveg') => void;
-  onSearch?: (q: string) => void;
-}> = ({ onSearch, vegFilter = 'all', onVegChange }) => {
+export const ShopTopBar = ({ onSearch, vegFilter = 'all', onVegChange }) => {
   const [query, setQuery] = React.useState('');
   React.useEffect(() => {
     const t = setTimeout(() => onSearch && onSearch(query), 250);
@@ -15,7 +11,7 @@ export const ShopTopBar: React.FC<{
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <select
           value={vegFilter}
-          onChange={(e) => onVegChange && onVegChange(e.target.value as 'all' | 'veg' | 'nonveg')}
+          onChange={(e) => onVegChange && onVegChange(e.target.value)}
           style={{ padding: '10px 12px' }}
           aria-label="Filter by veg or non-veg"
         >

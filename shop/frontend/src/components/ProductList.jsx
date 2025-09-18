@@ -1,24 +1,17 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { fetchJson } from '../lib/api';
-import type { Category, Product } from '../types';
 
-export const ProductList: React.FC<{
-  category: Category;
-  onAdd: (product: Product) => void;
-  onBack: () => void;
-  siteSlug?: string;
-  vegFilter?: 'all' | 'veg' | 'nonveg';
-}> = ({ category, onAdd, onBack, siteSlug = 'default', vegFilter = 'all' }) => {
-  const [products, setProducts] = useState<Product[]>([]);
+export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', vegFilter = 'all' }) => {
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | undefined>();
+  const [error, setError] = useState();
 
   useEffect(() => {
     let mounted = true;
     const params = new URLSearchParams({ categoryId: String(category._id) });
     if (vegFilter === 'veg') params.set('veg', 'veg');
     if (vegFilter === 'nonveg') params.set('veg', 'nonveg');
-    fetchJson<Product[]>(`/api/shop/${siteSlug}/products?${params.toString()}`)
+    fetchJson(`/api/shop/${siteSlug}/products?${params.toString()}`)
       .then((data) => {
         if (mounted) {
           setProducts(data);
@@ -87,3 +80,4 @@ export const ProductList: React.FC<{
     </div>
   );
 };
+

@@ -1,20 +1,17 @@
 import React from 'react';
 import { fetchJson } from '../lib/api';
 
-type StoreBannerProps = { siteSlug: string; onCta?: () => void };
-
-export const StoreBanner: React.FC<StoreBannerProps> = ({ siteSlug, onCta }: StoreBannerProps) => {
-  const [storeName, setStoreName] = React.useState<string>('');
+export const StoreBanner = ({ siteSlug, onCta }) => {
+  const [storeName, setStoreName] = React.useState('');
   const tagline = 'Fresh, fast & delicious';
 
   React.useEffect(() => {
     let cancelled = false;
     async function load() {
       try {
-        const data = await fetchJson<{ name: string }>(`/api/shop/${siteSlug}/site`);
+        const data = await fetchJson(`/api/shop/${siteSlug}/site`);
         if (!cancelled) setStoreName(data.name || 'Our Store');
-      } catch {
-      }
+      } catch {}
     }
     load();
     return () => { cancelled = true; };

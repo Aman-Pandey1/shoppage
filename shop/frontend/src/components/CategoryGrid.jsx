@@ -1,19 +1,15 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { fetchJson } from '../lib/api';
-import type { Category, Product } from '../types';
 
-export const CategoryGrid: React.FC<{
-  onSelect: (category: Category) => void;
-  siteSlug?: string;
-}> = ({ onSelect, siteSlug = 'default' }) => {
-  const [categories, setCategories] = useState<Category[]>([]);
+export const CategoryGrid = ({ onSelect, siteSlug = 'default' }) => {
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | undefined>();
-  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [error, setError] = useState();
+  const [counts, setCounts] = useState({});
 
   useEffect(() => {
     let mounted = true;
-    fetchJson<Category[]>(`/api/shop/${siteSlug}/categories`)
+    fetchJson(`/api/shop/${siteSlug}/categories`)
       .then((data) => {
         if (mounted) {
           setCategories(data);
@@ -31,25 +27,22 @@ export const CategoryGrid: React.FC<{
     };
   }, [siteSlug]);
 
-  // Load product counts per category to display "x products"
   useEffect(() => {
     let cancelled = false;
     async function loadCounts() {
       try {
         const results = await Promise.all(
           categories.map(async (c) => {
-            const list = await fetchJson<Product[]>(`/api/shop/${siteSlug}/products?categoryId=${encodeURIComponent(String(c._id))}`);
-            return [String(c._id), list.length] as [string, number];
+            const list = await fetchJson(`/api/shop/${siteSlug}/products?categoryId=${encodeURIComponent(String(c._id))}`);
+            return [String(c._id), list.length];
           })
         );
         if (!cancelled) {
-          const next: Record<string, number> = {};
+          const next = {};
           for (const [id, count] of results) next[id] = count;
           setCounts(next);
         }
-      } catch {
-        // ignore counts failure; UI falls back to no number
-      }
+      } catch {}
     }
     if (categories.length > 0) loadCounts();
     return () => { cancelled = true; };
@@ -58,7 +51,7 @@ export const CategoryGrid: React.FC<{
   if (loading) return <div>Loading categories...</div>;
   if (error) return <div style={{ color: 'red' }}>Failed to load categories: {error}</div>;
 
-  function getIcon(name: string): string {
+  function getIcon(name) {
     const n = name.toLowerCase();
     if (/(drink|beverage|juice|soda|shake)/.test(n)) return '🥤';
     if (/(pizza)/.test(n)) return '🍕';
@@ -101,14 +94,14 @@ export const CategoryGrid: React.FC<{
             overflow: 'hidden'
           }}
           onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-2px)';
-            (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--shadow-pop)';
-            (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--primary)';
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = 'var(--shadow-pop)';
+            e.currentTarget.style.borderColor = 'var(--primary)';
           }}
           onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.transform = 'none';
-            (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--shadow-soft)';
-            (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)';
+            e.currentTarget.style.transform = 'none';
+            e.currentTarget.style.boxShadow = 'var(--shadow-soft)';
+            e.currentTarget.style.borderColor = 'var(--border)';
           }}
           aria-label={`Open ${cat.name} category`}
         >
@@ -136,3 +129,4 @@ export const CategoryGrid: React.FC<{
     </div>
   );
 };
+

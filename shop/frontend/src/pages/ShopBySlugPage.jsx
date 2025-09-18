@@ -4,22 +4,22 @@ import { CartProvider } from '../store/CartContext';
 import { ShopApp } from '../ShopApp';
 import { fetchJson } from '../lib/api';
 
-export const ShopBySlugPage: React.FC = () => {
+export const ShopBySlugPage = () => {
   const params = useParams();
   const paramSlug = params.siteSlug;
-  const paramCategoryId = params.categoryId as string | undefined;
-  const [resolvedSlug, setResolvedSlug] = React.useState<string | undefined>(paramSlug);
-  const [loading, setLoading] = React.useState<boolean>(!paramSlug);
-  const [error, setError] = React.useState<string | undefined>();
+  const paramCategoryId = params.categoryId;
+  const [resolvedSlug, setResolvedSlug] = React.useState(paramSlug);
+  const [loading, setLoading] = React.useState(!paramSlug);
+  const [error, setError] = React.useState();
 
   React.useEffect(() => {
     let cancelled = false;
     async function resolveHost() {
       try {
         setLoading(true);
-        const data = await fetchJson<{ slug: string }>(`/api/shop/host-site`);
+        const data = await fetchJson(`/api/shop/host-site`);
         if (!cancelled) setResolvedSlug(data.slug || 'default');
-      } catch (e: any) {
+      } catch (e) {
         if (!cancelled) {
           setError(e.message || 'Failed to resolve site');
           setResolvedSlug('default');

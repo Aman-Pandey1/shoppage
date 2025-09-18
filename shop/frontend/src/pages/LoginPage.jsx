@@ -3,15 +3,15 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { login } from '../lib/api';
 import { Lock } from 'lucide-react';
 
-export const LoginPage: React.FC = () => {
+export const LoginPage = () => {
   const navigate = useNavigate();
-  const location = useLocation() as any;
+  const location = useLocation();
   const [email, setEmail] = useState('admin@example.com');
   const [password, setPassword] = useState('admin123');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | undefined>();
+  const [error, setError] = useState();
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);
     setError(undefined);
@@ -19,7 +19,7 @@ export const LoginPage: React.FC = () => {
       await login(email, password);
       const redirectTo = location.state?.from?.pathname || '/dashboard';
       navigate(redirectTo, { replace: true });
-    } catch (err: any) {
+    } catch (err) {
       setError(err.message || 'Login failed');
     } finally {
       setLoading(false);

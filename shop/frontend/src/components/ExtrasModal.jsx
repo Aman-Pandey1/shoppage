@@ -1,21 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import { Modal } from './Modal';
-import type { ExtraOptionGroup, SelectedOption } from '../types';
 
-function groupKey(groupIndex: number) {
+function groupKey(groupIndex) {
   return `g_${groupIndex}`;
 }
 
-export const ExtrasModal: React.FC<{
-  open: boolean;
-  groups?: ExtraOptionGroup[];
-  onCancel: () => void;
-  onConfirm: (selected: SelectedOption[]) => void;
-}> = ({ open, groups = [], onCancel, onConfirm }) => {
-  const [selected, setSelected] = useState<Record<string, Set<string>>>({});
+export const ExtrasModal = ({ open, groups = [], onCancel, onConfirm }) => {
+  const [selected, setSelected] = useState({});
 
   const constraints = useMemo(() => {
-    const result: Record<string, { min: number; max: number }> = {};
+    const result = {};
     groups.forEach((g, idx) => {
       result[groupKey(idx)] = {
         min: g.minSelect ?? 0,
@@ -25,7 +19,7 @@ export const ExtrasModal: React.FC<{
     return result;
   }, [groups]);
 
-  function toggle(groupIdx: number, optionKey: string) {
+  function toggle(groupIdx, optionKey) {
     const gk = groupKey(groupIdx);
     setSelected((prev) => {
       const set = new Set(prev[gk] || []);
@@ -40,10 +34,10 @@ export const ExtrasModal: React.FC<{
     });
   }
 
-  function canConfirm(): boolean {
+  function canConfirm() {
     for (let idx = 0; idx < groups.length; idx++) {
       const gk = groupKey(idx);
-      const set = selected[gk] || new Set<string>();
+      const set = selected[gk] || new Set();
       const { min } = constraints[gk] || { min: 0, max: Infinity };
       if (set.size < min) return false;
     }
@@ -51,10 +45,10 @@ export const ExtrasModal: React.FC<{
   }
 
   function handleConfirm() {
-    const list: SelectedOption[] = [];
+    const list = [];
     groups.forEach((g, idx) => {
       const gk = groupKey(idx);
-      const set = selected[gk] || new Set<string>();
+      const set = selected[gk] || new Set();
       g.options.forEach((opt) => {
         if (set.has(opt.key)) list.push({ groupKey: g.groupKey, optionKey: opt.key, priceDelta: opt.priceDelta });
       });
@@ -67,7 +61,7 @@ export const ExtrasModal: React.FC<{
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {groups.map((group, gIdx) => {
           const gk = groupKey(gIdx);
-          const set = selected[gk] || new Set<string>();
+          const set = selected[gk] || new Set();
           const min = group.minSelect ?? 0;
           const max = group.maxSelect ?? group.options.length;
           return (
@@ -111,3 +105,4 @@ export const ExtrasModal: React.FC<{
     </Modal>
   );
 };
+
