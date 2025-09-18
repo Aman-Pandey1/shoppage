@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 // import { ShopApp } from './ShopApp'
 import { ShopBySlugPage } from './pages/ShopBySlugPage.jsx'
+import { ShopHomePage } from './pages/ShopHomePage.jsx'
 import { LoginPage } from './pages/LoginPage.jsx'
 import { DashboardPage } from './pages/DashboardPage.jsx'
 import { ProtectedRoute } from './components/ProtectedRoute'
@@ -9,7 +10,8 @@ import { MyOrdersPage } from './pages/MyOrdersPage.jsx'
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<ShopBySlugPage />} />
+      <Route path="/" element={<ShopHomePage />} />
+      <Route path="/shop" element={<ShopHomePage />} />
       {/* Root-level site slug: e.g. /website1 */}
       <Route path=":siteSlug" element={<ShopBySlugPage />} />
       <Route path=":siteSlug/c/:categoryId" element={<ShopBySlugPage />} />
