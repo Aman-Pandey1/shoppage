@@ -1,7 +1,7 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { CartProvider } from '../store/CartContext';
-import { ShopApp } from '../ShopAppp';
+import { ShopApp } from '../ShopApp.js';
 import { fetchJson } from '../lib/api';
 
 export const ShopBySlugPage = () => {
