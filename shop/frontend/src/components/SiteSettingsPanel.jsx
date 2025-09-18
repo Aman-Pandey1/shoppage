@@ -1,14 +1,7 @@
 import React from 'react';
 import { fetchJsonAllowError, patchJson } from '../lib/api';
-import type { Site } from '../types';
 
-type Props = {
-  site?: Site;
-  selectedSiteId: string;
-  onSiteUpdated: (updated: Site) => void;
-};
-
-export const SiteSettingsPanel: React.FC<Props> = ({ site, selectedSiteId, onSiteUpdated }) => {
+export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
   const [pickupName, setPickupName] = React.useState(site?.pickup?.name || '');
   const [pickupPhone, setPickupPhone] = React.useState(site?.pickup?.phone || '');
   const [addr1, setAddr1] = React.useState(site?.pickup?.address?.streetAddress?.[0] || '');
@@ -20,9 +13,9 @@ export const SiteSettingsPanel: React.FC<Props> = ({ site, selectedSiteId, onSit
   const [uberCustomerId, setUberCustomerId] = React.useState(site?.uberCustomerId || '');
   const [brandColor, setBrandColor] = React.useState(site?.brandColor || '#0ea5e9');
   const [saving, setSaving] = React.useState(false);
-  const [savedAt, setSavedAt] = React.useState<number | null>(null);
+  const [savedAt, setSavedAt] = React.useState(null);
   const [testingUber, setTestingUber] = React.useState(false);
-  const [uberStatus, setUberStatus] = React.useState<{ ok: boolean; message: string } | null>(null);
+  const [uberStatus, setUberStatus] = React.useState(null);
 
   React.useEffect(() => {
     setPickupName(site?.pickup?.name || '');
@@ -93,13 +86,13 @@ export const SiteSettingsPanel: React.FC<Props> = ({ site, selectedSiteId, onSit
             setTestingUber(true);
             setUberStatus(null);
             try {
-              const res = await fetchJsonAllowError<any>(`/api/admin/sites/${site._id}/health`);
+              const res = await fetchJsonAllowError(`/api/admin/sites/${site._id}/health`);
               if (res.ok) {
                 setUberStatus({ ok: true, message: `Uber OK${res.eta ? ` · ETA ${new Date(res.eta).toLocaleTimeString()}` : ''}` });
               } else {
                 setUberStatus({ ok: false, message: `Uber error: ${res.error}` });
               }
-            } catch (e: any) {
+            } catch (e) {
               setUberStatus({ ok: false, message: e?.message || 'Uber error' });
             } finally {
               setTestingUber(false);
@@ -112,7 +105,7 @@ export const SiteSettingsPanel: React.FC<Props> = ({ site, selectedSiteId, onSit
         {savedAt ? <div className="muted" style={{ alignSelf: 'center', fontSize: 12 }}>Saved {new Date(savedAt).toLocaleTimeString()}</div> : null}
         <button className="primary-btn" disabled={saving} onClick={async () => {
           setSaving(true);
-          const payload: Partial<Site> = {
+          const payload = {
             uberCustomerId,
             brandColor,
             pickup: {
@@ -126,8 +119,8 @@ export const SiteSettingsPanel: React.FC<Props> = ({ site, selectedSiteId, onSit
                 country,
               }
             }
-          } as any;
-          const updated = await patchJson<Site>(`/api/admin/sites/${selectedSiteId}`, payload);
+          };
+          const updated = await patchJson(`/api/admin/sites/${selectedSiteId}`, payload);
           onSiteUpdated(updated);
           setSaving(false);
           setSavedAt(Date.now());
