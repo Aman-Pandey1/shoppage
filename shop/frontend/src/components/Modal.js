@@ -1,14 +1,6 @@
 import React from 'react';
 
-type ModalProps = {
-  open: boolean;
-  onClose: () => void;
-  title?: string;
-  children: React.ReactNode;
-  footer?: React.ReactNode;
-};
-
-const overlayStyle: React.CSSProperties = {
+const overlayStyle = {
   position: 'fixed',
   inset: 0,
   background:
@@ -22,7 +14,7 @@ const overlayStyle: React.CSSProperties = {
   backdropFilter: 'blur(4px)'
 };
 
-const panelStyle: React.CSSProperties = {
+const panelStyle = {
   width: 'min(92vw, 640px)',
   background: 'linear-gradient(180deg, rgba(255,255,255,0.80), rgba(255,255,255,0.65))',
   borderRadius: 20,
@@ -32,7 +24,7 @@ const panelStyle: React.CSSProperties = {
   backdropFilter: 'saturate(160%) blur(12px)'
 };
 
-const headerStyle: React.CSSProperties = {
+const headerStyle = {
   padding: '16px 20px',
   borderBottom: '1px solid var(--border)',
   fontWeight: 800,
@@ -40,12 +32,12 @@ const headerStyle: React.CSSProperties = {
   color: 'var(--text)'
 };
 
-const bodyStyle: React.CSSProperties = {
+const bodyStyle = {
   padding: 20,
   color: 'var(--text)'
 };
 
-const footerStyle: React.CSSProperties = {
+const footerStyle = {
   padding: 16,
   borderTop: '1px solid var(--border)',
   display: 'flex',
@@ -53,7 +45,7 @@ const footerStyle: React.CSSProperties = {
   gap: 12,
 };
 
-const buttonStyle: React.CSSProperties = {
+const buttonStyle = {
   padding: '10px 14px',
   borderRadius: 10,
   border: '1px solid var(--primary-600)',
@@ -62,7 +54,7 @@ const buttonStyle: React.CSSProperties = {
   cursor: 'pointer',
 };
 
-export const Modal: React.FC<ModalProps> = ({ open, onClose, title, children, footer }) => {
+export const Modal = ({ open, onClose, title, children, footer }) => {
   if (!open) return null;
   return (
     <div style={overlayStyle} onClick={onClose}>
@@ -78,3 +70,4 @@ export const Modal: React.FC<ModalProps> = ({ open, onClose, title, children, fo
     </div>
   );
 };
+

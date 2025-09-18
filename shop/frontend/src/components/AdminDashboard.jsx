@@ -1,39 +1,33 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { deleteJson, fetchJson, postJson, putJson, patchJson, download, postFile } from '../lib/api';
-import type { Category, Product, Site } from '../types';
 import { SiteSettingsPanel } from './SiteSettingsPanel';
 import { Modal } from './Modal';
 
-type EditableProduct = Partial<Product> & { _id?: string };
-
-export const AdminDashboard: React.FC = () => {
-  const [sites, setSites] = useState<Site[]>([]);
-  const [selectedSiteId, setSelectedSiteId] = useState<string>('');
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
+export const AdminDashboard = () => {
+  const [sites, setSites] = useState([]);
+  const [selectedSiteId, setSelectedSiteId] = useState('');
+  const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | undefined>();
-  const [filterCategory, setFilterCategory] = useState<string>('');
-  const [editing, setEditing] = useState<EditableProduct | null>(null);
-  const [activeTab, setActiveTab] = useState<'links' | 'settings' | 'products' | 'billing'>('links');
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const [billing, setBilling] = useState<{ weekTotalCents: number; monthTotalCents: number } | null>(null);
+  const [error, setError] = useState();
+  const [filterCategory, setFilterCategory] = useState('');
+  const [editing, setEditing] = useState(null);
+  const [activeTab, setActiveTab] = useState('links');
+  const fileInputRef = React.useRef(null);
+  const [billing, setBilling] = useState(null);
 
-  type SiteFormData = { id?: string; name: string; slug: string; domainsText: string };
   const [isSiteFormOpen, setIsSiteFormOpen] = useState(false);
-  const [siteForm, setSiteForm] = useState<SiteFormData>({ name: '', slug: '', domainsText: '' });
+  const [siteForm, setSiteForm] = useState({ name: '', slug: '', domainsText: '' });
 
-  type CategoryFormData = { name: string; imageUrl: string };
   const [isCategoryFormOpen, setIsCategoryFormOpen] = useState(false);
-  const [categoryForm, setCategoryForm] = useState<CategoryFormData>({ name: '', imageUrl: '' });
+  const [categoryForm, setCategoryForm] = useState({ name: '', imageUrl: '' });
 
-  const [deleteProductId, setDeleteProductId] = useState<string | null>(null);
+  const [deleteProductId, setDeleteProductId] = useState(null);
 
   async function loadAll() {
     try {
       setLoading(true);
-      // Load sites first
-      const sitesList = await fetchJson<Site[]>('/api/admin/sites');
+      const sitesList = await fetchJson('/api/admin/sites');
       setSites(sitesList);
       let siteId = selectedSiteId;
       if (!siteId) {
@@ -47,8 +41,8 @@ export const AdminDashboard: React.FC = () => {
         return;
       }
       const [cats, prods] = await Promise.all([
-        fetchJson<Category[]>(`/api/admin/sites/${siteId}/categories`),
-        fetchJson<Product[]>(`/api/admin/sites/${siteId}/products`),
+        fetchJson(`/api/admin/sites/${siteId}/categories`),
+        fetchJson(`/api/admin/sites/${siteId}/products`),
       ]);
       setCategories(cats);
       setProducts(prods);
@@ -56,7 +50,7 @@ export const AdminDashboard: React.FC = () => {
       if (current) {
         try { localStorage.setItem('admin_selected_site_slug', current.slug); } catch {}
       }
-    } catch (err: any) {
+    } catch (err) {
       setError(err.message || 'Failed to load');
     } finally {
       setLoading(false);
@@ -69,7 +63,7 @@ export const AdminDashboard: React.FC = () => {
     async function loadBilling() {
       if (!selectedSiteId) return setBilling(null);
       try {
-        const data = await fetchJson<{ weekTotalCents: number; monthTotalCents: number }>(`/api/admin/sites/${selectedSiteId}/billing`);
+        const data = await fetchJson(`/api/admin/sites/${selectedSiteId}/billing`);
         setBilling(data);
       } catch {
         setBilling(null);
@@ -84,7 +78,7 @@ export const AdminDashboard: React.FC = () => {
     }
   }, [selectedSiteId]);
 
-  const [vegFilter, setVegFilter] = useState<'all' | 'veg' | 'nonveg'>('all');
+  const [vegFilter, setVegFilter] = useState('all');
 
   const filteredProducts = useMemo(() => {
     let list = filterCategory ? products.filter((p) => p.categoryId === filterCategory) : products;
@@ -97,13 +91,13 @@ export const AdminDashboard: React.FC = () => {
     setEditing({ name: '', price: 0, categoryId: categories[0]?._id || '', description: '', imageUrl: '', spiceLevels: [], extraOptionGroups: [] });
   }
 
-  function startEdit(p: Product) {
+  function startEdit(p) {
     setEditing({ ...p });
   }
 
   async function saveEditing() {
     if (!editing) return;
-    const payload: any = {
+    const payload = {
       name: editing.name,
       description: editing.description,
       imageUrl: editing.imageUrl,
@@ -113,16 +107,16 @@ export const AdminDashboard: React.FC = () => {
       extraOptionGroups: editing.extraOptionGroups || [],
     };
     if (editing._id) {
-      const updated = await putJson<Product>(`/api/admin/sites/${selectedSiteId}/products/${editing._id}`, payload);
+      const updated = await putJson(`/api/admin/sites/${selectedSiteId}/products/${editing._id}`, payload);
       setProducts((prev) => prev.map((p) => (p._id === updated._id ? updated : p)));
     } else {
-      const created = await postJson<Product>(`/api/admin/sites/${selectedSiteId}/products`, payload);
+      const created = await postJson(`/api/admin/sites/${selectedSiteId}/products`, payload);
       setProducts((prev) => [created, ...prev]);
     }
     setEditing(null);
   }
 
-  async function deleteProduct(id: string) {
+  async function deleteProduct(id) {
     setDeleteProductId(id);
   }
 
@@ -165,7 +159,7 @@ export const AdminDashboard: React.FC = () => {
         </label>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <span>Veg / Non-Veg</span>
-          <select value={vegFilter} onChange={(e) => setVegFilter(e.target.value as any)}>
+          <select value={vegFilter} onChange={(e) => setVegFilter(e.target.value)}>
             <option value="all">All</option>
             <option value="veg">🟢 Veg</option>
             <option value="nonveg">🔴 Non-Veg</option>
@@ -253,7 +247,7 @@ export const AdminDashboard: React.FC = () => {
                   </label>
                   <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <span>Price</span>
-                    <input type="number" step="0.01" value={editing.price as number} onChange={(e) => setEditing({ ...editing, price: Number(e.target.value) })} />
+                    <input type="number" step="0.01" value={editing.price || 0} onChange={(e) => setEditing({ ...editing, price: Number(e.target.value) })} />
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <input
@@ -295,12 +289,13 @@ export const AdminDashboard: React.FC = () => {
                       <span className="muted" style={{ fontSize: 12 }}>Custom:</span>
                       <input placeholder="e.g. No Spice" onKeyDown={(e) => {
                         if (e.key === 'Enter') {
-                          const value = (e.currentTarget as HTMLInputElement).value.trim();
+                          const input = e.currentTarget;
+                          const value = input.value.trim();
                           if (value) {
                             const set = new Set(editing.spiceLevels || []);
                             set.add(value);
                             setEditing({ ...editing, spiceLevels: Array.from(set) });
-                            (e.currentTarget as HTMLInputElement).value = '';
+                            input.value = '';
                           }
                           e.preventDefault();
                         }
@@ -340,7 +335,7 @@ export const AdminDashboard: React.FC = () => {
               <input ref={fileInputRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (!file || !selectedSiteId) return;
-                const res = await postFile<{ created: number }>(`/api/admin/sites/${selectedSiteId}/products/bulk`, file);
+                const res = await postFile(`/api/admin/sites/${selectedSiteId}/products/bulk`, file);
                 await loadAll();
                 alert(`Imported ${res.created} products`);
                 e.currentTarget.value = '';
@@ -362,7 +357,7 @@ export const AdminDashboard: React.FC = () => {
                     <div style={{ fontWeight: 700 }}>${p.price.toFixed(2)}</div>
                     <div style={{ display: 'flex', gap: 8 }}>
                       <button onClick={() => startEdit(p)}>Edit</button>
-                      <button className="danger" onClick={() => deleteProduct(p._id!)}>Delete</button>
+                      <button className="danger" onClick={() => deleteProduct(p._id)}>Delete</button>
                     </div>
                   </div>
                 </div>
@@ -371,7 +366,6 @@ export const AdminDashboard: React.FC = () => {
           </>
         ) : null}
 
-        {/* Site create/edit modal */}
         <Modal
           open={isSiteFormOpen}
           onClose={() => setIsSiteFormOpen(false)}
@@ -385,11 +379,11 @@ export const AdminDashboard: React.FC = () => {
                   const domains = siteForm.domainsText.split(',').map(d => d.trim()).filter(Boolean);
                   if (!siteForm.name || !siteForm.slug) return;
                   if (siteForm.id) {
-                    const updated = await patchJson<Site>(`/api/admin/sites/${siteForm.id}`, { name: siteForm.name, slug: siteForm.slug, domains });
+                    const updated = await patchJson(`/api/admin/sites/${siteForm.id}`, { name: siteForm.name, slug: siteForm.slug, domains });
                     setSites(prev => prev.map(s => s._id === updated._id ? updated : s));
                     setSelectedSiteId(updated._id);
                   } else {
-                    const created = await postJson<Site>('/api/admin/sites', { name: siteForm.name, slug: siteForm.slug, domains });
+                    const created = await postJson('/api/admin/sites', { name: siteForm.name, slug: siteForm.slug, domains });
                     setSites(prev => [created, ...prev]);
                     setSelectedSiteId(created._id);
                   }
@@ -416,7 +410,6 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </Modal>
 
-        {/* Category create modal */}
         <Modal
           open={isCategoryFormOpen}
           onClose={() => setIsCategoryFormOpen(false)}
@@ -428,7 +421,7 @@ export const AdminDashboard: React.FC = () => {
                 className="primary-btn"
                 onClick={async () => {
                   if (!categoryForm.name) return;
-                  const created = await postJson<Category>(`/api/admin/sites/${selectedSiteId}/categories`, { name: categoryForm.name, imageUrl: categoryForm.imageUrl });
+                  const created = await postJson(`/api/admin/sites/${selectedSiteId}/categories`, { name: categoryForm.name, imageUrl: categoryForm.imageUrl });
                   setCategories((prev) => [created, ...prev]);
                   setIsCategoryFormOpen(false);
                 }}
@@ -448,7 +441,6 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </Modal>
 
-        {/* Delete product confirm */}
         <Modal
           open={!!deleteProductId}
           onClose={() => setDeleteProductId(null)}

@@ -2,23 +2,7 @@ import React, { useState } from 'react';
 import { Modal } from './Modal';
 import { fetchJson, postJson } from '../lib/api';
 
-type Address = {
-  streetAddress: string[];
-  city: string;
-  province: string;
-  postalCode: string;
-  country?: string;
-};
-
-type DeliveryAddressModalProps = {
-  open: boolean;
-  siteSlug: string;
-  onClose: () => void;
-  onConfirmed: (deliveryId: string) => void;
-  manifest: { name: string; quantity: number; priceCents?: number; size?: 'small'|'medium'|'large' }[];
-};
-
-export const DeliveryAddressModal: React.FC<DeliveryAddressModalProps> = ({ open, siteSlug, onClose, onConfirmed, manifest }) => {
+export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, manifest }) => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [addr1, setAddr1] = useState('');
@@ -27,17 +11,17 @@ export const DeliveryAddressModal: React.FC<DeliveryAddressModalProps> = ({ open
   const [province, setProvince] = useState('');
   const [postalCode, setPostalCode] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | undefined>();
-  const [quote, setQuote] = useState<any | null>(null);
-  const [tip, setTip] = useState<number>(0);
-  const [siteName, setSiteName] = useState<string>('');
-  const [country, setCountry] = useState<string>('CA');
+  const [error, setError] = useState();
+  const [quote, setQuote] = useState(null);
+  const [tip, setTip] = useState(0);
+  const [siteName, setSiteName] = useState('');
+  const [country, setCountry] = useState('CA');
 
   React.useEffect(() => {
     let cancelled = false;
     async function loadSite() {
       try {
-        const data = await fetchJson<{ name: string }>(`/api/shop/${siteSlug}/site`);
+        const data = await fetchJson(`/api/shop/${siteSlug}/site`);
         if (!cancelled) setSiteName(data.name || '');
       } catch {}
     }
@@ -45,18 +29,18 @@ export const DeliveryAddressModal: React.FC<DeliveryAddressModalProps> = ({ open
     return () => { cancelled = true; };
   }, [siteSlug]);
 
-  function isValidPostal(code: string) {
+  function isValidPostal(code) {
     const v = code.trim();
     if (country === 'CA') return /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/.test(v);
     if (country === 'US') return /^\d{5}(-\d{4})?$/.test(v);
     return v.length >= 4; // fallback
   }
 
-  function isValidPhone(ph: string) {
+  function isValidPhone(ph) {
     return /^\+?[1-9]\d{7,14}$/.test(ph.replace(/[^\d+]/g, ''));
   }
 
-  function validate(): string | null {
+  function validate() {
     if (!name.trim()) return 'Name is required';
     if (!isValidPhone(phone)) return 'Enter phone as +1XXXXXXXXXX';
     if (!addr1.trim()) return 'Address line 1 is required';
@@ -71,10 +55,10 @@ export const DeliveryAddressModal: React.FC<DeliveryAddressModalProps> = ({ open
     try {
       const invalid = validate();
       if (invalid) { setError(invalid); setLoading(false); return; }
-      const address: Address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
-      const q = await postJson<any>(`/api/delivery/${siteSlug}/quote`, { dropoff: { name, phone, address } });
+      const address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
+      const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { name, phone, address } });
       setQuote(q);
-    } catch (e: any) {
+    } catch (e) {
       setError(e.message || 'Failed to get quote');
     } finally { setLoading(false); }
   }
@@ -83,8 +67,8 @@ export const DeliveryAddressModal: React.FC<DeliveryAddressModalProps> = ({ open
     if (!quote) return;
     setLoading(true); setError(undefined);
     try {
-      const address: Address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
-      const result = await postJson<any>(`/api/delivery/${siteSlug}/create`, {
+      const address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
+      const result = await postJson(`/api/delivery/${siteSlug}/create`, {
         dropoff: { name, phone, address },
         manifestItems: manifest.map(m => ({ name: m.name, quantity: m.quantity, size: m.size || 'small', price: m.priceCents || 0 })),
         tip: Math.round((tip || 0) * 100),
@@ -92,7 +76,7 @@ export const DeliveryAddressModal: React.FC<DeliveryAddressModalProps> = ({ open
       });
       onConfirmed(result.id || result.delivery_id || '');
       onClose();
-    } catch (e: any) {
+    } catch (e) {
       setError(e.message || 'Failed to create delivery');
     } finally { setLoading(false); }
   }

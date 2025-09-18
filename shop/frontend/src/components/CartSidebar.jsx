@@ -1,9 +1,7 @@
 import React from 'react';
 import { useCart } from '../store/CartContext';
 
-type Props = { open?: boolean; onClose?: () => void; onCheckout?: () => void };
-
-export const CartSidebar: React.FC<Props> = ({ open, onClose, onCheckout }) => {
+export const CartSidebar = ({ open, onClose, onCheckout }) => {
   const { state, removeItem, updateQuantity, clearCart, getCartTotal } = useCart();
 
   return (
@@ -27,7 +25,7 @@ export const CartSidebar: React.FC<Props> = ({ open, onClose, onCheckout }) => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <div style={{ fontSize: 12 }} className="muted">ORDER READY FOR</div>
-            <div style={{ fontWeight: 800, fontSize: 20 }}>10:00 AM</div>
+            <div style={{ fontSize: 20, fontWeight: 800 }}>10:00 AM</div>
             <div style={{ fontSize: 12 }} className="muted">(in 5 hours)</div>
           </div>
           <div style={{ textAlign: 'right' }}>
@@ -96,3 +94,4 @@ export const CartSidebar: React.FC<Props> = ({ open, onClose, onCheckout }) => {
     </aside>
   );
 };
+

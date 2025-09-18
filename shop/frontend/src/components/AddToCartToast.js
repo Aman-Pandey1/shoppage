@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useCart } from '../store/CartContext';
 
-export const AddToCartToast: React.FC = () => {
+export const AddToCartToast = () => {
   const { lastAdded, state } = useCart();
   const [visible, setVisible] = useState(false);
-  const [msg, setMsg] = useState<string>('');
+  const [msg, setMsg] = useState('');
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {

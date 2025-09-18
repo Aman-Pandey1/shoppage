@@ -11,30 +11,27 @@ import { ExtrasModal } from './components/ExtrasModal';
 import { AddToCartToast } from './components/AddToCartToast';
 import { DeliveryAddressModal } from './components/DeliveryAddressModal';
 import { fetchJson, getAuthToken } from './lib/api';
-import type { Category, Product, SelectedOption } from './types';
 import { CategoryChips } from './components/CategoryChips';
 import { ShopTopBar } from './components/ShopTopBar';
 import { LoginModal } from './components/LoginModal';
 import { StoreBanner } from './components/StoreBanner';
 
-const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
-  { siteSlug = 'default', initialCategoryId }: { siteSlug?: string; initialCategoryId?: string }
-) => {
+const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const { state, setFulfillmentType, addItem } = useCart();
   const [privacyOpen, setPrivacyOpen] = useState(true);
   const [fulfillmentOpen, setFulfillmentOpen] = useState(false);
 
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-  const [allCategories, setAllCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [allCategories, setAllCategories] = useState([]);
 
-  const [pendingProduct, setPendingProduct] = useState<Product | null>(null);
+  const [pendingProduct, setPendingProduct] = useState(null);
   const [spiceOpen, setSpiceOpen] = useState(false);
   const [extrasOpen, setExtrasOpen] = useState(false);
-  const [pendingSpice, setPendingSpice] = useState<string | undefined>(undefined);
+  const [pendingSpice, setPendingSpice] = useState(undefined);
   const [deliveryModalOpen, setDeliveryModalOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
-  const [vegFilter, setVegFilter] = useState<'all' | 'veg' | 'nonveg'>('all');
-  const [lastDeliveryId, setLastDeliveryId] = useState<string | null>(null);
+  const [vegFilter, setVegFilter] = useState('all');
+  const [lastDeliveryId, setLastDeliveryId] = useState(null);
 
   // State for order type selection
   const [orderType, setOrderType] = useState<'pickup' | 'delivery'>('pickup');
@@ -60,7 +57,7 @@ const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
     setFulfillmentOpen(true);
   }
 
-  function handleChooseFulfillment(type: 'pickup' | 'delivery') {
+  function handleChooseFulfillment(type) {
     setFulfillmentType(type);
     setOrderType(type);
     setFulfillmentOpen(false);
@@ -69,7 +66,7 @@ const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
     }
   }
 
-  function startAddToCart(product: Product) {
+  function startAddToCart(product) {
     setPendingProduct(product);
     if (product.spiceLevels && product.spiceLevels.length > 0) {
       setSpiceOpen(true);
@@ -81,7 +78,7 @@ const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
     }
   }
 
-  function confirmSpice(spice?: string) {
+  function confirmSpice(spice) {
     setPendingSpice(spice);
     setSpiceOpen(false);
     if (pendingProduct && pendingProduct.extraOptionGroups && pendingProduct.extraOptionGroups.length > 0) {
@@ -93,7 +90,7 @@ const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
     }
   }
 
-  function confirmExtras(selected: SelectedOption[]) {
+  function confirmExtras(selected) {
     setExtrasOpen(false);
     if (pendingProduct) {
       addItem({ product: pendingProduct, spiceLevel: pendingSpice, selectedOptions: selected });
@@ -107,7 +104,7 @@ const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
     let cancelled = false;
     async function preselect() {
       try {
-        const cats = await fetchJson<Category[]>(`/api/shop/${siteSlug}/categories`);
+        const cats = await fetchJson(`/api/shop/${siteSlug}/categories`);
         if (cancelled) return;
         setAllCategories(cats);
         if (initialCategoryId) {
@@ -142,7 +139,7 @@ const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
       name: it.name,
       quantity: it.quantity,
       priceCents: Math.round(it.basePrice * 100),
-      size: 'small' as 'small',
+      size: 'small',
     }));
   }, [state.items]);
 
@@ -296,7 +293,7 @@ const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
         open={deliveryModalOpen}
         siteSlug={siteSlug}
         onClose={() => setDeliveryModalOpen(false)}
-        onConfirmed={(id: string) => setLastDeliveryId(id)}
+        onConfirmed={(id) => setLastDeliveryId(id)}
         manifest={manifest}
       />
       {lastDeliveryId ? (
@@ -317,8 +314,7 @@ const Main: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
   );
 };
 
-export const ShopApp: React.FC<{ siteSlug?: string; initialCategoryId?: string }> = (
-  { siteSlug = 'default', initialCategoryId }: { siteSlug?: string; initialCategoryId?: string }
-) => {
+export const ShopApp = ({ siteSlug = 'default', initialCategoryId }) => {
   return <Main siteSlug={siteSlug} initialCategoryId={initialCategoryId} />;
 };
+
