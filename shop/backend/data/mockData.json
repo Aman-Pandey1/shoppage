@@ -1,57 +1,6 @@
 {
   "sites": [
     {
-      "_id": "site-1757304649439",
-      "name": "new assian",
-      "slug": "assian",
-      "domains": [],
-      "isActive": true,
-      "uberCustomerId": "",
-      "pickup": {
-        "name": "",
-        "phone": "",
-        "address": {
-          "streetAddress": [
-            ""
-          ],
-          "city": "",
-          "province": "",
-          "postalCode": "",
-          "country": "CA"
-        }
-      },
-      "brandColor": "#e7e00d"
-    },
-    {
-      "_id": "site-1757302179979",
-      "name": "web",
-      "slug": "website1",
-      "domains": [],
-      "isActive": true
-    },
-    {
-      "_id": "site-1757247910961",
-      "name": "aman",
-      "slug": "aman",
-      "domains": [],
-      "isActive": true,
-      "uberCustomerId": "e17d4989-135a-5753-8721-deea80593053",
-      "pickup": {
-        "name": "aaaa",
-        "phone": "+1 (587) 710-4641",
-        "address": {
-          "streetAddress": [
-            "100 Queen St W"
-          ],
-          "city": "Toronto",
-          "province": "ON   ",
-          "postalCode": "M5H 2N2",
-          "country": "CA"
-        }
-      },
-      "brandColor": "#d50b77"
-    },
-    {
       "_id": "mock-site",
       "name": "Default Site",
       "slug": "default",
@@ -59,44 +8,6 @@
     }
   ],
   "categories": [
-    {
-      "_id": "c-1757649315072-8ekx",
-      "name": "Mains",
-      "imageUrl": "",
-      "sortIndex": 0,
-      "site": "site-1757304649439"
-    },
-    {
-      "_id": "c-1757648623951-k2le",
-      "name": "Mains",
-      "imageUrl": "",
-      "sortIndex": 0,
-      "site": "site-1757247910961"
-    },
-    {
-      "_id": "c-1757304677239",
-      "name": "drinks",
-      "imageUrl": "",
-      "site": "site-1757304649439"
-    },
-    {
-      "_id": "c-1757304669157",
-      "name": "food",
-      "imageUrl": "",
-      "site": "site-1757304649439"
-    },
-    {
-      "_id": "c-1757302197026",
-      "name": "starter",
-      "imageUrl": "",
-      "site": "site-1757302179979"
-    },
-    {
-      "_id": "c-1757247941343",
-      "name": "test",
-      "imageUrl": "",
-      "site": "site-1757247910961"
-    },
     {
       "_id": "c-1",
       "name": "Starters",
@@ -120,89 +31,6 @@
     }
   ],
   "products": [
-    {
-      "_id": "p-1757649373273",
-      "name": "p2",
-      "description": "test",
-      "imageUrl": "",
-      "price": 55,
-      "categoryId": "c-1757304669157",
-      "spiceLevels": [
-        "Mild",
-        "Medium",
-        "Hot",
-        "Extra Hot"
-      ],
-      "extraOptionGroups": [],
-      "site": "site-1757304649439"
-    },
-    {
-      "_id": "p-1757649315072-0rga",
-      "site": "site-1757304649439",
-      "name": "Butter Chicken",
-      "description": "Rich creamy gravy",
-      "imageUrl": "https://...",
-      "price": 12.99,
-      "categoryId": "c-1757649315072-8ekx",
-      "spiceLevels": [
-        "Mild",
-        "Medium",
-        "Hot"
-      ],
-      "extraOptionGroups": []
-    },
-    {
-      "_id": "p-1757648623951-0o7t",
-      "site": "site-1757247910961",
-      "name": "Butter Chicken",
-      "description": "Rich creamy gravy",
-      "imageUrl": "https://...",
-      "price": 12.99,
-      "categoryId": "c-1757648623951-k2le",
-      "spiceLevels": [
-        "Mild",
-        "Medium",
-        "Hot"
-      ],
-      "extraOptionGroups": []
-    },
-    {
-      "_id": "p-1757304717824",
-      "name": "p1",
-      "description": "this",
-      "imageUrl": "",
-      "price": 55,
-      "categoryId": "c-1757304669157",
-      "spiceLevels": [
-        "diewhdijew"
-      ],
-      "extraOptionGroups": [],
-      "site": "site-1757304649439"
-    },
-    {
-      "_id": "p-1757302221680",
-      "name": "p1",
-      "description": "weiedheiwhdew",
-      "imageUrl": "",
-      "price": 55,
-      "categoryId": "c-1757302197026",
-      "spiceLevels": [
-        "hotmediu"
-      ],
-      "extraOptionGroups": [],
-      "site": "site-1757302179979"
-    },
-    {
-      "_id": "p-1757247958478",
-      "name": "test",
-      "description": "oe3dlkr3nndkr",
-      "imageUrl": "",
-      "price": 55,
-      "categoryId": "c-1757247941343",
-      "spiceLevels": [],
-      "extraOptionGroups": [],
-      "site": "site-1757247910961"
-    },
     {
       "_id": "p-1",
       "name": "Spring Rolls",
@@ -328,39 +156,6 @@
         }
       ],
       "site": "mock-site"
-    }
-  ],
-  "orders": [
-    {
-      "_id": "o-1757563232543",
-      "createdAt": "2025-09-11T04:00:32.543Z",
-      "site": "site-1757247910961",
-      "userEmail": "admin@example.com",
-      "items": [
-        {
-          "name": "test",
-          "quantity": 1,
-          "priceCents": 5500,
-          "size": "small"
-        }
-      ],
-      "totalCents": 5500,
-      "tipCents": 0,
-      "externalId": "aman-order-1757563231709",
-      "uberDeliveryId": "del_tiA_38ytS4eIPjknYzkn0A",
-      "dropoff": {
-        "name": "aaa",
-        "phone": "+9115877104641",
-        "address": {
-          "streetAddress": [
-            "100 Queen St W"
-          ],
-          "city": "Toronto",
-          "province": "ON",
-          "postalCode": "M5H 2N2",
-          "country": "IN"
-        }
-      }
     }
   ]
 }
