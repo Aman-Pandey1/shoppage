@@ -1,31 +1,14 @@
-6t555import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import type { CartItem, CartState, FulfillmentType, Product, SelectedOption } from '../types';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 const DEFAULT_STORAGE_KEY = 'shop_cart_state_v1';
 
-type CartContextValue = {
-  state: CartState;
-  setFulfillmentType: (type: FulfillmentType) => void;
-  addItem: (args: {
-    product: Product;
-    quantity?: number;
-    spiceLevel?: string;
-    selectedOptions?: SelectedOption[];
-  }) => void;
-  lastAdded?: { name: string; quantity: number; price: number; imageUrl?: string } | null;
-  removeItem: (id: string) => void;
-  updateQuantity: (id: string, quantity: number) => void;
-  clearCart: () => void;
-  getCartTotal: () => number;
-};
+const CartContext = createContext(undefined);
 
-const CartContext = createContext<CartContextValue | undefined>(undefined);
-
-function calculateExtraCost(selectedOptions: SelectedOption[]): number {
-  return selectedOptions.reduce((sum, opt) => sum + (opt.priceDelta || 0), 0);
+function calculateExtraCost(selectedOptions) {
+  return (selectedOptions || []).reduce((sum, opt) => sum + (opt.priceDelta || 0), 0);
 }
 
-function generateItemId(productId: string, spiceLevel?: string, selectedOptions?: SelectedOption[]): string {
+function generateItemId(productId, spiceLevel, selectedOptions) {
   const optsKey = (selectedOptions || [])
     .slice()
     .sort((a, b) => `${a.groupKey}:${a.optionKey}`.localeCompare(`${b.groupKey}:${b.optionKey}`))
@@ -34,15 +17,15 @@ function generateItemId(productId: string, spiceLevel?: string, selectedOptions?
   return `${productId}__${spiceLevel || ''}__${optsKey}`;
 }
 
-export const CartProvider: React.FC<{ children: React.ReactNode; storageKey?: string }> = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => {
-  const [state, setState] = useState<CartState>({ items: [] });
-  const [lastAdded, setLastAdded] = useState<{ name: string; quantity: number; price: number; imageUrl?: string } | null>(null);
+export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => {
+  const [state, setState] = useState({ items: [] });
+  const [lastAdded, setLastAdded] = useState(null);
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(storageKey);
       if (raw) {
-        const parsed: CartState = JSON.parse(raw);
+        const parsed = JSON.parse(raw);
         setState(parsed);
       }
     } catch {}
@@ -54,15 +37,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode; storageKey?: st
     } catch {}
   }, [state, storageKey]);
 
-  const setFulfillmentType = useCallback((type: FulfillmentType) => {
+  const setFulfillmentType = useCallback((type) => {
     setState((prev) => ({ ...prev, fulfillmentType: type }));
   }, []);
 
-  const addItem = useCallback(({ product, quantity = 1, spiceLevel, selectedOptions = [] }: { product: Product; quantity?: number; spiceLevel?: string; selectedOptions?: SelectedOption[] }) => {
+  const addItem = useCallback(({ product, quantity = 1, spiceLevel, selectedOptions = [] }) => {
     const extraCost = calculateExtraCost(selectedOptions);
     const totalPrice = (product.price + extraCost) * quantity;
     const id = generateItemId(product._id, spiceLevel, selectedOptions);
-    const newItem: CartItem = {
+    const newItem = {
       id,
       productId: product._id,
       name: product.name,
@@ -93,11 +76,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode; storageKey?: st
     setLastAdded({ name: product.name, quantity, price: (product.price + extraCost), imageUrl: product.imageUrl });
   }, []);
 
-  const removeItem = useCallback((id: string) => {
+  const removeItem = useCallback((id) => {
     setState((prev) => ({ ...prev, items: prev.items.filter((it) => it.id !== id) }));
   }, []);
 
-  const updateQuantity = useCallback((id: string, quantity: number) => {
+  const updateQuantity = useCallback((id, quantity) => {
     setState((prev) => {
       const updated = prev.items.map((it) => (it.id === id ? { ...it, quantity, totalPrice: (it.basePrice + it.extraCost) * quantity } : it));
       return { ...prev, items: updated };
@@ -115,11 +98,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode; storageKey?: st
     [state, setFulfillmentType, addItem, removeItem, updateQuantity, clearCart, getCartTotal, lastAdded]
   );
 
-  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+  return (<CartContext.Provider value={value}>{children}</CartContext.Provider>);
 };
 
-export function useCart(): CartContextValue {
+export function useCart() {
   const ctx = useContext(CartContext);
   if (!ctx) throw new Error('useCart must be used within CartProvider');
   return ctx;
 }
+

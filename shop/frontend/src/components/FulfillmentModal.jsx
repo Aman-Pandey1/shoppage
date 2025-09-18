@@ -1,13 +1,7 @@
 import React from 'react';
 import { Modal } from './Modal';
-import type { FulfillmentType } from '../types';
 
-type FulfillmentModalProps = {
-  open: boolean;
-  onChoose: (type: FulfillmentType) => void;
-};
-
-export const FulfillmentModal: React.FC<FulfillmentModalProps> = ({ open, onChoose }) => {
+export const FulfillmentModal = ({ open, onChoose }) => {
   return (
     <Modal open={open} onClose={() => {}} title="Choose delivery or pickup">
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -51,3 +45,4 @@ export const FulfillmentModal: React.FC<FulfillmentModalProps> = ({ open, onChoo
     </Modal>
   );
 };
+

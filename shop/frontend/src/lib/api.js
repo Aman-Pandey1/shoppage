@@ -1,6 +1,6 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
-export function getAuthToken(): string | null {
+export function getAuthToken() {
   try {
     return localStorage.getItem('auth_token');
   } catch {
@@ -8,7 +8,7 @@ export function getAuthToken(): string | null {
   }
 }
 
-export function setAuthToken(token: string) {
+export function setAuthToken(token) {
   try { localStorage.setItem('auth_token', token); } catch {}
 }
 
@@ -16,9 +16,7 @@ export function clearAuthToken() {
   try { localStorage.removeItem('auth_token'); } catch {}
 }
 
-type AuthUser = { role?: 'user' | 'admin'; email?: string; userId?: string };
-
-function decodeJwt(token: string): any | null {
+function decodeJwt(token) {
   try {
     const parts = token.split('.');
     if (parts.length !== 3) return null;
@@ -30,21 +28,21 @@ function decodeJwt(token: string): any | null {
   }
 }
 
-export function getCurrentUser(): AuthUser | null {
+export function getCurrentUser() {
   const token = getAuthToken();
   if (!token) return null;
   const payload = decodeJwt(token);
   if (!payload) return null;
-  return { role: payload.role, email: payload.email, userId: payload.userId } as AuthUser;
+  return { role: payload.role, email: payload.email, userId: payload.userId };
 }
 
 export function logout() {
   clearAuthToken();
 }
 
-export async function fetchJson<T>(path: string): Promise<T> {
+export async function fetchJson(path) {
   const token = getAuthToken();
-  const headers: Record<string, string> = {};
+  const headers = {};
   if (token) headers['Authorization'] = `Bearer ${token}`;
   const response = await fetch(`${API_BASE_URL}${path}`, { headers });
   if (!response.ok) {
@@ -54,9 +52,9 @@ export async function fetchJson<T>(path: string): Promise<T> {
 }
 
 // Same as fetchJson but returns server error text in the exception message
-export async function fetchJsonAllowError<T>(path: string): Promise<T> {
+export async function fetchJsonAllowError(path) {
   const token = getAuthToken();
-  const headers: Record<string, string> = {};
+  const headers = {};
   if (token) headers['Authorization'] = `Bearer ${token}`;
   const response = await fetch(`${API_BASE_URL}${path}`, { headers });
   if (!response.ok) {
@@ -67,7 +65,7 @@ export async function fetchJsonAllowError<T>(path: string): Promise<T> {
   return response.json();
 }
 
-export async function postJson<T>(path: string, body: unknown): Promise<T> {
+export async function postJson(path, body) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: 'POST',
     headers: {
@@ -83,7 +81,7 @@ export async function postJson<T>(path: string, body: unknown): Promise<T> {
   return response.json();
 }
 
-export async function putJson<T>(path: string, body: unknown): Promise<T> {
+export async function putJson(path, body) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: 'PUT',
     headers: {
@@ -99,7 +97,7 @@ export async function putJson<T>(path: string, body: unknown): Promise<T> {
   return response.json();
 }
 
-export async function patchJson<T>(path: string, body: unknown): Promise<T> {
+export async function patchJson(path, body) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: 'PATCH',
     headers: {
@@ -115,7 +113,7 @@ export async function patchJson<T>(path: string, body: unknown): Promise<T> {
   return response.json();
 }
 
-export async function deleteJson(path: string): Promise<void> {
+export async function deleteJson(path) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: 'DELETE',
     headers: {
@@ -128,7 +126,7 @@ export async function deleteJson(path: string): Promise<void> {
   }
 }
 
-export async function login(email: string, password: string): Promise<string> {
+export async function login(email, password) {
   const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -139,12 +137,12 @@ export async function login(email: string, password: string): Promise<string> {
     throw new Error(`Login failed: ${response.status} ${text}`);
   }
   const data = await response.json();
-  const token = data.token as string;
+  const token = data.token;
   setAuthToken(token);
   return token;
 }
 
-export async function loginUser(email: string, password: string): Promise<string> {
+export async function loginUser(email, password) {
   const response = await fetch(`${API_BASE_URL}/api/user/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -155,12 +153,12 @@ export async function loginUser(email: string, password: string): Promise<string
     throw new Error(`Login failed: ${response.status} ${text}`);
   }
   const data = await response.json();
-  const token = data.token as string;
+  const token = data.token;
   setAuthToken(token);
   return token;
 }
 
-export async function download(path: string): Promise<Blob> {
+export async function download(path) {
   const token = getAuthToken();
   const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: {
@@ -174,7 +172,7 @@ export async function download(path: string): Promise<Blob> {
   return response.blob();
 }
 
-export async function postFile<T>(path: string, file: File, fieldName = 'file'): Promise<T> {
+export async function postFile(path, file, fieldName = 'file') {
   const form = new FormData();
   form.append(fieldName, file);
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -190,3 +188,4 @@ export async function postFile<T>(path: string, file: File, fieldName = 'file'):
   }
   return response.json();
 }
+

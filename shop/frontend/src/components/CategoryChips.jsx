@@ -1,11 +1,6 @@
 import React from 'react';
-import type { Category } from '../types';
 
-export const CategoryChips: React.FC<{
-  categories: Category[];
-  currentId?: string;
-  onSelect: (category: Category) => void;
-}> = ({ categories, currentId, onSelect }) => {
+export const CategoryChips = ({ categories, currentId, onSelect }) => {
   return (
     <div style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '8px 2px' }}>
       {categories.map((c) => {

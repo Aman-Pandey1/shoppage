@@ -3,19 +3,12 @@ import { useParams } from 'react-router-dom';
 import { fetchJson, getAuthToken } from '../lib/api';
 import { LoginModal } from '../components/LoginModal';
 
-type Order = {
-  _id: string;
-  totalCents: number;
-  createdAt: string;
-  items: { name: string; quantity: number; priceCents: number }[];
-};
-
-export const MyOrdersPage: React.FC = () => {
+export const MyOrdersPage = () => {
   const params = useParams();
-  const siteSlug = params.siteSlug as string;
-  const [orders, setOrders] = React.useState<Order[]>([]);
+  const siteSlug = params.siteSlug;
+  const [orders, setOrders] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | undefined>();
+  const [error, setError] = React.useState();
   const [query, setQuery] = React.useState('');
   const [loginOpen, setLoginOpen] = React.useState(false);
 
@@ -29,9 +22,9 @@ export const MyOrdersPage: React.FC = () => {
           setLoading(false);
           return;
         }
-        const data = await fetchJson<Order[]>(`/api/shop/${siteSlug}/orders/mine`);
+        const data = await fetchJson(`/api/shop/${siteSlug}/orders/mine`);
         if (mounted) setOrders(data);
-      } catch (e: any) {
+      } catch (e) {
         const msg = String(e?.message || '');
         if (/401|403/.test(msg)) {
           if (mounted) {

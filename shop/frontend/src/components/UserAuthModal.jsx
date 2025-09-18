@@ -2,35 +2,29 @@ import React, { useState } from 'react';
 import { postJson, setAuthToken } from '../lib/api';
 import { Modal } from './Modal';
 
-type Props = {
-  open: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
-};
-
-export const UserAuthModal: React.FC<Props> = ({ open, onClose, onSuccess }) => {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+export const UserAuthModal = ({ open, onClose, onSuccess }) => {
+  const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | undefined>();
+  const [error, setError] = useState();
 
   if (!open) return null;
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);
     setError(undefined);
     try {
       const path = mode === 'login' ? '/api/user/login' : '/api/user/register';
-      const body: any = { email, password };
+      const body = { email, password };
       if (mode === 'register') body.name = name;
-      const res = await postJson<{ token: string }>(path, body);
+      const res = await postJson(path, body);
       if (res?.token) setAuthToken(res.token);
       onSuccess();
       onClose();
-    } catch (e: any) {
+    } catch (e) {
       setError(e?.message || 'Failed');
     } finally {
       setLoading(false);

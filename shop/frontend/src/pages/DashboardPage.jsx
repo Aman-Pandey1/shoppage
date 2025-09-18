@@ -4,7 +4,7 @@ import { clearAuthToken } from '../lib/api';
 import { AdminDashboard } from '../components/AdminDashboard';
 import { BarChart3, LogOut, ArrowLeft } from 'lucide-react';
 
-export const DashboardPage: React.FC = () => {
+export const DashboardPage = () => {
   const navigate = useNavigate();
   function handleLogout() {
     clearAuthToken();
