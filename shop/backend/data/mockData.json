@@ -1,0 +1,161 @@
+{
+  "sites": [
+    {
+      "_id": "mock-site",
+      "name": "Default Site",
+      "slug": "default",
+      "isActive": true
+    }
+  ],
+  "categories": [
+    {
+      "_id": "c-1",
+      "name": "Starters",
+      "imageUrl": "https://picsum.photos/seed/starters/400/400",
+      "sortIndex": 1,
+      "site": "mock-site"
+    },
+    {
+      "_id": "c-2",
+      "name": "Mains",
+      "imageUrl": "https://picsum.photos/seed/mains/400/400",
+      "sortIndex": 2,
+      "site": "mock-site"
+    },
+    {
+      "_id": "c-3",
+      "name": "Beverages",
+      "imageUrl": "https://picsum.photos/seed/beverages/400/400",
+      "sortIndex": 3,
+      "site": "mock-site"
+    }
+  ],
+  "products": [
+    {
+      "_id": "p-1",
+      "name": "Spring Rolls",
+      "description": "Crispy veggie rolls with sweet chili sauce",
+      "imageUrl": "https://picsum.photos/seed/spring-rolls/800/600",
+      "price": 6.5,
+      "categoryId": "c-1",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "extraOptionGroups": [
+        {
+          "groupKey": "sauce",
+          "groupLabel": "Sauce",
+          "minSelect": 0,
+          "maxSelect": 2,
+          "options": [
+            {
+              "key": "chili",
+              "label": "Chili",
+              "priceDelta": 0
+            },
+            {
+              "key": "peanut",
+              "label": "Peanut",
+              "priceDelta": 0.5
+            }
+          ]
+        }
+      ],
+      "site": "mock-site"
+    },
+    {
+      "_id": "p-2",
+      "name": "Green Curry",
+      "description": "Thai green curry with vegetables",
+      "imageUrl": "https://picsum.photos/seed/green-curry/800/600",
+      "price": 12,
+      "categoryId": "c-2",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot",
+        "Extra Hot"
+      ],
+      "extraOptionGroups": [
+        {
+          "groupKey": "protein",
+          "groupLabel": "Protein",
+          "minSelect": 1,
+          "maxSelect": 1,
+          "options": [
+            {
+              "key": "tofu",
+              "label": "Tofu",
+              "priceDelta": 0
+            },
+            {
+              "key": "chicken",
+              "label": "Chicken",
+              "priceDelta": 2
+            },
+            {
+              "key": "shrimp",
+              "label": "Shrimp",
+              "priceDelta": 3
+            }
+          ]
+        },
+        {
+          "groupKey": "extras",
+          "groupLabel": "Extras",
+          "minSelect": 0,
+          "maxSelect": 2,
+          "options": [
+            {
+              "key": "rice",
+              "label": "Extra rice",
+              "priceDelta": 2
+            },
+            {
+              "key": "veggies",
+              "label": "Extra veggies",
+              "priceDelta": 1.5
+            }
+          ]
+        }
+      ],
+      "site": "mock-site"
+    },
+    {
+      "_id": "p-3",
+      "name": "Iced Tea",
+      "description": "Refreshing house iced tea",
+      "imageUrl": "https://picsum.photos/seed/iced-tea/800/600",
+      "price": 3,
+      "categoryId": "c-3",
+      "extraOptionGroups": [
+        {
+          "groupKey": "sweetness",
+          "groupLabel": "Sweetness",
+          "minSelect": 1,
+          "maxSelect": 1,
+          "options": [
+            {
+              "key": "0",
+              "label": "0%",
+              "priceDelta": 0
+            },
+            {
+              "key": "50",
+              "label": "50%",
+              "priceDelta": 0
+            },
+            {
+              "key": "100",
+              "label": "100%",
+              "priceDelta": 0
+            }
+          ]
+        }
+      ],
+      "site": "mock-site"
+    }
+  ]
+}
