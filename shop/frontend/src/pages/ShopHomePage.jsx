@@ -1,6 +1,6 @@
 import React from 'react';
 import { CartProvider } from '../store/CartContext';
-import { ShopApp } from '../ShopApp';
+import { ShopApp } from '../ShopAppp';
 import { fetchJson } from '../lib/api';
 
 export const ShopHomePage = () => {
