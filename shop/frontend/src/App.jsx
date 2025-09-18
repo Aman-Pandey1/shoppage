@@ -11,6 +11,7 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<ShopHomePage />} />
+      <Route path="/shop" element={<ShopHomePage />} />
       {/* Root-level site slug: e.g. /website1 */}
       <Route path=":siteSlug" element={<ShopBySlugPage />} />
       <Route path=":siteSlug/c/:categoryId" element={<ShopBySlugPage />} />
