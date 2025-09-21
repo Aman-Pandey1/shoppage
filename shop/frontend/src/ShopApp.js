@@ -25,6 +25,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [allCategories, setAllCategories] = useState([]);
 
   const [pendingProduct, setPendingProduct] = useState(null);
+  const [pendingQuantity, setPendingQuantity] = useState(1);
   const [spiceOpen, setSpiceOpen] = useState(false);
   const [extrasOpen, setExtrasOpen] = useState(false);
   const [pendingSpice, setPendingSpice] = useState(undefined);
@@ -88,15 +89,17 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     }
   }
 
-  function startAddToCart(product) {
+  function startAddToCart(product, quantity = 1) {
     setPendingProduct(product);
+    setPendingQuantity(Math.max(1, Math.min(99, Number(quantity) || 1)));
     if (product.spiceLevels && product.spiceLevels.length > 0) {
       setSpiceOpen(true);
     } else if (product.extraOptionGroups && product.extraOptionGroups.length > 0) {
       setExtrasOpen(true);
     } else {
-      addItem({ product });
+      addItem({ product, quantity: Math.max(1, Math.min(99, Number(quantity) || 1)) });
       setPendingProduct(null);
+      setPendingQuantity(1);
     }
   }
 
@@ -106,19 +109,21 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     if (pendingProduct && pendingProduct.extraOptionGroups && pendingProduct.extraOptionGroups.length > 0) {
       setExtrasOpen(true);
     } else if (pendingProduct) {
-      addItem({ product: pendingProduct, spiceLevel: spice });
+      addItem({ product: pendingProduct, spiceLevel: spice, quantity: pendingQuantity });
       setPendingProduct(null);
       setPendingSpice(undefined);
+      setPendingQuantity(1);
     }
   }
 
   function confirmExtras(selected) {
     setExtrasOpen(false);
     if (pendingProduct) {
-      addItem({ product: pendingProduct, spiceLevel: pendingSpice, selectedOptions: selected });
+      addItem({ product: pendingProduct, spiceLevel: pendingSpice, selectedOptions: selected, quantity: pendingQuantity });
     }
     setPendingProduct(null);
     setPendingSpice(undefined);
+    setPendingQuantity(1);
   }
 
   // Load categories and preselect a category if provided via route
@@ -394,8 +399,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       {lastDeliveryId ? (
         <div className="muted" style={{ textAlign: 'center', marginTop: 10, fontSize: 12 }}>Last delivery ID: {lastDeliveryId}</div>
       ) : null}
-      <SpiceModal open={spiceOpen} spiceLevels={pendingProduct?.spiceLevels} onCancel={() => setSpiceOpen(false)} onConfirm={confirmSpice} />
-      <ExtrasModal open={extrasOpen} groups={pendingProduct?.extraOptionGroups} onCancel={() => setExtrasOpen(false)} onConfirm={confirmExtras} />
+      <SpiceModal open={spiceOpen} spiceLevels={pendingProduct?.spiceLevels} product={pendingProduct} onCancel={() => setSpiceOpen(false)} onConfirm={confirmSpice} />
+      <ExtrasModal open={extrasOpen} groups={pendingProduct?.extraOptionGroups} product={pendingProduct} onCancel={() => setExtrasOpen(false)} onConfirm={confirmExtras} />
       <AddToCartToast />
       <UserAuthModal open={loginOpen} onClose={() => setLoginOpen(false)} onSuccess={() => {
         setLoginOpen(false);
