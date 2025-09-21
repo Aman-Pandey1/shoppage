@@ -16,7 +16,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   const [tip, setTip] = useState(0);
   const [siteName, setSiteName] = useState('');
   const [country, setCountry] = useState('CA');
-  const [tab, setTab] = useState('enter'); // 'enter' | 'location' | 'city'
+  const [tab, setTab] = useState('enter'); // delivery: only manual address (enter)
   const [locations, setLocations] = useState([]);
   const [cities, setCities] = useState([]);
   const [selectedPickupIndex, setSelectedPickupIndex] = useState(null);
@@ -78,14 +78,6 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         const invalid = validate();
         if (invalid) { setError(invalid); setLoading(false); return; }
         address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
-      } else if (tab === 'city') {
-        if (!selectedCity) { setError('Select a city'); setLoading(false); return; }
-        address = { streetAddress: [''], city: selectedCity, province, postalCode: '', country };
-      } else {
-        // location pickup still needs dropoff address; for demo we'll still require entry
-        const invalid = validate();
-        if (invalid) { setError(invalid); setLoading(false); return; }
-        address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
       }
       const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { name, phone, address }, pickupLocationIndex: selectedPickupIndex });
       setQuote(q);
@@ -116,37 +108,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   return (
     <Modal open={open} onClose={onClose} title="Delivery details">
       {error ? <div style={{ color: 'var(--danger)', marginBottom: 8 }}>{error}</div> : null}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-        <button className={tab === 'enter' ? 'primary-btn' : ''} onClick={() => setTab('enter')}>Enter address</button>
-        <button className={tab === 'location' ? 'primary-btn' : ''} onClick={() => setTab('location')}>By location</button>
-        <button className={tab === 'city' ? 'primary-btn' : ''} onClick={() => setTab('city')}>By city</button>
-      </div>
-
-      {tab === 'location' ? (
-        <div style={{ display: 'grid', gap: 10, marginBottom: 8 }}>
-          {locations.map((loc, idx) => (
-            <label key={idx} className="card" style={{ padding: 10, display: 'grid', gap: 6, textAlign: 'left' }}>
-              <input type="radio" name="pickupLoc" checked={selectedPickupIndex === idx} onChange={() => setSelectedPickupIndex(idx)} />
-              <div style={{ fontWeight: 700 }}>{loc.name || 'Restaurant'}</div>
-              <div className="muted" style={{ fontSize: 12 }}>
-                {(loc.address?.streetAddress || []).join(' ')}, {loc.address?.city}, {loc.address?.province} {loc.address?.postalCode}
-              </div>
-            </label>
-          ))}
-          {locations.length === 0 ? <div className="muted">No locations configured.</div> : null}
-        </div>
-      ) : null}
-
-      {tab === 'city' ? (
-        <div style={{ marginBottom: 8 }}>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span>City</span>
-            <select value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)}>
-              {cities.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </label>
-        </div>
-      ) : null}
+      <div className="muted" style={{ marginBottom: 8, fontSize: 12 }}>Enter your delivery address.</div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

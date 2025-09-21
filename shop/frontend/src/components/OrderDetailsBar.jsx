@@ -14,7 +14,7 @@ export const OrderDetailsBar = ({
       <div className="order-bar__row">
         <div className="order-bar__group">
           <div className="order-bar__label">Order details</div>
-          <button className="order-bar__input">
+          <button className="order-bar__input" onClick={onChangeOrderType}>
             <span>{orderType}</span>
             <span className="chev">▾</span>
           </button>
