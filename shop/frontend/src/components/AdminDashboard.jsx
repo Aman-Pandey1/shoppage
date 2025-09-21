@@ -188,11 +188,11 @@ export const AdminDashboard = () => {
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               <div className="card" style={{ padding: 12, minWidth: 220, borderTop: '3px solid var(--primary)' }}>
                 <div className="muted" style={{ fontSize: 12 }}>This week</div>
-                <div style={{ fontWeight: 900, fontSize: 22 }}>${((billing?.weekTotalCents || 0)/100).toFixed(2)}</div>
+                <div style={{ fontWeight: 900, fontSize: 22, color: 'var(--primary-600)' }}>${((billing?.weekTotalCents || 0)/100).toFixed(2)}</div>
               </div>
               <div className="card" style={{ padding: 12, minWidth: 220, borderTop: '3px solid var(--primary)' }}>
                 <div className="muted" style={{ fontSize: 12 }}>This month</div>
-                <div style={{ fontWeight: 900, fontSize: 22 }}>${((billing?.monthTotalCents || 0)/100).toFixed(2)}</div>
+                <div style={{ fontWeight: 900, fontSize: 22, color: 'var(--primary-600)' }}>${((billing?.monthTotalCents || 0)/100).toFixed(2)}</div>
               </div>
             </div>
             <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>Totals include item prices plus tip.</div>
@@ -383,7 +383,7 @@ export const AdminDashboard = () => {
                   </div>
                   <div className="muted" style={{ fontSize: 13, margin: '4px 0 8px' }}>{p.description}</div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontWeight: 700 }}>${p.price.toFixed(2)}</div>
+                    <div style={{ fontWeight: 900, color: 'var(--primary-600)' }}>${p.price.toFixed(2)}</div>
                     <div style={{ display: 'flex', gap: 8 }}>
                       <button onClick={() => startEdit(p)}>Edit</button>
                       <button className="danger" onClick={() => deleteProduct(p._id)}>Delete</button>

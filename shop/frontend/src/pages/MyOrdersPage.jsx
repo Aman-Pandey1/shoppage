@@ -80,7 +80,7 @@ export const MyOrdersPage = () => {
                   <div style={{ fontSize: 18 }}>{o.fulfillmentType === 'delivery' ? '🚚' : '🏪'}</div>
                   <div style={{ fontWeight: 800 }}>#{o._id.slice(-6)}</div>
                 </div>
-                <div className="muted" style={{ fontSize: 12 }}>{new Date(o.createdAt).toLocaleString()}</div>
+                <div className="muted" style={{ fontSize: 12, color: 'var(--primary-600)' }}>{new Date(o.createdAt).toLocaleString()}</div>
               </div>
               <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>{o.fulfillmentType === 'delivery' ? 'Delivery' : 'Pickup'}</div>
               <ul style={{ margin: '8px 0', paddingLeft: 18 }}>
@@ -89,7 +89,7 @@ export const MyOrdersPage = () => {
                 ))}
               </ul>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ fontWeight: 900 }}>${(o.totalCents/100).toFixed(2)}</div>
+                <div style={{ fontWeight: 900, color: 'var(--primary-600)' }}>${(o.totalCents/100).toFixed(2)}</div>
                 {o.fulfillmentType === 'delivery' && o.dropoff?.address ? (
                   <div className="muted" style={{ fontSize: 12, textAlign: 'right' }}>
                     {o.dropoff.address.city}

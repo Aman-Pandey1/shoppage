@@ -300,7 +300,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                 </select>
               </label>
               <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <span>Pickup time</span>
+                <span style={{ color: 'var(--primary-600)' }}>Pickup time</span>
                 <select value={pickupTime} onChange={(e) => setPickupTime(e.target.value)}>
                   {['10:00 AM','10:30 AM','11:00 AM','11:30 AM','12:00 PM','12:30 PM','1:00 PM'].map((t) => (
                     <option key={t} value={t}>{t}</option>
