@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { Modal } from './Modal';
+import chilliGreen from '../assets/chilli-green.svg';
+import chilliOrange from '../assets/chilli-orange.svg';
+import chilliRed from '../assets/chilli-red.svg';
 
 export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) => {
   const [selected, setSelected] = useState(undefined);
@@ -24,7 +27,8 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) 
       <div style={{ fontWeight: 800, marginBottom: 6 }}>Choose spice level</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
         {levels.map((lvl) => {
-          const icon = lvl.toLowerCase().includes('hot') ? '🌶️🌶️' : lvl.toLowerCase().includes('medium') ? '🌶️' : '🫑';
+          const lower = String(lvl || '').toLowerCase();
+          const imgSrc = lower.includes('hot') ? chilliRed : (lower.includes('medium') ? chilliOrange : chilliGreen);
           const active = selected === lvl;
           return (
             <button
@@ -39,7 +43,7 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) 
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 120
               }}
             >
-              <div style={{ fontSize: 22 }}>{icon}</div>
+              <img src={imgSrc} alt={`${lvl} chilli`} style={{ width: 28, height: 28 }} />
               <div style={{ fontWeight: 700 }}>{lvl}</div>
             </button>
           );
