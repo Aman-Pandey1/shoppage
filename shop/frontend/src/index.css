@@ -260,6 +260,52 @@ input:focus, select:focus, textarea:focus {
   padding-bottom: 80px; /* Space for the fixed order summary */
 }
 
+/* Top navigation bar (red header) */
+.top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: #ea5a4b; /* red band close to screenshot */
+  background-image: linear-gradient(180deg, #ea5a4b, #e44c3c);
+  color: #fff;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.05);
+}
+.top-nav__inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 10px 16px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand__logo {
+  width: 36px; height: 36px; border-radius: 8px; background: rgba(255,255,255,0.15);
+  display: grid; place-items: center; font-size: 20px; border: 1px solid rgba(255,255,255,0.25);
+}
+.brand__logo img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+.brand__name { font-weight: 800; letter-spacing: .02em; }
+.brand__tagline { font-size: 12px; opacity: .95; }
+.nav-title { justify-self: center; font-weight: 700; letter-spacing: .06em; }
+.actions { justify-self: end; display: flex; align-items: center; gap: 8px; }
+.profile-chip {
+  border: none; background: rgba(255,255,255,0.15); color: #fff; border-radius: 9999px; padding: 6px 10px;
+}
+.signin-btn { border: 1px solid rgba(255,255,255,0.65); color: #fff; background: transparent; }
+
+/* Order details bar */
+.order-bar { padding: 10px; border-radius: 12px; margin: 12px 0; }
+.order-bar__row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.order-bar__group { display: grid; gap: 6px; }
+.order-bar__label { font-size: 12px; color: #6b7280; }
+.order-bar__input { display: inline-flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 40px; padding: 8px 10px; border-radius: 8px; background: #fff; border: 1px solid var(--border); width: 100%; }
+.order-bar__inline { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.order-bar .chev { opacity: .7; }
+@media (max-width: 640px) {
+  .order-bar__row { grid-template-columns: 1fr; }
+}
+
 .order-type-card {
   margin: 10px;
   padding: 15px;
