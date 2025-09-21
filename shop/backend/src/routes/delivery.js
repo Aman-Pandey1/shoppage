@@ -20,11 +20,16 @@ router.post('/:slug/quote', async (req, res) => {
 			site = await Site.findById(req.siteId);
 		}
 		if (!site?.uberCustomerId || !site?.pickup?.address) return res.status(400).json({ error: 'Site not configured for Uber Direct' });
-		const { dropoff } = req.body || {};
+    const { dropoff, pickupLocationIndex } = req.body || {};
 		if (!dropoff?.address?.streetAddress) return res.status(400).json({ error: 'Invalid dropoff address' });
+    // Allow selecting a pickup location from configured list
+    let pickup = site.pickup;
+    if (typeof pickupLocationIndex === 'number' && Array.isArray(site.locations) && site.locations[pickupLocationIndex]) {
+      pickup = site.locations[pickupLocationIndex];
+    }
 		const quote = await requestQuote({
 			customerId: site.uberCustomerId,
-			pickup: site.pickup,
+      pickup,
 			dropoff,
 		});
 		res.json(quote);
@@ -43,10 +48,14 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 			site = await Site.findById(req.siteId);
 		}
 		if (!site?.uberCustomerId || !site?.pickup?.address) return res.status(400).json({ error: 'Site not configured for Uber Direct' });
-		const { dropoff, manifestItems, tip, externalId } = req.body || {};
+    const { dropoff, manifestItems, tip, externalId, pickupLocationIndex } = req.body || {};
+    let pickup = site.pickup;
+    if (typeof pickupLocationIndex === 'number' && Array.isArray(site.locations) && site.locations[pickupLocationIndex]) {
+      pickup = site.locations[pickupLocationIndex];
+    }
 		const delivery = await createDelivery({
 			customerId: site.uberCustomerId,
-			pickup: site.pickup,
+      pickup,
 			dropoff,
 			manifestItems,
 			tip,
@@ -63,6 +72,7 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 			tipCents: Number(tip) || 0,
 			externalId,
 			uberDeliveryId: delivery?.id || delivery?.delivery_id,
+      fulfillmentType: 'delivery',
 			dropoff,
 		};
 		if (req.app.locals.mockData) {

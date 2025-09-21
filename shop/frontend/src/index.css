@@ -14,8 +14,8 @@
   --card: #ffffff;
   --muted: #6b7280; /* gray-500 */
   --text: #111827; /* gray-900 */
-  --primary: #e44c3c; /* warm red matching header */
-  --primary-600: #c93a2b; /* darker hover */
+  --primary: #ec6446; /* tuned to reference */
+  --primary-600: #d94f30; /* darker hover */
   --accent: #a78bfa; /* violet-400 */
   /* Primary alpha variants (defaults, overridden by runtime) */
   --primary-alpha-04: rgba(14,165,233,0.04);
@@ -185,6 +185,9 @@ input:focus, select:focus, textarea:focus {
   margin-right: 380px; /* space for cart */
   padding: 12px 16px;
   max-width: 1200px;
+}
+@media (min-width: 1200px) {
+  .content { max-width: 1280px; }
 }
 
 /* Responsive layout adjustments + mobile drawer behavior */

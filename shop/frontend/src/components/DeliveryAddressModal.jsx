@@ -16,6 +16,11 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   const [tip, setTip] = useState(0);
   const [siteName, setSiteName] = useState('');
   const [country, setCountry] = useState('CA');
+  const [tab, setTab] = useState('enter'); // 'enter' | 'location' | 'city'
+  const [locations, setLocations] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [selectedPickupIndex, setSelectedPickupIndex] = useState(null);
+  const [selectedCity, setSelectedCity] = useState('');
 
   React.useEffect(() => {
     let cancelled = false;
@@ -25,7 +30,22 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         if (!cancelled) setSiteName(data.name || '');
       } catch {}
     }
+    async function loadLists() {
+      try {
+        const [locs, cits] = await Promise.all([
+          fetchJson(`/api/shop/${siteSlug}/locations`),
+          fetchJson(`/api/shop/${siteSlug}/cities`),
+        ]);
+        if (!cancelled) {
+          setLocations(Array.isArray(locs) ? locs : []);
+          setCities(Array.isArray(cits) ? cits : []);
+          if (Array.isArray(locs) && locs.length) setSelectedPickupIndex(0);
+          if (Array.isArray(cits) && cits.length) setSelectedCity(cits[0]);
+        }
+      } catch {}
+    }
     loadSite();
+    loadLists();
     return () => { cancelled = true; };
   }, [siteSlug]);
 
@@ -53,10 +73,21 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   async function getQuote() {
     setLoading(true); setError(undefined);
     try {
-      const invalid = validate();
-      if (invalid) { setError(invalid); setLoading(false); return; }
-      const address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
-      const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { name, phone, address } });
+      let address;
+      if (tab === 'enter') {
+        const invalid = validate();
+        if (invalid) { setError(invalid); setLoading(false); return; }
+        address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
+      } else if (tab === 'city') {
+        if (!selectedCity) { setError('Select a city'); setLoading(false); return; }
+        address = { streetAddress: [''], city: selectedCity, province, postalCode: '', country };
+      } else {
+        // location pickup still needs dropoff address; for demo we'll still require entry
+        const invalid = validate();
+        if (invalid) { setError(invalid); setLoading(false); return; }
+        address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
+      }
+      const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { name, phone, address }, pickupLocationIndex: selectedPickupIndex });
       setQuote(q);
     } catch (e) {
       setError(e.message || 'Failed to get quote');
@@ -73,6 +104,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         manifestItems: manifest.map(m => ({ name: m.name, quantity: m.quantity, size: m.size || 'small', price: m.priceCents || 0 })),
         tip: Math.round((tip || 0) * 100),
         externalId: `${siteName ? siteName.replace(/\s+/g, '-') : siteSlug}-order-${Date.now()}`,
+        pickupLocationIndex: selectedPickupIndex,
       });
       onConfirmed(result.id || result.delivery_id || '');
       onClose();
@@ -84,6 +116,38 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   return (
     <Modal open={open} onClose={onClose} title="Delivery details">
       {error ? <div style={{ color: 'var(--danger)', marginBottom: 8 }}>{error}</div> : null}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+        <button className={tab === 'enter' ? 'primary-btn' : ''} onClick={() => setTab('enter')}>Enter address</button>
+        <button className={tab === 'location' ? 'primary-btn' : ''} onClick={() => setTab('location')}>By location</button>
+        <button className={tab === 'city' ? 'primary-btn' : ''} onClick={() => setTab('city')}>By city</button>
+      </div>
+
+      {tab === 'location' ? (
+        <div style={{ display: 'grid', gap: 10, marginBottom: 8 }}>
+          {locations.map((loc, idx) => (
+            <label key={idx} className="card" style={{ padding: 10, display: 'grid', gap: 6, textAlign: 'left' }}>
+              <input type="radio" name="pickupLoc" checked={selectedPickupIndex === idx} onChange={() => setSelectedPickupIndex(idx)} />
+              <div style={{ fontWeight: 700 }}>{loc.name || 'Restaurant'}</div>
+              <div className="muted" style={{ fontSize: 12 }}>
+                {(loc.address?.streetAddress || []).join(' ')}, {loc.address?.city}, {loc.address?.province} {loc.address?.postalCode}
+              </div>
+            </label>
+          ))}
+          {locations.length === 0 ? <div className="muted">No locations configured.</div> : null}
+        </div>
+      ) : null}
+
+      {tab === 'city' ? (
+        <div style={{ marginBottom: 8 }}>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>City</span>
+            <select value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)}>
+              {cities.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </label>
+        </div>
+      ) : null}
+
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <span>Name</span>

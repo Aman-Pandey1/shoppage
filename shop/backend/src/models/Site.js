@@ -19,6 +19,8 @@ const SiteSchema = new mongoose.Schema({
 			country: { type: String, default: 'CA' },
 		},
 	}],
+	// Optional: cities for delivery selection (distinct from addresses)
+	cities: [{ type: String }],
 	pickup: {
 		name: { type: String },
 		phone: { type: String },
