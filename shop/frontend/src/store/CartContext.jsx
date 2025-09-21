@@ -8,6 +8,33 @@ function calculateExtraCost(selectedOptions) {
   return (selectedOptions || []).reduce((sum, opt) => sum + (opt.priceDelta || 0), 0);
 }
 
+function formatOptionsSummary(product, spiceLevel, selectedOptions) {
+  try {
+    const groups = Array.isArray(product?.extraOptionGroups) ? product.extraOptionGroups : [];
+    const groupKeyToLabel = new Map(groups.map((g) => [g.groupKey, g.groupLabel || g.groupKey]));
+    const groupKeyToOptions = new Map(groups.map((g) => [g.groupKey, new Map((g.options || []).map((o) => [o.key, o.label || o.key]))]));
+
+    const perGroupSelections = new Map();
+    (selectedOptions || []).forEach((opt) => {
+      const labelMap = groupKeyToOptions.get(opt.groupKey);
+      const optionLabel = labelMap ? (labelMap.get(opt.optionKey) || opt.optionKey) : opt.optionKey;
+      if (!perGroupSelections.has(opt.groupKey)) perGroupSelections.set(opt.groupKey, []);
+      perGroupSelections.get(opt.groupKey).push(optionLabel);
+    });
+
+    const parts = [];
+    if (spiceLevel) parts.push(`Spice: ${spiceLevel}`);
+    for (const [gk, labels] of perGroupSelections.entries()) {
+      const glabel = groupKeyToLabel.get(gk) || gk;
+      parts.push(`${glabel}: ${labels.join(', ')}`);
+    }
+    const summary = parts.join(' • ');
+    return summary || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function generateItemId(productId, spiceLevel, selectedOptions) {
   const optsKey = (selectedOptions || [])
     .slice()
@@ -73,7 +100,8 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
       }
       return { ...prev, items: [...prev.items, newItem] };
     });
-    setLastAdded({ name: product.name, quantity, price: (product.price + extraCost), imageUrl: product.imageUrl });
+    const optionsSummary = formatOptionsSummary(product, spiceLevel, selectedOptions);
+    setLastAdded({ name: product.name, quantity, price: (product.price + extraCost), imageUrl: product.imageUrl, optionsSummary });
   }, []);
 
   const removeItem = useCallback((id) => {

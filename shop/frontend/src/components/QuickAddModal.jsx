@@ -1,16 +1,22 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Modal } from './Modal';
 
 export const QuickAddModal = ({ open, product, onCancel, onConfirm }) => {
   const [qty, setQty] = useState(1);
+  const [bump, setBump] = useState(false);
   if (!product) return null;
 
-  function dec() { setQty((q) => Math.max(1, q - 1)); }
-  function inc() { setQty((q) => Math.min(99, q + 1)); }
+  function triggerBump() {
+    setBump(true);
+    // Reset after animation
+    setTimeout(() => setBump(false), 200);
+  }
+  function dec() { setQty((q) => { const next = Math.max(1, q - 1); if (next !== q) triggerBump(); return next; }); }
+  function inc() { setQty((q) => { const next = Math.min(99, q + 1); if (next !== q) triggerBump(); return next; }); }
 
   return (
     <Modal open={open} onClose={onCancel} title={null}>
-      <div style={{ display: 'grid', gap: 12 }}>
+      <div style={{ display: 'grid', gap: 12 }} className="animate-popIn">
         <div style={{ position: 'relative', height: 180, borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border)' }}>
           {product.imageUrl ? (
             <img src={product.imageUrl} alt={product.name} className="img-cover" />
@@ -27,15 +33,15 @@ export const QuickAddModal = ({ open, product, onCancel, onConfirm }) => {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', gap: 12 }}>
           <div className="muted" style={{ fontSize: 13 }}>{product.description || 'Add this to your order'}</div>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, border: '1px solid var(--border)', borderRadius: 999, padding: 6, background: 'var(--panel-2)' }}>
-            <button onClick={dec} aria-label="Decrease" title="Decrease" style={{ width: 32, height: 32, borderRadius: 999, display: 'grid', placeItems: 'center' }}>–</button>
-            <div style={{ minWidth: 24, textAlign: 'center', fontWeight: 800 }}>{qty}</div>
-            <button onClick={inc} aria-label="Increase" title="Increase" style={{ width: 32, height: 32, borderRadius: 999, display: 'grid', placeItems: 'center' }}>+</button>
+            <button onClick={dec} aria-label="Decrease" title="Decrease" className="hover-float" style={{ width: 32, height: 32, borderRadius: 999, display: 'grid', placeItems: 'center' }}>–</button>
+            <div className={bump ? 'animate-bump' : ''} style={{ minWidth: 24, textAlign: 'center', fontWeight: 800 }}>{qty}</div>
+            <button onClick={inc} aria-label="Increase" title="Increase" className="hover-float" style={{ width: 32, height: 32, borderRadius: 999, display: 'grid', placeItems: 'center' }}>+</button>
           </div>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-          <button onClick={onCancel} style={{ padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--panel-2)' }}>Cancel</button>
-          <button onClick={() => onConfirm(qty)} className="primary-btn" style={{ padding: '10px 16px', borderRadius: 10, minWidth: 140 }}>Add to cart</button>
+          <button onClick={onCancel} className="hover-float" style={{ padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--panel-2)' }}>Cancel</button>
+          <button onClick={() => onConfirm(qty)} className="primary-btn hover-float" style={{ padding: '10px 16px', borderRadius: 10, minWidth: 140 }}>Add to cart</button>
         </div>
       </div>
     </Modal>
