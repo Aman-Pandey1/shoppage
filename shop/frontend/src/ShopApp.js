@@ -8,6 +8,7 @@ import { OrderDetailsBar } from './components/OrderDetailsBar';
 import { ProductList } from './components/ProductList';
 import { PrivacyPolicyModal } from './components/PrivacyPolicyModal';
 import { FulfillmentModal } from './components/FulfillmentModal';
+import { Modal } from './components/Modal';
 import { SpiceModal } from './components/SpiceModal';
 import { ExtrasModal } from './components/ExtrasModal';
 import { AddToCartToast } from './components/AddToCartToast';
@@ -33,7 +34,12 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [lastDeliveryId, setLastDeliveryId] = useState(null);
 
   // Additional UI state brought from the alternate implementation
-  const [pickupTime] = useState('10:00 AM');
+  // Order details state
+  const [pickupDate, setPickupDate] = useState('Today');
+  const [pickupTime, setPickupTime] = useState('10:00 AM');
+  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [locations, setLocations] = useState([]);
+  const [orderDetailsOpen, setOrderDetailsOpen] = useState(false);
 
   useEffect(() => {
     const privacyAccepted = localStorage.getItem('privacyAccepted_v1');
@@ -60,6 +66,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     setFulfillmentOpen(false);
     if (type === 'delivery') {
       setDeliveryModalOpen(true);
+    } else {
+      setOrderDetailsOpen(true);
     }
   }
 
@@ -114,6 +122,21 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     return () => { cancelled = true; };
   }, [initialCategoryId, siteSlug]);
 
+  // Load pickup locations for popup
+  useEffect(() => {
+    let cancelled = false;
+    async function loadLocations() {
+      try {
+        const list = await fetchJson(`/api/shop/${siteSlug}/locations`);
+        if (!cancelled) setLocations(Array.isArray(list) ? list : []);
+      } catch {
+        if (!cancelled) setLocations([]);
+      }
+    }
+    loadLocations();
+    return () => { cancelled = true; };
+  }, [siteSlug]);
+
   const content = useMemo(() => {
     if (selectedCategory) {
       return (
@@ -142,8 +165,17 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
 
   const cartTotal = getCartTotal();
 
+  const addressSummary = selectedLocation ? `${selectedLocation?.address?.streetAddress?.[0] || ''}, ${selectedLocation?.address?.city || ''}` : undefined;
   const OrderTypeSelection = () => (
-    <OrderDetailsBar orderType="Select an order type" pickupDate="Today" pickupTime={pickupTime} />
+    <OrderDetailsBar
+      orderType={state.fulfillmentType === 'delivery' ? 'Delivery' : (state.fulfillmentType === 'pickup' ? 'Takeout' : 'Select order type')}
+      pickupDate={pickupDate}
+      pickupTime={pickupTime}
+      addressSummary={addressSummary}
+      onChangeOrderType={() => setFulfillmentOpen(true)}
+      onChangePickupDate={() => setOrderDetailsOpen(true)}
+      onChangePickupTime={() => setOrderDetailsOpen(true)}
+    />
   );
 
   return (
@@ -181,6 +213,62 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
 
       <PrivacyPolicyModal open={privacyOpen} onAccept={handleAcceptPrivacy} />
       <FulfillmentModal open={fulfillmentOpen} onChoose={handleChooseFulfillment} />
+      {/* Order Details Modal: Takeout/Delivery UI like screenshots */}
+      <Modal open={orderDetailsOpen} onClose={() => setOrderDetailsOpen(false)} title="ORDER DETAILS">
+        {state.fulfillmentType === 'delivery' ? (
+          <div style={{ display: 'grid', gap: 12 }}>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="primary-btn" disabled>Delivery</button>
+              <button onClick={() => setFulfillmentOpen(true)}>Takeout</button>
+            </div>
+            <div style={{ fontWeight: 800, textAlign: 'center' }}>Enter your address</div>
+            <button className="primary-btn" onClick={() => setDeliveryModalOpen(true)}>Add delivery address</button>
+          </div>
+        ) : (
+          <div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              <button className="primary-btn" disabled>Takeout</button>
+              <button onClick={() => setFulfillmentOpen(true)}>Delivery</button>
+            </div>
+            <div style={{ display: 'flex', gap: 12, borderBottom: '1px solid var(--border)', marginBottom: 12 }}>
+              <button className="primary-btn" style={{ background: 'transparent', border: 'none' }}>By location</button>
+              <button style={{ background: 'transparent', border: 'none' }}>By city</button>
+            </div>
+            <div style={{ display: 'grid', gap: 10 }}>
+              {locations.map((loc, idx) => (
+                <label key={idx} className="card" style={{ padding: 12, display: 'grid', gap: 6, textAlign: 'left', cursor: 'pointer' }}>
+                  <input type="radio" name="pickupLocation" checked={selectedLocation === loc} onChange={() => setSelectedLocation(loc)} />
+                  <div style={{ fontWeight: 800 }}>{loc.name || 'Restaurant'}</div>
+                  <div className="muted" style={{ fontSize: 12 }}>
+                    {(loc.address?.streetAddress || []).join(' ')}, {loc.address?.city}, {loc.address?.province} {loc.address?.postalCode}
+                  </div>
+                </label>
+              ))}
+              {locations.length === 0 ? <div className="muted">No pickup locations configured.</div> : null}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <span>Day</span>
+                <select value={pickupDate} onChange={(e) => setPickupDate(e.target.value)}>
+                  <option value="Today">Today</option>
+                  <option value="Tomorrow">Tomorrow</option>
+                </select>
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <span>Pickup time</span>
+                <select value={pickupTime} onChange={(e) => setPickupTime(e.target.value)}>
+                  {['10:00 AM','10:30 AM','11:00 AM','11:30 AM','12:00 PM','12:30 PM','1:00 PM'].map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+              <button className="primary-btn" onClick={() => setOrderDetailsOpen(false)}>Confirm</button>
+            </div>
+          </div>
+        )}
+      </Modal>
       <DeliveryAddressModal
         open={deliveryModalOpen}
         siteSlug={siteSlug}

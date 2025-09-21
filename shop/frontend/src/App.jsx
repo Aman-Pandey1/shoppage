@@ -9,7 +9,7 @@ import { MyOrdersPage } from './pages/MyOrdersPage.jsx'
 
 function App() {
   return (
-    <Routes>
+    <Routes future={{ v7_relativeSplatPath: true }}>
       <Route path="/" element={<ShopHomePage />} />
       <Route path="/shop" element={<ShopHomePage />} />
       {/* Root-level site slug: e.g. /website1 */}
