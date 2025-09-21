@@ -32,6 +32,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [loginOpen, setLoginOpen] = useState(false);
   const [vegFilter, setVegFilter] = useState('all');
   const [lastDeliveryId, setLastDeliveryId] = useState(null);
+  const [deliveryAddressSummary, setDeliveryAddressSummary] = useState('');
 
   // Additional UI state brought from the alternate implementation
   // Order details state
@@ -197,7 +198,10 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
 
   const cartTotal = getCartTotal();
 
-  const addressSummary = selectedLocation ? `${selectedLocation?.address?.streetAddress?.[0] || ''}, ${selectedLocation?.address?.city || ''}` : undefined;
+  const pickupAddressSummary = selectedLocation ? `${selectedLocation?.address?.streetAddress?.[0] || ''}, ${selectedLocation?.address?.city || ''}` : undefined;
+  const addressSummary = state.fulfillmentType === 'delivery'
+    ? (deliveryAddressSummary || undefined)
+    : pickupAddressSummary;
   const filteredLocations = useMemo(() => {
     if (!selectedPickupCity || selectedPickupCity === 'All') return locations;
     return locations.filter((loc) => (loc?.address?.city || '').toLowerCase() === selectedPickupCity.toLowerCase());
@@ -209,8 +213,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       pickupTime={pickupTime}
       addressSummary={addressSummary}
       onChangeOrderType={() => setFulfillmentOpen(true)}
-      onChangePickupDate={() => setOrderDetailsOpen(true)}
-      onChangePickupTime={() => setOrderDetailsOpen(true)}
+      onPickupDateChange={(val) => setPickupDate(val)}
+      onPickupTimeChange={(val) => setPickupTime(val)}
     />
   );
 
@@ -346,14 +350,16 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                 try {
                   const token = getAuthToken();
                   if (!token) { setLoginOpen(true); return; }
-                  if (!selectedLocation) { alert('Please choose a pickup location'); return; }
+                  const chosenLocation = selectedLocation || filteredLocations[0] || locations[0] || null;
+                  if (!chosenLocation) { alert('Please choose a pickup location'); return; }
+                  if (!selectedLocation) setSelectedLocation(chosenLocation);
                   // Build pickup order payload
                   const payload = {
                     items: manifest.map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.priceCents || 0, size: m.size || 'small' })),
                     totalCents: manifest.reduce((s, it) => s + (it.priceCents || 0) * (it.quantity || 1), 0),
                     tipCents: 0,
                     pickup: {
-                      location: selectedLocation,
+                      location: chosenLocation,
                       scheduledFor: readyAt,
                     },
                   };
@@ -377,8 +383,9 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         open={deliveryModalOpen}
         siteSlug={siteSlug}
         onClose={() => setDeliveryModalOpen(false)}
-        onConfirmed={(id) => {
+        onConfirmed={(id, summary) => {
           setLastDeliveryId(id);
+          if (summary) setDeliveryAddressSummary(summary);
           // After delivery order is placed, navigate to My Orders
           try { window.location.href = `/s/${siteSlug}/orders`; } catch {}
         }}
