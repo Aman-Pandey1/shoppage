@@ -51,6 +51,21 @@ router.get('/:slug/locations', async (req, res) => {
   }
 });
 
+// Public: list of supported cities for delivery selection
+router.get('/:slug/cities', async (req, res) => {
+  try {
+    const { site } = req;
+    const mock = req.app.locals.mockData;
+    if (mock) {
+      const s = mock.sites.find((x) => x._id === req.siteId) || {};
+      return res.json(Array.isArray(s?.cities) ? s.cities : []);
+    }
+    return res.json(Array.isArray(site.cities) ? site.cities : []);
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+});
+
 router.get('/:slug/categories', async (req, res) => {
 	try {
 		const mock = req.app.locals.mockData;

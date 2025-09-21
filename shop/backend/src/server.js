@@ -168,7 +168,7 @@ if (USE_MOCK_DATA) {
     }));
 
     app.locals.mockData = {
-      sites: mockSites,
+      sites: mockSites.map((s) => ({ ...s, cities: ['Edmonton', 'Calgary', 'Sherwood Park'] })),
       categories: categoriesWithSite,
       products: productsWithSite,
     };

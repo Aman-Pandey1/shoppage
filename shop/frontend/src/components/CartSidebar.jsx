@@ -1,8 +1,20 @@
 import React from 'react';
 import { useCart } from '../store/CartContext';
 
-export const CartSidebar = ({ open, onClose, onCheckout }) => {
+export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
   const { state, removeItem, updateQuantity, clearCart, getCartTotal } = useCart();
+  const [now, setNow] = React.useState(Date.now());
+  React.useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(t);
+  }, []);
+  const timeString = React.useMemo(() => readyAt ? new Date(readyAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—', [readyAt]);
+  const eta = React.useMemo(() => {
+    if (!readyAt) return '';
+    const diffMs = new Date(readyAt).getTime() - now;
+    const mins = Math.max(0, Math.round(diffMs / 60000));
+    return `(in ${mins} min)`;
+  }, [readyAt, now]);
 
   return (
     <aside
@@ -25,8 +37,8 @@ export const CartSidebar = ({ open, onClose, onCheckout }) => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <div style={{ fontSize: 12 }} className="muted">ORDER READY FOR</div>
-            <div style={{ fontSize: 20, fontWeight: 800 }}>10:00 AM</div>
-            <div style={{ fontSize: 12 }} className="muted">(in 5 hours)</div>
+            <div style={{ fontSize: 20, fontWeight: 800 }}>{timeString}</div>
+            <div style={{ fontSize: 12 }} className="muted">{eta}</div>
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: 12 }} className="muted">TOTAL</div>

@@ -34,6 +34,7 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* Category header */}
       <div className="card animate-fadeInUp" style={{ padding: 14, borderRadius: 'var(--radius)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -44,34 +45,32 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* Category image banner */}
+      <div className="card animate-fadeInUp" style={{ padding: 0, overflow: 'hidden' }}>
+        <div style={{ width: '100%', height: 220, background: 'linear-gradient(180deg, var(--primary-alpha-08), rgba(167,139,250,0.08))' }}>
+          {category.imageUrl ? (
+            <img src={category.imageUrl} alt={category.name} className="img-cover" />
+          ) : (
+            <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', fontSize: 42 }}>🛍️</div>
+          )}
+        </div>
+      </div>
+
+      {/* Text-only items grid (2–3 per row responsive) */}
+      <div className="products-grid" style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
         {products.map((p, idx) => (
-          <div
-            key={p._id}
-            className="card animate-fadeInUp"
-            style={{ borderRadius: 'var(--radius)', padding: 12, animationDelay: `${idx * 40}ms`, border: '1px solid var(--border)', background: '#fff' }}
-          >
-            <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr auto', alignItems: 'center', gap: 14 }}>
-              <div style={{ width: 160, height: 110, borderRadius: 10, overflow: 'hidden', background: 'linear-gradient(180deg, var(--primary-alpha-08), rgba(167,139,250,0.08))' }}>
-                {p.imageUrl ? (
-                  <img src={p.imageUrl} alt={p.name} className="img-cover" loading="lazy" />
-                ) : (
-                  <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', fontSize: 42 }}>🍽️</div>
-                )}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div key={p._id} className="card animate-fadeInUp" style={{ padding: 12, animationDelay: `${idx * 35}ms` }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'start' }}>
+              <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ fontSize: 18 }}>{p.isVeg === false ? '🔴' : '🟢'}</div>
-                  <div style={{ fontWeight: 800, letterSpacing: '.01em' }}>{p.name}</div>
+                  <div style={{ fontSize: 16 }}>{p.isVeg === false ? '🔴' : '🟢'}</div>
+                  <div style={{ fontWeight: 800 }}>{p.name}</div>
                 </div>
-                {p.description ? <div className="muted" style={{ fontSize: 14 }}>{p.description}</div> : null}
+                {p.description ? <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>{p.description}</div> : null}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+              <div style={{ display: 'grid', justifyItems: 'end', gap: 6 }}>
                 <div style={{ fontWeight: 800 }}>${p.price.toFixed(2)}</div>
-                <button onClick={() => onAdd(p)} className="primary-btn" style={{ padding: '10px 12px', borderRadius: 10, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <span>+</span>
-                  <span>Add</span>
-                </button>
+                <button onClick={() => onAdd(p)} className="primary-btn" aria-label={`Add ${p.name}`} title={`Add ${p.name}`} style={{ borderRadius: 999, width: 36, height: 36, padding: 0, display: 'grid', placeItems: 'center' }}>+</button>
               </div>
             </div>
           </div>
