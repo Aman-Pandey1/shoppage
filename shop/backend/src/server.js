@@ -27,7 +27,7 @@ app.use(morgan("dev"));
 
 const PORT = process.env.PORT || 4000;
 const MONGO_URI = process.env.MONGO_URI;
-const USE_MOCK_DATA = process.env.USE_MOCK_DATA === "true";
+const USE_MOCK_DATA = process.env.USE_MOCK_DATA === "true" || !MONGO_URI;
 
 if (USE_MOCK_DATA) {
   const persisted = typeof loadMockData === "function" ? loadMockData() : null;
@@ -171,6 +171,8 @@ if (USE_MOCK_DATA) {
       sites: mockSites.map((s) => ({ ...s, cities: ['Edmonton', 'Calgary', 'Sherwood Park'] })),
       categories: categoriesWithSite,
       products: productsWithSite,
+      users: [],
+      orders: [],
     };
     console.log(
       "Running with mock data. Set USE_MOCK_DATA=false to use MongoDB."
