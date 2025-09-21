@@ -34,6 +34,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [vegFilter, setVegFilter] = useState('all');
   const [lastDeliveryId, setLastDeliveryId] = useState(null);
   const [deliveryAddressSummary, setDeliveryAddressSummary] = useState('');
+  const [orderError, setOrderError] = useState('');
 
   // Additional UI state brought from the alternate implementation
   // Order details state
@@ -277,6 +278,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
           </div>
         ) : (
           <div>
+            {orderError ? <div style={{ color: 'var(--danger)', marginBottom: 10 }}>{orderError}</div> : null}
             <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
               <button className="primary-btn" disabled>Takeout</button>
               <button onClick={() => setFulfillmentOpen(true)}>Delivery</button>
@@ -351,12 +353,14 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
               </label>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
-              <button className="primary-btn" onClick={async () => {
+              <button className="primary-btn" disabled={!selectedLocation || manifest.length === 0} onClick={async () => {
                 try {
+                  setOrderError('');
                   const token = getAuthToken();
                   if (!token) { setLoginOpen(true); return; }
                   const chosenLocation = selectedLocation || filteredLocations[0] || locations[0] || null;
-                  if (!chosenLocation) { alert('Please choose a pickup location'); return; }
+                  if (!chosenLocation) { setOrderError('Please choose a pickup location'); return; }
+                  if (!manifest.length) { setOrderError('Please add items to your cart before confirming'); return; }
                   if (!selectedLocation) setSelectedLocation(chosenLocation);
                   // Build pickup order payload
                   const payload = {
@@ -377,7 +381,12 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                   setOrderDetailsOpen(false);
                   try { window.location.href = `/s/${siteSlug}/orders`; } catch {}
                 } catch (e) {
-                  alert(e?.message || 'Failed to place pickup order');
+                  let msg = e?.message || 'Failed to place pickup order';
+                  try {
+                    const parsed = JSON.parse(msg);
+                    if (parsed && parsed.error) msg = parsed.error;
+                  } catch {}
+                  setOrderError(msg);
                 }
               }}>Confirm</button>
             </div>
