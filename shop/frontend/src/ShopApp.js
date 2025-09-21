@@ -2,7 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useCart } from './store/CartContext';
 import { CartSidebar } from './components/CartSidebar';
 import { CategoryGrid } from './components/CategoryGrid';
-import { StoreHeader } from './components/StoreHeader';
+// import { StoreHeader } from './components/StoreHeader';
+import { TopNav } from './components/TopNav';
+import { OrderDetailsBar } from './components/OrderDetailsBar';
 import { ProductList } from './components/ProductList';
 import { PrivacyPolicyModal } from './components/PrivacyPolicyModal';
 import { FulfillmentModal } from './components/FulfillmentModal';
@@ -11,10 +13,7 @@ import { ExtrasModal } from './components/ExtrasModal';
 import { AddToCartToast } from './components/AddToCartToast';
 import { DeliveryAddressModal } from './components/DeliveryAddressModal';
 import { fetchJson, getAuthToken } from './lib/api';
-import { CategoryChips } from './components/CategoryChips';
-import { ShopTopBar } from './components/ShopTopBar';
 import { LoginModal } from './components/LoginModal';
-import { StoreBanner } from './components/StoreBanner';
 
 const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const { state, setFulfillmentType, addItem, getCartTotal } = useCart();
@@ -144,44 +143,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const cartTotal = getCartTotal();
 
   const OrderTypeSelection = () => (
-    <div className="order-type-section">
-      <div className="section-header">
-        <h2>Order details</h2>
-        <p>Select an order type</p>
-      </div>
-      <div className="order-options">
-        <div className="order-option">
-          <h3>Vegetarian Slatter</h3>
-          <p>11 products</p>
-        </div>
-        <div className="order-option">
-          <h3>Non-Veg Slatter</h3>
-          <p>14 products</p>
-        </div>
-        <div className="order-option">
-          <h3>Soup</h3>
-          <p>6 products</p>
-        </div>
-        <div className="order-option">
-          <h3>Main Vegetarian</h3>
-          <p>28 products</p>
-        </div>
-      </div>
-      <div className="pickup-time">
-        <h3>Pickup time</h3>
-        <div className="time-option">
-          <strong>Today</strong>
-          <span>{pickupTime}</span>
-        </div>
-      </div>
-      <div className="order-ready">
-        <h3>ORDER READY FOR</h3>
-        <div className="ready-time">
-          <strong>{pickupTime}</strong>
-          <span>(In an hour)</span>
-        </div>
-      </div>
-    </div>
+    <OrderDetailsBar orderType="Select an order type" pickupDate="Today" pickupTime={pickupTime} />
   );
 
   return (
@@ -202,68 +164,15 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
           setDeliveryModalOpen(true);
         }}
       />
+      <TopNav siteSlug={siteSlug} onSignIn={() => setLoginOpen(true)} />
       <main className="content">
-        <StoreHeader siteSlug={siteSlug} />
 
         <div className="card order-type-card">
           <OrderTypeSelection />
         </div>
 
-        <StoreBanner
-          siteSlug={siteSlug}
-          onCta={() => {
-            if (!state.fulfillmentType) setFulfillmentOpen(true);
-            else if (state.fulfillmentType === 'delivery') setDeliveryModalOpen(true);
-          }}
-        />
-        <ShopTopBar vegFilter={vegFilter} onVegChange={setVegFilter} />
-        <section className="card" style={{ padding: 10, marginBottom: 10 }}>
-          <CategoryChips
-            categories={allCategories}
-            currentId={selectedCategory?._id}
-            onSelect={(c) => setSelectedCategory(c)}
-          />
-        </section>
-        <div className="hide-desktop" style={{ marginBottom: 10 }}>
-          <button
-            className="primary-btn"
-            onClick={() => {
-              const hasToken = !!getAuthToken();
-              if (!hasToken) { setLoginOpen(true); return; }
-              if (!state.fulfillmentType) setFulfillmentOpen(true);
-              setFulfillmentType('delivery');
-              setDeliveryModalOpen(true);
-            }}
-          >
-            Checkout
-          </button>
-        </div>
         {content}
       </main>
-
-      <div className="order-summary-bar">
-        <div className="order-empty">
-          {state.items.length === 0 ? 'Your order is empty' : `${state.items.length} items in cart`}
-        </div>
-        <div className="order-total">
-          <div className="total-label">Subtotal</div>
-          <div className="total-amount">${(cartTotal || 0).toFixed(2)}</div>
-        </div>
-        <button
-          className="confirm-btn"
-          disabled={state.items.length === 0}
-          onClick={() => {
-            const hasToken = !!getAuthToken();
-            if (!hasToken) {
-              setLoginOpen(true);
-              return;
-            }
-            if (!state.fulfillmentType) setFulfillmentOpen(true);
-          }}
-        >
-          Confirm →
-        </button>
-      </div>
 
       <button className="cart-fab hide-desktop" onClick={() => setMobileCartOpen(true)}>
         <span style={{ fontSize: 18 }}>🛒</span>
