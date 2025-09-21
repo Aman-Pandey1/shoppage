@@ -18,6 +18,7 @@ export function loadMockData() {
 			return null;
 		}
 		if (!Array.isArray(data.orders)) data.orders = [];
+		if (!Array.isArray(data.users)) data.users = [];
 		return data;
 	} catch (_err) {
 		return null;
