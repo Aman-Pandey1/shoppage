@@ -46,8 +46,8 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) 
         })}
       </div>
       <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 16 }}>
-        <button onClick={onCancel} style={{ padding: '12px 16px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--panel-2)' }}>Cancel</button>
-        <button onClick={() => onConfirm(selected)} className="primary-btn" style={{ padding: '12px 16px', borderRadius: 12, minWidth: 140 }}>OK</button>
+        <button onClick={onCancel} className="hover-float" style={{ padding: '12px 16px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--panel-2)' }}>Cancel</button>
+        <button onClick={() => onConfirm(selected)} className="primary-btn hover-float" style={{ padding: '12px 16px', borderRadius: 12, minWidth: 140 }}>OK</button>
       </div>
     </Modal>
   );
