@@ -15,15 +15,14 @@ import { CategoryChips } from './components/CategoryChips';
 import { ShopTopBar } from './components/ShopTopBar';
 import { LoginModal } from './components/LoginModal';
 import { StoreBanner } from './components/StoreBanner';
+import './ShopApp.css';
 
 const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const { state, setFulfillmentType, addItem, getCartTotal } = useCart();
   const [privacyOpen, setPrivacyOpen] = useState(true);
   const [fulfillmentOpen, setFulfillmentOpen] = useState(false);
-
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [allCategories, setAllCategories] = useState([]);
-
   const [pendingProduct, setPendingProduct] = useState(null);
   const [spiceOpen, setSpiceOpen] = useState(false);
   const [extrasOpen, setExtrasOpen] = useState(false);
@@ -32,9 +31,6 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [loginOpen, setLoginOpen] = useState(false);
   const [vegFilter, setVegFilter] = useState('all');
   const [lastDeliveryId, setLastDeliveryId] = useState(null);
-
-  // Additional UI state brought from the alternate implementation
-  const [pickupTime] = useState('10:00 AM');
 
   useEffect(() => {
     const privacyAccepted = localStorage.getItem('privacyAccepted_v1');
@@ -97,7 +93,6 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     setPendingSpice(undefined);
   }
 
-  // Load categories and preselect a category if provided via route
   useEffect(() => {
     let cancelled = false;
     async function preselect() {
@@ -143,50 +138,9 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
 
   const cartTotal = getCartTotal();
 
-  const OrderTypeSelection = () => (
-    <div className="order-type-section">
-      <div className="section-header">
-        <h2>Order details</h2>
-        <p>Select an order type</p>
-      </div>
-      <div className="order-options">
-        <div className="order-option">
-          <h3>Vegetarian Slatter</h3>
-          <p>11 products</p>
-        </div>
-        <div className="order-option">
-          <h3>Non-Veg Slatter</h3>
-          <p>14 products</p>
-        </div>
-        <div className="order-option">
-          <h3>Soup</h3>
-          <p>6 products</p>
-        </div>
-        <div className="order-option">
-          <h3>Main Vegetarian</h3>
-          <p>28 products</p>
-        </div>
-      </div>
-      <div className="pickup-time">
-        <h3>Pickup time</h3>
-        <div className="time-option">
-          <strong>Today</strong>
-          <span>{pickupTime}</span>
-        </div>
-      </div>
-      <div className="order-ready">
-        <h3>ORDER READY FOR</h3>
-        <div className="ready-time">
-          <strong>{pickupTime}</strong>
-          <span>(In an hour)</span>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
-    <div>
-      <div className="cart-backdrop hide-desktop" data-show={mobileCartOpen ? 'true' : 'false'} onClick={() => setMobileCartOpen(false)} />
+    <div className="shop-app">
+      <div className={`cart-backdrop ${mobileCartOpen ? 'active' : ''}`} onClick={() => setMobileCartOpen(false)} />
 
       <CartSidebar
         open={mobileCartOpen}
@@ -202,13 +156,10 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
           setDeliveryModalOpen(true);
         }}
       />
+      
+      <StoreHeader siteSlug={siteSlug} />
+      
       <main className="content">
-        <StoreHeader siteSlug={siteSlug} />
-
-        <div className="card order-type-card">
-          <OrderTypeSelection />
-        </div>
-
         <StoreBanner
           siteSlug={siteSlug}
           onCta={() => {
@@ -216,58 +167,25 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
             else if (state.fulfillmentType === 'delivery') setDeliveryModalOpen(true);
           }}
         />
+        
         <ShopTopBar vegFilter={vegFilter} onVegChange={setVegFilter} />
-        <section className="card" style={{ padding: 10, marginBottom: 10 }}>
+        
+        <div className="category-section">
+          <h2 className="section-title">Our Categories</h2>
           <CategoryChips
             categories={allCategories}
             currentId={selectedCategory?._id}
             onSelect={(c) => setSelectedCategory(c)}
           />
-        </section>
-        <div className="hide-desktop" style={{ marginBottom: 10 }}>
-          <button
-            className="primary-btn"
-            onClick={() => {
-              const hasToken = !!getAuthToken();
-              if (!hasToken) { setLoginOpen(true); return; }
-              if (!state.fulfillmentType) setFulfillmentOpen(true);
-              setFulfillmentType('delivery');
-              setDeliveryModalOpen(true);
-            }}
-          >
-            Checkout
-          </button>
         </div>
+        
         {content}
       </main>
 
-      <div className="order-summary-bar">
-        <div className="order-empty">
-          {state.items.length === 0 ? 'Your order is empty' : `${state.items.length} items in cart`}
-        </div>
-        <div className="order-total">
-          <div className="total-label">Subtotal</div>
-          <div className="total-amount">${(cartTotal || 0).toFixed(2)}</div>
-        </div>
-        <button
-          className="confirm-btn"
-          disabled={state.items.length === 0}
-          onClick={() => {
-            const hasToken = !!getAuthToken();
-            if (!hasToken) {
-              setLoginOpen(true);
-              return;
-            }
-            if (!state.fulfillmentType) setFulfillmentOpen(true);
-          }}
-        >
-          Confirm →
-        </button>
-      </div>
-
-      <button className="cart-fab hide-desktop" onClick={() => setMobileCartOpen(true)}>
-        <span style={{ fontSize: 18 }}>🛒</span>
-        <span style={{ fontWeight: 800 }}>Cart ({state.items.length})</span>
+      <button className="cart-fab" onClick={() => setMobileCartOpen(true)}>
+        <span className="cart-icon">🛒</span>
+        <span className="cart-count">{state.items.length}</span>
+        <span className="cart-price">${(cartTotal || 0).toFixed(2)}</span>
       </button>
 
       <PrivacyPolicyModal open={privacyOpen} onAccept={handleAcceptPrivacy} />
@@ -279,18 +197,25 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         onConfirmed={(id) => setLastDeliveryId(id)}
         manifest={manifest}
       />
-      {lastDeliveryId ? (
-        <div className="muted" style={{ textAlign: 'center', marginTop: 10, fontSize: 12 }}>Last delivery ID: {lastDeliveryId}</div>
-      ) : null}
+      
+      {lastDeliveryId && (
+        <div className="delivery-confirmation">Last delivery ID: {lastDeliveryId}</div>
+      )}
+      
       <SpiceModal open={spiceOpen} spiceLevels={pendingProduct?.spiceLevels} onCancel={() => setSpiceOpen(false)} onConfirm={confirmSpice} />
       <ExtrasModal open={extrasOpen} groups={pendingProduct?.extraOptionGroups} onCancel={() => setExtrasOpen(false)} onConfirm={confirmExtras} />
       <AddToCartToast />
-      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} onSuccess={() => {
-        setLoginOpen(false);
-        if (!state.fulfillmentType) setFulfillmentOpen(true);
-        setFulfillmentType('delivery');
-        setDeliveryModalOpen(true);
-      }} mode="user" />
+      <LoginModal 
+        open={loginOpen} 
+        onClose={() => setLoginOpen(false)} 
+        onSuccess={() => {
+          setLoginOpen(false);
+          if (!state.fulfillmentType) setFulfillmentOpen(true);
+          setFulfillmentType('delivery');
+          setDeliveryModalOpen(true);
+        }} 
+        mode="user" 
+      />
     </div>
   );
 };
@@ -298,4 +223,3 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
 export const ShopApp = ({ siteSlug = 'default', initialCategoryId }) => {
   return <Main siteSlug={siteSlug} initialCategoryId={initialCategoryId} />;
 };
-

@@ -1,6 +1,28 @@
 {
   "sites": [
     {
+      "_id": "site-1758186524269",
+      "name": "aman",
+      "slug": "aman",
+      "domains": [],
+      "uberCustomerId": "",
+      "pickup": {
+        "name": "",
+        "phone": "",
+        "address": {
+          "streetAddress": [
+            ""
+          ],
+          "city": "",
+          "province": "",
+          "postalCode": "",
+          "country": "CA"
+        }
+      },
+      "brandColor": "#e7c30d",
+      "isActive": true
+    },
+    {
       "_id": "mock-site",
       "name": "Default Site",
       "slug": "default",
@@ -8,6 +30,12 @@
     }
   ],
   "categories": [
+    {
+      "_id": "c-1758186558285",
+      "name": "veg",
+      "imageUrl": "",
+      "site": "site-1758186524269"
+    },
     {
       "_id": "c-1",
       "name": "Starters",
@@ -31,6 +59,22 @@
     }
   ],
   "products": [
+    {
+      "_id": "p-1758186578038",
+      "name": "p1",
+      "description": "dede3",
+      "imageUrl": "",
+      "price": 55,
+      "categoryId": "c-1758186558285",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot",
+        "Extra Hot"
+      ],
+      "extraOptionGroups": [],
+      "site": "site-1758186524269"
+    },
     {
       "_id": "p-1",
       "name": "Spring Rolls",
@@ -157,5 +201,6 @@
       ],
       "site": "mock-site"
     }
-  ]
+  ],
+  "orders": []
 }
