@@ -70,7 +70,7 @@ export const CategoryGrid = ({ onSelect, siteSlug = 'default' }) => {
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+        gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
         gap: 20,
         alignItems: 'start'
       }}

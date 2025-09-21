@@ -26,7 +26,24 @@
       "_id": "mock-site",
       "name": "Default Site",
       "slug": "default",
-      "isActive": true
+      "isActive": true,
+      "uberCustomerId": "",
+      "pickup": {
+        "name": "",
+        "phone": "",
+        "address": {
+          "streetAddress": [
+            ""
+          ],
+          "city": "",
+          "province": "",
+          "postalCode": "",
+          "country": "CA"
+        }
+      },
+      "brandColor": "#0d4fe7",
+      "locations": [],
+      "cities": []
     }
   ],
   "categories": [
