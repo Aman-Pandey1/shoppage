@@ -129,7 +129,7 @@ input:focus, select:focus, textarea:focus {
 
 .primary-btn {
   border: 1px solid var(--primary-600);
-  background: linear-gradient(180deg, var(--primary-alpha-22), var(--primary-alpha-12));
+  background: linear-gradient(180deg, var(--primary-alpha-25), var(--primary-alpha-12));
   color: #0e1726;
 }
 .primary-btn:hover {

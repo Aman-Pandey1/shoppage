@@ -69,7 +69,7 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
                 {p.description ? <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>{p.description}</div> : null}
               </div>
               <div style={{ display: 'grid', justifyItems: 'end', gap: 6 }}>
-                <div style={{ fontWeight: 800 }}>${p.price.toFixed(2)}</div>
+                <div style={{ fontWeight: 900, color: 'var(--primary-600)' }}>${p.price.toFixed(2)}</div>
                 <button onClick={() => onAdd(p)} className="primary-btn" aria-label={`Add ${p.name}`} title={`Add ${p.name}`} style={{ borderRadius: 999, width: 36, height: 36, padding: 0, display: 'grid', placeItems: 'center' }}>+</button>
               </div>
             </div>
