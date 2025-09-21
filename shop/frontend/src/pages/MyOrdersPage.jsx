@@ -11,6 +11,7 @@ export const MyOrdersPage = () => {
   const [error, setError] = React.useState();
   const [query, setQuery] = React.useState('');
   const [loginOpen, setLoginOpen] = React.useState(false);
+  const [tab, setTab] = React.useState('all'); // all | pickup | delivery
 
   React.useEffect(() => {
     let mounted = true;
@@ -45,36 +46,56 @@ export const MyOrdersPage = () => {
   if (error) return <div style={{ color: 'red' }}>{error}</div>;
 
   const filtered = React.useMemo(() => {
-    if (!query.trim()) return orders;
+    let list = orders;
+    if (tab !== 'all') list = list.filter((o) => (o.fulfillmentType || '').toLowerCase() === tab);
+    if (!query.trim()) return list;
     const q = query.toLowerCase();
-    return orders.filter((o) =>
+    return list.filter((o) =>
       o._id.toLowerCase().includes(q) ||
       o.items.some((it) => it.name.toLowerCase().includes(q))
     );
-  }, [orders, query]);
+  }, [orders, query, tab]);
 
   return (
     <div className="container" style={{ paddingTop: 20 }}>
-      <h2 style={{ marginTop: 0 }}>My Orders</h2>
+      <div className="card" style={{ padding: 12, marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ fontWeight: 900, fontSize: 18 }}>My Orders</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className={tab === 'all' ? 'primary-btn' : ''} onClick={() => setTab('all')}>All</button>
+          <button className={tab === 'pickup' ? 'primary-btn' : ''} onClick={() => setTab('pickup')}>Pickup</button>
+          <button className={tab === 'delivery' ? 'primary-btn' : ''} onClick={() => setTab('delivery')}>Delivery</button>
+        </div>
+      </div>
       <div className="card" style={{ padding: 8, borderRadius: 12, marginBottom: 10 }}>
         <input placeholder="Search my orders by item or order #" value={query} onChange={(e) => setQuery(e.target.value)} />
       </div>
       {filtered.length === 0 ? (
         <div className="muted">No orders yet.</div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12 }}>
           {filtered.map((o) => (
-            <div key={o._id} className="card" style={{ padding: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <div style={{ fontWeight: 800 }}>#{o._id.slice(-6)}</div>
-                <div className="muted" style={{ fontSize: 12 }}>{new Date(o.createdAt).toLocaleString()}</div>
+            <div key={o._id} className="card" style={{ padding: 12, borderTop: `3px solid ${o.fulfillmentType === 'delivery' ? 'var(--primary)' : 'var(--green-600)'}` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ fontSize: 18 }}>{o.fulfillmentType === 'delivery' ? '🚚' : '🏪'}</div>
+                  <div style={{ fontWeight: 800 }}>#{o._id.slice(-6)}</div>
+                </div>
+                <div className="muted" style={{ fontSize: 12, color: 'var(--primary-600)' }}>{new Date(o.createdAt).toLocaleString()}</div>
               </div>
+              <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>{o.fulfillmentType === 'delivery' ? 'Delivery' : 'Pickup'}</div>
               <ul style={{ margin: '8px 0', paddingLeft: 18 }}>
                 {o.items.map((it, idx) => (
                   <li key={idx}>{it.name} × {it.quantity}</li>
                 ))}
               </ul>
-              <div style={{ fontWeight: 900 }}>${(o.totalCents/100).toFixed(2)}</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ fontWeight: 900, color: 'var(--primary-600)' }}>${(o.totalCents/100).toFixed(2)}</div>
+                {o.fulfillmentType === 'delivery' && o.dropoff?.address ? (
+                  <div className="muted" style={{ fontSize: 12, textAlign: 'right' }}>
+                    {o.dropoff.address.city}
+                  </div>
+                ) : null}
+              </div>
             </div>
           ))}
         </div>

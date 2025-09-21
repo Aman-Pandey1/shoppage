@@ -16,9 +16,8 @@ export const FulfillmentModal = ({ open, onChoose }) => {
           }}
           className="animate-fadeInUp"
         >
-          <div style={{ height: 120, background: 'url(https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?q=80&w=1200&auto=format&fit=crop) center/cover' }} />
           <div style={{ padding: 14, display: 'grid', gap: 6, textAlign: 'center' }}>
-            <div style={{ fontSize: 24 }}>🏪</div>
+            <div style={{ fontSize: 32 }}>🏪</div>
             <div style={{ fontWeight: 800 }}>Pickup</div>
             <div className="muted" style={{ fontSize: 12 }}>Choose by location or city</div>
           </div>
@@ -34,9 +33,8 @@ export const FulfillmentModal = ({ open, onChoose }) => {
           }}
           className="animate-fadeInUp"
         >
-          <div style={{ height: 120, background: 'url(https://images.unsplash.com/photo-1562967914-608f82629710?q=80&w=1200&auto=format&fit=crop) center/cover' }} />
           <div style={{ padding: 14, display: 'grid', gap: 6, textAlign: 'center' }}>
-            <div style={{ fontSize: 24 }}>🚚</div>
+            <div style={{ fontSize: 32 }}>🚚</div>
             <div style={{ fontWeight: 800 }}>Delivery</div>
             <div className="muted" style={{ fontSize: 12 }}>Enter your address</div>
           </div>

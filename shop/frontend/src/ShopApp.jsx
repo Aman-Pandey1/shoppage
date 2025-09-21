@@ -52,6 +52,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [locations, setLocations] = useState([]);
   const [cities, setCities] = useState([]);
   const [orderDetailsOpen, setOrderDetailsOpen] = useState(false);
+  const [selectedPickupCity, setSelectedPickupCity] = useState('');
 
   useEffect(() => {
     const privacyAccepted = localStorage.getItem('privacyAccepted_v1');
@@ -184,6 +185,10 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const cartTotal = getCartTotal();
 
   const addressSummary = selectedLocation ? `${selectedLocation?.address?.streetAddress?.[0] || ''}, ${selectedLocation?.address?.city || ''}` : undefined;
+  const filteredLocations = useMemo(() => {
+    if (!selectedPickupCity || selectedPickupCity === 'All') return locations;
+    return locations.filter((loc) => (loc?.address?.city || '').toLowerCase() === selectedPickupCity.toLowerCase());
+  }, [locations, selectedPickupCity]);
   const OrderTypeSelection = () => (
     <OrderDetailsBar
       orderType={state.fulfillmentType === 'delivery' ? 'Delivery' : (state.fulfillmentType === 'pickup' ? 'Takeout' : 'Select order type')}
@@ -240,10 +245,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
               <button className="primary-btn" disabled>Delivery</button>
               <button onClick={() => setFulfillmentOpen(true)}>Takeout</button>
             </div>
-            <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid var(--border)' }}>
-              <button className="primary-btn" style={{ background: 'transparent', border: 'none' }} onClick={() => setDeliveryModalOpen(true)}>Enter address</button>
-              <button style={{ background: 'transparent', border: 'none' }} onClick={() => setDeliveryModalOpen(true)}>By location</button>
-              <button style={{ background: 'transparent', border: 'none' }} onClick={() => setDeliveryModalOpen(true)}>By city</button>
+            <div className="muted" style={{ fontSize: 12 }}>
+              Enter your address to see delivery ETA and fee.
             </div>
             <div className="muted" style={{ fontSize: 12 }}>
               {cities.length ? `Serving: ${cities.join(', ')}` : 'Delivery cities will be shown during checkout'}
@@ -256,22 +259,35 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
               <button className="primary-btn" disabled>Takeout</button>
               <button onClick={() => setFulfillmentOpen(true)}>Delivery</button>
             </div>
-            <div style={{ display: 'flex', gap: 12, borderBottom: '1px solid var(--border)', marginBottom: 12 }}>
-              <button className="primary-btn" style={{ background: 'transparent', border: 'none' }}>By location</button>
-              <button style={{ background: 'transparent', border: 'none' }}>By city</button>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <span>City</span>
+                <select value={selectedPickupCity || ''} onChange={(e) => {
+                  const val = e.target.value;
+                  setSelectedPickupCity(val);
+                  const nextList = (val && val !== 'All') ? locations.filter((l) => (l?.address?.city || '').toLowerCase() === val.toLowerCase()) : locations;
+                  setSelectedLocation(nextList[0] || null);
+                }}>
+                  <option value="All">All</option>
+                  {Array.from(new Set(cities)).map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <span>Restaurant address</span>
+                <select value={String(filteredLocations.findIndex((l) => l === selectedLocation))} onChange={(e) => {
+                  const idx = Number(e.target.value);
+                  const chosen = filteredLocations[idx];
+                  setSelectedLocation(chosen || null);
+                }}>
+                  {filteredLocations.map((loc, idx) => (
+                    <option key={`${loc.name}-${idx}`} value={String(idx)}>{`${loc.name || 'Restaurant'} — ${(loc.address?.streetAddress || []).join(' ')}, ${loc.address?.city || ''}`}</option>
+                  ))}
+                </select>
+              </label>
             </div>
-            <div style={{ display: 'grid', gap: 10 }}>
-              {locations.map((loc, idx) => (
-                <label key={idx} className="card" style={{ padding: 12, display: 'grid', gap: 6, textAlign: 'left', cursor: 'pointer' }}>
-                  <input type="radio" name="pickupLocation" checked={selectedLocation === loc} onChange={() => setSelectedLocation(loc)} />
-                  <div style={{ fontWeight: 800 }}>{loc.name || 'Restaurant'}</div>
-                  <div className="muted" style={{ fontSize: 12 }}>
-                    {(loc.address?.streetAddress || []).join(' ')}, {loc.address?.city}, {loc.address?.province} {loc.address?.postalCode}
-                  </div>
-                </label>
-              ))}
-              {locations.length === 0 ? <div className="muted">No pickup locations configured.</div> : null}
-            </div>
+            {filteredLocations.length === 0 ? <div className="muted" style={{ marginBottom: 12 }}>No pickup locations available.</div> : null}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
               <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <span>Day</span>
@@ -281,7 +297,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                 </select>
               </label>
               <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <span>Pickup time</span>
+                <span style={{ color: 'var(--primary-600)' }}>Pickup time</span>
                 <select value={pickupTime} onChange={(e) => setPickupTime(e.target.value)}>
                   {['10:00 AM','10:30 AM','11:00 AM','11:30 AM','12:00 PM','12:30 PM','1:00 PM'].map((t) => (
                     <option key={t} value={t}>{t}</option>
