@@ -1,5 +1,6 @@
 import React from 'react';
 import { fetchJsonAllowError, patchJson } from '../lib/api';
+import { Modal } from './Modal';
 
 export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
   const [pickupName, setPickupName] = React.useState(site?.pickup?.name || '');
@@ -18,6 +19,11 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
   const [savedAt, setSavedAt] = React.useState(null);
   const [testingUber, setTestingUber] = React.useState(false);
   const [uberStatus, setUberStatus] = React.useState(null);
+
+  // Location modal state
+  const [isLocFormOpen, setIsLocFormOpen] = React.useState(false);
+  const [editingLocIndex, setEditingLocIndex] = React.useState(null);
+  const [locForm, setLocForm] = React.useState({ name: '', phone: '', addr1: '', addr2: '', city: '', province: '', postalCode: '', country: 'CA' });
 
   React.useEffect(() => {
     setPickupName(site?.pickup?.name || '');
@@ -50,15 +56,28 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => {
-                const next = prompt('Name', loc.name || '')
-                if (next === null) return;
-                setLocations(prev => prev.map((l, i) => i === idx ? { ...l, name: next } : l));
-              }}>Rename</button>
+                setEditingLocIndex(idx);
+                setLocForm({
+                  name: loc.name || '',
+                  phone: loc.phone || '',
+                  addr1: loc.address?.streetAddress?.[0] || '',
+                  addr2: loc.address?.streetAddress?.[1] || '',
+                  city: loc.address?.city || '',
+                  province: loc.address?.province || '',
+                  postalCode: loc.address?.postalCode || '',
+                  country: loc.address?.country || 'CA',
+                });
+                setIsLocFormOpen(true);
+              }}>Edit</button>
               <button className="danger" onClick={() => setLocations(prev => prev.filter((_, i) => i !== idx))}>Remove</button>
             </div>
           </div>
         ))}
-        <button onClick={() => setLocations(prev => [...prev, { name: 'New Location', phone: '', address: { streetAddress: [''], city: '', province: '', postalCode: '', country: 'CA' } }])}>+ Add location</button>
+        <button onClick={() => {
+          setEditingLocIndex(null);
+          setLocForm({ name: '', phone: '', addr1: '', addr2: '', city: '', province: '', postalCode: '', country: 'CA' });
+          setIsLocFormOpen(true);
+        }}>+ Add location</button>
       </div>
 
       <div style={{ gridColumn: '1 / -1', fontWeight: 800, marginTop: 8 }}>Delivery cities (for Delivery tabs)</div>
@@ -167,6 +186,82 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
           setSavedAt(Date.now());
         }}>{saving ? 'Saving…' : 'Save settings'}</button>
       </div>
+
+      <Modal
+        open={isLocFormOpen}
+        onClose={() => setIsLocFormOpen(false)}
+        title={editingLocIndex !== null ? 'Edit location' : 'Add location'}
+        footer={(
+          <>
+            <button onClick={() => setIsLocFormOpen(false)}>Cancel</button>
+            <button
+              className="primary-btn"
+              onClick={() => {
+                const payload = {
+                  name: locForm.name || 'Restaurant',
+                  phone: locForm.phone || '',
+                  address: {
+                    streetAddress: [locForm.addr1, ...(locForm.addr2 ? [locForm.addr2] : [])],
+                    city: locForm.city || '',
+                    province: locForm.province || '',
+                    postalCode: locForm.postalCode || '',
+                    country: locForm.country || 'CA',
+                  },
+                };
+                setLocations(prev => {
+                  if (editingLocIndex !== null && editingLocIndex >= 0) {
+                    return prev.map((l, i) => i === editingLocIndex ? payload : l);
+                  }
+                  return [...prev, payload];
+                });
+                setIsLocFormOpen(false);
+                setEditingLocIndex(null);
+              }}
+            >{editingLocIndex !== null ? 'Save changes' : 'Add location'}</button>
+          </>
+        )}
+      >
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>Name</span>
+            <input value={locForm.name} onChange={(e) => setLocForm({ ...locForm, name: e.target.value })} />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>Phone</span>
+            <input value={locForm.phone} onChange={(e) => setLocForm({ ...locForm, phone: e.target.value })} placeholder="+1..." />
+          </label>
+          <label style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>Address line 1</span>
+            <input value={locForm.addr1} onChange={(e) => setLocForm({ ...locForm, addr1: e.target.value })} />
+          </label>
+          <label style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>Address line 2 (optional)</span>
+            <input value={locForm.addr2} onChange={(e) => setLocForm({ ...locForm, addr2: e.target.value })} />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>City</span>
+            <input value={locForm.city} onChange={(e) => setLocForm({ ...locForm, city: e.target.value })} />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>State/Province</span>
+            <input value={locForm.province} onChange={(e) => setLocForm({ ...locForm, province: e.target.value })} placeholder="ON, BC, AB..." />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>Postal Code</span>
+            <input value={locForm.postalCode} onChange={(e) => setLocForm({ ...locForm, postalCode: e.target.value })} />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>Country</span>
+            <select value={locForm.country} onChange={(e) => setLocForm({ ...locForm, country: e.target.value })}>
+              <option value="CA">Canada (CA)</option>
+              <option value="US">United States (US)</option>
+              <option value="IN">India (IN)</option>
+              <option value="GB">United Kingdom (GB)</option>
+              <option value="AU">Australia (AU)</option>
+            </select>
+          </label>
+        </div>
+      </Modal>
     </div>
   );
 };

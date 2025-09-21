@@ -35,7 +35,7 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Category header */}
-      <div className="card animate-fadeInUp" style={{ padding: 14, borderRadius: 'var(--radius)' }}>
+      <div className="card animate-fadeInUp" style={{ padding: 14, borderRadius: 'var(--radius)', borderTop: '3px solid var(--primary)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <button onClick={onBack} aria-label="Back" title="Back">←</button>
@@ -46,8 +46,8 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
       </div>
 
       {/* Category image banner */}
-      <div className="card animate-fadeInUp" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ width: '100%', height: 220, background: 'linear-gradient(180deg, var(--primary-alpha-08), rgba(167,139,250,0.08))' }}>
+      <div className="card animate-fadeInUp" style={{ padding: 0, overflow: 'hidden', borderLeft: '3px solid var(--primary)' }}>
+        <div style={{ width: '100%', height: 220, background: 'linear-gradient(180deg, var(--primary-alpha-08), var(--primary-alpha-04))' }}>
           {category.imageUrl ? (
             <img src={category.imageUrl} alt={category.name} className="img-cover" />
           ) : (
