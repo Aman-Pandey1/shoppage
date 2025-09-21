@@ -293,7 +293,33 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
               </label>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
-              <button className="primary-btn" onClick={() => setOrderDetailsOpen(false)}>Confirm</button>
+              <button className="primary-btn" onClick={async () => {
+                try {
+                  const token = getAuthToken();
+                  if (!token) { setLoginOpen(true); return; }
+                  if (!selectedLocation) { alert('Please choose a pickup location'); return; }
+                  // Build pickup order payload
+                  const payload = {
+                    items: manifest.map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.priceCents || 0, size: m.size || 'small' })),
+                    totalCents: manifest.reduce((s, it) => s + (it.priceCents || 0) * (it.quantity || 1), 0),
+                    tipCents: 0,
+                    pickup: {
+                      location: selectedLocation,
+                      scheduledFor: readyAt,
+                    },
+                  };
+                  const res = await fetchJson(`/api/shop/${siteSlug}/site`).catch(() => ({}));
+                  await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/shop/${siteSlug}/orders/pickup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+                    body: JSON.stringify(payload),
+                  }).then(async (r) => { if (!r.ok) throw new Error(await r.text()); return r.json(); });
+                  setOrderDetailsOpen(false);
+                  try { window.location.href = `/s/${siteSlug}/orders`; } catch {}
+                } catch (e) {
+                  alert(e?.message || 'Failed to place pickup order');
+                }
+              }}>Confirm</button>
             </div>
           </div>
         )}
