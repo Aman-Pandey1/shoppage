@@ -205,9 +205,10 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const cartTotal = getCartTotal();
 
   const pickupAddressSummary = selectedLocation ? `${selectedLocation?.address?.streetAddress?.[0] || ''}, ${selectedLocation?.address?.city || ''}` : undefined;
+  const pickupCitySummary = selectedPickupCity && selectedPickupCity !== 'All' ? selectedPickupCity : undefined;
   const addressSummary = state.fulfillmentType === 'delivery'
     ? (deliveryAddressSummary || undefined)
-    : pickupAddressSummary;
+    : (pickupCitySummary || pickupAddressSummary);
   const filteredLocations = useMemo(() => {
     if (!selectedPickupCity || selectedPickupCity === 'All') return locations;
     return locations.filter((loc) => (loc?.address?.city || '').toLowerCase() === selectedPickupCity.toLowerCase());
@@ -352,7 +353,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                 </select>
               </label>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16, gap: 8 }}>
+              <button onClick={() => setOrderDetailsOpen(false)}>OK</button>
               <button className="primary-btn" disabled={!selectedLocation || manifest.length === 0} onClick={async () => {
                 try {
                   setOrderError('');
