@@ -258,7 +258,7 @@
     {
       "_id": "p-1758468845240",
       "name": "Barfi",
-      "description": "very testy sweet .",
+      "description": "Soft, spongy balls made from milk solids, fried until golden, and soaked in sugar syrup flavored with rose water or cardamom.",
       "imageUrl": "",
       "price": 25,
       "categoryId": "c-1758468501308",
@@ -306,7 +306,7 @@
     {
       "_id": "p-1758468737017",
       "name": "Basan laddu",
-      "description": "very testy sweet .",
+      "description": "Round Indian sweet balls made from flour (like besan or rava), sugar, and ghee, often served during festivals.",
       "imageUrl": "",
       "price": 20,
       "categoryId": "c-1758468501308",
@@ -337,7 +337,7 @@
     {
       "_id": "p-1758468628752",
       "name": "Gulab Jamun",
-      "description": "very testy sweet .",
+      "description": "Soft, spongy balls made from milk solids, fried until golden, and soaked in sugar syrup flavored with rose water or cardamom.",
       "imageUrl": "",
       "price": 12,
       "categoryId": "c-1758468501308",
