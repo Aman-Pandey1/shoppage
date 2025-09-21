@@ -350,5 +350,14 @@
       "site": "mock-site"
     }
   ],
-  "orders": []
+  "orders": [],
+  "users": [
+    {
+      "_id": "u-1758473488632",
+      "email": "ap@gmail.com",
+      "name": "ap",
+      "passwordHash": "$2a$10$Vr9h3dzHzxxiIUMUBa9npOcY2oNl3pwcg8UwsJ4ePaHyTFtRSgzLO",
+      "createdAt": "2025-09-21T16:51:28.632Z"
+    }
+  ]
 }
