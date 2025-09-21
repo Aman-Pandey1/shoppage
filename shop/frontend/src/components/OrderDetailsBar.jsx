@@ -6,8 +6,8 @@ export const OrderDetailsBar = ({
   pickupTime = '10:00 AM',
   addressSummary,
   onChangeOrderType,
-  onChangePickupDate,
-  onChangePickupTime,
+  onPickupDateChange,
+  onPickupTimeChange,
 }) => {
   return (
     <div className="order-bar card animate-fadeInUp" role="region" aria-label="Order details">
@@ -21,15 +21,32 @@ export const OrderDetailsBar = ({
         </div>
         <div className="order-bar__group">
           <div className="order-bar__label">Pickup time</div>
-          <div className="order-bar__inline">
-            <button className="order-bar__input" onClick={onChangePickupDate}>
-              <span>{pickupDate}</span>
-              <span className="chev">▾</span>
-            </button>
-            <button className="order-bar__input" onClick={onChangePickupTime}>
-              <span>{pickupTime}</span>
-              <span className="chev">▾</span>
-            </button>
+          <div className="order-bar__inline" style={{ gap: 8 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span className="muted" style={{ fontSize: 12 }}>Day</span>
+              <select
+                value={pickupDate}
+                onChange={(e) => onPickupDateChange && onPickupDateChange(e.target.value)}
+                className="order-bar__input"
+                style={{ padding: '6px 10px', borderRadius: 8 }}
+              >
+                <option value="Today">Today</option>
+                <option value="Tomorrow">Tomorrow</option>
+              </select>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span className="muted" style={{ fontSize: 12 }}>Time</span>
+              <select
+                value={pickupTime}
+                onChange={(e) => onPickupTimeChange && onPickupTimeChange(e.target.value)}
+                className="order-bar__input"
+                style={{ padding: '6px 10px', borderRadius: 8 }}
+              >
+                {['10:00 AM','10:30 AM','11:00 AM','11:30 AM','12:00 PM','12:30 PM','1:00 PM'].map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </label>
           </div>
         </div>
       </div>
