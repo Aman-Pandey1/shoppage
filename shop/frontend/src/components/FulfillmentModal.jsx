@@ -3,7 +3,7 @@ import { Modal } from './Modal';
 
 export const FulfillmentModal = ({ open, onChoose }) => {
   return (
-    <Modal open={open} onClose={() => {}} title="Choose delivery or pickup">
+    <Modal open={open} onClose={() => {}} title="Choose your order type">
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         <button
           onClick={() => onChoose('pickup')}
@@ -20,7 +20,7 @@ export const FulfillmentModal = ({ open, onChoose }) => {
           <div style={{ padding: 14, display: 'grid', gap: 6, textAlign: 'center' }}>
             <div style={{ fontSize: 24 }}>🏪</div>
             <div style={{ fontWeight: 800 }}>Pickup</div>
-            <div className="muted" style={{ fontSize: 12 }}>Collect from store</div>
+            <div className="muted" style={{ fontSize: 12 }}>Choose by location or city</div>
           </div>
         </button>
         <button
@@ -38,7 +38,7 @@ export const FulfillmentModal = ({ open, onChoose }) => {
           <div style={{ padding: 14, display: 'grid', gap: 6, textAlign: 'center' }}>
             <div style={{ fontSize: 24 }}>🚚</div>
             <div style={{ fontWeight: 800 }}>Delivery</div>
-            <div className="muted" style={{ fontSize: 12 }}>Bring it to me</div>
+            <div className="muted" style={{ fontSize: 12 }}>Enter your address</div>
           </div>
         </button>
       </div>
