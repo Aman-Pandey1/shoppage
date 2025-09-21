@@ -23,6 +23,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [allCategories, setAllCategories] = useState([]);
   const [pendingProduct, setPendingProduct] = useState(null);
+  const [pendingQuantity, setPendingQuantity] = useState(1);
   const [spiceOpen, setSpiceOpen] = useState(false);
   const [extrasOpen, setExtrasOpen] = useState(false);
   const [pendingSpice, setPendingSpice] = useState(undefined);
@@ -30,6 +31,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [loginOpen, setLoginOpen] = useState(false);
   const [vegFilter, setVegFilter] = useState('all');
   const [lastDeliveryId, setLastDeliveryId] = useState(null);
+  const [deliveryAddressSummary, setDeliveryAddressSummary] = useState('');
 
   // Additional UI state brought from the alternate implementation
   // Order details state
@@ -85,15 +87,17 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     }
   }
 
-  function startAddToCart(product) {
+  function startAddToCart(product, quantity = 1) {
     setPendingProduct(product);
+    setPendingQuantity(Math.max(1, Math.min(99, Number(quantity) || 1)));
     if (product.spiceLevels && product.spiceLevels.length > 0) {
       setSpiceOpen(true);
     } else if (product.extraOptionGroups && product.extraOptionGroups.length > 0) {
       setExtrasOpen(true);
     } else {
-      addItem({ product });
+      addItem({ product, quantity: Math.max(1, Math.min(99, Number(quantity) || 1)) });
       setPendingProduct(null);
+      setPendingQuantity(1);
     }
   }
 
@@ -103,19 +107,21 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     if (pendingProduct && pendingProduct.extraOptionGroups && pendingProduct.extraOptionGroups.length > 0) {
       setExtrasOpen(true);
     } else if (pendingProduct) {
-      addItem({ product: pendingProduct, spiceLevel: spice });
+      addItem({ product: pendingProduct, spiceLevel: spice, quantity: pendingQuantity });
       setPendingProduct(null);
       setPendingSpice(undefined);
+      setPendingQuantity(1);
     }
   }
 
   function confirmExtras(selected) {
     setExtrasOpen(false);
     if (pendingProduct) {
-      addItem({ product: pendingProduct, spiceLevel: pendingSpice, selectedOptions: selected });
+      addItem({ product: pendingProduct, spiceLevel: pendingSpice, selectedOptions: selected, quantity: pendingQuantity });
     }
     setPendingProduct(null);
     setPendingSpice(undefined);
+    setPendingQuantity(1);
   }
 
   useEffect(() => {
@@ -194,7 +200,10 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
 
   const cartTotal = getCartTotal();
 
-  const addressSummary = selectedLocation ? `${selectedLocation?.address?.streetAddress?.[0] || ''}, ${selectedLocation?.address?.city || ''}` : undefined;
+  const pickupAddressSummary = selectedLocation ? `${selectedLocation?.address?.streetAddress?.[0] || ''}, ${selectedLocation?.address?.city || ''}` : undefined;
+  const addressSummary = state.fulfillmentType === 'delivery'
+    ? (deliveryAddressSummary || undefined)
+    : pickupAddressSummary;
   const filteredLocations = useMemo(() => {
     if (!selectedPickupCity || selectedPickupCity === 'All') return locations;
     return locations.filter((loc) => (loc?.address?.city || '').toLowerCase() === selectedPickupCity.toLowerCase());
@@ -206,8 +215,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       pickupTime={pickupTime}
       addressSummary={addressSummary}
       onChangeOrderType={() => setFulfillmentOpen(true)}
-      onChangePickupDate={() => setOrderDetailsOpen(true)}
-      onChangePickupTime={() => setOrderDetailsOpen(true)}
+      onPickupDateChange={(val) => setPickupDate(val)}
+      onPickupTimeChange={(val) => setPickupTime(val)}
     />
   );
 
@@ -343,14 +352,16 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                 try {
                   const token = getAuthToken();
                   if (!token) { setLoginOpen(true); return; }
-                  if (!selectedLocation) { alert('Please choose a pickup location'); return; }
+                  const chosenLocation = selectedLocation || filteredLocations[0] || locations[0] || null;
+                  if (!chosenLocation) { alert('Please choose a pickup location'); return; }
+                  if (!selectedLocation) setSelectedLocation(chosenLocation);
                   // Build pickup order payload
                   const payload = {
                     items: manifest.map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.priceCents || 0, size: m.size || 'small' })),
                     totalCents: manifest.reduce((s, it) => s + (it.priceCents || 0) * (it.quantity || 1), 0),
                     tipCents: 0,
                     pickup: {
-                      location: selectedLocation,
+                      location: chosenLocation,
                       scheduledFor: readyAt,
                     },
                   };
@@ -374,20 +385,19 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         open={deliveryModalOpen}
         siteSlug={siteSlug}
         onClose={() => setDeliveryModalOpen(false)}
-        onConfirmed={(id) => {
+        onConfirmed={(id, summary) => {
           setLastDeliveryId(id);
+          if (summary) setDeliveryAddressSummary(summary);
           // After delivery order is placed, navigate to My Orders
           try { window.location.href = `/s/${siteSlug}/orders`; } catch {}
         }}
         manifest={manifest}
       />
-      
-      {lastDeliveryId && (
-        <div className="delivery-confirmation">Last delivery ID: {lastDeliveryId}</div>
-      )}
-      
-      <SpiceModal open={spiceOpen} spiceLevels={pendingProduct?.spiceLevels} onCancel={() => setSpiceOpen(false)} onConfirm={confirmSpice} />
-      <ExtrasModal open={extrasOpen} groups={pendingProduct?.extraOptionGroups} onCancel={() => setExtrasOpen(false)} onConfirm={confirmExtras} />
+      {lastDeliveryId ? (
+        <div className="muted" style={{ textAlign: 'center', marginTop: 10, fontSize: 12 }}>Last delivery ID: {lastDeliveryId}</div>
+      ) : null}
+      <SpiceModal open={spiceOpen} spiceLevels={pendingProduct?.spiceLevels} product={pendingProduct} onCancel={() => setSpiceOpen(false)} onConfirm={confirmSpice} />
+      <ExtrasModal open={extrasOpen} groups={pendingProduct?.extraOptionGroups} product={pendingProduct} onCancel={() => setExtrasOpen(false)} onConfirm={confirmExtras} />
       <AddToCartToast />
       <UserAuthModal open={loginOpen} onClose={() => setLoginOpen(false)} onSuccess={() => {
         setLoginOpen(false);

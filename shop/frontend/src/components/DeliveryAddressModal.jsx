@@ -98,7 +98,8 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         externalId: `${siteName ? siteName.replace(/\s+/g, '-') : siteSlug}-order-${Date.now()}`,
         pickupLocationIndex: selectedPickupIndex,
       });
-      onConfirmed(result.id || result.delivery_id || '');
+      const summary = [addr1, city, postalCode].filter(Boolean).join(', ');
+      onConfirmed(result.id || result.delivery_id || '', summary);
       onClose();
     } catch (e) {
       setError(e.message || 'Failed to create delivery');

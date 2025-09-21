@@ -55,6 +55,19 @@
             "postalCode": "2N2",
             "country": "CA"
           }
+        },
+        {
+          "name": "aaa",
+          "phone": "+9115877104641",
+          "address": {
+            "streetAddress": [
+              "100 Queen St W"
+            ],
+            "city": "Mohali",
+            "province": "Punjab",
+            "postalCode": "140306",
+            "country": "IN"
+          }
         }
       ],
       "cities": [
@@ -146,6 +159,86 @@
     }
   ],
   "products": [
+    {
+      "_id": "p-1758470272060",
+      "name": "Ice Cream Sundae",
+      "description": "\n\nClassic chilled dessert with scoops of ice cream topped with sauces, nuts, fruits, and whipped cream.",
+      "imageUrl": "",
+      "price": 0,
+      "categoryId": "c-1758468501308",
+      "spiceLevels": [
+        "Extra Hot",
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "extraOptionGroups": [],
+      "site": "mock-site"
+    },
+    {
+      "_id": "p-1758470234153",
+      "name": "Jalebi",
+      "description": "\n\nDeep-fried spirals made from fermented flour batter, soaked in saffron-flavored sugar syrup; crispy outside, juicy inside.",
+      "imageUrl": "",
+      "price": 12,
+      "categoryId": "c-1758468501308",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot",
+        "Extra Hot"
+      ],
+      "extraOptionGroups": [],
+      "site": "mock-site"
+    },
+    {
+      "_id": "p-1758470194486",
+      "name": "Cookies",
+      "description": "\n\nCrispy or chewy baked biscuits, available in endless flavors like chocolate chip, oatmeal, and butter.",
+      "imageUrl": "",
+      "price": 25,
+      "categoryId": "c-1758468501308",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot",
+        "Extra Hot"
+      ],
+      "extraOptionGroups": [],
+      "site": "mock-site"
+    },
+    {
+      "_id": "p-1758470159379",
+      "name": "Cheesecake",
+      "description": "\n\nCreamy dessert made from cream cheese layered on a biscuit or sponge base, often topped with fruit or chocolate glaze.",
+      "imageUrl": "",
+      "price": 30,
+      "categoryId": "c-1758468501308",
+      "spiceLevels": [
+        "Medium",
+        "Mild",
+        "Hot",
+        "Extra Hot"
+      ],
+      "extraOptionGroups": [],
+      "site": "mock-site"
+    },
+    {
+      "_id": "p-1758470117816",
+      "name": "Chocolate Brownie  ",
+      "description": "A rich, fudgy baked dessert with a deep chocolate flavor, often topped with nuts or served warm with ice cream.",
+      "imageUrl": "",
+      "price": 30,
+      "categoryId": "c-1758468501308",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot",
+        "Extra Hot"
+      ],
+      "extraOptionGroups": [],
+      "site": "mock-site"
+    },
     {
       "_id": "p-1758468871954",
       "name": "Rasmalayi",
