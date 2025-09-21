@@ -35,7 +35,8 @@ export function requireUser(req, res, next) {
   if (!token) return res.status(401).json({ error: 'Missing token' });
   try {
     const payload = jwt.verify(token, JWT_SECRET);
-    if (payload?.role !== 'user') return res.status(403).json({ error: 'Forbidden' });
+    // Allow both 'user' and 'admin' roles to place pickup orders
+    if (payload?.role !== 'user' && payload?.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
     req.user = payload;
     next();
   } catch (err) {

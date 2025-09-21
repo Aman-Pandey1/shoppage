@@ -80,7 +80,7 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
                 <div style={{ fontWeight: 900, color: 'var(--primary-600)' }}>${p.price.toFixed(2)}</div>
                 <button
                   onClick={() => { setActiveProduct(p); setQuickAddOpen(true); }}
-                  className="primary-btn"
+                  className="primary-btn hover-float"
                   aria-label={`Add ${p.name}`}
                   title={`Add ${p.name}`}
                   style={{ borderRadius: 999, width: 38, height: 38, padding: 0, display: 'grid', placeItems: 'center' }}

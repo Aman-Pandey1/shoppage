@@ -165,6 +165,14 @@ input:focus, select:focus, textarea:focus {
 .animate-slideInLeft { animation: slideInLeft .25s ease-out both; }
 .animate-slideInRight { animation: slideInRight .25s ease-out both; }
 
+/* Micro animations */
+@keyframes bump {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+.animate-bump { animation: bump .18s cubic-bezier(.22,.7,.3,1) both; }
+
 /* Tiny utility for subtle floating hover */
 .hover-float:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
 

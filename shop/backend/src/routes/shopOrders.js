@@ -21,7 +21,7 @@ router.get('/:slug/orders/mine', requireUser, async (req, res) => {
   }
 });
 
-// Create a pickup order (no Uber delivery). Requires user auth.
+// Create a pickup order (no Uber delivery). Requires user or admin auth.
 router.post('/:slug/orders/pickup', requireUser, async (req, res) => {
   try {
     const { items, totalCents, tipCents, pickup } = req.body || {};

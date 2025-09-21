@@ -114,8 +114,8 @@ export const ExtrasModal = ({ open, groups = [], onCancel, onConfirm, product })
         })}
       </div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 16 }}>
-        <button onClick={onCancel} style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--panel-2)' }}>Cancel</button>
-        <button disabled={!canConfirm()} onClick={handleConfirm} className="primary-btn" style={{ padding: '10px 14px', borderRadius: 8, opacity: canConfirm() ? 1 : 0.7 }}>Add</button>
+        <button onClick={onCancel} className="hover-float" style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--panel-2)' }}>Cancel</button>
+        <button disabled={!canConfirm()} onClick={handleConfirm} className="primary-btn hover-float" style={{ padding: '10px 14px', borderRadius: 8, opacity: canConfirm() ? 1 : 0.7 }}>Add</button>
       </div>
     </Modal>
   );
