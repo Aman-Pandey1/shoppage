@@ -21,6 +21,7 @@ export const AdminDashboard = () => {
 
   const [isCategoryFormOpen, setIsCategoryFormOpen] = useState(false);
   const [categoryForm, setCategoryForm] = useState({ name: '', imageUrl: '' });
+  const [deleteCategoryId, setDeleteCategoryId] = useState(null);
 
   const [deleteProductId, setDeleteProductId] = useState(null);
 
@@ -168,6 +169,7 @@ export const AdminDashboard = () => {
         <button onClick={() => {
           setCategoryForm({ name: '', imageUrl: '' });
           setIsCategoryFormOpen(true);
+          setActiveTab('categories');
         }}>+ New category</button>
         <button className="primary-btn" style={{ marginTop: 12 }} onClick={startCreate}>+ New product</button>
       </aside>
@@ -176,6 +178,7 @@ export const AdminDashboard = () => {
         <div style={{ display: 'flex', gap: 8 }}>
           <button className={activeTab === 'links' ? 'primary-btn' : ''} onClick={() => setActiveTab('links')}>Links</button>
           <button className={activeTab === 'settings' ? 'primary-btn' : ''} onClick={() => setActiveTab('settings')}>Settings</button>
+          <button className={activeTab === 'categories' ? 'primary-btn' : ''} onClick={() => setActiveTab('categories')}>Categories</button>
           <button className={activeTab === 'products' ? 'primary-btn' : ''} onClick={() => setActiveTab('products')}>Products</button>
           <button className={activeTab === 'billing' ? 'primary-btn' : ''} onClick={() => setActiveTab('billing')}>Billing</button>
         </div>
@@ -185,11 +188,11 @@ export const AdminDashboard = () => {
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               <div className="card" style={{ padding: 12, minWidth: 220, borderTop: '3px solid var(--primary)' }}>
                 <div className="muted" style={{ fontSize: 12 }}>This week</div>
-                <div style={{ fontWeight: 900, fontSize: 22 }}>${((billing?.weekTotalCents || 0)/100).toFixed(2)}</div>
+                <div style={{ fontWeight: 900, fontSize: 22, color: 'var(--primary-600)' }}>${((billing?.weekTotalCents || 0)/100).toFixed(2)}</div>
               </div>
               <div className="card" style={{ padding: 12, minWidth: 220, borderTop: '3px solid var(--primary)' }}>
                 <div className="muted" style={{ fontSize: 12 }}>This month</div>
-                <div style={{ fontWeight: 900, fontSize: 22 }}>${((billing?.monthTotalCents || 0)/100).toFixed(2)}</div>
+                <div style={{ fontWeight: 900, fontSize: 22, color: 'var(--primary-600)' }}>${((billing?.monthTotalCents || 0)/100).toFixed(2)}</div>
               </div>
             </div>
             <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>Totals include item prices plus tip.</div>
@@ -214,6 +217,32 @@ export const AdminDashboard = () => {
                     <button onClick={() => { setSelectedSiteId(s._id); setActiveTab('settings'); }}>Manage</button>
                     <button onClick={() => { setSelectedSiteId(s._id); setActiveTab('products'); }}>Products</button>
                     <button onClick={() => { setSiteForm({ id: s._id, name: s.name, slug: s.slug, domainsText: (s.domains || []).join(', ') }); setIsSiteFormOpen(true); }}>Edit</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {activeTab === 'categories' ? (
+          <div className="card" style={{ padding: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontWeight: 800 }}>Categories</div>
+              <button onClick={() => { setCategoryForm({ name: '', imageUrl: '' }); setIsCategoryFormOpen(true); }}>+ New category</button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12, marginTop: 10 }}>
+              {categories.map((c) => (
+                <div key={c._id} className="card" style={{ padding: 12 }}>
+                  <div style={{ width: '100%', aspectRatio: '4 / 3', borderRadius: 'var(--radius-sm)', overflow: 'hidden', background: 'linear-gradient(180deg, rgba(59,130,246,0.08), rgba(236,72,153,0.08))', marginBottom: 10 }}>
+                    {c.imageUrl ? <img src={c.imageUrl} alt={c.name} className="img-cover" /> : null}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ fontWeight: 800 }}>{c.name}</div>
+                    <div className="muted" style={{ fontSize: 12 }}>ID: {c._id.slice(-6)}</div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
+                    <button onClick={() => { setCategoryForm({ id: c._id, name: c.name, imageUrl: c.imageUrl || '' }); setIsCategoryFormOpen(true); }}>Edit</button>
+                    <button className="danger" onClick={() => setDeleteCategoryId(c._id)}>Delete</button>
                   </div>
                 </div>
               ))}
@@ -354,7 +383,7 @@ export const AdminDashboard = () => {
                   </div>
                   <div className="muted" style={{ fontSize: 13, margin: '4px 0 8px' }}>{p.description}</div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontWeight: 700 }}>${p.price.toFixed(2)}</div>
+                    <div style={{ fontWeight: 900, color: 'var(--primary-600)' }}>${p.price.toFixed(2)}</div>
                     <div style={{ display: 'flex', gap: 8 }}>
                       <button onClick={() => startEdit(p)}>Edit</button>
                       <button className="danger" onClick={() => deleteProduct(p._id)}>Delete</button>
@@ -413,7 +442,7 @@ export const AdminDashboard = () => {
         <Modal
           open={isCategoryFormOpen}
           onClose={() => setIsCategoryFormOpen(false)}
-          title="Create category"
+          title={categoryForm.id ? 'Edit category' : 'Create category'}
           footer={(
             <>
               <button onClick={() => setIsCategoryFormOpen(false)}>Cancel</button>
@@ -421,11 +450,18 @@ export const AdminDashboard = () => {
                 className="primary-btn"
                 onClick={async () => {
                   if (!categoryForm.name) return;
-                  const created = await postJson(`/api/admin/sites/${selectedSiteId}/categories`, { name: categoryForm.name, imageUrl: categoryForm.imageUrl });
-                  setCategories((prev) => [created, ...prev]);
-                  setIsCategoryFormOpen(false);
+                  if (categoryForm.id) {
+                    const updated = await patchJson(`/api/admin/sites/${selectedSiteId}/categories/${categoryForm.id}`, { name: categoryForm.name, imageUrl: categoryForm.imageUrl });
+                    setCategories((prev) => prev.map((c) => c._id === updated._id ? updated : c));
+                    setIsCategoryFormOpen(false);
+                    setCategoryForm({ name: '', imageUrl: '' });
+                  } else {
+                    const created = await postJson(`/api/admin/sites/${selectedSiteId}/categories`, { name: categoryForm.name, imageUrl: categoryForm.imageUrl });
+                    setCategories((prev) => [created, ...prev]);
+                    setIsCategoryFormOpen(false);
+                  }
                 }}
-              >Create</button>
+              >{categoryForm.id ? 'Save changes' : 'Create'}</button>
             </>
           )}
         >
@@ -458,6 +494,25 @@ export const AdminDashboard = () => {
           )}
         >
           <div>Are you sure you want to delete this product? This action cannot be undone.</div>
+        </Modal>
+
+        <Modal
+          open={!!deleteCategoryId}
+          onClose={() => setDeleteCategoryId(null)}
+          title="Delete category"
+          footer={(
+            <>
+              <button onClick={() => setDeleteCategoryId(null)}>Cancel</button>
+              <button className="danger" onClick={async () => {
+                if (!deleteCategoryId) return;
+                await deleteJson(`/api/admin/sites/${selectedSiteId}/categories/${deleteCategoryId}`);
+                setCategories((prev) => prev.filter((c) => c._id !== deleteCategoryId));
+                setDeleteCategoryId(null);
+              }}>Delete</button>
+            </>
+          )}
+        >
+          <div>Are you sure you want to delete this category? Products will remain but be unfiltered.</div>
         </Modal>
 
       </section>
