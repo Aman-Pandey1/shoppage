@@ -13,6 +13,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
   const [uberCustomerId, setUberCustomerId] = React.useState(site?.uberCustomerId || '');
   const [brandColor, setBrandColor] = React.useState(site?.brandColor || '#0ea5e9');
   const [locations, setLocations] = React.useState(Array.isArray(site?.locations) ? site.locations : []);
+  const [cities, setCities] = React.useState(Array.isArray(site?.cities) ? site.cities : []);
   const [saving, setSaving] = React.useState(false);
   const [savedAt, setSavedAt] = React.useState(null);
   const [testingUber, setTestingUber] = React.useState(false);
@@ -30,6 +31,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
     setUberCustomerId(site?.uberCustomerId || '');
     setBrandColor(site?.brandColor || '#0ea5e9');
     setLocations(Array.isArray(site?.locations) ? site.locations : []);
+    setCities(Array.isArray(site?.cities) ? site.cities : []);
   }, [site?._id]);
 
   if (!site) return <div className="muted">Select a site to configure.</div>;
@@ -57,6 +59,17 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
           </div>
         ))}
         <button onClick={() => setLocations(prev => [...prev, { name: 'New Location', phone: '', address: { streetAddress: [''], city: '', province: '', postalCode: '', country: 'CA' } }])}>+ Add location</button>
+      </div>
+
+      <div style={{ gridColumn: '1 / -1', fontWeight: 800, marginTop: 8 }}>Delivery cities (for Delivery tabs)</div>
+      <div style={{ gridColumn: '1 / -1', display: 'grid', gap: 8 }}>
+        {(cities || []).map((cityName, idx) => (
+          <div key={idx} className="card" style={{ padding: 10, display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center' }}>
+            <input value={cityName} onChange={(e) => setCities(prev => prev.map((c, i) => i === idx ? e.target.value : c))} />
+            <button className="danger" onClick={() => setCities(prev => prev.filter((_, i) => i !== idx))}>Remove</button>
+          </div>
+        ))}
+        <button onClick={() => setCities(prev => [...prev, 'New City'])}>+ Add city</button>
       </div>
 
       <div style={{ gridColumn: '1 / -1', fontWeight: 800, marginTop: 8 }}>Legacy default pickup (optional)</div>
@@ -135,6 +148,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
             uberCustomerId,
             brandColor,
             locations,
+            cities,
             pickup: {
               name: pickupName,
               phone: pickupPhone,
