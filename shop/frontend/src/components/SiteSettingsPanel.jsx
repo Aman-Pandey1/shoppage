@@ -12,6 +12,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
   const [country, setCountry] = React.useState(site?.pickup?.address?.country || 'CA');
   const [uberCustomerId, setUberCustomerId] = React.useState(site?.uberCustomerId || '');
   const [brandColor, setBrandColor] = React.useState(site?.brandColor || '#0ea5e9');
+  const [locations, setLocations] = React.useState(Array.isArray(site?.locations) ? site.locations : []);
   const [saving, setSaving] = React.useState(false);
   const [savedAt, setSavedAt] = React.useState(null);
   const [testingUber, setTestingUber] = React.useState(false);
@@ -28,12 +29,37 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
     setCountry(site?.pickup?.address?.country || 'CA');
     setUberCustomerId(site?.uberCustomerId || '');
     setBrandColor(site?.brandColor || '#0ea5e9');
+    setLocations(Array.isArray(site?.locations) ? site.locations : []);
   }, [site?._id]);
 
   if (!site) return <div className="muted">Select a site to configure.</div>;
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+      <div style={{ gridColumn: '1 / -1', fontWeight: 800 }}>Pickup locations</div>
+      <div style={{ gridColumn: '1 / -1', display: 'grid', gap: 8 }}>
+        {(locations || []).map((loc, idx) => (
+          <div key={idx} className="card" style={{ padding: 10, display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontWeight: 700 }}>{loc.name || 'Restaurant'}</div>
+              <div className="muted" style={{ fontSize: 12 }}>
+                {(loc.address?.streetAddress || []).join(' ')}, {loc.address?.city}, {loc.address?.province} {loc.address?.postalCode}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => {
+                const next = prompt('Name', loc.name || '')
+                if (next === null) return;
+                setLocations(prev => prev.map((l, i) => i === idx ? { ...l, name: next } : l));
+              }}>Rename</button>
+              <button className="danger" onClick={() => setLocations(prev => prev.filter((_, i) => i !== idx))}>Remove</button>
+            </div>
+          </div>
+        ))}
+        <button onClick={() => setLocations(prev => [...prev, { name: 'New Location', phone: '', address: { streetAddress: [''], city: '', province: '', postalCode: '', country: 'CA' } }])}>+ Add location</button>
+      </div>
+
+      <div style={{ gridColumn: '1 / -1', fontWeight: 800, marginTop: 8 }}>Legacy default pickup (optional)</div>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span>Pickup name</span>
         <input value={pickupName} onChange={(e) => setPickupName(e.target.value)} />
@@ -108,6 +134,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
           const payload = {
             uberCustomerId,
             brandColor,
+            locations,
             pickup: {
               name: pickupName,
               phone: pickupPhone,

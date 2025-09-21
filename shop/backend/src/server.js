@@ -43,6 +43,19 @@ if (USE_MOCK_DATA) {
         name: "Default Site",
         slug: "default",
         isActive: true,
+        locations: [
+          {
+            name: "Kissan Restaurant & Sweets",
+            phone: "+1 555-000-0000",
+            address: {
+              streetAddress: ["720 Tamarack Way Northwest"],
+              city: "Edmonton",
+              province: "Alberta",
+              postalCode: "T6T 0Y3",
+              country: "CA",
+            }
+          }
+        ]
       },
     ];
 

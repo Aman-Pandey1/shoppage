@@ -7,5 +7,8 @@ export default defineConfig({
       include: [/\.[jt]sx?(\?.*)?$/],
     }),
   ],
+  optimizeDeps: {
+    include: ['react-router-dom'],
+  },
 })
 
