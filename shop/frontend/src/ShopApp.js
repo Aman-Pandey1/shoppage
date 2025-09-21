@@ -54,7 +54,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [locations, setLocations] = useState([]);
   const [cities, setCities] = useState([]);
   const [orderDetailsOpen, setOrderDetailsOpen] = useState(false);
-  const [selectedPickupCity, setSelectedPickupCity] = useState('');
+  const [selectedPickupCity, setSelectedPickupCity] = useState('All');
+  const [pickupTab, setPickupTab] = useState('location'); // address | location | city
 
   useEffect(() => {
     const privacyAccepted = localStorage.getItem('privacyAccepted_v1');
@@ -143,7 +144,12 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     async function loadLocations() {
       try {
         const list = await fetchJson(`/api/shop/${siteSlug}/locations`);
-        if (!cancelled) setLocations(Array.isArray(list) ? list : []);
+        if (!cancelled) {
+          const arr = Array.isArray(list) ? list : [];
+          setLocations(arr);
+          // Default to first location
+          if (!selectedLocation && arr.length) setSelectedLocation(arr[0]);
+        }
       } catch {
         if (!cancelled) setLocations([]);
       }
@@ -151,7 +157,11 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     async function loadCities() {
       try {
         const list = await fetchJson(`/api/shop/${siteSlug}/cities`);
-        if (!cancelled) setCities(Array.isArray(list) ? list : []);
+        if (!cancelled) {
+          setCities(Array.isArray(list) ? list : []);
+          // Ensure default tab + city are initialized so dropdowns show a value
+          setSelectedPickupCity('All');
+        }
       } catch { if (!cancelled) setCities([]); }
     }
     loadLocations();
@@ -262,33 +272,56 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
               <button className="primary-btn" disabled>Takeout</button>
               <button onClick={() => setFulfillmentOpen(true)}>Delivery</button>
             </div>
+            {/* Tab header like screenshot */}
+            <div style={{ display: 'flex', gap: 12, borderBottom: '1px solid var(--border)', marginBottom: 12 }}>
+              <button onClick={() => setPickupTab('location')} style={{ border: 'none', background: 'transparent', padding: '8px 2px', fontWeight: pickupTab==='location'?800:600, color: pickupTab==='location'? 'var(--text)' : 'var(--muted)', borderBottom: pickupTab==='location'? '2px solid var(--primary-600)' : '2px solid transparent' }}>By location</button>
+              <button onClick={() => setPickupTab('city')} style={{ border: 'none', background: 'transparent', padding: '8px 2px', fontWeight: pickupTab==='city'?800:600, color: pickupTab==='city'? 'var(--text)' : 'var(--muted)', borderBottom: pickupTab==='city'? '2px solid var(--primary-600)' : '2px solid transparent' }}>By city</button>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <span>City</span>
-                <select value={selectedPickupCity || ''} onChange={(e) => {
-                  const val = e.target.value;
-                  setSelectedPickupCity(val);
-                  const nextList = (val && val !== 'All') ? locations.filter((l) => (l?.address?.city || '').toLowerCase() === val.toLowerCase()) : locations;
-                  setSelectedLocation(nextList[0] || null);
-                }}>
-                  <option value="All">All</option>
-                  {Array.from(new Set(cities)).map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-              </label>
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <span>Restaurant address</span>
-                <select value={String(filteredLocations.findIndex((l) => l === selectedLocation))} onChange={(e) => {
-                  const idx = Number(e.target.value);
-                  const chosen = filteredLocations[idx];
-                  setSelectedLocation(chosen || null);
-                }}>
-                  {filteredLocations.map((loc, idx) => (
-                    <option key={`${loc.name}-${idx}`} value={String(idx)}>{`${loc.name || 'Restaurant'} — ${(loc.address?.streetAddress || []).join(' ')}, ${loc.address?.city || ''}`}</option>
-                  ))}
-                </select>
-              </label>
+              {pickupTab === 'city' ? (
+                <>
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <span>City</span>
+                    <select value={selectedPickupCity} onChange={(e) => {
+                      const val = e.target.value;
+                      setSelectedPickupCity(val);
+                      const nextList = (val && val !== 'All') ? locations.filter((l) => (l?.address?.city || '').toLowerCase() === val.toLowerCase()) : locations;
+                      setSelectedLocation(nextList[0] || null);
+                    }}>
+                      <option value="All">All</option>
+                      {Array.from(new Set(cities)).map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <span>Restaurant address</span>
+                    <select value={String(Math.max(0, filteredLocations.findIndex((l) => l === selectedLocation)))} onChange={(e) => {
+                      const idx = Number(e.target.value);
+                      const chosen = filteredLocations[idx];
+                      setSelectedLocation(chosen || null);
+                    }}>
+                      {filteredLocations.map((loc, idx) => (
+                        <option key={`${loc.name}-${idx}`} value={String(idx)}>{`${loc.name || 'Restaurant'} — ${(loc.address?.streetAddress || []).join(' ')}, ${loc.address?.city || ''}`}</option>
+                      ))}
+                    </select>
+                  </label>
+                </>
+              ) : (
+                <label style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span>Restaurant address</span>
+                  <select value={String(Math.max(0, locations.findIndex((l) => l === selectedLocation)))} onChange={(e) => {
+                    const idx = Number(e.target.value);
+                    const chosen = locations[idx];
+                    setSelectedLocation(chosen || null);
+                    setSelectedPickupCity(chosen?.address?.city || 'All');
+                  }}>
+                    {locations.map((loc, idx) => (
+                      <option key={`${loc.name}-${idx}`} value={String(idx)}>{`${loc.name || 'Restaurant'} — ${(loc.address?.streetAddress || []).join(' ')}, ${loc.address?.city || ''}`}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
             </div>
             {filteredLocations.length === 0 ? <div className="muted" style={{ marginBottom: 12 }}>No pickup locations available.</div> : null}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>

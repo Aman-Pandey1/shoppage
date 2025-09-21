@@ -33,7 +33,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
       className="animate-slideInRight cart-sidebar"
       data-open={open ? 'true' : 'false'}
     >
-      <div className="card" style={{ padding: 14, borderRadius: 12, marginBottom: 12 }}>
+      <div className="card" style={{ padding: 14, borderRadius: 12, marginBottom: 12, borderTop: '3px solid var(--primary)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <div style={{ fontSize: 12 }} className="muted">ORDER READY FOR</div>
@@ -55,14 +55,14 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
       </div>
 
       {state.items.length === 0 ? (
-        <div className="card animate-fadeInUp" style={{ textAlign: 'center', padding: 22, borderRadius: 'var(--radius)', border: '1px dashed var(--border)', background: '#fff', color: 'var(--muted)' }}>
+        <div className="card animate-fadeInUp" style={{ textAlign: 'center', padding: 22, borderRadius: 'var(--radius)', border: '1px dashed var(--primary-600)', background: 'var(--primary-alpha-04)', color: 'var(--muted)' }}>
           <div style={{ fontSize: 36, marginBottom: 6, color: 'var(--accent)' }}>🧾</div>
           <div style={{ fontWeight: 700, marginBottom: 4 }}>Your order is empty</div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {state.items.map((item) => (
-            <div key={item.id} className="card animate-fadeInUp" style={{ borderRadius: 'var(--radius-sm)', padding: 10 }}>
+            <div key={item.id} className="card animate-fadeInUp" style={{ borderRadius: 'var(--radius-sm)', padding: 10, borderLeft: '3px solid var(--primary)' }}>
               <div style={{ display: 'flex', gap: 10 }}>
                 {item.imageUrl ? <img src={item.imageUrl} alt={item.name} style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8 }} /> : null}
                 <div style={{ flex: 1 }}>

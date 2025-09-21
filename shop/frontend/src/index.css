@@ -14,16 +14,16 @@
   --card: #ffffff;
   --muted: #6b7280; /* gray-500 */
   --text: #111827; /* gray-900 */
-  --primary: #ec6446; /* tuned to reference */
-  --primary-600: #d94f30; /* darker hover */
+  --primary: #ea5a4b; /* red theme from screenshot */
+  --primary-600: #e44c3c; /* darker hover */
   --accent: #a78bfa; /* violet-400 */
-  /* Primary alpha variants (defaults, overridden by runtime) */
-  --primary-alpha-04: rgba(14,165,233,0.04);
-  --primary-alpha-08: rgba(14,165,233,0.08);
-  --primary-alpha-12: rgba(14,165,233,0.12);
-  --primary-alpha-18: rgba(14,165,233,0.18);
-  --primary-alpha-22: rgba(14,165,233,0.22);
-  --primary-alpha-25: rgba(14,165,233,0.25);
+  /* Primary alpha variants (use the red theme like screenshot) */
+  --primary-alpha-04: rgba(234, 90, 75, 0.04);
+  --primary-alpha-08: rgba(234, 90, 75, 0.08);
+  --primary-alpha-12: rgba(234, 90, 75, 0.12);
+  --primary-alpha-18: rgba(234, 90, 75, 0.18);
+  --primary-alpha-22: rgba(234, 90, 75, 0.22);
+  --primary-alpha-25: rgba(234, 90, 75, 0.25);
   --danger: #ef4444;
   --border: #ece5df; /* softer border */
   --ring: rgba(14, 165, 233, 0.35);
