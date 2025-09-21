@@ -2,7 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useCart } from './store/CartContext';
 import { CartSidebar } from './components/CartSidebar';
 import { CategoryGrid } from './components/CategoryGrid';
-import { StoreHeader } from './components/StoreHeader';
+// import { StoreHeader } from './components/StoreHeader';
+import { TopNav } from './components/TopNav';
+import { OrderDetailsBar } from './components/OrderDetailsBar';
 import { ProductList } from './components/ProductList';
 import { PrivacyPolicyModal } from './components/PrivacyPolicyModal';
 import { FulfillmentModal } from './components/FulfillmentModal';
@@ -11,11 +13,7 @@ import { ExtrasModal } from './components/ExtrasModal';
 import { AddToCartToast } from './components/AddToCartToast';
 import { DeliveryAddressModal } from './components/DeliveryAddressModal';
 import { fetchJson, getAuthToken } from './lib/api';
-import { CategoryChips } from './components/CategoryChips';
-import { ShopTopBar } from './components/ShopTopBar';
 import { LoginModal } from './components/LoginModal';
-import { StoreBanner } from './components/StoreBanner';
-import './ShopApp.css';
 
 const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const { state, setFulfillmentType, addItem, getCartTotal } = useCart();
@@ -138,6 +136,10 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
 
   const cartTotal = getCartTotal();
 
+  const OrderTypeSelection = () => (
+    <OrderDetailsBar orderType="Select an order type" pickupDate="Today" pickupTime={pickupTime} />
+  );
+
   return (
     <div className="shop-app">
       <div className={`cart-backdrop ${mobileCartOpen ? 'active' : ''}`} onClick={() => setMobileCartOpen(false)} />
@@ -156,36 +158,19 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
           setDeliveryModalOpen(true);
         }}
       />
-      
-      <StoreHeader siteSlug={siteSlug} />
-      
+      <TopNav siteSlug={siteSlug} onSignIn={() => setLoginOpen(true)} />
       <main className="content">
-        <StoreBanner
-          siteSlug={siteSlug}
-          onCta={() => {
-            if (!state.fulfillmentType) setFulfillmentOpen(true);
-            else if (state.fulfillmentType === 'delivery') setDeliveryModalOpen(true);
-          }}
-        />
-        
-        <ShopTopBar vegFilter={vegFilter} onVegChange={setVegFilter} />
-        
-        <div className="category-section">
-          <h2 className="section-title">Our Categories</h2>
-          <CategoryChips
-            categories={allCategories}
-            currentId={selectedCategory?._id}
-            onSelect={(c) => setSelectedCategory(c)}
-          />
+
+        <div className="card order-type-card">
+          <OrderTypeSelection />
         </div>
-        
+
         {content}
       </main>
 
-      <button className="cart-fab" onClick={() => setMobileCartOpen(true)}>
-        <span className="cart-icon">🛒</span>
-        <span className="cart-count">{state.items.length}</span>
-        <span className="cart-price">${(cartTotal || 0).toFixed(2)}</span>
+      <button className="cart-fab hide-desktop" onClick={() => setMobileCartOpen(true)}>
+        <span style={{ fontSize: 18 }}>🛒</span>
+        <span style={{ fontWeight: 800 }}>Cart ({state.items.length})</span>
       </button>
 
       <PrivacyPolicyModal open={privacyOpen} onAccept={handleAcceptPrivacy} />

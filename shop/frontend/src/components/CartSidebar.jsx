@@ -8,7 +8,7 @@ export const CartSidebar = ({ open, onClose, onCheckout }) => {
     <aside
       style={{
         position: 'fixed',
-        top: 16,
+        top: 88,
         right: 16,
         bottom: 16,
         width: 360,
