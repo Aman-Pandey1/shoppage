@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
+import { QuickAddModal } from './QuickAddModal';
 import { fetchJson } from '../lib/api';
 
 export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', vegFilter = 'all' }) => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState();
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [activeProduct, setActiveProduct] = useState(null);
 
   useEffect(() => {
     let mounted = true;
@@ -45,14 +48,19 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
         </div>
       </div>
 
-      {/* Category image banner */}
-      <div className="card animate-fadeInUp" style={{ padding: 0, overflow: 'hidden', borderLeft: '3px solid var(--primary)' }}>
-        <div style={{ width: '100%', height: 220, background: 'linear-gradient(180deg, var(--primary-alpha-08), var(--primary-alpha-04))' }}>
+      {/* Category image banner - improved styling */}
+      <div className="card animate-fadeInUp" style={{ padding: 0, overflow: 'hidden', borderLeft: '3px solid var(--primary)', position: 'relative' }}>
+        <div style={{ width: '100%', height: 240, background: 'linear-gradient(180deg, var(--primary-alpha-08), var(--primary-alpha-04))', position: 'relative' }}>
           {category.imageUrl ? (
             <img src={category.imageUrl} alt={category.name} className="img-cover" />
           ) : (
-            <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', fontSize: 42 }}>🛍️</div>
+            <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', fontSize: 48 }}>🛍️</div>
           )}
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(2,6,23,0.00), rgba(2,6,23,0.18))' }} />
+          <div style={{ position: 'absolute', left: 12, bottom: 12, right: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontWeight: 900, fontSize: 18, color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>{category.name}</div>
+            <div className="muted" style={{ fontSize: 12, color: '#fff', opacity: 0.95 }}>{products.length} items</div>
+          </div>
         </div>
       </div>
 
@@ -70,12 +78,34 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
               </div>
               <div style={{ display: 'grid', justifyItems: 'end', gap: 6 }}>
                 <div style={{ fontWeight: 900, color: 'var(--primary-600)' }}>${p.price.toFixed(2)}</div>
-                <button onClick={() => onAdd(p)} className="primary-btn" aria-label={`Add ${p.name}`} title={`Add ${p.name}`} style={{ borderRadius: 999, width: 36, height: 36, padding: 0, display: 'grid', placeItems: 'center' }}>+</button>
+                <button
+                  onClick={() => { setActiveProduct(p); setQuickAddOpen(true); }}
+                  className="primary-btn"
+                  aria-label={`Add ${p.name}`}
+                  title={`Add ${p.name}`}
+                  style={{ borderRadius: 999, width: 38, height: 38, padding: 0, display: 'grid', placeItems: 'center' }}
+                >+
+                </button>
               </div>
             </div>
           </div>
         ))}
       </div>
+
+      {/* Quick Add Modal */}
+      {quickAddOpen && (
+        <QuickAddModal
+          open={quickAddOpen}
+          product={activeProduct}
+          onCancel={() => { setQuickAddOpen(false); setActiveProduct(null); }}
+          onConfirm={(qty) => {
+            const prod = activeProduct;
+            setQuickAddOpen(false);
+            setActiveProduct(null);
+            onAdd(prod, Math.max(1, Math.min(99, Number(qty) || 1)));
+          }}
+        />
+      )}
     </div>
   );
 };
