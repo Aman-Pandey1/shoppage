@@ -28,6 +28,29 @@ router.get('/:slug/site', async (req, res) => {
   }
 });
 
+// Public: list of pickup locations for a site (falls back to legacy single pickup)
+router.get('/:slug/locations', async (req, res) => {
+  try {
+    const { site } = req;
+    const mock = req.app.locals.mockData;
+    if (mock) {
+      const s = mock.sites.find((x) => x._id === req.siteId) || {};
+      const fromLegacy = s?.pickup ? [{
+        name: s.pickup.name,
+        phone: s.pickup.phone,
+        address: s.pickup.address,
+      }] : [];
+      return res.json(Array.isArray(s?.locations) && s.locations.length ? s.locations : fromLegacy);
+    }
+    const list = Array.isArray(site.locations) && site.locations.length
+      ? site.locations
+      : (site.pickup ? [{ name: site.pickup.name, phone: site.pickup.phone, address: site.pickup.address }] : []);
+    return res.json(list);
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+});
+
 router.get('/:slug/categories', async (req, res) => {
 	try {
 		const mock = req.app.locals.mockData;

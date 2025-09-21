@@ -4,6 +4,7 @@ export const OrderDetailsBar = ({
   orderType = 'Select an order type',
   pickupDate = 'Today',
   pickupTime = '10:00 AM',
+  addressSummary,
   onChangeOrderType,
   onChangePickupDate,
   onChangePickupTime,
@@ -32,6 +33,9 @@ export const OrderDetailsBar = ({
           </div>
         </div>
       </div>
+      {addressSummary ? (
+        <div className="muted" style={{ marginTop: 8, textAlign: 'left', fontSize: 12 }}>{addressSummary}</div>
+      ) : null}
     </div>
   );
 };
