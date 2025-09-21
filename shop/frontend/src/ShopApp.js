@@ -14,7 +14,7 @@ import { ExtrasModal } from './components/ExtrasModal';
 import { AddToCartToast } from './components/AddToCartToast';
 import { DeliveryAddressModal } from './components/DeliveryAddressModal';
 import { fetchJson, getAuthToken } from './lib/api';
-import { LoginModal } from './components/LoginModal';
+import { UserAuthModal } from './components/UserAuthModal';
 
 const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const { state, setFulfillmentType, addItem, getCartTotal } = useCart();
@@ -37,8 +37,22 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   // Order details state
   const [pickupDate, setPickupDate] = useState('Today');
   const [pickupTime, setPickupTime] = useState('10:00 AM');
+  const readyAt = React.useMemo(() => {
+    try {
+      const base = new Date();
+      if (pickupDate === 'Tomorrow') base.setDate(base.getDate() + 1);
+      const [time, mod] = pickupTime.split(' ');
+      const [h, m] = time.split(':');
+      let hour = Number(h);
+      if (mod === 'PM' && hour < 12) hour += 12;
+      if (mod === 'AM' && hour === 12) hour = 0;
+      base.setHours(hour, Number(m) || 0, 0, 0);
+      return base.toISOString();
+    } catch { return null; }
+  }, [pickupDate, pickupTime]);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [locations, setLocations] = useState([]);
+  const [cities, setCities] = useState([]);
   const [orderDetailsOpen, setOrderDetailsOpen] = useState(false);
 
   useEffect(() => {
@@ -133,7 +147,14 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         if (!cancelled) setLocations([]);
       }
     }
+    async function loadCities() {
+      try {
+        const list = await fetchJson(`/api/shop/${siteSlug}/cities`);
+        if (!cancelled) setCities(Array.isArray(list) ? list : []);
+      } catch { if (!cancelled) setCities([]); }
+    }
     loadLocations();
+    loadCities();
     return () => { cancelled = true; };
   }, [siteSlug]);
 
@@ -195,6 +216,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
           setFulfillmentType('delivery');
           setDeliveryModalOpen(true);
         }}
+        readyAt={readyAt}
       />
       <TopNav siteSlug={siteSlug} onSignIn={() => setLoginOpen(true)} />
       <main className="content">
@@ -221,8 +243,15 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
               <button className="primary-btn" disabled>Delivery</button>
               <button onClick={() => setFulfillmentOpen(true)}>Takeout</button>
             </div>
-            <div style={{ fontWeight: 800, textAlign: 'center' }}>Enter your address</div>
-            <button className="primary-btn" onClick={() => setDeliveryModalOpen(true)}>Add delivery address</button>
+            <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid var(--border)' }}>
+              <button className="primary-btn" style={{ background: 'transparent', border: 'none' }} onClick={() => setDeliveryModalOpen(true)}>Enter address</button>
+              <button style={{ background: 'transparent', border: 'none' }} onClick={() => setDeliveryModalOpen(true)}>By location</button>
+              <button style={{ background: 'transparent', border: 'none' }} onClick={() => setDeliveryModalOpen(true)}>By city</button>
+            </div>
+            <div className="muted" style={{ fontSize: 12 }}>
+              {cities.length ? `Serving: ${cities.join(', ')}` : 'Delivery cities will be shown during checkout'}
+            </div>
+            <button className="primary-btn" onClick={() => setDeliveryModalOpen(true)}>Add delivery details</button>
           </div>
         ) : (
           <div>
@@ -273,7 +302,11 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         open={deliveryModalOpen}
         siteSlug={siteSlug}
         onClose={() => setDeliveryModalOpen(false)}
-        onConfirmed={(id) => setLastDeliveryId(id)}
+        onConfirmed={(id) => {
+          setLastDeliveryId(id);
+          // After delivery order is placed, navigate to My Orders
+          try { window.location.href = `/s/${siteSlug}/orders`; } catch {}
+        }}
         manifest={manifest}
       />
       {lastDeliveryId ? (
@@ -282,12 +315,12 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       <SpiceModal open={spiceOpen} spiceLevels={pendingProduct?.spiceLevels} onCancel={() => setSpiceOpen(false)} onConfirm={confirmSpice} />
       <ExtrasModal open={extrasOpen} groups={pendingProduct?.extraOptionGroups} onCancel={() => setExtrasOpen(false)} onConfirm={confirmExtras} />
       <AddToCartToast />
-      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} onSuccess={() => {
+      <UserAuthModal open={loginOpen} onClose={() => setLoginOpen(false)} onSuccess={() => {
         setLoginOpen(false);
         if (!state.fulfillmentType) setFulfillmentOpen(true);
         setFulfillmentType('delivery');
         setDeliveryModalOpen(true);
-      }} mode="user" />
+      }} />
     </div>
   );
 };
