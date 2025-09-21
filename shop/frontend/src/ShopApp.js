@@ -13,10 +13,7 @@ import { ExtrasModal } from './components/ExtrasModal';
 import { AddToCartToast } from './components/AddToCartToast';
 import { DeliveryAddressModal } from './components/DeliveryAddressModal';
 import { fetchJson, getAuthToken } from './lib/api';
-import { CategoryChips } from './components/CategoryChips';
-import { ShopTopBar } from './components/ShopTopBar';
 import { LoginModal } from './components/LoginModal';
-import { StoreBanner } from './components/StoreBanner';
 
 const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const { state, setFulfillmentType, addItem, getCartTotal } = useCart();
@@ -174,54 +171,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
           <OrderTypeSelection />
         </div>
 
-        <ShopTopBar vegFilter={vegFilter} onVegChange={setVegFilter} />
-        <section className="card" style={{ padding: 10, marginBottom: 10 }}>
-          <CategoryChips
-            categories={allCategories}
-            currentId={selectedCategory?._id}
-            onSelect={(c) => setSelectedCategory(c)}
-          />
-        </section>
-        <div className="hide-desktop" style={{ marginBottom: 10 }}>
-          <button
-            className="primary-btn"
-            onClick={() => {
-              const hasToken = !!getAuthToken();
-              if (!hasToken) { setLoginOpen(true); return; }
-              if (!state.fulfillmentType) setFulfillmentOpen(true);
-              setFulfillmentType('delivery');
-              setDeliveryModalOpen(true);
-            }}
-          >
-            Checkout
-          </button>
-        </div>
         {content}
       </main>
-
-      <div className="order-summary-bar">
-        <div className="order-empty">
-          {state.items.length === 0 ? 'Your order is empty' : `${state.items.length} items in cart`}
-        </div>
-        <div className="order-total">
-          <div className="total-label">Subtotal</div>
-          <div className="total-amount">${(cartTotal || 0).toFixed(2)}</div>
-        </div>
-        <button
-          className="confirm-btn"
-          disabled={state.items.length === 0}
-          onClick={() => {
-            const hasToken = !!getAuthToken();
-            if (!hasToken) {
-              setLoginOpen(true);
-              return;
-            }
-            if (!state.fulfillmentType) setFulfillmentOpen(true);
-          }}
-        >
-          Confirm →
-        </button>
-      </div>
 
       <button className="cart-fab hide-desktop" onClick={() => setMobileCartOpen(true)}>
         <span style={{ fontSize: 18 }}>🛒</span>
