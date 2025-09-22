@@ -121,69 +121,114 @@ router.delete('/:id', requireAdmin, async (req, res) => {
 
 // Download Excel template
 router.get('/template.xlsx', requireAdmin, async (_req, res) => {
-  const wb = xlsx.utils.book_new();
-  const ws = xlsx.utils.aoa_to_sheet([
-    ['name','description','price','imageUrl','categoryName','spiceLevels','isVeg'],
-    ['Butter Chicken','Rich creamy gravy', '12.99','https://...','Mains','Mild,Medium,Hot','false']
-  ]);
-  xlsx.utils.book_append_sheet(wb, ws, 'Products');
-  const buf = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
-  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-  res.setHeader('Content-Disposition', 'attachment; filename="product_template.xlsx"');
-  res.send(buf);
+	const wb = xlsx.utils.book_new();
+	// Categories sheet
+	const categoriesWs = xlsx.utils.aoa_to_sheet([
+		['name','imageUrl'],
+		['Mains','https://example.com/mains.jpg']
+	]);
+	xlsx.utils.book_append_sheet(wb, categoriesWs, 'Categories');
+	// Products sheet
+	const productsWs = xlsx.utils.aoa_to_sheet([
+		['name','description','price','spiceLevels','categoryName'],
+		['Butter Chicken','Rich creamy gravy','12.99','Mild,Medium,Hot','Mains']
+	]);
+	xlsx.utils.book_append_sheet(wb, productsWs, 'Products');
+	const buf = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+	res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+	res.setHeader('Content-Disposition', 'attachment; filename="product_template.xlsx"');
+	res.send(buf);
 });
 
 // Bulk upload via Excel
 router.post('/bulk', requireAdmin, upload.single('file'), async (req, res) => {
-  try {
-    const { siteId } = req.params;
-    if (!req.file) return res.status(400).json({ error: 'Missing file' });
-    const wb = xlsx.read(req.file.buffer, { type: 'buffer' });
-    const sheet = wb.Sheets[wb.SheetNames[0]];
-    const rows = xlsx.utils.sheet_to_json(sheet, { defval: '' });
-    const mock = req.app.locals.mockData;
-    const created = [];
-    for (const r of rows) {
-      const name = r.name || r.Name;
-      if (!name) continue;
-      const price = parseFloat(String(r.price || r.Price || 0));
-      const description = r.description || r.Description || '';
-      const imageUrl = r.imageUrl || r.ImageUrl || '';
-      const categoryName = r.categoryName || r.Category || '';
-      const spiceLevels = String(r.spiceLevels || r.SpiceLevels || '').split(',').map((s) => String(s).trim()).filter(Boolean);
-      const isVegCell = r.isVeg ?? r.IsVeg ?? r.veg ?? r.Veg;
-      const isVeg = typeof isVegCell === 'string' ? /^(1|true|yes|veg)$/i.test(isVegCell) : !!isVegCell;
+	try {
+		const { siteId } = req.params;
+		if (!req.file) return res.status(400).json({ error: 'Missing file' });
+		const wb = xlsx.read(req.file.buffer, { type: 'buffer' });
+		const mock = req.app.locals.mockData;
 
-      // Resolve or create category by name
-      let categoryId = null;
-      if (mock) {
-        let cat = (mock.categories || []).find((c) => c.site === siteId && String(c.name).toLowerCase() === String(categoryName).toLowerCase());
-        if (!cat) {
-          cat = { _id: `c-${Date.now()}-${Math.random().toString(36).slice(2,6)}`, name: categoryName || 'Uncategorized', imageUrl: '', sortIndex: 0, site: siteId };
-          mock.categories.unshift(cat);
-        }
-        categoryId = cat._id;
-      } else {
-        let cat = await Category.findOne({ site: siteId, name: categoryName });
-        if (!cat) cat = await Category.create({ site: siteId, name: categoryName || 'Uncategorized', imageUrl: '', sortIndex: 0 });
-        categoryId = cat._id;
-      }
+		const createdProducts = [];
+		let createdCategories = 0;
 
-      const payload = { site: siteId, name, description, imageUrl, price, categoryId, spiceLevels, isVeg, extraOptionGroups: [] };
-      if (mock) {
-        const p = { _id: `p-${Date.now()}-${Math.random().toString(36).slice(2,6)}`, ...payload };
-        mock.products.unshift(p);
-        created.push(p);
-      } else {
-        const p = await Product.create(payload);
-        created.push(p);
-      }
-    }
-    try { if (req.app.locals.mockData) saveMockData(req.app.locals.mockData); } catch {}
-    res.json({ created: created.length });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
+		// Helper to ensure a category exists and return its id
+    async function ensureCategoryByName(categoryNameInput, imageUrlInput = '') {
+			const categoryName = String(categoryNameInput || '').trim() || 'Uncategorized';
+			let categoryId = null;
+			if (mock) {
+				let cat = (mock.categories || []).find((c) => c.site === siteId && String(c.name).toLowerCase() === categoryName.toLowerCase());
+				if (!cat) {
+          const fallbackImage = imageUrlInput || `https://picsum.photos/seed/${encodeURIComponent(categoryName.toLowerCase())}/400/400`;
+          cat = { _id: `c-${Date.now()}-${Math.random().toString(36).slice(2,6)}`, name: categoryName, imageUrl: fallbackImage, sortIndex: 0, site: siteId };
+					mock.categories.unshift(cat);
+					createdCategories += 1;
+				} else if (imageUrlInput && !cat.imageUrl) {
+					// Fill imageUrl if it's missing
+					cat.imageUrl = imageUrlInput;
+				}
+				categoryId = cat._id;
+			} else {
+				let cat = await Category.findOne({ site: siteId, name: categoryName });
+				if (!cat) {
+          const fallbackImage = imageUrlInput || `https://picsum.photos/seed/${encodeURIComponent(categoryName.toLowerCase())}/400/400`;
+          cat = await Category.create({ site: siteId, name: categoryName, imageUrl: fallbackImage, sortIndex: 0 });
+					createdCategories += 1;
+				} else if (imageUrlInput && !cat.imageUrl) {
+					cat.imageUrl = imageUrlInput;
+					await cat.save();
+				}
+				categoryId = cat._id;
+			}
+			return categoryId;
+		}
+
+		// 1) Import Categories sheet if present
+		if (wb.SheetNames.includes('Categories')) {
+			const catSheet = wb.Sheets['Categories'];
+			const catRows = xlsx.utils.sheet_to_json(catSheet, { defval: '' });
+			for (const r of catRows) {
+				const name = r.name || r.Name;
+				if (!name) continue;
+				const imageUrl = r.imageUrl || r.ImageUrl || r['image url'] || r.Image || '';
+				// ensure creates or updates image if missing
+				await ensureCategoryByName(name, imageUrl);
+			}
+		}
+
+		// 2) Import Products sheet (or fallback to first sheet for backward compat)
+		let productSheetName = 'Products';
+		if (!wb.SheetNames.includes(productSheetName)) productSheetName = wb.SheetNames[0];
+		const sheet = wb.Sheets[productSheetName];
+		const rows = xlsx.utils.sheet_to_json(sheet, { defval: '' });
+		for (const r of rows) {
+			const name = r.name || r.Name || r['product name'] || r.Product;
+			if (!name) continue;
+			const price = parseFloat(String(r.price || r.Price || 0));
+			if (Number.isNaN(price)) continue;
+			const description = r.description || r.Description || '';
+			const spiceLevels = String(r.spiceLevels || r['spice level'] || r.SpiceLevels || '').split(',').map((s) => String(s).trim()).filter(Boolean);
+			const categoryName = r.categoryName || r.CategoryName || r.Category || '';
+			const imageUrl = r.imageUrl || r.ImageUrl || '';
+			const isVegCell = r.isVeg ?? r.IsVeg ?? r.veg ?? r.Veg;
+			const isVeg = typeof isVegCell === 'string' ? /^(1|true|yes|veg)$/i.test(isVegCell) : (typeof isVegCell === 'boolean' ? isVegCell : true);
+
+			const categoryId = await ensureCategoryByName(categoryName);
+			const payload = { site: siteId, name, description, imageUrl, price, categoryId, spiceLevels, isVeg, extraOptionGroups: [] };
+			if (mock) {
+				const p = { _id: `p-${Date.now()}-${Math.random().toString(36).slice(2,6)}`, ...payload };
+				mock.products.unshift(p);
+				createdProducts.push(p);
+			} else {
+				const p = await Product.create(payload);
+				createdProducts.push(p);
+			}
+		}
+
+		try { if (req.app.locals.mockData) saveMockData(req.app.locals.mockData); } catch {}
+		res.json({ created: createdProducts.length, createdProducts: createdProducts.length, createdCategories });
+	} catch (err) {
+		res.status(400).json({ error: err.message });
+	}
 });
 
 export default router;
