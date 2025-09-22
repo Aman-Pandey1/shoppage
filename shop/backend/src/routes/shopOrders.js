@@ -3,6 +3,7 @@ import { tenantBySlug } from '../middleware/tenant.js';
 import { requireUser } from '../middleware/auth.js';
 import Order from '../models/Order.js';
 import Site from '../models/Site.js';
+import { getDelivery } from '../services/uberDirect.js';
 
 const router = Router();
 
@@ -17,6 +18,48 @@ router.get('/:slug/orders/mine', requireUser, async (req, res) => {
     }
     const list = await Order.find({ site: req.siteId, userId: req.user?.userId }).sort({ createdAt: -1 });
     res.json(list);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Get tracking details for a specific order (user's own order only)
+router.get('/:slug/orders/:orderId/tracking', requireUser, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const mock = req.app.locals.mockData;
+    let order;
+    if (mock) {
+      order = (mock.orders || []).find((o) => String(o._id) === String(orderId) && o.site === req.siteId);
+      if (!order) return res.status(404).json({ error: 'Order not found' });
+      if (String(order.userEmail || '') !== String(req.user?.email || '')) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+      return res.json({
+        uberDeliveryId: order.uberDeliveryId,
+        uberTrackingUrl: order.uberTrackingUrl,
+        uberStatus: order.uberStatus || 'unknown',
+      });
+    }
+    order = await Order.findOne({ _id: orderId, site: req.siteId, userId: req.user?.userId });
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    // If we have Uber delivery ID and site has uberCustomerId, fetch live status
+    const site = await Site.findById(req.siteId);
+    let live;
+    if (site?.uberCustomerId && order?.uberDeliveryId) {
+      try {
+        live = await getDelivery({ customerId: site.uberCustomerId, deliveryId: order.uberDeliveryId });
+      } catch (e) {
+        // ignore live fetch errors; fall back to stored fields
+      }
+    }
+    const trackingUrl = live?.tracking_url || live?.trackingUrl || live?.share_url || order.uberTrackingUrl || '';
+    const status = live?.status || live?.state || live?.current_status || order.uberStatus || 'unknown';
+    res.json({
+      uberDeliveryId: order.uberDeliveryId,
+      uberTrackingUrl: trackingUrl,
+      uberStatus: status,
+    });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

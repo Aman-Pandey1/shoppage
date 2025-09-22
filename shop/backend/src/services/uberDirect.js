@@ -66,6 +66,17 @@ export async function createDelivery({ customerId, pickup, dropoff, manifestItem
 	return res.json();
 }
 
+export async function getDelivery({ customerId, deliveryId }) {
+    const token = await getAccessToken();
+    const url = `${UBER_BASE}/${encodeURIComponent(customerId)}/deliveries/${encodeURIComponent(deliveryId)}`; // GET
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) {
+        const text = await safeText(res);
+        throw new Error(`Uber get delivery error ${res.status} ${text}`);
+    }
+    return res.json();
+}
+
 function formatAddress(addr) {
 	const lines = Array.isArray(addr.streetAddress) ? addr.streetAddress : [addr.streetAddress];
 	const parts = [

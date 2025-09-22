@@ -12,6 +12,9 @@ export const MyOrdersPage = () => {
   const [query, setQuery] = React.useState('');
   const [loginOpen, setLoginOpen] = React.useState(false);
   const [tab, setTab] = React.useState('all'); // all | pickup | delivery
+  const [tracking, setTracking] = React.useState({});
+  const [trackingLoadingId, setTrackingLoadingId] = React.useState('');
+  const [trackingError, setTrackingError] = React.useState('');
 
   React.useEffect(() => {
     let mounted = true;
@@ -100,6 +103,28 @@ export const MyOrdersPage = () => {
                   </div>
                 ) : null}
               </div>
+              {o.fulfillmentType === 'delivery' ? (
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
+                  <button
+                    onClick={async () => {
+                      try {
+                        setTrackingError('');
+                        setTrackingLoadingId(o._id);
+                        const data = await fetchJson(`/api/shop/${siteSlug || 'default'}/orders/${o._id}/tracking`);
+                        setTracking(prev => ({ ...prev, [o._id]: data }));
+                        const url = data?.uberTrackingUrl;
+                        if (url) {
+                          try { window.open(url, '_blank', 'noopener'); } catch {}
+                        }
+                      } catch (e) {
+                        setTrackingError(e.message || 'Failed to load tracking');
+                      } finally {
+                        setTrackingLoadingId('');
+                      }
+                    }}
+                  >{trackingLoadingId === o._id ? 'Loading…' : 'Track live'}</button>
+                </div>
+              ) : null}
             </div>
           ))}
         </div>
