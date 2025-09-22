@@ -360,23 +360,25 @@ export const AdminDashboard = () => {
             ) : null}
 
             <div style={{ display: 'flex', gap: 8, margin: '6px 0 8px' }}>
-              <button onClick={async () => {
+              <button title="Download Excel with Categories and Products sheets" onClick={async () => {
                 if (!selectedSiteId) return;
                 const blob = await download(`/api/admin/sites/${selectedSiteId}/products/template.xlsx`);
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url; a.download = 'product_template.xlsx'; a.click();
                 URL.revokeObjectURL(url);
-              }}>Download template</button>
+              }}>Download template (Categories + Products)</button>
               <input ref={fileInputRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (!file || !selectedSiteId) return;
                 const res = await postFile(`/api/admin/sites/${selectedSiteId}/products/bulk`, file);
                 await loadAll();
-                alert(`Imported ${res.created} products`);
+                const productsCount = res.createdProducts ?? res.created ?? 0;
+                const categoriesCount = res.createdCategories ?? 0;
+                alert(`Imported ${productsCount} products and ${categoriesCount} categories`);
                 e.currentTarget.value = '';
               }} />
-              <button onClick={() => fileInputRef.current?.click()}>Upload Excel</button>
+              <button title="Upload Excel to auto-create categories with images and their products" onClick={() => fileInputRef.current?.click()}>Upload Excel (auto create)</button>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
               {filteredProducts.map((p) => (
