@@ -64,7 +64,10 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 			externalId,
 		});
 		// Record order
-		const totalCents = (manifestItems || []).reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 1), 0) + (Number(tip) || 0);
+		const itemsTotal = (manifestItems || []).reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 1), 0);
+		if (itemsTotal < 5000) return res.status(400).json({ error: 'Minimum order is $50.00' });
+		const deliveryFeeCents = Number(site.deliveryFeeCents) || 0;
+		const totalCents = itemsTotal + deliveryFeeCents + (Number(tip) || 0);
 		const orderPayload = {
 			site: req.siteId,
 			userId: req.user?.userId,
@@ -72,6 +75,7 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 			items: (manifestItems || []).map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.price, size: m.size })),
 			totalCents,
 			tipCents: Number(tip) || 0,
+			deliveryFeeCents,
 			externalId,
 			uberDeliveryId: delivery?.id || delivery?.delivery_id,
       fulfillmentType: 'delivery',

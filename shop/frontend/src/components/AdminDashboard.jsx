@@ -15,6 +15,7 @@ export const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('links');
   const fileInputRef = React.useRef(null);
   const [billing, setBilling] = useState(null);
+  const [todayBilling, setTodayBilling] = useState(null);
 
   const [isSiteFormOpen, setIsSiteFormOpen] = useState(false);
   const [siteForm, setSiteForm] = useState({ name: '', slug: '', domainsText: '' });
@@ -66,6 +67,7 @@ export const AdminDashboard = () => {
       try {
         const data = await fetchJson(`/api/admin/sites/${selectedSiteId}/billing`);
         setBilling(data);
+        setTodayBilling({ todayTotalCents: data.todayTotalCents || 0, todayDeliveryFeeCents: data.todayDeliveryFeeCents || 0 });
       } catch {
         setBilling(null);
       }
@@ -186,6 +188,11 @@ export const AdminDashboard = () => {
           <div className="card" style={{ padding: 12 }}>
             <div style={{ fontWeight: 800, marginBottom: 8 }}>Billing (Weekly / Monthly)</div>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <div className="card" style={{ padding: 12, minWidth: 220, borderTop: '3px solid var(--primary)' }}>
+                <div className="muted" style={{ fontSize: 12 }}>Today total</div>
+                <div style={{ fontWeight: 900, fontSize: 22, color: 'var(--primary-600)' }}>${(((todayBilling?.todayTotalCents)||0)/100).toFixed(2)}</div>
+                <div className="muted" style={{ fontSize: 12 }}>Delivery fees: ${(((todayBilling?.todayDeliveryFeeCents)||0)/100).toFixed(2)}</div>
+              </div>
               <div className="card" style={{ padding: 12, minWidth: 220, borderTop: '3px solid var(--primary)' }}>
                 <div className="muted" style={{ fontSize: 12 }}>This week</div>
                 <div style={{ fontWeight: 900, fontSize: 22, color: 'var(--primary-600)' }}>${((billing?.weekTotalCents || 0)/100).toFixed(2)}</div>
