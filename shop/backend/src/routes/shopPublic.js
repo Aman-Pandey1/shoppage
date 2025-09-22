@@ -51,6 +51,30 @@ router.get('/:slug/locations', async (req, res) => {
   }
 });
 
+// Public: get opening hours for a site
+router.get('/:slug/hours', async (req, res) => {
+  try {
+    const { site } = req;
+    const defaultHours = {
+      mon: { open: '10:00', close: '22:00', closed: false },
+      tue: { open: '10:00', close: '22:00', closed: false },
+      wed: { open: '10:00', close: '22:00', closed: false },
+      thu: { open: '10:00', close: '22:00', closed: false },
+      fri: { open: '10:00', close: '22:00', closed: false },
+      sat: { open: '10:00', close: '22:00', closed: false },
+      sun: { open: '10:00', close: '22:00', closed: false },
+    };
+    const mock = req.app.locals.mockData;
+    if (mock) {
+      const s = mock.sites.find((x) => x._id === req.siteId) || {};
+      return res.json(s.hours || defaultHours);
+    }
+    return res.json(site.hours || defaultHours);
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+});
+
 // Public: list of supported cities for delivery selection
 router.get('/:slug/cities', async (req, res) => {
   try {

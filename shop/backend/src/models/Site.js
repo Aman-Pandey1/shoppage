@@ -21,6 +21,16 @@ const SiteSchema = new mongoose.Schema({
 	}],
 	// Optional: cities for delivery selection (distinct from addresses)
 	cities: [{ type: String }],
+	// Opening hours configuration per day of week (24h "HH:mm" strings). If omitted, UI will default to 10:00-22:00.
+	hours: {
+		mon: { open: { type: String, default: '10:00' }, close: { type: String, default: '22:00' }, closed: { type: Boolean, default: false } },
+		tue: { open: { type: String, default: '10:00' }, close: { type: String, default: '22:00' }, closed: { type: Boolean, default: false } },
+		wed: { open: { type: String, default: '10:00' }, close: { type: String, default: '22:00' }, closed: { type: Boolean, default: false } },
+		thu: { open: { type: String, default: '10:00' }, close: { type: String, default: '22:00' }, closed: { type: Boolean, default: false } },
+		fri: { open: { type: String, default: '10:00' }, close: { type: String, default: '22:00' }, closed: { type: Boolean, default: false } },
+		sat: { open: { type: String, default: '10:00' }, close: { type: String, default: '22:00' }, closed: { type: Boolean, default: false } },
+		sun: { open: { type: String, default: '10:00' }, close: { type: String, default: '22:00' }, closed: { type: Boolean, default: false } },
+	},
 	pickup: {
 		name: { type: String },
 		phone: { type: String },

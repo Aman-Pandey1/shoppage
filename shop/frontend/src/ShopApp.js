@@ -38,12 +38,16 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
 
   // Additional UI state brought from the alternate implementation
   // Order details state
-  const [pickupDate, setPickupDate] = useState('Today');
-  const [pickupTime, setPickupTime] = useState('10:00 AM');
+  const [pickupDate, setPickupDate] = useState(''); // YYYY-MM-DD
+  const [pickupTime, setPickupTime] = useState(''); // e.g., 10:00 AM
+  const [hours, setHours] = useState(null);
+  const [dateOptions, setDateOptions] = useState([]);
+  const [timeOptions, setTimeOptions] = useState([]);
   const readyAt = React.useMemo(() => {
     try {
-      const base = new Date();
-      if (pickupDate === 'Tomorrow') base.setDate(base.getDate() + 1);
+      if (!pickupDate || !pickupTime) return null;
+      const [yr, mo, dy] = pickupDate.split('-').map(Number);
+      const base = new Date(yr, (mo || 1) - 1, dy || 1);
       const [time, mod] = pickupTime.split(' ');
       const [h, m] = time.split(':');
       let hour = Number(h);
@@ -176,6 +180,87 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     return () => { cancelled = true; };
   }, [siteSlug]);
 
+  // Load site opening hours
+  useEffect(() => {
+    let cancelled = false;
+    async function loadHours() {
+      try {
+        const data = await fetchJson(`/api/shop/${siteSlug}/hours`);
+        if (!cancelled) setHours(data);
+      } catch {
+        if (!cancelled) setHours(null);
+      }
+    }
+    loadHours();
+    return () => { cancelled = true; };
+  }, [siteSlug]);
+
+  // Compute date options (today + next 6 days, respecting closed days)
+  useEffect(() => {
+    function formatDateLabel(date, isToday) {
+      const weekday = date.toLocaleDateString([], { weekday: 'long' });
+      const month = date.toLocaleDateString([], { month: 'short' });
+      const day = date.getDate();
+      if (isToday) return `Today (${weekday}, ${month} ${day})`;
+      return `${weekday} (${month} ${day})`;
+    }
+    function dayKeyFromDate(date) {
+      const idx = date.getDay(); // 0=Sun
+      return ['sun','mon','tue','wed','thu','fri','sat'][idx];
+    }
+    const opts = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      const value = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      const key = dayKeyFromDate(d);
+      const cfg = hours?.[key];
+      const closed = cfg?.closed === true;
+      if (!closed) {
+        opts.push({ value, label: formatDateLabel(d, i === 0) });
+      }
+    }
+    setDateOptions(opts);
+    if (!pickupDate && opts.length) setPickupDate(opts[0].value);
+  }, [hours]);
+
+  // Compute time options for selected date from hours (default 10:00-22:00)
+  useEffect(() => {
+    function parse24h(s, fallback) {
+      if (!s || !/^\d{2}:\d{2}$/.test(s)) return fallback;
+      const [hh, mm] = s.split(':').map(Number);
+      return { hh, mm };
+    }
+    function format12h(hh, mm) {
+      const mod = hh >= 12 ? 'PM' : 'AM';
+      const h12 = hh % 12 === 0 ? 12 : hh % 12;
+      return `${h12}:${String(mm).padStart(2,'0')} ${mod}`;
+    }
+    function dayKeyFromDateString(iso) {
+      const [yr, mo, dy] = iso.split('-').map(Number);
+      const d = new Date(yr, (mo || 1)-1, dy || 1);
+      return ['sun','mon','tue','wed','thu','fri','sat'][d.getDay()];
+    }
+    if (!pickupDate) { setTimeOptions([]); return; }
+    const key = dayKeyFromDateString(pickupDate);
+    const cfg = hours?.[key] || { open: '10:00', close: '22:00', closed: false };
+    if (cfg.closed) { setTimeOptions([]); return; }
+    const { hh: openH = 10, mm: openM = 0 } = parse24h(cfg.open, { hh: 10, mm: 0 });
+    const { hh: closeH = 22, mm: closeM = 0 } = parse24h(cfg.close, { hh: 22, mm: 0 });
+    const options = [];
+    let curH = openH, curM = openM;
+    while (curH < closeH || (curH === closeH && curM <= closeM)) {
+      options.push({ value: format12h(curH, curM), label: format12h(curH, curM) });
+      curM += 30;
+      if (curM >= 60) { curM -= 60; curH += 1; }
+    }
+    setTimeOptions(options);
+    if (!pickupTime && options.length) setPickupTime(options[0].value);
+    if (pickupTime && options.length && !options.find(o => o.value === pickupTime)) {
+      setPickupTime(options[0].value);
+    }
+  }, [hours, pickupDate]);
+
   const content = useMemo(() => {
     if (selectedCategory) {
       return (
@@ -218,6 +303,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       orderType={state.fulfillmentType === 'delivery' ? 'Delivery' : (state.fulfillmentType === 'pickup' ? 'Takeout' : 'Select order type')}
       pickupDate={pickupDate}
       pickupTime={pickupTime}
+      dateOptions={dateOptions}
+      timeOptions={timeOptions}
       addressSummary={addressSummary}
       onChangeOrderType={() => setFulfillmentOpen(true)}
       onPickupDateChange={(val) => setPickupDate(val)}
@@ -280,10 +367,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         ) : (
           <div>
             {orderError ? <div style={{ color: 'var(--danger)', marginBottom: 10 }}>{orderError}</div> : null}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-              <button className="primary-btn" disabled>Takeout</button>
-              <button onClick={() => setFulfillmentOpen(true)}>Delivery</button>
-            </div>
+            <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>Takeout selected</div>
             {/* Tab header like screenshot */}
             <div style={{ display: 'flex', gap: 12, borderBottom: '1px solid var(--border)', marginBottom: 12 }}>
               <button onClick={() => setPickupTab('location')} style={{ border: 'none', background: 'transparent', padding: '8px 2px', fontWeight: pickupTab==='location'?800:600, color: pickupTab==='location'? 'var(--text)' : 'var(--muted)', borderBottom: pickupTab==='location'? '2px solid var(--primary-600)' : '2px solid transparent' }}>By location</button>
@@ -340,15 +424,16 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
               <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <span>Day</span>
                 <select value={pickupDate} onChange={(e) => setPickupDate(e.target.value)}>
-                  <option value="Today">Today</option>
-                  <option value="Tomorrow">Tomorrow</option>
+                  {dateOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
                 </select>
               </label>
               <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <span style={{ color: 'var(--primary-600)' }}>Pickup time</span>
                 <select value={pickupTime} onChange={(e) => setPickupTime(e.target.value)}>
-                  {['10:00 AM','10:30 AM','11:00 AM','11:30 AM','12:00 PM','12:30 PM','1:00 PM'].map((t) => (
-                    <option key={t} value={t}>{t}</option>
+                  {timeOptions.map((t) => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
                   ))}
                 </select>
               </label>
