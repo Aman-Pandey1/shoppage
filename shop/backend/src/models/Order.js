@@ -19,6 +19,8 @@ const OrderSchema = new mongoose.Schema({
     deliveryFeeCents: { type: Number, default: 0 },
     externalId: { type: String },
     uberDeliveryId: { type: String },
+    uberTrackingUrl: { type: String },
+    uberStatus: { type: String },
     status: { type: String, default: 'created' },
     pickup: {
         location: {

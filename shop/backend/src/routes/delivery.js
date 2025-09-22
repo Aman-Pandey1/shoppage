@@ -19,7 +19,8 @@ router.post('/:slug/quote', async (req, res) => {
 		} else {
 			site = await Site.findById(req.siteId);
 		}
-		if (!site?.uberCustomerId || !site?.pickup?.address) return res.status(400).json({ error: 'Site not configured for Uber Direct' });
+		const hasPickupCfg = !!(site?.pickup?.address) || (Array.isArray(site?.locations) && site.locations.length && site.locations[0]?.address);
+		if (!site?.uberCustomerId || !hasPickupCfg) return res.status(400).json({ error: 'Site not configured for Uber Direct' });
     const { dropoff, pickupLocationIndex } = req.body || {};
 		if (!dropoff?.address?.streetAddress) return res.status(400).json({ error: 'Invalid dropoff address' });
     // Allow selecting a pickup location from configured list
@@ -48,16 +49,24 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 		} else {
 			site = await Site.findById(req.siteId);
 		}
-		if (!site?.uberCustomerId || !site?.pickup?.address) return res.status(400).json({ error: 'Site not configured for Uber Direct' });
+		const hasPickupCfg = !!(site?.pickup?.address) || (Array.isArray(site?.locations) && site.locations.length && site.locations[0]?.address);
+		if (!site?.uberCustomerId || !hasPickupCfg) return res.status(400).json({ error: 'Site not configured for Uber Direct' });
     const { dropoff, manifestItems, tip, externalId, pickupLocationIndex } = req.body || {};
     let pickup = site.pickup || (Array.isArray(site.locations) && site.locations.length ? site.locations[0] : null);
     if (typeof pickupLocationIndex === 'number' && Array.isArray(site.locations) && site.locations[pickupLocationIndex]) {
       pickup = site.locations[pickupLocationIndex];
     }
     if (!pickup) return res.status(400).json({ error: 'No pickup location configured' });
+		// Ensure pickup has a valid E.164 phone for Uber
+		const safePickup = {
+			...pickup,
+			phone: (pickup?.phone && /^\+?[1-9]\d{7,14}$/.test(String(pickup.phone).replace(/[^\d+]/g, '')))
+				? String(pickup.phone).replace(/[^\d+]/g, '')
+				: '+10000000000',
+		};
 		const delivery = await createDelivery({
 			customerId: site.uberCustomerId,
-      pickup,
+      pickup: safePickup,
 			dropoff,
 			manifestItems,
 			tip,
@@ -68,6 +77,8 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 		if (itemsTotal < 5000) return res.status(400).json({ error: 'Minimum order is $50.00' });
 		const deliveryFeeCents = Number(site.deliveryFeeCents) || 0;
 		const totalCents = itemsTotal + deliveryFeeCents + (Number(tip) || 0);
+		const trackingUrl = delivery?.tracking_url || delivery?.trackingUrl || delivery?.share_url || delivery?.tracking_url_v2 || '';
+		const deliveryStatus = delivery?.status || delivery?.state || delivery?.current_status || '';
 		const orderPayload = {
 			site: req.siteId,
 			userId: req.user?.userId,
@@ -78,6 +89,8 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 			deliveryFeeCents,
 			externalId,
 			uberDeliveryId: delivery?.id || delivery?.delivery_id,
+      uberTrackingUrl: trackingUrl,
+      uberStatus: deliveryStatus,
       fulfillmentType: 'delivery',
 			dropoff,
 		};
