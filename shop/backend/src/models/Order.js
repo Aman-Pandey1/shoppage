@@ -16,6 +16,7 @@ const OrderSchema = new mongoose.Schema({
     items: [OrderItemSchema],
     totalCents: { type: Number, required: true },
     tipCents: { type: Number, default: 0 },
+    deliveryFeeCents: { type: Number, default: 0 },
     externalId: { type: String },
     uberDeliveryId: { type: String },
     status: { type: String, default: 'created' },
