@@ -7,6 +7,8 @@ const SiteSchema = new mongoose.Schema({
 	isActive: { type: Boolean, default: true },
 	brandColor: { type: String, default: '#0ea5e9' },
 	uberCustomerId: { type: String },
+	// Flat delivery fee in cents applied to delivery orders only
+	deliveryFeeCents: { type: Number, default: 0 },
 	// New: support multiple pickup locations for a site while keeping legacy `pickup`
 	locations: [{
 		name: { type: String },

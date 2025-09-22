@@ -15,6 +15,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
   const [brandColor, setBrandColor] = React.useState(site?.brandColor || '#0ea5e9');
   const [locations, setLocations] = React.useState(Array.isArray(site?.locations) ? site.locations : []);
   const [cities, setCities] = React.useState(Array.isArray(site?.cities) ? site.cities : []);
+  const [deliveryFee, setDeliveryFee] = React.useState(((Number(site?.deliveryFeeCents)||0)/100).toFixed(2));
   const [hours, setHours] = React.useState(site?.hours || {
     mon: { open: '10:00', close: '22:00', closed: false },
     tue: { open: '10:00', close: '22:00', closed: false },
@@ -47,6 +48,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
     setBrandColor(site?.brandColor || '#0ea5e9');
     setLocations(Array.isArray(site?.locations) ? site.locations : []);
     setCities(Array.isArray(site?.cities) ? site.cities : []);
+    setDeliveryFee(((Number(site?.deliveryFeeCents)||0)/100).toFixed(2));
     setHours(site?.hours || {
       mon: { open: '10:00', close: '22:00', closed: false },
       tue: { open: '10:00', close: '22:00', closed: false },
@@ -108,6 +110,13 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
         ))}
         <button onClick={() => setCities(prev => [...prev, 'New City'])}>+ Add city</button>
       </div>
+
+      <div style={{ gridColumn: '1 / -1', fontWeight: 800, marginTop: 8 }}>Delivery settings</div>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span>Flat delivery fee (in $)</span>
+        <input type="number" step="0.01" min={0} value={deliveryFee} onChange={(e) => setDeliveryFee(e.target.value)} />
+        <span className="muted" style={{ fontSize: 12 }}>Applied only to delivery orders. Not shown for pickup.</span>
+      </label>
 
       <div style={{ gridColumn: '1 / -1', fontWeight: 800, marginTop: 8 }}>Opening hours</div>
       <div className="card" style={{ gridColumn: '1 / -1', padding: 10, display: 'grid', gap: 8 }}>
@@ -210,6 +219,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
             brandColor,
             locations,
             cities,
+            deliveryFeeCents: Math.max(0, Math.round(Number(deliveryFee || 0) * 100)),
             hours,
             pickup: {
               name: pickupName,

@@ -15,6 +15,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   const [quote, setQuote] = useState(null);
   const [tip, setTip] = useState(0);
   const [siteName, setSiteName] = useState('');
+  const [deliveryFeeCents, setDeliveryFeeCents] = useState(0);
   const [country, setCountry] = useState('CA');
   const [tab, setTab] = useState('enter'); // delivery: only manual address (enter)
   const [locations, setLocations] = useState([]);
@@ -27,7 +28,10 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
     async function loadSite() {
       try {
         const data = await fetchJson(`/api/shop/${siteSlug}/site`);
-        if (!cancelled) setSiteName(data.name || '');
+        if (!cancelled) {
+          setSiteName(data.name || '');
+          setDeliveryFeeCents(Number(data.deliveryFeeCents) || 0);
+        }
       } catch {}
     }
     async function loadLists() {
@@ -163,6 +167,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
           <>
             <div style={{ marginRight: 'auto' }}>
               <div style={{ fontWeight: 700 }}>Estimated: {quote?.fee?.amount ? `$${(quote.fee.amount / 100).toFixed(2)}` : '—'}</div>
+              {deliveryFeeCents ? <div className="muted" style={{ fontSize: 12 }}>Delivery fee: ${(deliveryFeeCents/100).toFixed(2)}</div> : null}
               {quote?.dropoff_estimated_dt ? <div className="muted" style={{ fontSize: 12 }}>ETA: {new Date(quote.dropoff_estimated_dt).toLocaleTimeString()}</div> : null}
             </div>
             <button className="primary-btn" disabled={loading} onClick={createDelivery} style={{ padding: '12px 16px', borderRadius: 12 }}>{loading ? 'Creating…' : 'Confirm delivery'}</button>
