@@ -9,6 +9,7 @@ import authRouter, { userAuthRouter } from './routes/auth.js';
 import adminSitesRouter, { adminBillingRouter } from './routes/adminSites.js';
 import adminCategoriesRouter from './routes/adminCategories.js';
 import adminProductsRouter from './routes/adminProducts.js';
+import adminOrdersRouter from './routes/adminOrders.js';
 import shopPublicRouter from './routes/shopPublic.js';
 import shopOrdersRouter from './routes/shopOrders.js';
 import deliveryRouter from './routes/delivery.js';
@@ -200,6 +201,7 @@ app.use('/api/admin/sites', adminSitesRouter);
 app.use('/api/admin', adminBillingRouter);
 app.use('/api/admin/sites/:siteId/categories', adminCategoriesRouter);
 app.use('/api/admin/sites/:siteId/products', adminProductsRouter);
+app.use('/api/admin/sites/:siteId/orders', adminOrdersRouter);
 app.use('/api/admin', adminUberRouter);
 // Public shop endpoints by site slug
 app.use("/api/shop", shopPublicRouter);

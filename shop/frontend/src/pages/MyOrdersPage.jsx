@@ -45,9 +45,6 @@ export const MyOrdersPage = () => {
     return () => { mounted = false; };
   }, [siteSlug]);
 
-  if (loading) return <div>Loading orders…</div>;
-  if (error) return <div style={{ color: 'red' }}>{error}</div>;
-
   const filtered = React.useMemo(() => {
     let list = Array.isArray(orders) ? orders : [];
     if (tab !== 'all') list = list.filter((o) => (o.fulfillmentType || '').toLowerCase() === tab);
@@ -59,6 +56,9 @@ export const MyOrdersPage = () => {
       return idStr.includes(q) || items.some((it) => String(it?.name || '').toLowerCase().includes(q));
     });
   }, [orders, query, tab]);
+
+  if (loading) return <div>Loading orders…</div>;
+  if (error) return <div style={{ color: 'red' }}>{error}</div>;
 
   return (
     <div className="container" style={{ paddingTop: 20 }}>
