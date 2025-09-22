@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { tenantBySlug } from '../middleware/tenant.js';
 import { requireUser } from '../middleware/auth.js';
 import Order from '../models/Order.js';
+import Site from '../models/Site.js';
 
 const router = Router();
 
@@ -26,12 +27,14 @@ router.post('/:slug/orders/pickup', requireUser, async (req, res) => {
   try {
     const { items, totalCents, tipCents, pickup } = req.body || {};
     if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ error: 'Items required' });
+    const itemsTotal = items.reduce((s, it) => s + (Number(it.priceCents)||0) * (Number(it.quantity)||1), 0);
+    if (itemsTotal < 5000) return res.status(400).json({ error: 'Minimum order is $50.00' });
     const orderPayload = {
       site: req.siteId,
       userId: req.user?.userId,
       userEmail: req.user?.email,
       items: items.map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.priceCents, size: m.size })),
-      totalCents: Number(totalCents) || items.reduce((s, it) => s + (Number(it.priceCents)||0) * (Number(it.quantity)||1), 0),
+      totalCents: Number(totalCents) || itemsTotal,
       tipCents: Number(tipCents) || 0,
       fulfillmentType: 'pickup',
       pickup,
