@@ -22,16 +22,16 @@ router.get('/', requireAdmin, async (_req, res) => {
 
 router.post('/', requireAdmin, async (req, res) => {
 	try {
-		const { name, slug, domains, uberCustomerId, pickup, brandColor, locations, cities } = req.body || {};
+		const { name, slug, domains, uberCustomerId, pickup, brandColor, locations, cities, hours, deliveryFeeCents } = req.body || {};
 		if (!name || !slug) return res.status(400).json({ error: 'name and slug are required' });
 		const mock = req.app.locals.mockData;
 		if (mock) {
-			const created = { _id: `site-${Date.now()}`, name, slug, domains: domains || [], uberCustomerId, pickup, locations: Array.isArray(locations) ? locations : [], cities: Array.isArray(cities) ? cities : [], brandColor: brandColor || '#0ea5e9', isActive: true };
+			const created = { _id: `site-${Date.now()}`, name, slug, domains: domains || [], uberCustomerId, pickup, locations: Array.isArray(locations) ? locations : [], cities: Array.isArray(cities) ? cities : [], hours: hours || undefined, deliveryFeeCents: Number(deliveryFeeCents) || 0, brandColor: brandColor || '#0ea5e9', isActive: true };
 			mock.sites.unshift(created);
 			try { saveMockData(req.app.locals.mockData); } catch {}
 			return res.status(201).json(created);
 		}
-		const site = await Site.create({ name, slug, domains: domains || [], uberCustomerId, pickup, locations: Array.isArray(locations) ? locations : [], cities: Array.isArray(cities) ? cities : [], brandColor: brandColor || '#0ea5e9', isActive: true });
+		const site = await Site.create({ name, slug, domains: domains || [], uberCustomerId, pickup, locations: Array.isArray(locations) ? locations : [], cities: Array.isArray(cities) ? cities : [], hours, deliveryFeeCents: Number(deliveryFeeCents) || 0, brandColor: brandColor || '#0ea5e9', isActive: true });
 		res.status(201).json(site);
 	} catch (err) {
 		res.status(400).json({ error: err.message });
@@ -41,17 +41,17 @@ router.post('/', requireAdmin, async (req, res) => {
 router.patch('/:siteId', requireAdmin, async (req, res) => {
 	try {
 		const { siteId } = req.params;
-		const { name, slug, domains, isActive, uberCustomerId, pickup, brandColor, locations, cities } = req.body || {};
+		const { name, slug, domains, isActive, uberCustomerId, pickup, brandColor, locations, cities, hours, deliveryFeeCents } = req.body || {};
 		const mock = req.app.locals.mockData;
 		if (mock) {
 			const idx = mock.sites.findIndex((s) => s._id === siteId);
 			if (idx === -1) return res.status(404).json({ error: 'Not found' });
-			const updated = { ...mock.sites[idx], ...(name !== undefined ? { name } : {}), ...(slug !== undefined ? { slug } : {}), ...(domains !== undefined ? { domains } : {}), ...(isActive !== undefined ? { isActive } : {}), ...(uberCustomerId !== undefined ? { uberCustomerId } : {}), ...(pickup !== undefined ? { pickup } : {}), ...(brandColor !== undefined ? { brandColor } : {}), ...(locations !== undefined ? { locations } : {}), ...(cities !== undefined ? { cities } : {}) };
+			const updated = { ...mock.sites[idx], ...(name !== undefined ? { name } : {}), ...(slug !== undefined ? { slug } : {}), ...(domains !== undefined ? { domains } : {}), ...(isActive !== undefined ? { isActive } : {}), ...(uberCustomerId !== undefined ? { uberCustomerId } : {}), ...(pickup !== undefined ? { pickup } : {}), ...(brandColor !== undefined ? { brandColor } : {}), ...(locations !== undefined ? { locations } : {}), ...(cities !== undefined ? { cities } : {}), ...(hours !== undefined ? { hours } : {}), ...(deliveryFeeCents !== undefined ? { deliveryFeeCents: Number(deliveryFeeCents) || 0 } : {}) };
 			mock.sites[idx] = updated;
 			try { saveMockData(req.app.locals.mockData); } catch {}
 			return res.json(updated);
 		}
-		const site = await Site.findByIdAndUpdate(siteId, { name, slug, domains, isActive, uberCustomerId, pickup, brandColor, locations, cities }, { new: true });
+		const site = await Site.findByIdAndUpdate(siteId, { name, slug, domains, isActive, uberCustomerId, pickup, brandColor, locations, cities, hours, deliveryFeeCents: deliveryFeeCents !== undefined ? Number(deliveryFeeCents) || 0 : undefined }, { new: true });
 		if (!site) return res.status(404).json({ error: 'Not found' });
 		res.json(site);
 	} catch (err) {
@@ -92,19 +92,30 @@ adminBillingRouter.get('/sites/:siteId/billing', requireAdmin, async (req, res) 
     startOfWeek.setDate(now.getDate() - ((now.getDay() + 6) % 7)); // Monday as start
     startOfWeek.setHours(0,0,0,0);
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
     const mock = req.app.locals.mockData;
     if (mock) {
       const orders = (mock.orders || []).filter((o) => o.site === siteId);
+      const todayTotal = orders
+        .filter((o) => new Date(o.createdAt || 0) >= startOfDay)
+        .reduce((s, o) => s + (Number(o.totalCents) || 0), 0);
+      const todayDeliveryFees = orders
+        .filter((o) => new Date(o.createdAt || 0) >= startOfDay)
+        .reduce((s, o) => s + (Number(o.deliveryFeeCents) || 0), 0);
       const weekTotal = orders
         .filter((o) => new Date(o.createdAt || 0) >= startOfWeek)
         .reduce((s, o) => s + (Number(o.totalCents) || 0), 0);
       const monthTotal = orders
         .filter((o) => new Date(o.createdAt || 0) >= startOfMonth)
         .reduce((s, o) => s + (Number(o.totalCents) || 0), 0);
-      return res.json({ weekTotalCents: weekTotal, monthTotalCents: monthTotal });
+      return res.json({ todayTotalCents: todayTotal, todayDeliveryFeeCents: todayDeliveryFees, weekTotalCents: weekTotal, monthTotalCents: monthTotal });
     }
 
+    const [todayAgg] = await Order.aggregate([
+      { $match: { site: new mongoose.Types.ObjectId(siteId), createdAt: { $gte: startOfDay } } },
+      { $group: { _id: null, total: { $sum: '$totalCents' }, deliveryFees: { $sum: '$deliveryFeeCents' } } },
+    ]);
     const [weekAgg] = await Order.aggregate([
       { $match: { site: new mongoose.Types.ObjectId(siteId), createdAt: { $gte: startOfWeek } } },
       { $group: { _id: null, total: { $sum: '$totalCents' } } },
@@ -113,7 +124,7 @@ adminBillingRouter.get('/sites/:siteId/billing', requireAdmin, async (req, res) 
       { $match: { site: new mongoose.Types.ObjectId(siteId), createdAt: { $gte: startOfMonth } } },
       { $group: { _id: null, total: { $sum: '$totalCents' } } },
     ]);
-    res.json({ weekTotalCents: weekAgg?.total || 0, monthTotalCents: monthAgg?.total || 0 });
+    res.json({ todayTotalCents: todayAgg?.total || 0, todayDeliveryFeeCents: todayAgg?.deliveryFees || 0, weekTotalCents: weekAgg?.total || 0, monthTotalCents: monthAgg?.total || 0 });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

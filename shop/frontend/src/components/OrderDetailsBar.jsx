@@ -2,12 +2,14 @@ import React from 'react';
 
 export const OrderDetailsBar = ({
   orderType = 'Select an order type',
-  pickupDate = 'Today',
-  pickupTime = '10:00 AM',
+  pickupDate,
+  pickupTime,
   addressSummary,
   onChangeOrderType,
   onPickupDateChange,
   onPickupTimeChange,
+  dateOptions = [],
+  timeOptions = [],
 }) => {
   return (
     <div className="order-bar card animate-fadeInUp" role="region" aria-label="Order details">
@@ -30,8 +32,12 @@ export const OrderDetailsBar = ({
                 className="order-bar__input"
                 style={{ padding: '6px 10px', borderRadius: 8 }}
               >
-                <option value="Today">Today</option>
-                <option value="Tomorrow">Tomorrow</option>
+                {(dateOptions.length ? dateOptions : [
+                  { value: 'today', label: 'Today' },
+                  { value: 'tomorrow', label: 'Tomorrow' },
+                ]).map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
               </select>
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -42,8 +48,8 @@ export const OrderDetailsBar = ({
                 className="order-bar__input"
                 style={{ padding: '6px 10px', borderRadius: 8 }}
               >
-                {['10:00 AM','10:30 AM','11:00 AM','11:30 AM','12:00 PM','12:30 PM','1:00 PM'].map((t) => (
-                  <option key={t} value={t}>{t}</option>
+                {(timeOptions.length ? timeOptions : ['10:00 AM','10:30 AM','11:00 AM','11:30 AM','12:00 PM','12:30 PM','1:00 PM']).map((t) => (
+                  <option key={t.value || t} value={t.value || t}>{t.label || t}</option>
                 ))}
               </select>
             </label>
