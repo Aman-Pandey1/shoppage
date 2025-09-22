@@ -68,6 +68,8 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 		if (itemsTotal < 5000) return res.status(400).json({ error: 'Minimum order is $50.00' });
 		const deliveryFeeCents = Number(site.deliveryFeeCents) || 0;
 		const totalCents = itemsTotal + deliveryFeeCents + (Number(tip) || 0);
+		const trackingUrl = delivery?.tracking_url || delivery?.trackingUrl || delivery?.share_url || delivery?.tracking_url_v2 || '';
+		const deliveryStatus = delivery?.status || delivery?.state || delivery?.current_status || '';
 		const orderPayload = {
 			site: req.siteId,
 			userId: req.user?.userId,
@@ -78,6 +80,8 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 			deliveryFeeCents,
 			externalId,
 			uberDeliveryId: delivery?.id || delivery?.delivery_id,
+      uberTrackingUrl: trackingUrl,
+      uberStatus: deliveryStatus,
       fulfillmentType: 'delivery',
 			dropoff,
 		};
