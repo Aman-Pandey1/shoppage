@@ -72,7 +72,45 @@
       ],
       "cities": [
         "Delhi"
-      ]
+      ],
+      "hours": {
+        "mon": {
+          "open": "10:00",
+          "close": "22:00",
+          "closed": false
+        },
+        "tue": {
+          "open": "10:00",
+          "close": "22:00",
+          "closed": true
+        },
+        "wed": {
+          "open": "10:00",
+          "close": "22:00",
+          "closed": false
+        },
+        "thu": {
+          "open": "10:00",
+          "close": "22:00",
+          "closed": false
+        },
+        "fri": {
+          "open": "10:00",
+          "close": "22:00",
+          "closed": false
+        },
+        "sat": {
+          "open": "10:00",
+          "close": "22:00",
+          "closed": false
+        },
+        "sun": {
+          "open": "10:00",
+          "close": "22:00",
+          "closed": false
+        }
+      },
+      "deliveryFeeCents": 800
     }
   ],
   "categories": [
