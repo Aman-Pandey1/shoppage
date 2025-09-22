@@ -8,6 +8,7 @@ export const AdminDashboard = () => {
   const [selectedSiteId, setSelectedSiteId] = useState('');
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState();
   const [filterCategory, setFilterCategory] = useState('');
@@ -16,6 +17,10 @@ export const AdminDashboard = () => {
   const fileInputRef = React.useRef(null);
   const [billing, setBilling] = useState(null);
   const [todayBilling, setTodayBilling] = useState(null);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [ordersError, setOrdersError] = useState();
+  const [ordersFrom, setOrdersFrom] = useState('');
+  const [ordersTo, setOrdersTo] = useState('');
 
   const [isSiteFormOpen, setIsSiteFormOpen] = useState(false);
   const [siteForm, setSiteForm] = useState({ name: '', slug: '', domainsText: '' });
@@ -60,6 +65,26 @@ export const AdminDashboard = () => {
   }
 
   useEffect(() => { loadAll(); }, [selectedSiteId]);
+
+  useEffect(() => {
+    async function loadOrders() {
+      if (!selectedSiteId || activeTab !== 'orders') return;
+      try {
+        setOrdersLoading(true);
+        setOrdersError(undefined);
+        const params = new URLSearchParams();
+        if (ordersFrom) params.set('from', ordersFrom);
+        if (ordersTo) params.set('to', ordersTo);
+        const data = await fetchJson(`/api/admin/sites/${selectedSiteId}/orders${params.toString() ? ('?' + params.toString()) : ''}`);
+        setOrders(Array.isArray(data) ? data : []);
+      } catch (e) {
+        setOrdersError(e.message || 'Failed to load orders');
+      } finally {
+        setOrdersLoading(false);
+      }
+    }
+    loadOrders();
+  }, [activeTab, selectedSiteId, ordersFrom, ordersTo]);
 
   useEffect(() => {
     async function loadBilling() {
@@ -182,6 +207,7 @@ export const AdminDashboard = () => {
           <button className={activeTab === 'settings' ? 'primary-btn' : ''} onClick={() => setActiveTab('settings')}>Settings</button>
           <button className={activeTab === 'categories' ? 'primary-btn' : ''} onClick={() => setActiveTab('categories')}>Categories</button>
           <button className={activeTab === 'products' ? 'primary-btn' : ''} onClick={() => setActiveTab('products')}>Products</button>
+          <button className={activeTab === 'orders' ? 'primary-btn' : ''} onClick={() => setActiveTab('orders')}>Orders</button>
           <button className={activeTab === 'billing' ? 'primary-btn' : ''} onClick={() => setActiveTab('billing')}>Billing</button>
         </div>
         {activeTab === 'billing' ? (
@@ -265,6 +291,60 @@ export const AdminDashboard = () => {
               selectedSiteId={selectedSiteId}
               onSiteUpdated={(updated) => setSites(prev => prev.map(s => s._id === updated._id ? updated : s))}
             />
+          </div>
+        ) : null}
+
+        {activeTab === 'orders' ? (
+          <div className="card" style={{ padding: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontWeight: 800 }}>Orders</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span className="muted" style={{ fontSize: 12 }}>From</span>
+                  <input type="date" value={ordersFrom} onChange={(e) => setOrdersFrom(e.target.value)} />
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span className="muted" style={{ fontSize: 12 }}>To</span>
+                  <input type="date" value={ordersTo} onChange={(e) => setOrdersTo(e.target.value)} />
+                </label>
+                <button onClick={() => { setOrdersFrom(''); setOrdersTo(''); }}>Clear</button>
+              </div>
+            </div>
+            {ordersLoading ? <div style={{ marginTop: 10 }}>Loading orders…</div> : null}
+            {ordersError ? <div style={{ color: 'red', marginTop: 10 }}>{ordersError}</div> : null}
+            {!ordersLoading && !ordersError ? (
+              <div style={{ marginTop: 12, overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>Order #</th>
+                      <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>Customer</th>
+                      <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>Date</th>
+                      <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>Price</th>
+                      <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>Items</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(Array.isArray(orders) ? orders : []).map((o) => {
+                      const customer = o.dropoff?.name || o.userEmail || '—';
+                      const itemsText = (Array.isArray(o.items) ? o.items : []).map((it) => `${it.name} × ${it.quantity}`).join(', ');
+                      return (
+                        <tr key={o._id}>
+                          <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>#{String(o._id || '').slice(-6)}</td>
+                          <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>{customer}</td>
+                          <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>{new Date(o.createdAt).toLocaleString()}</td>
+                          <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)', fontWeight: 800, color: 'var(--primary-600)' }}>${((o.totalCents||0)/100).toFixed(2)}</td>
+                          <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>{itemsText}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                {(!orders || orders.length === 0) ? (
+                  <div className="muted" style={{ marginTop: 8 }}>No orders for selected filters.</div>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         ) : null}
 
@@ -360,23 +440,25 @@ export const AdminDashboard = () => {
             ) : null}
 
             <div style={{ display: 'flex', gap: 8, margin: '6px 0 8px' }}>
-              <button onClick={async () => {
+              <button title="Download Excel with Categories and Products sheets" onClick={async () => {
                 if (!selectedSiteId) return;
                 const blob = await download(`/api/admin/sites/${selectedSiteId}/products/template.xlsx`);
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url; a.download = 'product_template.xlsx'; a.click();
                 URL.revokeObjectURL(url);
-              }}>Download template</button>
+              }}>Download template (Categories + Products)</button>
               <input ref={fileInputRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (!file || !selectedSiteId) return;
                 const res = await postFile(`/api/admin/sites/${selectedSiteId}/products/bulk`, file);
                 await loadAll();
-                alert(`Imported ${res.created} products`);
+                const productsCount = res.createdProducts ?? res.created ?? 0;
+                const categoriesCount = res.createdCategories ?? 0;
+                alert(`Imported ${productsCount} products and ${categoriesCount} categories`);
                 e.currentTarget.value = '';
               }} />
-              <button onClick={() => fileInputRef.current?.click()}>Upload Excel</button>
+              <button title="Upload Excel to auto-create categories with images and their products" onClick={() => fileInputRef.current?.click()}>Upload Excel (auto create)</button>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
               {filteredProducts.map((p) => (
