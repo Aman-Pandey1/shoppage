@@ -431,11 +431,28 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
               </label>
               <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <span style={{ color: 'var(--primary-600)' }}>Pickup time</span>
-                <select value={pickupTime} onChange={(e) => setPickupTime(e.target.value)}>
-                  {timeOptions.map((t) => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                  ))}
-                </select>
+                {(() => {
+                  const times = (timeOptions && timeOptions.length) ? timeOptions : (() => {
+                    const out = [];
+                    let h = 10, m = 0; // 10:00 AM to 10:00 PM fallback
+                    while (h < 22 || (h === 22 && m === 0)) {
+                      const mod = h >= 12 ? 'PM' : 'AM';
+                      const h12 = h % 12 === 0 ? 12 : h % 12;
+                      const label = `${h12}:${String(m).padStart(2,'0')} ${mod}`;
+                      out.push({ value: label, label });
+                      m += 45; if (m >= 60) { m -= 60; h += 1; }
+                    }
+                    return out;
+                  })();
+                  const value = pickupTime || (times[0]?.value || '');
+                  return (
+                    <select value={value} onChange={(e) => setPickupTime(e.target.value)}>
+                      {times.map((t) => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                      ))}
+                    </select>
+                  );
+                })()}
               </label>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16, gap: 8 }}>
