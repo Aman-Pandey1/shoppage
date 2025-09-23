@@ -73,7 +73,7 @@
         },
         "wed": {
           "open": "10:00",
-          "close": "22:00",
+          "close": "12:41",
           "closed": false
         },
         "thu": {
@@ -375,7 +375,67 @@
       "site": "mock-site"
     }
   ],
-  "orders": [],
+  "orders": [
+    {
+      "_id": "o-1758628898800",
+      "createdAt": "2025-09-23T12:01:38.800Z",
+      "site": "mock-site",
+      "userEmail": "admin@example.com",
+      "items": [
+        {
+          "name": "Gulab Jamun",
+          "quantity": 2,
+          "priceCents": 1200,
+          "size": "small"
+        },
+        {
+          "name": "Chocolate Brownie  ",
+          "quantity": 1,
+          "priceCents": 3000,
+          "size": "small"
+        }
+      ],
+      "totalCents": 6200,
+      "tipCents": 0,
+      "deliveryFeeCents": 800,
+      "externalId": "Default-Site-order-1758628895960",
+      "uberDeliveryId": "del_20td3nCqSZq4QyoBao7shg",
+      "uberTrackingUrl": "https://delivery.uber.com/ca/orders/db4b5dde-70aa-499a-b843-2a016a8eec86?tenancyOverride=uber%2Ftesting%2Fdirect%2Fe17d4989-135a-5753-8721-deea80593053",
+      "uberStatus": "pending",
+      "fulfillmentType": "delivery",
+      "dropoff": {
+        "name": "aaa",
+        "phone": "+9115877104641",
+        "address": {
+          "streetAddress": [
+            "100 Queen St W"
+          ],
+          "city": "Toronto",
+          "province": "ON",
+          "postalCode": "V6Z 2H7",
+          "country": "CA"
+        }
+      },
+      "pickup": {
+        "location": {
+          "name": "Varinderjeet Kaur",
+          "phone": "+1 416-868-6937",
+          "address": {
+            "streetAddress": [
+              "100 Queen St W"
+            ],
+            "city": "Toronto",
+            "province": "ON",
+            "postalCode": "2N2",
+            "country": "CA"
+          }
+        }
+      },
+      "meta": {
+        "distanceKm": null
+      }
+    }
+  ],
   "users": [
     {
       "_id": "u-1758473488632",
