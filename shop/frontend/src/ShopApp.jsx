@@ -221,7 +221,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     if (!pickupDate && opts.length) setPickupDate(opts[0].value);
   }, [hours]);
 
-  // Compute time options for selected date from hours (default 10:00-22:00)
+  // Compute time options for selected date from hours (default 10:00-22:00) with 45-minute intervals
   useEffect(() => {
     function parse24h(s, fallback) {
       if (!s || !/^\d{2}:\d{2}$/.test(s)) return fallback;
@@ -248,7 +248,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     let curH = openH, curM = openM;
     while (curH < closeH || (curH === closeH && curM <= closeM)) {
       options.push({ value: format12h(curH, curM), label: format12h(curH, curM) });
-      curM += 30;
+      curM += 45;
       if (curM >= 60) { curM -= 60; curH += 1; }
     }
     setTimeOptions(options);
