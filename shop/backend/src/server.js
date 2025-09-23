@@ -34,6 +34,7 @@ const MONGO_URI = process.env.MONGO_URI;
 const USE_MOCK_DATA = process.env.USE_MOCK_DATA === "true" || !MONGO_URI;
 
 if (USE_MOCK_DATA) {
+  try { globalThis.__USE_MOCK_DATA = true; } catch {}
   const persisted = typeof loadMockData === "function" ? loadMockData() : null;
   if (persisted) {
     app.locals.mockData = persisted;

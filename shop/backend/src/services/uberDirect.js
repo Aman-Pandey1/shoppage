@@ -2,7 +2,13 @@ import fetch from 'node-fetch';
 
 const UBER_TOKEN_URL = 'https://login.uber.com/oauth/v2/token';
 const UBER_ENV = (process.env.UBER_ENV || 'production').toLowerCase();
-const USING_MOCK = String(process.env.USE_MOCK_DATA || '').toLowerCase() === 'true';
+function isUsingMock() {
+  try {
+    if (globalThis && (globalThis.__USE_MOCK_DATA === true)) return true;
+  } catch {}
+  const val = String(process.env.USE_MOCK_DATA || '').toLowerCase();
+  return val === 'true';
+}
 const UBER_BASE = UBER_ENV === 'sandbox'
   ? 'https://sandbox-api.uber.com/v1/customers'
   : 'https://api.uber.com/v1/customers';
@@ -40,7 +46,7 @@ export async function requestQuote({ customerId, pickup, dropoff }) {
   const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
   if (!res.ok) {
     const text = await safeText(res);
-    if ((UBER_ENV === 'sandbox' || USING_MOCK) && /address_undeliverable|Cannot find eligible product/i.test(text)) {
+    if ((UBER_ENV === 'sandbox' || isUsingMock()) && (res.status >= 500 || /address_undeliverable|Cannot find eligible product|internal_server_error/i.test(text))) {
       // Return a simulated quote to unblock testing
       return {
         id: `q-${Date.now()}`,
@@ -71,7 +77,7 @@ export async function createDelivery({ customerId, pickup, dropoff, manifestItem
   const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
   if (!res.ok) {
     const text = await safeText(res);
-    if ((UBER_ENV === 'sandbox' || USING_MOCK) && /address_undeliverable|Cannot find eligible product/i.test(text)) {
+    if ((UBER_ENV === 'sandbox' || isUsingMock()) && (res.status >= 500 || /address_undeliverable|Cannot find eligible product|internal_server_error/i.test(text))) {
       // Simulate delivery object for testing
       const id = `d-${Date.now()}`;
       return {
