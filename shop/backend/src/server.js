@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
+import webhookUberRouter from './routes/webhookUber.js';
 import morgan from 'morgan';
 import categoriesRouter from './routes/categories.js';
 import productsRouter from './routes/products.js';
@@ -23,6 +24,8 @@ dotenv.config();
 
 const app = express();
 app.use(cors());
+// Mount webhook with raw body BEFORE JSON parser
+app.use('/webhook/uber', express.raw({ type: '*/*' }), webhookUberRouter);
 app.use(express.json());
 app.use(morgan("dev"));
 
