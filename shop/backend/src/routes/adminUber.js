@@ -34,8 +34,13 @@ router.get('/sites/:siteId/health', requireAdmin, async (req, res) => {
           address: pickup.address,
         },
       });
-			return res.json({ ok: true, fee: quote?.fee, eta: quote?.dropoff_estimated_dt });
+      return res.json({ ok: true, fee: quote?.fee, eta: quote?.dropoff_estimated_dt });
 		} catch (err) {
+			// Beautify common undeliverable errors
+			const msg = String(err?.message || '');
+			if (/address_undeliverable|Cannot find eligible product/i.test(msg)) {
+				return res.status(400).json({ ok: false, error: 'Address undeliverable in Uber sandbox. Ensure pickup address is valid and within supported region, or try a nearby address.' });
+			}
 			return res.status(400).json({ ok: false, error: err.message });
 		}
 	} catch (err) {

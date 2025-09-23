@@ -2,6 +2,7 @@ import React from 'react';
 import { useParams } from 'react-router-dom';
 import { fetchJson, getAuthToken } from '../lib/api';
 import { LoginModal } from '../components/LoginModal';
+import { TrackingModal } from '../components/TrackingModal';
 
 export const MyOrdersPage = () => {
   const params = useParams();
@@ -15,6 +16,7 @@ export const MyOrdersPage = () => {
   const [tracking, setTracking] = React.useState({});
   const [trackingLoadingId, setTrackingLoadingId] = React.useState('');
   const [trackingError, setTrackingError] = React.useState('');
+  const [trackingModal, setTrackingModal] = React.useState({ open: false, url: '', status: '' });
 
   React.useEffect(() => {
     let mounted = true;
@@ -112,10 +114,7 @@ export const MyOrdersPage = () => {
                         setTrackingLoadingId(o._id);
                         const data = await fetchJson(`/api/shop/${siteSlug || 'default'}/orders/${o._id}/tracking`);
                         setTracking(prev => ({ ...prev, [o._id]: data }));
-                        const url = data?.uberTrackingUrl;
-                        if (url) {
-                          try { window.open(url, '_blank', 'noopener'); } catch {}
-                        }
+                        setTrackingModal({ open: true, url: data?.uberTrackingUrl || '', status: data?.uberStatus || '' });
                       } catch (e) {
                         setTrackingError(e.message || 'Failed to load tracking');
                       } finally {
@@ -129,6 +128,12 @@ export const MyOrdersPage = () => {
           ))}
         </div>
       )}
+      <TrackingModal
+        open={trackingModal.open}
+        trackingUrl={trackingModal.url}
+        status={trackingModal.status}
+        onClose={() => setTrackingModal({ open: false, url: '', status: '' })}
+      />
       <LoginModal
         open={loginOpen}
         onClose={() => setLoginOpen(false)}
