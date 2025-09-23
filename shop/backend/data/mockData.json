@@ -29,23 +29,23 @@
       "isActive": true,
       "uberCustomerId": "e17d4989-135a-5753-8721-deea80593053",
       "pickup": {
-        "name": "",
-        "phone": "+919888421284",
+        "name": "app",
+        "phone": "+1 604-662-4700",
         "address": {
           "streetAddress": [
-            "H. No. 27, Emaar Mohali Hills Sector 99"
+            "750 Hornby St"
           ],
-          "city": "Mohali",
-          "province": "Punjab",
-          "postalCode": "140306",
-          "country": "IN"
+          "city": "Vancouver",
+          "province": "Canada",
+          "postalCode": "BC V6Z 2H7",
+          "country": "CA"
         }
       },
       "brandColor": "#0d4fe7",
       "locations": [
         {
           "name": "Varinderjeet Kaur",
-          "phone": "+919888421284",
+          "phone": "+1 416-868-6937",
           "address": {
             "streetAddress": [
               "100 Queen St W"
@@ -54,19 +54,6 @@
             "province": "ON",
             "postalCode": "2N2",
             "country": "CA"
-          }
-        },
-        {
-          "name": "aaa",
-          "phone": "+9115877104641",
-          "address": {
-            "streetAddress": [
-              "100 Queen St W"
-            ],
-            "city": "Mohali",
-            "province": "Punjab",
-            "postalCode": "140306",
-            "country": "IN"
           }
         }
       ],
