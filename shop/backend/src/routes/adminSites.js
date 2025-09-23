@@ -97,19 +97,37 @@ adminBillingRouter.get('/sites/:siteId/billing', requireAdmin, async (req, res) 
     const mock = req.app.locals.mockData;
     if (mock) {
       const orders = (mock.orders || []).filter((o) => o.site === siteId);
-      const todayTotal = orders
-        .filter((o) => new Date(o.createdAt || 0) >= startOfDay)
-        .reduce((s, o) => s + (Number(o.totalCents) || 0), 0);
-      const todayDeliveryFees = orders
-        .filter((o) => new Date(o.createdAt || 0) >= startOfDay)
-        .reduce((s, o) => s + (Number(o.deliveryFeeCents) || 0), 0);
-      const weekTotal = orders
-        .filter((o) => new Date(o.createdAt || 0) >= startOfWeek)
-        .reduce((s, o) => s + (Number(o.totalCents) || 0), 0);
-      const monthTotal = orders
-        .filter((o) => new Date(o.createdAt || 0) >= startOfMonth)
-        .reduce((s, o) => s + (Number(o.totalCents) || 0), 0);
-      return res.json({ todayTotalCents: todayTotal, todayDeliveryFeeCents: todayDeliveryFees, weekTotalCents: weekTotal, monthTotalCents: monthTotal });
+      const isToday = (o) => new Date(o.createdAt || 0) >= startOfDay;
+      const isWeek = (o) => new Date(o.createdAt || 0) >= startOfWeek;
+      const isMonth = (o) => new Date(o.createdAt || 0) >= startOfMonth;
+      const sum = (list, field) => list.reduce((s, o) => s + (Number(o[field]) || 0), 0);
+      const todayOrders = orders.filter(isToday);
+      const weekOrders = orders.filter(isWeek);
+      const monthOrders = orders.filter(isMonth);
+
+      const todayTotalCents = sum(todayOrders, 'totalCents');
+      const weekTotalCents = sum(weekOrders, 'totalCents');
+      const monthTotalCents = sum(monthOrders, 'totalCents');
+      const todayDeliveryFeeCents = sum(todayOrders, 'deliveryFeeCents');
+      const weekDeliveryFeeCents = sum(weekOrders, 'deliveryFeeCents');
+      const monthDeliveryFeeCents = sum(monthOrders, 'deliveryFeeCents');
+
+      // Selling totals exclude delivery fees (items + tip only)
+      const todaySellingCents = todayTotalCents - todayDeliveryFeeCents;
+      const weekSellingCents = weekTotalCents - weekDeliveryFeeCents;
+      const monthSellingCents = monthTotalCents - monthDeliveryFeeCents;
+
+      return res.json({
+        todayTotalCents: todaySellingCents,
+        todayDeliveryFeeCents,
+        weekTotalCents: weekSellingCents,
+        monthTotalCents: monthSellingCents,
+        todaySellingCents,
+        weekSellingCents,
+        monthSellingCents,
+        weekDeliveryFeeCents,
+        monthDeliveryFeeCents,
+      });
     }
 
     const [todayAgg] = await Order.aggregate([
@@ -118,13 +136,28 @@ adminBillingRouter.get('/sites/:siteId/billing', requireAdmin, async (req, res) 
     ]);
     const [weekAgg] = await Order.aggregate([
       { $match: { site: new mongoose.Types.ObjectId(siteId), createdAt: { $gte: startOfWeek } } },
-      { $group: { _id: null, total: { $sum: '$totalCents' } } },
+      { $group: { _id: null, total: { $sum: '$totalCents' }, deliveryFees: { $sum: '$deliveryFeeCents' } } },
     ]);
     const [monthAgg] = await Order.aggregate([
       { $match: { site: new mongoose.Types.ObjectId(siteId), createdAt: { $gte: startOfMonth } } },
-      { $group: { _id: null, total: { $sum: '$totalCents' } } },
+      { $group: { _id: null, total: { $sum: '$totalCents' }, deliveryFees: { $sum: '$deliveryFeeCents' } } },
     ]);
-    res.json({ todayTotalCents: todayAgg?.total || 0, todayDeliveryFeeCents: todayAgg?.deliveryFees || 0, weekTotalCents: weekAgg?.total || 0, monthTotalCents: monthAgg?.total || 0 });
+
+    const todaySellingCents = (todayAgg?.total || 0) - (todayAgg?.deliveryFees || 0);
+    const weekSellingCents = (weekAgg?.total || 0) - (weekAgg?.deliveryFees || 0);
+    const monthSellingCents = (monthAgg?.total || 0) - (monthAgg?.deliveryFees || 0);
+
+    res.json({
+      todayTotalCents: todaySellingCents,
+      todayDeliveryFeeCents: todayAgg?.deliveryFees || 0,
+      weekTotalCents: weekSellingCents,
+      monthTotalCents: monthSellingCents,
+      todaySellingCents,
+      weekSellingCents,
+      monthSellingCents,
+      weekDeliveryFeeCents: weekAgg?.deliveryFees || 0,
+      monthDeliveryFeeCents: monthAgg?.deliveryFees || 0,
+    });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

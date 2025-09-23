@@ -214,21 +214,23 @@ export const AdminDashboard = () => {
           <div className="card" style={{ padding: 12 }}>
             <div style={{ fontWeight: 800, marginBottom: 8 }}>Billing (Weekly / Monthly)</div>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <div className="card" style={{ padding: 12, minWidth: 220, borderTop: '3px solid var(--primary)' }}>
-                <div className="muted" style={{ fontSize: 12 }}>Today total</div>
+              <div className="card" style={{ padding: 12, minWidth: 240, borderTop: '3px solid var(--primary)' }}>
+                <div className="muted" style={{ fontSize: 12 }}>Today (Selling)</div>
                 <div style={{ fontWeight: 900, fontSize: 22, color: 'var(--primary-600)' }}>${(((todayBilling?.todayTotalCents)||0)/100).toFixed(2)}</div>
                 <div className="muted" style={{ fontSize: 12 }}>Delivery fees: ${(((todayBilling?.todayDeliveryFeeCents)||0)/100).toFixed(2)}</div>
               </div>
-              <div className="card" style={{ padding: 12, minWidth: 220, borderTop: '3px solid var(--primary)' }}>
-                <div className="muted" style={{ fontSize: 12 }}>This week</div>
-                <div style={{ fontWeight: 900, fontSize: 22, color: 'var(--primary-600)' }}>${((billing?.weekTotalCents || 0)/100).toFixed(2)}</div>
+              <div className="card" style={{ padding: 12, minWidth: 240, borderTop: '3px solid var(--primary)' }}>
+                <div className="muted" style={{ fontSize: 12 }}>This week (Selling)</div>
+                <div style={{ fontWeight: 900, fontSize: 22, color: 'var(--primary-600)' }}>${(((billing?.weekTotalCents)||0)/100).toFixed(2)}</div>
+                <div className="muted" style={{ fontSize: 12 }}>Delivery fees: ${(((billing?.weekDeliveryFeeCents)||0)/100).toFixed(2)}</div>
               </div>
-              <div className="card" style={{ padding: 12, minWidth: 220, borderTop: '3px solid var(--primary)' }}>
-                <div className="muted" style={{ fontSize: 12 }}>This month</div>
-                <div style={{ fontWeight: 900, fontSize: 22, color: 'var(--primary-600)' }}>${((billing?.monthTotalCents || 0)/100).toFixed(2)}</div>
+              <div className="card" style={{ padding: 12, minWidth: 240, borderTop: '3px solid var(--primary)' }}>
+                <div className="muted" style={{ fontSize: 12 }}>This month (Selling)</div>
+                <div style={{ fontWeight: 900, fontSize: 22, color: 'var(--primary-600)' }}>${(((billing?.monthTotalCents)||0)/100).toFixed(2)}</div>
+                <div className="muted" style={{ fontSize: 12 }}>Delivery fees: ${(((billing?.monthDeliveryFeeCents)||0)/100).toFixed(2)}</div>
               </div>
             </div>
-            <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>Totals include item prices plus tip.</div>
+            <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>Selling excludes delivery fees. Delivery is shown separately.</div>
           </div>
         ) : null}
 
@@ -322,6 +324,7 @@ export const AdminDashboard = () => {
                       <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>Date</th>
                       <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>Price</th>
                       <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>Items</th>
+                      <th style={{ textAlign: 'right', padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -335,6 +338,19 @@ export const AdminDashboard = () => {
                           <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>{new Date(o.createdAt).toLocaleString()}</td>
                           <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)', fontWeight: 800, color: 'var(--primary-600)' }}>${((o.totalCents||0)/100).toFixed(2)}</td>
                           <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>{itemsText}</td>
+                          <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>
+                            <button onClick={async () => {
+                              try {
+                                const blob = await download(`/api/admin/sites/${selectedSiteId}/orders/${o._id}/pdf`);
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url; a.download = `order-${String(o._id).slice(-6)}.pdf`; a.click();
+                                URL.revokeObjectURL(url);
+                              } catch (e) {
+                                alert('Failed to download PDF');
+                              }
+                            }}>Download PDF</button>
+                          </td>
                         </tr>
                       );
                     })}
