@@ -24,6 +24,34 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   const [selectedPickupIndex, setSelectedPickupIndex] = useState(null);
   const [selectedCity, setSelectedCity] = useState('');
 
+  const itemsSubtotalCents = React.useMemo(() => {
+    try {
+      return (Array.isArray(manifest) ? manifest : []).reduce((sum, it) => sum + (Number(it.priceCents) || 0) * (Number(it.quantity) || 1), 0);
+    } catch { return 0; }
+  }, [manifest]);
+
+  function parseServerError(err) {
+    try {
+      const raw = String(err?.message || err || '');
+      // Try extract JSON { error: ... }
+      const brace = raw.indexOf('{');
+      if (brace >= 0) {
+        const json = raw.slice(brace);
+        try {
+          const parsed = JSON.parse(json);
+          if (parsed && parsed.error) return String(parsed.error);
+        } catch {}
+      }
+      // Friendly Uber 5xx mapping
+      if (/internal_server_error|We have experienced a problem/i.test(raw)) {
+        return 'Delivery service is temporarily unavailable. Please try again in a minute or choose pickup.';
+      }
+      return raw.replace(/^Request failed:\s*\d+\s*/i, '').trim() || 'Something went wrong';
+    } catch {
+      return 'Something went wrong';
+    }
+  }
+
   React.useEffect(() => {
     let cancelled = false;
     async function loadSite() {
@@ -89,7 +117,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
       if (typeof q?.distanceKm === 'number') setDistanceKm(q.distanceKm);
       if (typeof q?.distanceFeeCents === 'number') setDeliveryFeeCents(q.distanceFeeCents);
     } catch (e) {
-      setError(e.message || 'Failed to get quote');
+      setError(parseServerError(e) || 'Failed to get quote');
     } finally { setLoading(false); }
   }
 
@@ -109,7 +137,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
       onConfirmed(result.id || result.delivery_id || '', summary);
       onClose();
     } catch (e) {
-      setError(e.message || 'Failed to create delivery');
+      setError(parseServerError(e) || 'Failed to create delivery');
     } finally { setLoading(false); }
   }
 
@@ -158,22 +186,38 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
           </select>
         </label>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 14, alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 14, alignItems: 'flex-start' }}>
         <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <span>Tip</span>
           <input type="number" step="0.5" min={0} value={tip} onChange={(e) => setTip(Number(e.target.value))} style={{ width: 90 }} />
         </label>
-        <div style={{ display: 'inline-flex', gap: 10, marginLeft: 'auto' }}>
+        <div style={{ display: 'grid', gap: 8, marginLeft: 'auto', minWidth: 260 }}>
+          <div className="card" style={{ padding: 10, borderRadius: 10, background: 'var(--primary-alpha-04)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <span className="muted">Items</span>
+              <span style={{ fontWeight: 700 }}>${(itemsSubtotalCents/100).toFixed(2)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <span className="muted">Delivery fee</span>
+              <span style={{ fontWeight: 700 }}>{deliveryFeeCents ? `$${(deliveryFeeCents/100).toFixed(2)}` : '—'}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <span className="muted">Tip</span>
+              <span style={{ fontWeight: 700 }}>${Number(tip || 0).toFixed(2)}</span>
+            </div>
+            <div style={{ height: 1, background: 'var(--border)', margin: '6px 0' }} />
+            {quote?.dropoff_estimated_dt ? (
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>ETA: {new Date(quote.dropoff_estimated_dt).toLocaleTimeString()}</div>
+            ) : null}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 800 }}>Estimated total</span>
+              <span style={{ fontWeight: 900 }}>${(((itemsSubtotalCents + (deliveryFeeCents||0) + Math.round((Number(tip)||0)*100)))/100).toFixed(2)}</span>
+            </div>
+          </div>
         {!quote ? (
           <button className="primary-btn" disabled={loading} onClick={getQuote} style={{ padding: '12px 16px', borderRadius: 12 }}>{loading ? 'Requesting…' : 'Get quote'}</button>
         ) : (
           <>
-            <div style={{ marginRight: 'auto' }}>
-              <div style={{ fontWeight: 700 }}>Estimated: {quote?.fee?.amount ? `$${(quote.fee.amount / 100).toFixed(2)}` : '—'}</div>
-              {typeof distanceKm === 'number' ? <div className="muted" style={{ fontSize: 12 }}>Distance: {distanceKm.toFixed(1)} km</div> : null}
-              {deliveryFeeCents ? <div className="muted" style={{ fontSize: 12 }}>Delivery fee: ${(deliveryFeeCents/100).toFixed(2)}</div> : null}
-              {quote?.dropoff_estimated_dt ? <div className="muted" style={{ fontSize: 12 }}>ETA: {new Date(quote.dropoff_estimated_dt).toLocaleTimeString()}</div> : null}
-            </div>
             <button className="primary-btn" disabled={loading} onClick={createDelivery} style={{ padding: '12px 16px', borderRadius: 12 }}>{loading ? 'Creating…' : 'Confirm delivery'}</button>
           </>
         )}
