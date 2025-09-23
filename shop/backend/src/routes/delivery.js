@@ -5,6 +5,7 @@ import Order from '../models/Order.js';
 import { saveMockData } from '../utils/mockStore.js';
 import Site from '../models/Site.js';
 import { requestQuote, createDelivery } from '../services/uberDirect.js';
+import { distanceBetweenAddressesKm, calculateDistanceFeeCents } from '../services/geo.js';
 
 const router = Router();
 
@@ -21,20 +22,38 @@ router.post('/:slug/quote', async (req, res) => {
 		}
 		const hasPickupCfg = !!(site?.pickup?.address) || (Array.isArray(site?.locations) && site.locations.length && site.locations[0]?.address);
 		if (!site?.uberCustomerId || !hasPickupCfg) return res.status(400).json({ error: 'Site not configured for Uber Direct' });
-    const { dropoff, pickupLocationIndex } = req.body || {};
+		const { dropoff, pickupLocationIndex } = req.body || {};
 		if (!dropoff?.address?.streetAddress) return res.status(400).json({ error: 'Invalid dropoff address' });
-    // Allow selecting a pickup location from configured list
-    let pickup = site.pickup || (Array.isArray(site.locations) && site.locations.length ? site.locations[0] : null);
-    if (typeof pickupLocationIndex === 'number' && Array.isArray(site.locations) && site.locations[pickupLocationIndex]) {
-      pickup = site.locations[pickupLocationIndex];
-    }
-    if (!pickup) return res.status(400).json({ error: 'No pickup location configured' });
+		// Determine pickup location: use provided index if valid, otherwise choose nearest to dropoff
+		const locs = (Array.isArray(site.locations) && site.locations.length)
+			? site.locations
+			: (site.pickup ? [site.pickup] : []);
+		if (!locs.length) return res.status(400).json({ error: 'No pickup location configured' });
+		let chosenIdx = 0;
+		if (typeof pickupLocationIndex === 'number' && locs[pickupLocationIndex]) {
+			chosenIdx = pickupLocationIndex;
+		} else {
+			// Find nearest
+			let minDist = Infinity;
+			for (let i = 0; i < locs.length; i++) {
+				try {
+					const km = await distanceBetweenAddressesKm(locs[i].address, dropoff.address);
+					if (typeof km === 'number' && km < minDist) { minDist = km; chosenIdx = i; }
+				} catch {}
+			}
+		}
+		const pickup = locs[chosenIdx];
+		if (!pickup) return res.status(400).json({ error: 'No pickup location configured' });
+		// Compute distance-based delivery fee
+		let distanceKm = null;
+		try { distanceKm = await distanceBetweenAddressesKm(pickup.address, dropoff.address); } catch {}
+		const distanceFeeCents = calculateDistanceFeeCents(distanceKm);
 		const quote = await requestQuote({
 			customerId: site.uberCustomerId,
-      pickup,
+			pickup,
 			dropoff,
 		});
-		res.json(quote);
+		res.json({ ...quote, distanceKm, distanceFeeCents, pickupLocationIndex: chosenIdx });
 	} catch (err) {
 		res.status(400).json({ error: err.message });
 	}
@@ -51,12 +70,26 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 		}
 		const hasPickupCfg = !!(site?.pickup?.address) || (Array.isArray(site?.locations) && site.locations.length && site.locations[0]?.address);
 		if (!site?.uberCustomerId || !hasPickupCfg) return res.status(400).json({ error: 'Site not configured for Uber Direct' });
-    const { dropoff, manifestItems, tip, externalId, pickupLocationIndex } = req.body || {};
-    let pickup = site.pickup || (Array.isArray(site.locations) && site.locations.length ? site.locations[0] : null);
-    if (typeof pickupLocationIndex === 'number' && Array.isArray(site.locations) && site.locations[pickupLocationIndex]) {
-      pickup = site.locations[pickupLocationIndex];
-    }
-    if (!pickup) return res.status(400).json({ error: 'No pickup location configured' });
+		const { dropoff, manifestItems, tip, externalId, pickupLocationIndex } = req.body || {};
+		const locs = (Array.isArray(site.locations) && site.locations.length)
+			? site.locations
+			: (site.pickup ? [site.pickup] : []);
+		if (!locs.length) return res.status(400).json({ error: 'No pickup location configured' });
+		let chosenIdx = 0;
+		if (typeof pickupLocationIndex === 'number' && locs[pickupLocationIndex]) {
+			chosenIdx = pickupLocationIndex;
+		} else {
+			// Choose nearest to dropoff
+			let minDist = Infinity;
+			for (let i = 0; i < locs.length; i++) {
+				try {
+					const km = await distanceBetweenAddressesKm(locs[i].address, dropoff.address);
+					if (typeof km === 'number' && km < minDist) { minDist = km; chosenIdx = i; }
+				} catch {}
+			}
+		}
+		let pickup = locs[chosenIdx];
+		if (!pickup) return res.status(400).json({ error: 'No pickup location configured' });
 		// Ensure pickup has a valid E.164 phone for Uber
 		const safePickup = {
 			...pickup,
@@ -64,6 +97,10 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 				? String(pickup.phone).replace(/[^\d+]/g, '')
 				: '+10000000000',
 		};
+		// Compute distance-based fee
+		let distanceKm = null;
+		try { distanceKm = await distanceBetweenAddressesKm(pickup.address, dropoff.address); } catch {}
+		const distanceFeeCents = calculateDistanceFeeCents(distanceKm);
 		const delivery = await createDelivery({
 			customerId: site.uberCustomerId,
       pickup: safePickup,
@@ -75,7 +112,7 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 		// Record order
 		const itemsTotal = (manifestItems || []).reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 1), 0);
 		if (itemsTotal < 5000) return res.status(400).json({ error: 'Minimum order is $50.00' });
-		const deliveryFeeCents = Number(site.deliveryFeeCents) || 0;
+		const deliveryFeeCents = Number(distanceFeeCents) || 0;
 		const totalCents = itemsTotal + deliveryFeeCents + (Number(tip) || 0);
 		const trackingUrl = delivery?.tracking_url || delivery?.trackingUrl || delivery?.share_url || delivery?.tracking_url_v2 || '';
 		const deliveryStatus = delivery?.status || delivery?.state || delivery?.current_status || '';
@@ -93,6 +130,8 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
       uberStatus: deliveryStatus,
       fulfillmentType: 'delivery',
 			dropoff,
+			pickup: { location: pickup },
+			meta: { distanceKm },
 		};
 		if (req.app.locals.mockData) {
 			if (!Array.isArray(req.app.locals.mockData.orders)) req.app.locals.mockData.orders = [];
@@ -102,7 +141,7 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 		} else {
 			await Order.create(orderPayload);
 		}
-		res.status(201).json(delivery);
+		res.status(201).json({ ...delivery, distanceKm, distanceFeeCents, pickupLocationIndex: chosenIdx });
 	} catch (err) {
 		res.status(400).json({ error: err.message });
 	}

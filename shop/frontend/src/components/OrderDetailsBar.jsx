@@ -48,7 +48,18 @@ export const OrderDetailsBar = ({
                 className="order-bar__input"
                 style={{ padding: '6px 10px', borderRadius: 8 }}
               >
-                {(timeOptions.length ? timeOptions : ['10:00 AM','10:30 AM','11:00 AM','11:30 AM','12:00 PM','12:30 PM','1:00 PM']).map((t) => (
+                {(timeOptions.length ? timeOptions : (() => {
+                  const out = [];
+                  let h = 10, m = 0; // 10:00 AM to 10:00 PM
+                  while (h < 22 || (h === 22 && m === 0)) {
+                    const mod = h >= 12 ? 'PM' : 'AM';
+                    const h12 = h % 12 === 0 ? 12 : h % 12;
+                    const label = `${h12}:${String(m).padStart(2,'0')} ${mod}`;
+                    out.push({ value: label, label });
+                    m += 45; if (m >= 60) { m -= 60; h += 1; }
+                  }
+                  return out;
+                })()).map((t) => (
                   <option key={t.value || t} value={t.value || t}>{t.label || t}</option>
                 ))}
               </select>
