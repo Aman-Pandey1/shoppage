@@ -2,7 +2,7 @@ import React from 'react';
 import { useCart } from '../store/CartContext';
 
 export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
-  const { state, removeItem, updateQuantity, clearCart, getCartTotal } = useCart();
+  const { state, removeItem, updateQuantity, clearCart, getCartTotal, setNotes } = useCart();
   const [now, setNow] = React.useState(Date.now());
   React.useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 30000);
@@ -90,9 +90,24 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
       )}
 
       <div className="card" style={{ marginTop: 12, borderRadius: 'var(--radius-sm)', padding: 12 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, marginBottom: 10 }}>
-          <span>Total</span>
-          <span>${getCartTotal().toFixed(2)}</span>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span className="muted" style={{ fontSize: 12 }}>Notes for restaurant</span>
+          <textarea rows={3} placeholder="e.g., No onions, extra spicy" value={state.notes || ''} onChange={(e) => setNotes(e.target.value)} />
+        </label>
+        <div style={{ display: 'grid', gap: 6, marginTop: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span className="muted">Items</span>
+            <span>${getCartTotal().toFixed(2)}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span className="muted">Tax (5%)</span>
+            <span>${(getCartTotal() * 0.05).toFixed(2)}</span>
+          </div>
+          <div style={{ height: 1, background: 'var(--border)' }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800 }}>
+            <span>Total</span>
+            <span>${(getCartTotal() * 1.05).toFixed(2)}</span>
+          </div>
         </div>
         <button
           className="primary-btn"

@@ -466,12 +466,12 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                   // Build pickup order payload
                   const payload = {
                     items: manifest.map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.priceCents || 0, size: m.size || 'small' })),
-                    totalCents: manifest.reduce((s, it) => s + (it.priceCents || 0) * (it.quantity || 1), 0),
                     tipCents: 0,
                     pickup: {
                       location: chosenLocation,
                       scheduledFor: readyAt,
                     },
+                    notes: state.notes || undefined,
                   };
                   const res = await fetchJson(`/api/shop/${siteSlug}/site`).catch(() => ({}));
                   await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/shop/${siteSlug}/orders/pickup`, {

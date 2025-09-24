@@ -19,6 +19,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   const [country, setCountry] = useState('CA');
   const [distanceKm, setDistanceKm] = useState(null);
   const [tab, setTab] = useState('enter'); // delivery: only manual address (enter)
+  const [notes, setNotes] = useState('');
   const [locations, setLocations] = useState([]);
   const [cities, setCities] = useState([]);
   const [selectedPickupIndex, setSelectedPickupIndex] = useState(null);
@@ -186,17 +187,25 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
           </select>
         </label>
       </div>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+        <span>Notes for restaurant (optional)</span>
+        <textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g., Leave at door, call on arrival" />
+      </label>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 14, alignItems: 'flex-start' }}>
         <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <span>Tip</span>
           <input type="number" step="0.5" min={0} value={tip} onChange={(e) => setTip(Number(e.target.value))} style={{ width: 90 }} />
         </label>
         <div style={{ display: 'grid', gap: 8, marginLeft: 'auto', minWidth: 260 }}>
-          <div className="card" style={{ padding: 10, borderRadius: 10, background: 'var(--primary-alpha-04)' }}>
+            <div className="card" style={{ padding: 10, borderRadius: 10, background: 'var(--primary-alpha-04)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
               <span className="muted">Items</span>
               <span style={{ fontWeight: 700 }}>${(itemsSubtotalCents/100).toFixed(2)}</span>
             </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                <span className="muted">Tax (5%)</span>
+                <span style={{ fontWeight: 700 }}>${((itemsSubtotalCents*0.05)/100).toFixed(2)}</span>
+              </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
               <span className="muted">Delivery fee</span>
               <span style={{ fontWeight: 700 }}>{deliveryFeeCents ? `$${(deliveryFeeCents/100).toFixed(2)}` : '—'}</span>
@@ -211,14 +220,33 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
             ) : null}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontWeight: 800 }}>Estimated total</span>
-              <span style={{ fontWeight: 900 }}>${(((itemsSubtotalCents + (deliveryFeeCents||0) + Math.round((Number(tip)||0)*100)))/100).toFixed(2)}</span>
+                <span style={{ fontWeight: 900 }}>${(((itemsSubtotalCents + Math.round(itemsSubtotalCents*0.05) + (deliveryFeeCents||0) + Math.round((Number(tip)||0)*100)))/100).toFixed(2)}</span>
             </div>
           </div>
         {!quote ? (
           <button className="primary-btn" disabled={loading} onClick={getQuote} style={{ padding: '12px 16px', borderRadius: 12 }}>{loading ? 'Requesting…' : 'Get quote'}</button>
         ) : (
           <>
-            <button className="primary-btn" disabled={loading} onClick={createDelivery} style={{ padding: '12px 16px', borderRadius: 12 }}>{loading ? 'Creating…' : 'Confirm delivery'}</button>
+            <button className="primary-btn" disabled={loading} onClick={async () => {
+              // Wrap createDelivery to include notes in payload
+              setLoading(true); setError(undefined);
+              try {
+                const address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
+                const result = await postJson(`/api/delivery/${siteSlug}/create`, {
+                  dropoff: { name, phone, address },
+                  manifestItems: manifest.map(m => ({ name: m.name, quantity: m.quantity, size: m.size || 'small', price: m.priceCents || 0 })),
+                  tip: Math.round((tip || 0) * 100),
+                  externalId: `${siteName ? siteName.replace(/\s+/g, '-') : siteSlug}-order-${Date.now()}`,
+                  pickupLocationIndex: (quote && typeof quote.pickupLocationIndex === 'number') ? quote.pickupLocationIndex : selectedPickupIndex,
+                  notes,
+                });
+                const summary = [addr1, city, postalCode].filter(Boolean).join(', ');
+                onConfirmed(result.id || result.delivery_id || '', summary);
+                onClose();
+              } catch (e) {
+                setError(parseServerError(e) || 'Failed to create delivery');
+              } finally { setLoading(false); }
+            }} style={{ padding: '12px 16px', borderRadius: 12 }}>{loading ? 'Creating…' : 'Confirm delivery'}</button>
           </>
         )}
         </div>

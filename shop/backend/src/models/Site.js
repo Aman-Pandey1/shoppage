@@ -6,6 +6,8 @@ const SiteSchema = new mongoose.Schema({
 	domains: [{ type: String }],
 	isActive: { type: Boolean, default: true },
 	brandColor: { type: String, default: '#0ea5e9' },
+	// Optional logo URL displayed in the shop header
+	logoUrl: { type: String },
 	uberCustomerId: { type: String },
 	// Flat delivery fee in cents applied to delivery orders only
 	deliveryFeeCents: { type: Number, default: 0 },
