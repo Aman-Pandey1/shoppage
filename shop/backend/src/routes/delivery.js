@@ -70,7 +70,7 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 		}
 		const hasPickupCfg = !!(site?.pickup?.address) || (Array.isArray(site?.locations) && site.locations.length && site.locations[0]?.address);
 		if (!site?.uberCustomerId || !hasPickupCfg) return res.status(400).json({ error: 'Site not configured for Uber Direct' });
-    const { dropoff, manifestItems, tip, externalId, pickupLocationIndex, notes } = req.body || {};
+		const { dropoff, manifestItems, externalId, pickupLocationIndex, notes } = req.body || {};
 		const locs = (Array.isArray(site.locations) && site.locations.length)
 			? site.locations
 			: (site.pickup ? [site.pickup] : []);
@@ -103,18 +103,18 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 		const distanceFeeCents = calculateDistanceFeeCents(distanceKm);
 		const delivery = await createDelivery({
 			customerId: site.uberCustomerId,
-      pickup: safePickup,
+			pickup: safePickup,
 			dropoff,
 			manifestItems,
-			tip,
+			tip: 0,
 			externalId,
 		});
 		// Record order
     const itemsTotal = (manifestItems || []).reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 1), 0);
 		if (itemsTotal < 5000) return res.status(400).json({ error: 'Minimum order is $50.00' });
 		const deliveryFeeCents = Number(distanceFeeCents) || 0;
-    const taxCents = Math.round(itemsTotal * 0.05);
-    const totalCents = itemsTotal + taxCents + deliveryFeeCents + (Number(tip) || 0);
+		const taxCents = Math.round(itemsTotal * 0.05);
+		const totalCents = itemsTotal + taxCents + deliveryFeeCents;
 		const trackingUrl = delivery?.tracking_url || delivery?.trackingUrl || delivery?.share_url || delivery?.tracking_url_v2 || '';
 		const deliveryStatus = delivery?.status || delivery?.state || delivery?.current_status || '';
 		const orderPayload = {
@@ -122,9 +122,9 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 			userId: req.user?.userId,
 			userEmail: req.user?.email,
 			items: (manifestItems || []).map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.price, size: m.size })),
-      totalCents,
-      taxCents,
-			tipCents: Number(tip) || 0,
+			totalCents,
+			taxCents,
+			tipCents: 0,
 			deliveryFeeCents,
 			externalId,
 			uberDeliveryId: delivery?.id || delivery?.delivery_id,
