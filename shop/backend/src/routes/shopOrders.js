@@ -68,13 +68,12 @@ router.get('/:slug/orders/:orderId/tracking', requireUser, async (req, res) => {
 // Create a pickup order (no Uber delivery). Requires user or admin auth.
 router.post('/:slug/orders/pickup', requireUser, async (req, res) => {
   try {
-    const { items, tipCents, pickup, notes } = req.body || {};
+    const { items, pickup, notes } = req.body || {};
     if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ error: 'Items required' });
     const itemsTotal = items.reduce((s, it) => s + (Number(it.priceCents)||0) * (Number(it.quantity)||1), 0);
     if (itemsTotal < 5000) return res.status(400).json({ error: 'Minimum order is $50.00' });
     const taxCents = Math.round(itemsTotal * 0.05);
-    const tip = Number(tipCents) || 0;
-    const totalCents = itemsTotal + taxCents + tip;
+    const totalCents = itemsTotal + taxCents;
     const orderPayload = {
       site: req.siteId,
       userId: req.user?.userId,
@@ -82,7 +81,7 @@ router.post('/:slug/orders/pickup', requireUser, async (req, res) => {
       items: items.map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.priceCents, size: m.size })),
       totalCents,
       taxCents,
-      tipCents: tip,
+      tipCents: 0,
       fulfillmentType: 'pickup',
       pickup,
       notes: typeof notes === 'string' ? notes.slice(0, 1000) : undefined,

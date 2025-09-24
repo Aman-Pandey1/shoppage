@@ -17,7 +17,8 @@ const OrderSchema = new mongoose.Schema({
     totalCents: { type: Number, required: true },
     // 5% tax on items subtotal
     taxCents: { type: Number, default: 0 },
-    tipCents: { type: Number, default: 0 },
+    // Tip removed from system; keep field for backward compatibility set to 0
+    tipCents: { type: Number, default: 0, select: true },
     deliveryFeeCents: { type: Number, default: 0 },
     // Freeform notes from customer to restaurant (e.g., extra spicy, no onions)
     notes: { type: String },
