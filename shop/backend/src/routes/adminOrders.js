@@ -107,6 +107,7 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
 			doc.text('Pickup Order', leftX, doc.y, { width: columnWidth });
 			if (order.userEmail) doc.text(`Customer: ${order.userEmail}`, leftX, doc.y, { width: columnWidth });
     }
+		const leftEndY = doc.y;
     // Right: Restaurant address
     let rightYStart = topY;
 		doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('Restaurant', rightX, rightYStart);
@@ -117,7 +118,10 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
 			doc.text(`${p.name || 'Restaurant'}`, rightX, doc.y, { width: columnWidth });
 			doc.text(`${addr} ${p?.address?.city || ''} ${p?.address?.province || ''} ${p?.address?.postalCode || ''}`, rightX, doc.y, { width: columnWidth });
     }
-    doc.moveDown(1);
+		const rightEndY = doc.y;
+		// Set cursor to the deeper of the two columns to avoid overlap
+		doc.y = Math.max(leftEndY, rightEndY) + 10;
+		doc.moveDown(0.2);
 
 		// Items table (centered) helpers
 		const colWidths = [260, 60, 85, 90]; // Name, Qty, Unit, Total
@@ -187,12 +191,16 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
     const tip = Number(order.tipCents || 0) / 100;
     const grandTotal = Number(order.totalCents || 0) / 100;
 
-    const labelWidth = 220;
-    const valueX = startX + tableWidth - 100;
+		const labelWidth = 220;
+		const valueX = startX + tableWidth - 100;
+		// Border box for totals
+		doc.save();
+		doc.roundedRect(startX, doc.y - 4, tableWidth, 80, 6).strokeColor(colors.border).stroke();
+		doc.restore();
 		function row(label, value) {
       const y = doc.y;
 			doc.font('Helvetica').fillColor(colors.textDark).text(label, valueX - labelWidth, y, { width: labelWidth, align: 'right' });
-      doc.text(`$${(Number(value)||0).toFixed(2)}`, valueX, y, { width: 100, align: 'right' });
+			doc.text(`$${(Number(value)||0).toFixed(2)}`, valueX, y, { width: 100, align: 'right' });
       doc.moveDown(0.3);
     }
     row('Items Subtotal', itemsSubtotal);
