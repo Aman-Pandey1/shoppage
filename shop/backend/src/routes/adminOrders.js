@@ -122,7 +122,6 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
 
     doc.moveDown();
     const delivery = Number(order.deliveryFeeCents || 0) / 100;
-    const tip = Number(order.tipCents || 0) / 100;
     const tax = Number(order.taxCents || 0) / 100;
     const grandTotal = Number(order.totalCents || 0) / 100;
 
@@ -136,7 +135,6 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
     }
     row('Items Subtotal', itemsSubtotal);
     row('Tax (5%)', tax);
-    row('Tip', tip);
     row('Delivery Fee', delivery);
     doc.moveDown(0.2);
     doc.moveTo(startX, doc.y).lineTo(startX + colWidths.reduce((a,b)=>a+b,0), doc.y).strokeColor('#ccc').stroke();
