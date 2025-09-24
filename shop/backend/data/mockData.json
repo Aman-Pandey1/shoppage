@@ -97,7 +97,8 @@
           "closed": false
         }
       },
-      "deliveryFeeCents": 800
+      "deliveryFeeCents": 800,
+      "logoUrl": "/uploads/site-mock-site-1758726838195-d5hniq.jpg"
     }
   ],
   "categories": [
@@ -209,7 +210,7 @@
     {
       "_id": "c-1758638422976-x7gs",
       "name": "Appetizers (Part-1)",
-      "imageUrl": "https://picsum.photos/seed/appetizers%20(part-1)/400/400",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422976-x7gs-1758727187108-whxzzt.jpg",
       "sortIndex": 0,
       "site": "mock-site"
     },
