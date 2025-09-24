@@ -1,5 +1,5 @@
 import React from 'react';
-import { fetchJsonAllowError, patchJson } from '../lib/api';
+import { fetchJsonAllowError, patchJson, resolveAssetUrl } from '../lib/api';
 import { Modal } from './Modal';
 
 export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
@@ -126,7 +126,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
       </label>
       {logoUrl ? (
         <div className="card" style={{ gridColumn: '1 / -1', padding: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <img src={logoUrl} alt="logo" style={{ width: 64, height: 64, objectFit: 'contain' }} />
+          <img src={resolveAssetUrl(logoUrl)} alt="logo" style={{ width: 64, height: 64, objectFit: 'contain' }} />
           <div className="muted" style={{ fontSize: 12 }}>Preview</div>
         </div>
       ) : null}

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { deleteJson, fetchJson, postJson, putJson, patchJson, download, postFile } from '../lib/api';
+import { deleteJson, fetchJson, postJson, putJson, patchJson, download, postFile, resolveAssetUrl } from '../lib/api';
 import { SiteSettingsPanel } from './SiteSettingsPanel';
 import { Modal } from './Modal';
 
@@ -272,7 +272,7 @@ export const AdminDashboard = () => {
               {categories.map((c) => (
                 <div key={c._id} className="card" style={{ padding: 12 }}>
                   <div style={{ width: '100%', aspectRatio: '4 / 3', borderRadius: 'var(--radius-sm)', overflow: 'hidden', background: 'linear-gradient(180deg, rgba(59,130,246,0.08), rgba(236,72,153,0.08))', marginBottom: 10 }}>
-                    {c.imageUrl ? <img src={c.imageUrl} alt={c.name} className="img-cover" /> : null}
+                    {c.imageUrl ? <img src={resolveAssetUrl(c.imageUrl)} alt={c.name} className="img-cover" /> : null}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ fontWeight: 800 }}>{c.name}</div>
@@ -488,7 +488,7 @@ export const AdminDashboard = () => {
               {filteredProducts.map((p) => (
                 <div key={p._id} className="card" style={{ padding: 12 }}>
                   <div style={{ width: '100%', aspectRatio: '4 / 3', borderRadius: 'var(--radius-sm)', overflow: 'hidden', background: 'linear-gradient(180deg, rgba(34,211,238,0.08), rgba(167,139,250,0.08))', marginBottom: 10 }}>
-                    {p.imageUrl ? <img src={p.imageUrl} alt={p.name} className="img-cover" /> : null}
+                    {p.imageUrl ? <img src={resolveAssetUrl(p.imageUrl)} alt={p.name} className="img-cover" /> : null}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ fontWeight: 800 }}>{p.name}</div>

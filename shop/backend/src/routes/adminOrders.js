@@ -57,96 +57,150 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=order-${String(order._id).slice(-6)}.pdf`);
 
-    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+		const doc = new PDFDocument({ size: 'A4', margin: 50 });
     doc.pipe(res);
 
-    // Header band
-    doc.save();
-    doc.rect(doc.page.margins.left, doc.y, doc.page.width - doc.page.margins.left - doc.page.margins.right, 28)
-      .fill('#f3f4f6');
-    doc.restore();
-    doc.moveDown(-0.8);
-    doc.font('Helvetica-Bold').fontSize(20).fillColor('#111827').text('Order Invoice', { align: 'left' });
-    doc.moveDown(0.2);
-    doc.font('Helvetica').fontSize(10).fillColor('#374151').text(`Order #: ${String(order._id)}`);
-    doc.text(`Date: ${new Date(order.createdAt).toLocaleString()}`);
-    doc.text(`Fulfillment: ${order.fulfillmentType || (order.dropoff ? 'delivery' : 'pickup')}`);
+		// Theme colors and layout helpers
+		const colors = {
+			primary: '#2563eb',
+			primaryText: '#ffffff',
+			text: '#334155',
+			textDark: '#0f172a',
+			border: '#cbd5e1',
+			tableHeader: '#e0f2fe',
+			rowStripe: '#f8fafc',
+			headHighlight: '#dbeafe',
+		};
+		const availableWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+		doc.lineWidth(0.5);
 
-    // Two-column block: Customer and Restaurant
-    doc.moveDown(0.8);
-    const leftX = doc.x;
-    const midX = leftX + 250;
-    const topY = doc.y;
-    // Left: Customer
-    doc.font('Helvetica-Bold').fontSize(12).fillColor('#111827').text('Customer', leftX, topY);
-    doc.font('Helvetica').fontSize(10).fillColor('#374151');
+		// Header band (colorful)
+		const headerY = doc.y;
+		doc.save();
+		doc.rect(doc.page.margins.left, headerY, availableWidth, 40).fill(colors.primary);
+		doc.restore();
+		doc.font('Helvetica-Bold').fontSize(22).fillColor(colors.primaryText).text('Order Invoice', doc.page.margins.left + 12, headerY + 10);
+		// move the cursor just below the header band
+		doc.y = headerY + 52;
+		doc.font('Helvetica').fontSize(10).fillColor(colors.text).text(`Order #: ${String(order._id)}`);
+		doc.text(`Date: ${new Date(order.createdAt).toLocaleString()}`);
+		doc.text(`Fulfillment: ${order.fulfillmentType || (order.dropoff ? 'delivery' : 'pickup')}`);
+
+		// Two-column block: Customer and Restaurant
+		doc.moveDown(0.6);
+		const columnGap = 16;
+		const columnWidth = (availableWidth - columnGap) / 2;
+		const leftX = doc.page.margins.left;
+		const rightX = leftX + columnWidth + columnGap;
+		const topY = doc.y;
+		// Left: Customer
+		doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('Customer', leftX, topY);
+		doc.font('Helvetica').fontSize(10).fillColor(colors.text);
     if (order.dropoff) {
       const d = order.dropoff || {};
       const addr = Array.isArray(d?.address?.streetAddress) ? d.address.streetAddress.join(' ') : '';
-      doc.text(`Name: ${d.name || '—'}`, leftX, doc.y);
-      doc.text(`Phone: ${d.phone || '—'}`, leftX, doc.y);
-      doc.text(`Address: ${addr} ${d?.address?.city || ''} ${d?.address?.province || ''} ${d?.address?.postalCode || ''}`, leftX, doc.y, { width: 240 });
+			doc.text(`Name: ${d.name || '—'}`, leftX, doc.y, { width: columnWidth });
+			doc.text(`Phone: ${d.phone || '—'}`, leftX, doc.y, { width: columnWidth });
+			doc.text(`Address: ${addr} ${d?.address?.city || ''} ${d?.address?.province || ''} ${d?.address?.postalCode || ''}`, leftX, doc.y, { width: columnWidth });
     } else if (order.pickup?.location) {
       const p = order.pickup.location;
-      doc.text('Pickup Order', leftX, doc.y);
-      if (order.userEmail) doc.text(`Customer: ${order.userEmail}`, leftX, doc.y);
+			doc.text('Pickup Order', leftX, doc.y, { width: columnWidth });
+			if (order.userEmail) doc.text(`Customer: ${order.userEmail}`, leftX, doc.y, { width: columnWidth });
     }
+		const leftEndY = doc.y;
     // Right: Restaurant address
     let rightYStart = topY;
-    doc.font('Helvetica-Bold').fontSize(12).fillColor('#111827').text('Restaurant', midX, rightYStart);
-    doc.font('Helvetica').fontSize(10).fillColor('#374151');
+		doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('Restaurant', rightX, rightYStart);
+		doc.font('Helvetica').fontSize(10).fillColor(colors.text);
     if (order.pickup?.location) {
       const p = order.pickup.location;
       const addr = Array.isArray(p?.address?.streetAddress) ? p.address.streetAddress.join(' ') : '';
-      doc.text(`${p.name || 'Restaurant'}`, midX, doc.y);
-      doc.text(`${addr} ${p?.address?.city || ''} ${p?.address?.province || ''} ${p?.address?.postalCode || ''}`, midX, doc.y, { width: 240 });
+			doc.text(`${p.name || 'Restaurant'}`, rightX, doc.y, { width: columnWidth });
+			doc.text(`${addr} ${p?.address?.city || ''} ${p?.address?.province || ''} ${p?.address?.postalCode || ''}`, rightX, doc.y, { width: columnWidth });
     }
-    doc.moveDown(1);
+		const rightEndY = doc.y;
+		// Set cursor to the deeper of the two columns to avoid overlap
+		doc.y = Math.max(leftEndY, rightEndY) + 10;
+		doc.moveDown(0.2);
 
-    // Items table header
-    doc.font('Helvetica-Bold').fontSize(12).fillColor('#111827').text('Items');
-    doc.moveDown(0.4);
-    const startX = doc.x;
-    const colWidths = [240, 60, 90, 100]; // Name, Qty, Unit, Total
-    const tableWidth = colWidths.reduce((a,b)=>a+b,0);
-    doc.save();
-    doc.rect(startX, doc.y - 2, tableWidth, 18).fill('#f9fafb');
-    doc.restore();
-    doc.font('Helvetica-Bold').fontSize(10);
-    const headerY = doc.y - 0.5;
-    doc.text('Name', startX + 6, headerY, { width: colWidths[0]-12 });
-    doc.text('Qty', startX + colWidths[0], headerY, { width: colWidths[1], align: 'right' });
-    doc.text('Unit', startX + colWidths[0] + colWidths[1], headerY, { width: colWidths[2], align: 'right' });
-    doc.text('Total', startX + colWidths[0] + colWidths[1] + colWidths[2], headerY, { width: colWidths[3], align: 'right' });
-    doc.moveDown(1);
-    doc.moveTo(startX, doc.y).lineTo(startX + tableWidth, doc.y).strokeColor('#e5e7eb').stroke();
+		// Items table (centered) helpers
+		const colWidths = [260, 60, 85, 90]; // Name, Qty, Unit, Total
+		const tableWidth = colWidths.reduce((a, b) => a + b, 0);
+		const startX = doc.page.margins.left + (availableWidth - tableWidth) / 2;
 
-    // Items rows
-    let itemsSubtotal = 0;
-    (Array.isArray(order.items) ? order.items : []).forEach((it) => {
-      const unit = Number(it.priceCents || 0) / 100;
-      const qty = Number(it.quantity || 1);
-      const line = unit * qty;
-      itemsSubtotal += line;
-      doc.moveDown(0.2);
-      doc.font('Helvetica').fillColor('#374151').text(`${it.name} ${it.size ? '('+it.size+')' : ''}`, startX, doc.y, { width: colWidths[0] });
-      doc.text(String(qty), startX + colWidths[0], doc.y, { width: colWidths[1], align: 'right' });
-      doc.text(`$${unit.toFixed(2)}`, startX + colWidths[0] + colWidths[1], doc.y, { width: colWidths[2], align: 'right' });
-      doc.text(`$${line.toFixed(2)}`, startX + colWidths[0] + colWidths[1] + colWidths[2], doc.y, { width: colWidths[3], align: 'right' });
-    });
+		function drawItemsHeader() {
+			doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark)
+				.text('Items', startX, doc.y, { width: tableWidth, align: 'center' });
+			doc.moveDown(0.4);
+			doc.save();
+			doc.rect(startX, doc.y - 2, tableWidth, 18).fill(colors.tableHeader);
+			doc.restore();
+			doc.font('Helvetica-Bold').fontSize(10).fillColor(colors.textDark);
+			const headerY = doc.y - 0.5;
+			doc.text('Name', startX, headerY, { width: colWidths[0], align: 'center' });
+			doc.text('Qty', startX + colWidths[0], headerY, { width: colWidths[1], align: 'center' });
+			doc.text('Unit', startX + colWidths[0] + colWidths[1], headerY, { width: colWidths[2], align: 'center' });
+			doc.text('Total', startX + colWidths[0] + colWidths[1] + colWidths[2], headerY, { width: colWidths[3], align: 'center' });
+			doc.moveDown(1);
+			doc.moveTo(startX, doc.y).lineTo(startX + tableWidth, doc.y).strokeColor(colors.border).stroke();
+		}
 
-    doc.moveDown();
+		const pageBottom = doc.page.height - doc.page.margins.bottom;
+		function ensureRowSpace() {
+			if (doc.y + 22 > pageBottom) {
+				doc.addPage();
+				drawItemsHeader();
+			}
+		}
+
+		drawItemsHeader();
+
+		// Items rows
+		let itemsSubtotal = 0;
+		(Array.isArray(order.items) ? order.items : []).forEach((it, idx) => {
+			ensureRowSpace();
+			const unit = Number(it.priceCents || 0) / 100;
+			const qty = Number(it.quantity || 1);
+			const line = unit * qty;
+			itemsSubtotal += line;
+
+			// zebra background for readability
+			doc.save();
+			if (idx % 2 === 0) {
+				doc.rect(startX, doc.y - 2, tableWidth, 18).fill(colors.rowStripe);
+			}
+			doc.restore();
+
+			const rowY = doc.y;
+			doc.font('Helvetica').fillColor(colors.text)
+				.text(`${it.name} ${it.size ? '(' + it.size + ')' : ''}`, startX, rowY, { width: colWidths[0], align: 'center' });
+			doc.text(String(qty), startX + colWidths[0], rowY, { width: colWidths[1], align: 'center' });
+			doc.text(`$${unit.toFixed(2)}`, startX + colWidths[0] + colWidths[1], rowY, { width: colWidths[2], align: 'center' });
+			doc.text(`$${line.toFixed(2)}`, startX + colWidths[0] + colWidths[1] + colWidths[2], rowY, { width: colWidths[3], align: 'center' });
+
+			doc.moveDown(0.4);
+			doc.moveTo(startX, doc.y).lineTo(startX + tableWidth, doc.y).strokeColor(colors.border).stroke();
+		});
+
+		doc.moveDown();
+		if (doc.y + 90 > pageBottom) {
+			doc.addPage();
+		}
     const delivery = Number(order.deliveryFeeCents || 0) / 100;
     const tax = Number(order.taxCents || 0) / 100;
     const tip = Number(order.tipCents || 0) / 100;
     const grandTotal = Number(order.totalCents || 0) / 100;
 
-    const labelWidth = 220;
-    const valueX = startX + tableWidth - 100;
-    function row(label, value) {
+		const labelWidth = 220;
+		const valueX = startX + tableWidth - 100;
+		// Border box for totals
+		doc.save();
+		doc.roundedRect(startX, doc.y - 4, tableWidth, 80, 6).strokeColor(colors.border).stroke();
+		doc.restore();
+		function row(label, value) {
       const y = doc.y;
-      doc.font('Helvetica').fillColor('#111827').text(label, valueX - labelWidth, y, { width: labelWidth, align: 'right' });
-      doc.text(`$${(Number(value)||0).toFixed(2)}`, valueX, y, { width: 100, align: 'right' });
+			doc.font('Helvetica').fillColor(colors.textDark).text(label, valueX - labelWidth, y, { width: labelWidth, align: 'right' });
+			doc.text(`$${(Number(value)||0).toFixed(2)}`, valueX, y, { width: 100, align: 'right' });
       doc.moveDown(0.3);
     }
     row('Items Subtotal', itemsSubtotal);
@@ -155,21 +209,21 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
     if (tip > 0) row('Tip', tip);
     if (delivery > 0) row('Delivery Fee', delivery);
     doc.moveDown(0.2);
-    doc.moveTo(startX, doc.y).lineTo(startX + tableWidth, doc.y).strokeColor('#d1d5db').stroke();
+		doc.moveTo(startX, doc.y).lineTo(startX + tableWidth, doc.y).strokeColor(colors.border).stroke();
     doc.moveDown(0.2);
-    doc.font('Helvetica-Bold');
+		doc.font('Helvetica-Bold');
     row('Grand Total', grandTotal);
 
-    // Notes
+		// Notes
     if (order.notes) {
       doc.moveDown(0.8);
-      doc.font('Helvetica-Bold').fontSize(10).fillColor('#111827').text('Notes:', startX, doc.y);
-      doc.font('Helvetica').fontSize(10).fillColor('#374151').text(String(order.notes), startX, doc.y, { width: tableWidth });
+			doc.font('Helvetica-Bold').fontSize(10).fillColor(colors.textDark).text('Notes:', startX, doc.y);
+			doc.font('Helvetica').fontSize(10).fillColor(colors.text).text(String(order.notes), startX, doc.y, { width: tableWidth });
     }
 
-    // Footer
+		// Footer
     doc.moveDown(1.2);
-    doc.font('Helvetica-Bold').fontSize(12).fillColor('#111827').text('Thank you for your order!', { align: 'center' });
+		doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('Thank you for your order!', { align: 'center' });
 
     doc.end();
   } catch (err) {
