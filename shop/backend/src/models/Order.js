@@ -15,8 +15,12 @@ const OrderSchema = new mongoose.Schema({
     fulfillmentType: { type: String, enum: ['pickup', 'delivery', 'created'], default: 'created' },
     items: [OrderItemSchema],
     totalCents: { type: Number, required: true },
+    // 5% tax on items subtotal
+    taxCents: { type: Number, default: 0 },
     tipCents: { type: Number, default: 0 },
     deliveryFeeCents: { type: Number, default: 0 },
+    // Freeform notes from customer to restaurant (e.g., extra spicy, no onions)
+    notes: { type: String },
     externalId: { type: String },
     uberDeliveryId: { type: String },
     uberTrackingUrl: { type: String },
@@ -47,6 +51,8 @@ const OrderSchema = new mongoose.Schema({
             country: String,
         },
     },
+    // Arbitrary metadata (e.g., distanceKm)
+    meta: { type: mongoose.Schema.Types.Mixed },
 }, { timestamps: true });
 
 export default mongoose.model('Order', OrderSchema);

@@ -45,7 +45,7 @@ function generateItemId(productId, spiceLevel, selectedOptions) {
 }
 
 export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => {
-  const [state, setState] = useState({ items: [] });
+  const [state, setState] = useState({ items: [], notes: '' });
   const [lastAdded, setLastAdded] = useState(null);
 
   useEffect(() => {
@@ -66,6 +66,10 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
 
   const setFulfillmentType = useCallback((type) => {
     setState((prev) => ({ ...prev, fulfillmentType: type }));
+  }, []);
+
+  const setNotes = useCallback((text) => {
+    setState((prev) => ({ ...prev, notes: String(text || '').slice(0, 1000) }));
   }, []);
 
   const addItem = useCallback(({ product, quantity = 1, spiceLevel, selectedOptions = [] }) => {
@@ -122,8 +126,8 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
   }, [state.items]);
 
   const value = useMemo(
-    () => ({ state, setFulfillmentType, addItem, removeItem, updateQuantity, clearCart, getCartTotal, lastAdded }),
-    [state, setFulfillmentType, addItem, removeItem, updateQuantity, clearCart, getCartTotal, lastAdded]
+    () => ({ state, setFulfillmentType, addItem, removeItem, updateQuantity, clearCart, getCartTotal, lastAdded, setNotes }),
+    [state, setFulfillmentType, addItem, removeItem, updateQuantity, clearCart, getCartTotal, lastAdded, setNotes]
   );
 
   return (<CartContext.Provider value={value}>{children}</CartContext.Provider>);
