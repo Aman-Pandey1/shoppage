@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
+import path from 'path';
 import webhookUberRouter from './routes/webhookUber.js';
 import morgan from 'morgan';
 import categoriesRouter from './routes/categories.js';
@@ -28,6 +29,13 @@ app.use(cors());
 app.use('/webhook/uber', express.raw({ type: '*/*' }), webhookUberRouter);
 app.use(express.json());
 app.use(morgan("dev"));
+
+// Static uploads serving
+const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads');
+try { await (async () => { 
+  try { await import('fs/promises').then(({ mkdir }) => mkdir(UPLOAD_DIR, { recursive: true })); } catch {}
+})(); } catch {}
+app.use('/uploads', express.static(UPLOAD_DIR));
 
 const PORT = process.env.PORT || 4000;
 const MONGO_URI = process.env.MONGO_URI;
