@@ -70,7 +70,7 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 		}
 		const hasPickupCfg = !!(site?.pickup?.address) || (Array.isArray(site?.locations) && site.locations.length && site.locations[0]?.address);
 		if (!site?.uberCustomerId || !hasPickupCfg) return res.status(400).json({ error: 'Site not configured for Uber Direct' });
-		const { dropoff, manifestItems, tip, externalId, pickupLocationIndex } = req.body || {};
+    const { dropoff, manifestItems, tip, externalId, pickupLocationIndex, notes } = req.body || {};
 		const locs = (Array.isArray(site.locations) && site.locations.length)
 			? site.locations
 			: (site.pickup ? [site.pickup] : []);
@@ -110,10 +110,11 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 			externalId,
 		});
 		// Record order
-		const itemsTotal = (manifestItems || []).reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 1), 0);
+    const itemsTotal = (manifestItems || []).reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 1), 0);
 		if (itemsTotal < 5000) return res.status(400).json({ error: 'Minimum order is $50.00' });
 		const deliveryFeeCents = Number(distanceFeeCents) || 0;
-		const totalCents = itemsTotal + deliveryFeeCents + (Number(tip) || 0);
+    const taxCents = Math.round(itemsTotal * 0.05);
+    const totalCents = itemsTotal + taxCents + deliveryFeeCents + (Number(tip) || 0);
 		const trackingUrl = delivery?.tracking_url || delivery?.trackingUrl || delivery?.share_url || delivery?.tracking_url_v2 || '';
 		const deliveryStatus = delivery?.status || delivery?.state || delivery?.current_status || '';
 		const orderPayload = {
@@ -121,7 +122,8 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 			userId: req.user?.userId,
 			userEmail: req.user?.email,
 			items: (manifestItems || []).map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.price, size: m.size })),
-			totalCents,
+      totalCents,
+      taxCents,
 			tipCents: Number(tip) || 0,
 			deliveryFeeCents,
 			externalId,
@@ -131,7 +133,8 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
       fulfillmentType: 'delivery',
 			dropoff,
 			pickup: { location: pickup },
-			meta: { distanceKm },
+      meta: { distanceKm },
+      notes: typeof notes === 'string' ? notes.slice(0, 1000) : undefined,
 		};
 		if (req.app.locals.mockData) {
 			if (!Array.isArray(req.app.locals.mockData.orders)) req.app.locals.mockData.orders = [];

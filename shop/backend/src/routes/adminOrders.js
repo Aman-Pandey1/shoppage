@@ -60,31 +60,43 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
     const doc = new PDFDocument({ size: 'A4', margin: 50 });
     doc.pipe(res);
 
-    // Header
-    doc.fontSize(20).text('Order Invoice', { align: 'left' });
+    // Header + meta line
+    doc.fontSize(20).fillColor('#000').text('Order Invoice', { align: 'left' });
     doc.moveDown(0.5);
     doc.fontSize(10).fillColor('#555').text(`Order #: ${String(order._id)}`);
     doc.text(`Date: ${new Date(order.createdAt).toLocaleString()}`);
     doc.text(`Fulfillment: ${order.fulfillmentType || (order.dropoff ? 'delivery' : 'pickup')}`);
-    doc.moveDown();
 
-    // Customer / Address
+    // Two-column block: Customer and Restaurant
+    doc.moveDown(0.8);
+    const leftX = doc.x;
+    const midX = leftX + 250;
+    const topY = doc.y;
+    // Left: Customer
+    doc.fontSize(12).fillColor('#000').text('Customer', leftX, topY);
+    doc.fontSize(10).fillColor('#333');
     if (order.dropoff) {
-      const drop = order.dropoff || {};
-      const lines = Array.isArray(drop?.address?.streetAddress) ? drop.address.streetAddress.join(' ') : '';
-      doc.fontSize(12).fillColor('#000').text('Customer');
-      doc.fontSize(10).fillColor('#333').text(`Name: ${drop.name || '—'}`);
-      doc.text(`Phone: ${drop.phone || '—'}`);
-      doc.text(`Address: ${lines} ${drop?.address?.city || ''} ${drop?.address?.province || ''} ${drop?.address?.postalCode || ''}`);
-      doc.moveDown();
+      const d = order.dropoff || {};
+      const addr = Array.isArray(d?.address?.streetAddress) ? d.address.streetAddress.join(' ') : '';
+      doc.text(`Name: ${d.name || '—'}`, leftX, doc.y);
+      doc.text(`Phone: ${d.phone || '—'}`, leftX, doc.y);
+      doc.text(`Address: ${addr} ${d?.address?.city || ''} ${d?.address?.province || ''} ${d?.address?.postalCode || ''}`, leftX, doc.y, { width: 240 });
     } else if (order.pickup?.location) {
       const p = order.pickup.location;
-      const addr = Array.isArray(p?.address?.streetAddress) ? p.address.streetAddress.join(' ') : '';
-      doc.fontSize(12).fillColor('#000').text('Pickup Location');
-      doc.fontSize(10).fillColor('#333').text(`${p.name || ''}`);
-      doc.text(`${addr} ${p?.address?.city || ''} ${p?.address?.province || ''} ${p?.address?.postalCode || ''}`);
-      doc.moveDown();
+      doc.text('Pickup Order', leftX, doc.y);
+      if (order.userEmail) doc.text(`Customer: ${order.userEmail}`, leftX, doc.y);
     }
+    // Right: Restaurant address
+    let rightYStart = topY;
+    doc.fontSize(12).fillColor('#000').text('Restaurant', midX, rightYStart);
+    doc.fontSize(10).fillColor('#333');
+    if (order.pickup?.location) {
+      const p = order.pickup.location;
+      const addr = Array.isArray(p?.address?.streetAddress) ? p.address.streetAddress.join(' ') : '';
+      doc.text(`${p.name || 'Restaurant'}`, midX, doc.y);
+      doc.text(`${addr} ${p?.address?.city || ''} ${p?.address?.province || ''} ${p?.address?.postalCode || ''}`, midX, doc.y, { width: 240 });
+    }
+    doc.moveDown(1);
 
     // Items table header
     doc.fontSize(12).fillColor('#000').text('Items');
@@ -111,7 +123,7 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
     doc.moveDown();
     const delivery = Number(order.deliveryFeeCents || 0) / 100;
     const tip = Number(order.tipCents || 0) / 100;
-    const sellingTotal = (Number(order.totalCents || 0) - Number(order.deliveryFeeCents || 0)) / 100;
+    const tax = Number(order.taxCents || 0) / 100;
     const grandTotal = Number(order.totalCents || 0) / 100;
 
     const labelWidth = 200;
@@ -122,12 +134,25 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
       doc.text(`$${value.toFixed(2)}`, valueX, y, { width: 100, align: 'right' });
       doc.moveDown(0.3);
     }
-    row('Items + Tip (Selling)', sellingTotal);
+    row('Items Subtotal', itemsSubtotal);
+    row('Tax (5%)', tax);
+    row('Tip', tip);
     row('Delivery Fee', delivery);
     doc.moveDown(0.2);
     doc.moveTo(startX, doc.y).lineTo(startX + colWidths.reduce((a,b)=>a+b,0), doc.y).strokeColor('#ccc').stroke();
     doc.moveDown(0.2);
     row('Grand Total', grandTotal);
+
+    // Notes
+    if (order.notes) {
+      doc.moveDown(0.8);
+      doc.fontSize(10).fillColor('#000').text('Notes:', startX, doc.y);
+      doc.fontSize(10).fillColor('#333').text(String(order.notes), startX, doc.y, { width: colWidths.reduce((a,b)=>a+b,0) });
+    }
+
+    // Footer
+    doc.moveDown(1.2);
+    doc.fontSize(12).fillColor('#000').text('Thank you, visit again!', { align: 'center' });
 
     doc.end();
   } catch (err) {

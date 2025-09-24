@@ -26,7 +26,7 @@ export const AdminDashboard = () => {
   const [siteForm, setSiteForm] = useState({ name: '', slug: '', domainsText: '' });
 
   const [isCategoryFormOpen, setIsCategoryFormOpen] = useState(false);
-  const [categoryForm, setCategoryForm] = useState({ name: '', imageUrl: '' });
+  const [categoryForm, setCategoryForm] = useState({ name: '', imageUrl: '', file: null });
   const [deleteCategoryId, setDeleteCategoryId] = useState(null);
 
   const [deleteProductId, setDeleteProductId] = useState(null);
@@ -218,16 +218,19 @@ export const AdminDashboard = () => {
                 <div className="muted" style={{ fontSize: 12 }}>Today (Selling)</div>
                 <div style={{ fontWeight: 900, fontSize: 22, color: 'var(--primary-600)' }}>${(((todayBilling?.todayTotalCents)||0)/100).toFixed(2)}</div>
                 <div className="muted" style={{ fontSize: 12 }}>Delivery fees: ${(((todayBilling?.todayDeliveryFeeCents)||0)/100).toFixed(2)}</div>
+                <div className="muted" style={{ fontSize: 12 }}>Tax: ${(((todayBilling?.todayTaxCents)||0)/100).toFixed(2)}</div>
               </div>
               <div className="card" style={{ padding: 12, minWidth: 240, borderTop: '3px solid var(--primary)' }}>
                 <div className="muted" style={{ fontSize: 12 }}>This week (Selling)</div>
                 <div style={{ fontWeight: 900, fontSize: 22, color: 'var(--primary-600)' }}>${(((billing?.weekTotalCents)||0)/100).toFixed(2)}</div>
                 <div className="muted" style={{ fontSize: 12 }}>Delivery fees: ${(((billing?.weekDeliveryFeeCents)||0)/100).toFixed(2)}</div>
+                <div className="muted" style={{ fontSize: 12 }}>Tax: ${(((billing?.weekTaxCents)||0)/100).toFixed(2)}</div>
               </div>
               <div className="card" style={{ padding: 12, minWidth: 240, borderTop: '3px solid var(--primary)' }}>
                 <div className="muted" style={{ fontSize: 12 }}>This month (Selling)</div>
                 <div style={{ fontWeight: 900, fontSize: 22, color: 'var(--primary-600)' }}>${(((billing?.monthTotalCents)||0)/100).toFixed(2)}</div>
                 <div className="muted" style={{ fontSize: 12 }}>Delivery fees: ${(((billing?.monthDeliveryFeeCents)||0)/100).toFixed(2)}</div>
+                <div className="muted" style={{ fontSize: 12 }}>Tax: ${(((billing?.monthTaxCents)||0)/100).toFixed(2)}</div>
               </div>
             </div>
             <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>Selling excludes delivery fees. Delivery is shown separately.</div>
@@ -242,7 +245,7 @@ export const AdminDashboard = () => {
                 <div key={s._id} className="card" style={{ padding: 12 }}>
                   <div style={{ fontWeight: 800 }}>{s.name}</div>
                   <div className="muted" style={{ fontSize: 12, margin: '4px 0 8px' }}>/{s.slug}</div>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
                     <a href={`/s/${s.slug}`} target="_blank" rel="noreferrer">Open</a>
                     {(s.domains || []).map((d, i) => (
                       <a key={i} href={`https://${d}`} target="_blank" rel="noreferrer">{d}</a>
@@ -276,7 +279,7 @@ export const AdminDashboard = () => {
                     <div className="muted" style={{ fontSize: 12 }}>ID: {c._id.slice(-6)}</div>
                   </div>
                   <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
-                    <button onClick={() => { setCategoryForm({ id: c._id, name: c.name, imageUrl: c.imageUrl || '' }); setIsCategoryFormOpen(true); }}>Edit</button>
+                    <button onClick={() => { setCategoryForm({ id: c._id, name: c.name, imageUrl: c.imageUrl || '', file: null }); setIsCategoryFormOpen(true); }}>Edit</button>
                     <button className="danger" onClick={() => setDeleteCategoryId(c._id)}>Delete</button>
                   </div>
                 </div>
@@ -331,12 +334,17 @@ export const AdminDashboard = () => {
                     {(Array.isArray(orders) ? orders : []).map((o) => {
                       const customer = o.dropoff?.name || o.userEmail || '—';
                       const itemsText = (Array.isArray(o.items) ? o.items : []).map((it) => `${it.name} × ${it.quantity}`).join(', ');
+                      const tax = ((o.taxCents||0)/100).toFixed(2);
+                      const notes = o.notes ? String(o.notes).slice(0, 60) : '';
                       return (
                         <tr key={o._id}>
                           <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>#{String(o._id || '').slice(-6)}</td>
-                          <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>{customer}</td>
+                          <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>{customer}{notes ? <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>Notes: {notes}{o.notes.length > 60 ? '…' : ''}</div> : null}</td>
                           <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>{new Date(o.createdAt).toLocaleString()}</td>
-                          <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)', fontWeight: 800, color: 'var(--primary-600)' }}>${((o.totalCents||0)/100).toFixed(2)}</td>
+                          <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>
+                            <div style={{ fontWeight: 800, color: 'var(--primary-600)' }}>${((o.totalCents||0)/100).toFixed(2)}</div>
+                            <div className="muted" style={{ fontSize: 12 }}>Tax: ${tax}</div>
+                          </td>
                           <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>{itemsText}</td>
                           <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>
                             <button onClick={async () => {
@@ -555,16 +563,33 @@ export const AdminDashboard = () => {
                 className="primary-btn"
                 onClick={async () => {
                   if (!categoryForm.name) return;
+                  // First create/update the category basic fields
+                  let cat;
                   if (categoryForm.id) {
-                    const updated = await patchJson(`/api/admin/sites/${selectedSiteId}/categories/${categoryForm.id}`, { name: categoryForm.name, imageUrl: categoryForm.imageUrl });
-                    setCategories((prev) => prev.map((c) => c._id === updated._id ? updated : c));
-                    setIsCategoryFormOpen(false);
-                    setCategoryForm({ name: '', imageUrl: '' });
+                    cat = await patchJson(`/api/admin/sites/${selectedSiteId}/categories/${categoryForm.id}`, { name: categoryForm.name, imageUrl: categoryForm.imageUrl });
                   } else {
-                    const created = await postJson(`/api/admin/sites/${selectedSiteId}/categories`, { name: categoryForm.name, imageUrl: categoryForm.imageUrl });
-                    setCategories((prev) => [created, ...prev]);
-                    setIsCategoryFormOpen(false);
+                    cat = await postJson(`/api/admin/sites/${selectedSiteId}/categories`, { name: categoryForm.name, imageUrl: categoryForm.imageUrl });
                   }
+                  // If a file is selected, upload it and update imageUrl
+                  if (categoryForm.file) {
+                    try {
+                      const form = new FormData();
+                      form.append('file', categoryForm.file);
+                      const resp = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/admin/sites/${selectedSiteId}/categories/${cat._id}/image`, {
+                        method: 'POST',
+                        headers: { ...(localStorage.getItem('auth_token') ? { Authorization: `Bearer ${localStorage.getItem('auth_token')}` } : {}) },
+                        body: form,
+                      });
+                      if (resp.ok) {
+                        const data = await resp.json();
+                        cat = data.category || cat;
+                      }
+                    } catch {}
+                  }
+                  // Apply to list and close
+                  setCategories((prev) => categoryForm.id ? prev.map((c) => c._id === cat._id ? cat : c) : [cat, ...prev]);
+                  setIsCategoryFormOpen(false);
+                  setCategoryForm({ name: '', imageUrl: '', file: null });
                 }}
               >{categoryForm.id ? 'Save changes' : 'Create'}</button>
             </>
@@ -578,6 +603,10 @@ export const AdminDashboard = () => {
             <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <span>Image URL</span>
               <input value={categoryForm.imageUrl} onChange={(e) => setCategoryForm({ ...categoryForm, imageUrl: e.target.value })} />
+            </label>
+            <label style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span>Or upload image</span>
+              <input type="file" accept="image/*" onChange={(e) => setCategoryForm({ ...categoryForm, file: e.target.files?.[0] || null })} />
             </label>
           </div>
         </Modal>
