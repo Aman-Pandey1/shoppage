@@ -13,7 +13,6 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState();
   const [quote, setQuote] = useState(null);
-  const [tip, setTip] = useState(0);
   const [siteName, setSiteName] = useState('');
   const [deliveryFeeCents, setDeliveryFeeCents] = useState(0);
   const [country, setCountry] = useState('CA');
@@ -130,7 +129,6 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
       const result = await postJson(`/api/delivery/${siteSlug}/create`, {
         dropoff: { name, phone, address },
         manifestItems: manifest.map(m => ({ name: m.name, quantity: m.quantity, size: m.size || 'small', price: m.priceCents || 0 })),
-        tip: Math.round((tip || 0) * 100),
         externalId: `${siteName ? siteName.replace(/\s+/g, '-') : siteSlug}-order-${Date.now()}`,
         pickupLocationIndex: (quote && typeof quote.pickupLocationIndex === 'number') ? quote.pickupLocationIndex : selectedPickupIndex,
       });
@@ -192,10 +190,6 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         <textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g., Leave at door, call on arrival" />
       </label>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 14, alignItems: 'flex-start' }}>
-        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <span>Tip</span>
-          <input type="number" step="0.5" min={0} value={tip} onChange={(e) => setTip(Number(e.target.value))} style={{ width: 90 }} />
-        </label>
         <div style={{ display: 'grid', gap: 8, marginLeft: 'auto', minWidth: 260 }}>
             <div className="card" style={{ padding: 10, borderRadius: 10, background: 'var(--primary-alpha-04)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -210,17 +204,13 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
               <span className="muted">Delivery fee</span>
               <span style={{ fontWeight: 700 }}>{deliveryFeeCents ? `$${(deliveryFeeCents/100).toFixed(2)}` : '—'}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-              <span className="muted">Tip</span>
-              <span style={{ fontWeight: 700 }}>${Number(tip || 0).toFixed(2)}</span>
-            </div>
             <div style={{ height: 1, background: 'var(--border)', margin: '6px 0' }} />
             {quote?.dropoff_estimated_dt ? (
               <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>ETA: {new Date(quote.dropoff_estimated_dt).toLocaleTimeString()}</div>
             ) : null}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontWeight: 800 }}>Estimated total</span>
-                <span style={{ fontWeight: 900 }}>${(((itemsSubtotalCents + Math.round(itemsSubtotalCents*0.05) + (deliveryFeeCents||0) + Math.round((Number(tip)||0)*100)))/100).toFixed(2)}</span>
+                <span style={{ fontWeight: 900 }}>${(((itemsSubtotalCents + Math.round(itemsSubtotalCents*0.05) + (deliveryFeeCents||0)))/100).toFixed(2)}</span>
             </div>
           </div>
         {!quote ? (
@@ -235,7 +225,6 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
                 const result = await postJson(`/api/delivery/${siteSlug}/create`, {
                   dropoff: { name, phone, address },
                   manifestItems: manifest.map(m => ({ name: m.name, quantity: m.quantity, size: m.size || 'small', price: m.priceCents || 0 })),
-                  tip: Math.round((tip || 0) * 100),
                   externalId: `${siteName ? siteName.replace(/\s+/g, '-') : siteSlug}-order-${Date.now()}`,
                   pickupLocationIndex: (quote && typeof quote.pickupLocationIndex === 'number') ? quote.pickupLocationIndex : selectedPickupIndex,
                   notes,
