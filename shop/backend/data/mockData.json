@@ -98,7 +98,7 @@
         }
       },
       "deliveryFeeCents": 800,
-      "logoUrl": "/uploads/site-mock-site-1758726838195-d5hniq.jpg"
+      "logoUrl": "/uploads/site-mock-site-1758728852349-mnxgba.png"
     }
   ],
   "categories": [
@@ -210,7 +210,7 @@
     {
       "_id": "c-1758638422976-x7gs",
       "name": "Appetizers (Part-1)",
-      "imageUrl": "/uploads/cat-mock-site-c-1758638422976-x7gs-1758727187108-whxzzt.jpg",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422976-x7gs-1758728702408-2xec87.png",
       "sortIndex": 0,
       "site": "mock-site"
     },
@@ -2032,6 +2032,61 @@
     }
   ],
   "orders": [
+    {
+      "_id": "o-1758729008449",
+      "createdAt": "2025-09-24T15:50:08.449Z",
+      "site": "mock-site",
+      "userEmail": "admin@example.com",
+      "items": [
+        {
+          "name": "Chicken Wings",
+          "quantity": 6,
+          "priceCents": 1295,
+          "size": "small"
+        }
+      ],
+      "totalCents": 8959,
+      "taxCents": 389,
+      "tipCents": 0,
+      "deliveryFeeCents": 800,
+      "externalId": "Default-Site-order-1758729001568",
+      "uberDeliveryId": "del_m5f6QBdhSXWwcGYOhiEcJA",
+      "uberTrackingUrl": "https://delivery.uber.com/ca/orders/9b97fa40-1761-4975-b070-660e86211c24?tenancyOverride=uber%2Ftesting%2Fdirect%2Fe17d4989-135a-5753-8721-deea80593053",
+      "uberStatus": "pending",
+      "fulfillmentType": "delivery",
+      "dropoff": {
+        "name": "aaa",
+        "phone": "+9115877104641",
+        "address": {
+          "streetAddress": [
+            "100 Queen St W"
+          ],
+          "city": "Toronto",
+          "province": "ON",
+          "postalCode": "A1A 1A1",
+          "country": "IN"
+        }
+      },
+      "pickup": {
+        "location": {
+          "name": "Varinderjeet Kaur",
+          "phone": "+1 416-868-6937",
+          "address": {
+            "streetAddress": [
+              "100 Queen St W"
+            ],
+            "city": "Toronto",
+            "province": "ON",
+            "postalCode": "2N2",
+            "country": "CA"
+          }
+        }
+      },
+      "meta": {
+        "distanceKm": null
+      },
+      "notes": "test nots"
+    },
     {
       "_id": "o-1758628898800",
       "createdAt": "2025-09-23T12:01:38.800Z",
