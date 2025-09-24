@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { QuickAddModal } from './QuickAddModal';
-import { fetchJson } from '../lib/api';
+import { fetchJson, resolveAssetUrl } from '../lib/api';
 
 export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', vegFilter = 'all' }) => {
   const [products, setProducts] = useState([]);
@@ -52,7 +52,7 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
       <div className="card animate-fadeInUp" style={{ padding: 0, overflow: 'hidden', borderLeft: '3px solid var(--primary)', position: 'relative' }}>
         <div style={{ width: '100%', height: 240, background: 'linear-gradient(180deg, var(--primary-alpha-08), var(--primary-alpha-04))', position: 'relative' }}>
           {category.imageUrl ? (
-            <img src={category.imageUrl} alt={category.name} className="img-cover" />
+            <img src={resolveAssetUrl(category.imageUrl)} alt={category.name} className="img-cover" />
           ) : (
             <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', fontSize: 48 }}>🛍️</div>
           )}

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Modal } from './Modal';
+import { resolveAssetUrl } from '../lib/api';
 
 export const QuickAddModal = ({ open, product, onCancel, onConfirm }) => {
   const [qty, setQty] = useState(1);
@@ -19,7 +20,7 @@ export const QuickAddModal = ({ open, product, onCancel, onConfirm }) => {
       <div style={{ display: 'grid', gap: 12 }} className="animate-popIn">
         <div style={{ position: 'relative', height: 180, borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border)' }}>
           {product.imageUrl ? (
-            <img src={product.imageUrl} alt={product.name} className="img-cover" />
+            <img src={resolveAssetUrl(product.imageUrl)} alt={product.name} className="img-cover" />
           ) : (
             <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', fontSize: 42, background: 'var(--primary-alpha-08)' }}>🛍️</div>
           )}
