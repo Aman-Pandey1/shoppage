@@ -147,11 +147,14 @@ adminBillingRouter.get('/sites/:siteId/billing', requireAdmin, async (req, res) 
       const todayTaxCents = sum(todayOrders, 'taxCents');
       const weekTaxCents = sum(weekOrders, 'taxCents');
       const monthTaxCents = sum(monthOrders, 'taxCents');
+      const todayTipCents = sum(todayOrders, 'tipCents');
+      const weekTipCents = sum(weekOrders, 'tipCents');
+      const monthTipCents = sum(monthOrders, 'tipCents');
 
-      // Selling totals exclude delivery fees (items + tip only)
-      const todaySellingCents = todayTotalCents - todayDeliveryFeeCents;
-      const weekSellingCents = weekTotalCents - weekDeliveryFeeCents;
-      const monthSellingCents = monthTotalCents - monthDeliveryFeeCents;
+      // Selling totals exclude delivery fees and tips
+      const todaySellingCents = todayTotalCents - todayDeliveryFeeCents - todayTipCents;
+      const weekSellingCents = weekTotalCents - weekDeliveryFeeCents - weekTipCents;
+      const monthSellingCents = monthTotalCents - monthDeliveryFeeCents - monthTipCents;
 
       return res.json({
         todayTotalCents: todaySellingCents,
@@ -171,20 +174,20 @@ adminBillingRouter.get('/sites/:siteId/billing', requireAdmin, async (req, res) 
 
     const [todayAgg] = await Order.aggregate([
       { $match: { site: new mongoose.Types.ObjectId(siteId), createdAt: { $gte: startOfDay } } },
-      { $group: { _id: null, total: { $sum: '$totalCents' }, deliveryFees: { $sum: '$deliveryFeeCents' }, tax: { $sum: '$taxCents' } } },
+      { $group: { _id: null, total: { $sum: '$totalCents' }, deliveryFees: { $sum: '$deliveryFeeCents' }, tax: { $sum: '$taxCents' }, tips: { $sum: '$tipCents' } } },
     ]);
     const [weekAgg] = await Order.aggregate([
       { $match: { site: new mongoose.Types.ObjectId(siteId), createdAt: { $gte: startOfWeek } } },
-      { $group: { _id: null, total: { $sum: '$totalCents' }, deliveryFees: { $sum: '$deliveryFeeCents' }, tax: { $sum: '$taxCents' } } },
+      { $group: { _id: null, total: { $sum: '$totalCents' }, deliveryFees: { $sum: '$deliveryFeeCents' }, tax: { $sum: '$taxCents' }, tips: { $sum: '$tipCents' } } },
     ]);
     const [monthAgg] = await Order.aggregate([
       { $match: { site: new mongoose.Types.ObjectId(siteId), createdAt: { $gte: startOfMonth } } },
-      { $group: { _id: null, total: { $sum: '$totalCents' }, deliveryFees: { $sum: '$deliveryFeeCents' }, tax: { $sum: '$taxCents' } } },
+      { $group: { _id: null, total: { $sum: '$totalCents' }, deliveryFees: { $sum: '$deliveryFeeCents' }, tax: { $sum: '$taxCents' }, tips: { $sum: '$tipCents' } } },
     ]);
 
-    const todaySellingCents = (todayAgg?.total || 0) - (todayAgg?.deliveryFees || 0);
-    const weekSellingCents = (weekAgg?.total || 0) - (weekAgg?.deliveryFees || 0);
-    const monthSellingCents = (monthAgg?.total || 0) - (monthAgg?.deliveryFees || 0);
+    const todaySellingCents = (todayAgg?.total || 0) - (todayAgg?.deliveryFees || 0) - (todayAgg?.tips || 0);
+    const weekSellingCents = (weekAgg?.total || 0) - (weekAgg?.deliveryFees || 0) - (weekAgg?.tips || 0);
+    const monthSellingCents = (monthAgg?.total || 0) - (monthAgg?.deliveryFees || 0) - (monthAgg?.tips || 0);
 
     res.json({
       todayTotalCents: todaySellingCents,
