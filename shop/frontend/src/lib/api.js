@@ -189,3 +189,15 @@ export async function postFile(path, file, fieldName = 'file') {
   return response.json();
 }
 
+// Resolve a possibly relative asset URL (e.g., "/uploads/..") into an absolute URL
+export function resolveAssetUrl(url) {
+  try {
+    if (!url) return '';
+    if (/^(https?:)?\/\//i.test(url) || url.startsWith('data:')) return url;
+    const base = API_BASE_URL.replace(/\/$/, '');
+    return `${base}${url.startsWith('/') ? url : `/${url}`}`;
+  } catch {
+    return url || '';
+  }
+}
+
