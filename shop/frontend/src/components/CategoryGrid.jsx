@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchJson } from '../lib/api';
+import { fetchJson, resolveAssetUrl } from '../lib/api';
 
 export const CategoryGrid = ({ onSelect, siteSlug = 'default' }) => {
   const [categories, setCategories] = useState([]);
@@ -112,8 +112,8 @@ export const CategoryGrid = ({ onSelect, siteSlug = 'default' }) => {
               background: 'linear-gradient(180deg, var(--primary-alpha-08), rgba(167,139,250,0.08))',
             }}
           >
-            {cat.imageUrl ? (
-              <img src={cat.imageUrl} alt={cat.name} className="img-cover" loading="lazy" />
+          {cat.imageUrl ? (
+              <img src={resolveAssetUrl(cat.imageUrl)} alt={cat.name} className="img-cover" loading="lazy" />
             ) : (
               <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', fontSize: 42 }}>{getIcon(cat.name)}</div>
             )}

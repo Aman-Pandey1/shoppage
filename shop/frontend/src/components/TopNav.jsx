@@ -21,6 +21,14 @@ export const TopNav = ({ siteSlug = 'default', onSignIn }) => {
   }, [siteSlug]);
 
   const name = site?.name || 'Store';
+  const apiBase = (import.meta.env.VITE_API_URL || 'http://localhost:4000').replace(/\/$/, '');
+  const logoSrc = React.useMemo(() => {
+    const url = site?.logoUrl || '';
+    if (!url) return '';
+    if (/^https?:\/\//i.test(url)) return url;
+    // For relative URLs like "/uploads/...", prefix API base so the image loads correctly in the frontend app
+    return `${apiBase}${url.startsWith('/') ? url : `/${url}`}`;
+  }, [site?.logoUrl, apiBase]);
   const initials = React.useMemo(() => {
     if (!user?.email) return 'FR';
     const base = (user?.email?.split('@')[0] || '').replace(/[^A-Za-z]/g, '');
@@ -32,8 +40,8 @@ export const TopNav = ({ siteSlug = 'default', onSignIn }) => {
       <div className="top-nav__inner">
         <div className="brand" aria-label="Store brand">
           <div className="brand__logo" aria-hidden>
-            {site?.logoUrl ? (
-              <img src={site.logoUrl} alt="" />
+            {logoSrc ? (
+              <img src={logoSrc} alt="logo" />
             ) : (
               <span>🍽️</span>
             )}

@@ -111,9 +111,12 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
         </div>
         <button
           className="primary-btn"
-          style={{ width: '100%', padding: '12px 16px', borderRadius: 12 }}
+          style={{ width: '100%', padding: '12px 16px', borderRadius: 12, pointerEvents: state.items.length === 0 ? 'none' : 'auto' }}
           disabled={state.items.length === 0}
-          onClick={onCheckout}
+          onClick={() => {
+            try { onCheckout && onCheckout(); } catch {}
+          }}
+          aria-disabled={state.items.length === 0 ? 'true' : 'false'}
         >
           Confirm →
         </button>
