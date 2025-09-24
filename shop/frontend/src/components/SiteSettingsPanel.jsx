@@ -16,6 +16,8 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
   const [locations, setLocations] = React.useState(Array.isArray(site?.locations) ? site.locations : []);
   const [cities, setCities] = React.useState(Array.isArray(site?.cities) ? site.cities : []);
   const [deliveryFee, setDeliveryFee] = React.useState(((Number(site?.deliveryFeeCents)||0)/100).toFixed(2));
+  const [logoUrl, setLogoUrl] = React.useState(site?.logoUrl || '');
+  const [logoFile, setLogoFile] = React.useState(null);
   const [hours, setHours] = React.useState(site?.hours || {
     mon: { open: '10:00', close: '22:00', closed: false },
     tue: { open: '10:00', close: '22:00', closed: false },
@@ -58,6 +60,8 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
       sat: { open: '10:00', close: '22:00', closed: false },
       sun: { open: '10:00', close: '22:00', closed: false },
     });
+    setLogoUrl(site?.logoUrl || '');
+    setLogoFile(null);
   }, [site?._id]);
 
   if (!site) return <div className="muted">Select a site to configure.</div>;
@@ -110,6 +114,22 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
         ))}
         <button onClick={() => setCities(prev => [...prev, 'New City'])}>+ Add city</button>
       </div>
+
+      <div style={{ gridColumn: '1 / -1', fontWeight: 800, marginTop: 8 }}>Branding</div>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span>Logo URL</span>
+        <input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." />
+      </label>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span>Or upload logo</span>
+        <input type="file" accept="image/*" onChange={(e) => setLogoFile(e.target.files?.[0] || null)} />
+      </label>
+      {logoUrl ? (
+        <div className="card" style={{ gridColumn: '1 / -1', padding: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <img src={logoUrl} alt="logo" style={{ width: 64, height: 64, objectFit: 'contain' }} />
+          <div className="muted" style={{ fontSize: 12 }}>Preview</div>
+        </div>
+      ) : null}
 
       <div style={{ gridColumn: '1 / -1', fontWeight: 800, marginTop: 8 }}>Delivery settings</div>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -221,6 +241,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
             cities,
             deliveryFeeCents: Math.max(0, Math.round(Number(deliveryFee || 0) * 100)),
             hours,
+            logoUrl,
             pickup: {
               name: pickupName,
               phone: pickupPhone,
@@ -233,7 +254,23 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
               }
             }
           };
-          const updated = await patchJson(`/api/admin/sites/${selectedSiteId}`, payload);
+          let updated = await patchJson(`/api/admin/sites/${selectedSiteId}`, payload);
+          if (logoFile) {
+            try {
+              const form = new FormData();
+              form.append('file', logoFile);
+              const resp = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/admin/sites/${selectedSiteId}/logo`, {
+                method: 'POST',
+                headers: { ...(localStorage.getItem('auth_token') ? { Authorization: `Bearer ${localStorage.getItem('auth_token')}` } : {}) },
+                body: form,
+              });
+              if (resp.ok) {
+                const data = await resp.json();
+                updated = data.site || updated;
+                setLogoUrl(data.logoUrl || updated.logoUrl || '');
+              }
+            } catch {}
+          }
           onSiteUpdated(updated);
           setSaving(false);
           setSavedAt(Date.now());
