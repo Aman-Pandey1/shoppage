@@ -1,11 +1,25 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Modal } from './Modal';
 import { getSpiceBadge, findAssetByKeywords, normalizeSpiceLevel } from '../lib/assetFinder';
 
 export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) => {
   const [selected, setSelected] = useState(undefined);
   const baseDefaults = ['Mild', 'Medium', 'Hot'];
-  const levels = Array.from(new Set((Array.isArray(spiceLevels) && spiceLevels.length > 0) ? [...spiceLevels, ...baseDefaults] : baseDefaults));
+  // Dedupe by canonical name and keep a stable order (single set of options)
+  const levels = useMemo(() => {
+    const input = Array.isArray(spiceLevels) && spiceLevels.length > 0 ? spiceLevels : baseDefaults;
+    const canonicalSet = new Set(input.map((lvl) => normalizeSpiceLevel(lvl)));
+    // Ensure common order and include any custom levels at the end
+    const ordered = ['mild', 'medium', 'hot', 'extra-hot'];
+    const result = [];
+    for (const key of ordered) {
+      if (canonicalSet.has(key)) result.push(key);
+    }
+    for (const key of canonicalSet) {
+      if (!ordered.includes(key)) result.push(key);
+    }
+    return result.length ? result : ordered;
+  }, [spiceLevels]);
 
   return (
     <Modal open={open} onClose={onCancel} title={null}>
@@ -23,20 +37,19 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) 
           </div>
         </div>
       ) : null}
-      <div className="image-choice-grid">
-        {levels.map((lvl) => {
-          const canonical = normalizeSpiceLevel(lvl);
+      <div className="image-choice-grid" style={{ flexWrap: 'nowrap', overflowX: 'auto', justifyContent: 'flex-start' }}>
+        {levels.map((canonical) => {
           const imgSrc = getSpiceBadge(canonical) || findAssetByKeywords([canonical, 'spice', 'chilli', 'pepper']);
           const active = normalizeSpiceLevel(selected) === canonical;
           return (
             <button
-              key={lvl}
+              key={canonical}
               onClick={() => setSelected(canonical)}
               aria-label={canonical}
               className="image-choice"
               data-active={active}
             >
-              <div className="image-square">
+              <div className="image-square" style={{ width: 100, height: 100 }}>
                 {imgSrc ? (
                   <img
                     src={imgSrc}

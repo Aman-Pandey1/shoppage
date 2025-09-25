@@ -342,11 +342,11 @@ input:focus, select:focus, textarea:focus {
 
 /* Order details bar */
 .order-bar { padding: 10px; border-radius: 12px; margin: 12px 0; }
-.order-bar__row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.order-bar__row { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 12px; }
 .order-bar__group { display: grid; gap: 6px; }
 .order-bar__label { font-size: 12px; color: #6b7280; }
 .order-bar__input { display: inline-flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 40px; padding: 8px 10px; border-radius: 8px; background: #fff; border: 1px solid var(--border); width: 100%; }
-.order-bar__inline { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.order-bar__inline { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 8px; }
 .order-bar .chev { opacity: .7; }
 @media (max-width: 640px) {
   .order-bar__row { grid-template-columns: 1fr; }

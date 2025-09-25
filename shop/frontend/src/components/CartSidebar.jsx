@@ -1,8 +1,12 @@
 import React from 'react';
 import { useCart } from '../store/CartContext';
+import { fetchJson } from '../lib/api';
 
 export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
-  const { state, removeItem, updateQuantity, clearCart, getCartTotal, setNotes } = useCart();
+  const { state, removeItem, updateQuantity, clearCart, getCartTotal, setNotes, applyCoupon, clearCoupon } = useCart();
+  const [code, setCode] = React.useState('');
+  const [couponError, setCouponError] = React.useState('');
+  const [checking, setChecking] = React.useState(false);
   const [now, setNow] = React.useState(Date.now());
   React.useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 30000);
@@ -90,6 +94,29 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
       )}
 
       <div className="card" style={{ marginTop: 12, borderRadius: 'var(--radius-sm)', padding: 12 }}>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
+          <span className="muted" style={{ fontSize: 12 }}>Coupon code</span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g., WELCOME10" style={{ flex: 1 }} />
+            <button disabled={checking || !code.trim()} onClick={async () => {
+              setCouponError(''); setChecking(true);
+              try {
+                const siteSlug = (window.location.pathname.match(/\/s\/([^/]+)/)?.[1]) || 'default';
+                const res = await fetchJson(`/api/shop/${siteSlug}/coupon/${encodeURIComponent(code.trim())}`);
+                if (res && typeof res.percent === 'number') {
+                  applyCoupon(code.trim(), res.percent);
+                } else {
+                  setCouponError('Invalid code');
+                }
+              } catch (e) {
+                setCouponError('Invalid code');
+              } finally { setChecking(false); }
+            }}>Apply</button>
+            {state.coupon ? <button onClick={() => { clearCoupon(); setCode(''); }}>Remove</button> : null}
+          </div>
+          {couponError ? <div style={{ color: 'var(--danger)', fontSize: 12 }}>{couponError}</div> : null}
+          {state.coupon ? <div className="muted" style={{ fontSize: 12 }}>Applied: {state.coupon.code} ({state.coupon.percent}% off)</div> : null}
+        </label>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <span className="muted" style={{ fontSize: 12 }}>Notes for restaurant</span>
           <textarea rows={3} placeholder="e.g., No onions, extra spicy" value={state.notes || ''} onChange={(e) => setNotes(e.target.value)} />
@@ -97,8 +124,14 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
         <div style={{ display: 'grid', gap: 6, marginTop: 10 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span className="muted">Items</span>
-            <span>${getCartTotal().toFixed(2)}</span>
+            <span>${state.items.reduce((s, it) => s + it.totalPrice, 0).toFixed(2)}</span>
           </div>
+          {state.coupon ? (
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span className="muted">Discount ({state.coupon.percent}% )</span>
+              <span>-${(state.items.reduce((s, it) => s + it.totalPrice, 0) * (state.coupon.percent/100)).toFixed(2)}</span>
+            </div>
+          ) : null}
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span className="muted">Tax (5%)</span>
             <span>${(getCartTotal() * 0.05).toFixed(2)}</span>
@@ -114,7 +147,14 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
           style={{ width: '100%', padding: '12px 16px', borderRadius: 12, pointerEvents: state.items.length === 0 ? 'none' : 'auto' }}
           disabled={state.items.length === 0}
           onClick={() => {
-            try { onCheckout && onCheckout(); } catch {}
+            if (typeof onCheckout === 'function') {
+              try { onCheckout(); } catch {}
+            } else {
+              try {
+                const evt = new CustomEvent('cart:confirm');
+                window.dispatchEvent(evt);
+              } catch {}
+            }
           }}
           aria-disabled={state.items.length === 0 ? 'true' : 'false'}
         >
