@@ -188,6 +188,24 @@ input:focus, select:focus, textarea:focus {
   display: block;
 }
 
+/* Image-only button grid helpers for popups */
+.image-choice-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+.image-choice {
+  padding: 10px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+}
+.image-choice[data-active="true"] {
+  border: 2px solid var(--primary-600);
+  background: var(--primary-alpha-12);
+}
+
 /* Layout helpers */
 .content {
   margin-right: 380px; /* space for cart */

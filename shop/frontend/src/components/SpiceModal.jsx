@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
 import { Modal } from './Modal';
-import chilliGreen from '../assets/chilli-green.svg';
-import chilliOrange from '../assets/chilli-orange.svg';
-import chilliRed from '../assets/chilli-red.svg';
-import { getSpiceBadge } from '../lib/assetFinder';
+import { getSpiceBadge, findAssetByKeywords } from '../lib/assetFinder';
 
 export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) => {
   const [selected, setSelected] = useState(undefined);
@@ -25,47 +22,47 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) 
           </div>
         </div>
       ) : null}
-      <div style={{ fontWeight: 800, marginBottom: 6 }}>Choose spice level</div>
+      {/* Label removed per request: show images only */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
         {levels.map((lvl) => {
           const lower = String(lvl || '').toLowerCase();
-          const badge = getSpiceBadge(lvl);
-          const fallback = lower.includes('hot')
-            ? chilliRed
-            : (lower.includes('medium') || lower.includes('spicy'))
-              ? chilliOrange
-              : chilliGreen;
-          const imgSrc = badge || fallback;
+          const imgSrc = getSpiceBadge(lvl) || findAssetByKeywords(['extra-hot', 'hot', 'medium', 'mild', 'spice', 'chilli', 'pepper']);
           const active = selected === lvl;
           return (
             <button
               key={lvl}
               onClick={() => setSelected(lvl)}
+              aria-label={lvl}
               style={{
-                padding: '12px 16px',
-                borderRadius: 999,
+                padding: 10,
+                borderRadius: 16,
                 border: active ? '2px solid var(--primary-600)' : '1px solid var(--border)',
                 background: active ? 'var(--primary-alpha-12)' : 'var(--panel-2)',
                 cursor: 'pointer',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 140
+                display: 'grid', placeItems: 'center'
               }}
             >
               <div style={{
-                width: 180,
-                height: 60,
+                width: 120,
+                height: 120,
                 display: 'grid',
                 placeItems: 'center',
                 background: 'linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.70))',
                 borderRadius: 14,
                 border: '1px solid var(--border)'
               }}>
-                <img
-                  src={imgSrc}
-                  alt={`${lvl} level`}
-                  style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.15))' }}
-                />
+                {imgSrc ? (
+                  <img
+                    src={imgSrc}
+                    alt={`${lvl} spice`}
+                    loading="eager"
+                    decoding="async"
+                    style={{ maxWidth: '80%', maxHeight: '80%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }}
+                  />
+                ) : (
+                  <div style={{ fontSize: 42 }}>🌶️</div>
+                )}
               </div>
-              <div style={{ fontWeight: 700 }}>{lvl}</div>
             </button>
           );
         })}

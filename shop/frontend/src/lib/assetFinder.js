@@ -45,14 +45,14 @@ export function findAssetByKeywords(keywords) {
  */
 export function getPickupImage() {
   return (
-    findAssetByKeywords(['pickup', 'store', 'shop', 'takeout', 'image1', 'img1']) ||
+    findAssetByKeywords(['pickup', 'pick-up', 'counter', 'store', 'shop', 'takeout', 'carryout', 'collection', 'takeaway', 'take-away']) ||
     undefined
   );
 }
 
 export function getDeliveryImage() {
   return (
-    findAssetByKeywords(['delivery', 'truck', 'van', 'courier', 'image2', 'img2']) ||
+    findAssetByKeywords(['delivery', 'deliver', 'courier', 'rider', 'driver', 'bike', 'scooter', 'truck', 'van']) ||
     undefined
   );
 }
@@ -60,12 +60,14 @@ export function getDeliveryImage() {
 export function getSpiceBadge(level) {
   const lower = String(level || '').toLowerCase();
   if (lower.includes('extra'))
-    return findAssetByKeywords(['extra', 'level4', 'lvl4', '4']);
+    return findAssetByKeywords(['extra-hot', 'extra_hot', 'xhot', 'x-hot', 'very-hot', 'veryhot', 'extra', 'level4', 'lvl4', '4', 'spice']);
   if (lower.includes('hot'))
-    return findAssetByKeywords(['hot', 'level3', 'lvl3', '3']);
+    return findAssetByKeywords(['hot', 'level3', 'lvl3', '3', 'spice']);
   if (lower.includes('medium') || lower.includes('spicy'))
-    return findAssetByKeywords(['spicy', 'medium', 'level2', 'lvl2', '2']);
-  // default/mild
-  return findAssetByKeywords(['mild', 'level1', 'lvl1', '1']);
+    return findAssetByKeywords(['medium', 'spicy', 'level2', 'lvl2', '2', 'spice']);
+  if (lower.includes('mild') || lower.includes('low'))
+    return findAssetByKeywords(['mild', 'low', 'level1', 'lvl1', '1', 'spice']);
+  // generic fallback if no match
+  return findAssetByKeywords(['spice', 'chilli', 'chili', 'pepper']);
 }
 
