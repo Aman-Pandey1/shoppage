@@ -80,12 +80,7 @@ export const OrderDetailsBar = ({
                 ))}
               </select>
             </label>
-            {/* Show selected date alongside time for clarity (visible box) */}
-            {selectedDateLabel ? (
-              <div aria-label="Selected date" className="order-bar__input" style={{ display: 'flex', alignItems: 'center', fontWeight: 600 }}>
-                {selectedDateLabel}
-              </div>
-            ) : null}
+            {/* Removed duplicate selected date display to avoid showing date twice */}
           </div>
         </div>
       </div>

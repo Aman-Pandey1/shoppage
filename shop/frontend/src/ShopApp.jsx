@@ -338,9 +338,9 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         {content}
       </main>
 
-      <button className="cart-fab hide-desktop" onClick={() => setMobileCartOpen(true)}>
-        <span style={{ fontSize: 18 }}>🛒</span>
-        <span style={{ fontWeight: 800 }}>Cart ({state.items.length})</span>
+      <button className="cart-fab hide-desktop" aria-label="Open cart" onClick={() => setMobileCartOpen(true)}>
+        <span className="cart-fab__icon">🛒</span>
+        {state.items.length > 0 ? <span className="cart-fab__badge" aria-label={`Items in cart: ${state.items.length}`}>{state.items.length}</span> : null}
       </button>
 
       <PrivacyPolicyModal open={privacyOpen} onAccept={handleAcceptPrivacy} />

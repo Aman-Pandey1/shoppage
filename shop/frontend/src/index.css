@@ -282,15 +282,35 @@ input:focus, select:focus, textarea:focus {
   bottom: 16px;
   display: none;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 0;
   border-radius: 9999px;
-  padding: 10px 14px;
+  width: 52px;
+  height: 52px;
   box-shadow: var(--shadow-pop);
   background: linear-gradient(180deg, var(--primary-alpha-25), var(--primary-alpha-12));
   border: 1px solid var(--primary-600);
 }
 @media (max-width: 1024px) {
   .cart-fab { display: inline-flex; }
+}
+
+/* Cart FAB internals */
+.cart-fab__icon { font-size: 22px; line-height: 1; }
+.cart-fab__badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 9999px;
+  background: #000;
+  color: #fff;
+  font-size: 12px;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.25);
 }
 
 /* Visibility helpers */
