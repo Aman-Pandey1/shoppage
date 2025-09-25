@@ -474,6 +474,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                       scheduledFor: readyAt,
                     },
                     notes: state.notes || undefined,
+                    coupon: state.coupon || undefined,
                   };
                   const res = await fetchJson(`/api/shop/${siteSlug}/site`).catch(() => ({}));
                   await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/shop/${siteSlug}/orders/pickup`, {
