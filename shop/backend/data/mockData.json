@@ -1209,7 +1209,8 @@
       "spiceLevels": [
         "Mild",
         "Medium",
-        "Hot"
+        "Hot",
+        "Extra Hot"
       ],
       "isVeg": true,
       "extraOptionGroups": []
