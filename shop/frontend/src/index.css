@@ -188,6 +188,41 @@ input:focus, select:focus, textarea:focus {
   display: block;
 }
 
+/* Image-only button grid helpers for popups */
+.image-choice-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+.image-choice {
+  padding: 10px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+}
+.image-choice[data-active="true"] {
+  border: 2px solid var(--primary-600);
+  background: var(--primary-alpha-12);
+}
+
+/* Square image container with nice gradient background */
+.image-square {
+  width: 120px;
+  height: 120px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.70));
+  border-radius: 14px;
+  border: 1px solid var(--border);
+}
+.image-square img {
+  max-width: 80%;
+  max-height: 80%;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.12));
+}
+
 /* Layout helpers */
 .content {
   margin-right: 380px; /* space for cart */
