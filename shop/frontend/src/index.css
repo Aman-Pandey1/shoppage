@@ -196,14 +196,14 @@ input:focus, select:focus, textarea:focus {
   justify-content: center;
 }
 .image-choice {
-  padding: 10px;
+  padding: 0;
   border-radius: 16px;
-  border: 1px solid var(--border);
-  background: var(--panel-2);
+  border: none;
+  background: transparent;
 }
 .image-choice[data-active="true"] {
-  border: 2px solid var(--primary-600);
-  background: var(--primary-alpha-12);
+  outline: 3px solid var(--primary-600);
+  outline-offset: 4px;
 }
 
 /* Square image container with nice gradient background */
@@ -212,9 +212,9 @@ input:focus, select:focus, textarea:focus {
   height: 160px;
   display: grid;
   place-items: center;
-  background: linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.70));
+  background: transparent;
   border-radius: 14px;
-  border: 1px solid var(--border);
+  border: none;
 }
 .image-square img {
   max-width: 90%;
