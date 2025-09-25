@@ -20,6 +20,7 @@ export const FulfillmentModal = ({ open, onChoose }) => {
           className="animate-fadeInUp"
         >
           <div style={{ padding: 12, display: 'grid', gap: 6, textAlign: 'center' }}>
+            <div style={{ fontWeight: 800 }}>Pickup</div>
             {pickupImg ? (
               <div style={{ height: 120, display: 'grid', placeItems: 'center' }}>
                 <img src={pickupImg} alt="Pickup" loading="eager" decoding="async" style={{ maxWidth: '85%', maxHeight: '85%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }} />
@@ -27,7 +28,6 @@ export const FulfillmentModal = ({ open, onChoose }) => {
             ) : (
               <div style={{ fontSize: 32 }}>🏪</div>
             )}
-            <div style={{ fontWeight: 700 }}>Pickup</div>
           </div>
         </button>
         <button
@@ -42,6 +42,7 @@ export const FulfillmentModal = ({ open, onChoose }) => {
           className="animate-fadeInUp"
         >
           <div style={{ padding: 12, display: 'grid', gap: 6, textAlign: 'center' }}>
+            <div style={{ fontWeight: 800 }}>Delivery</div>
             {deliveryImg ? (
               <div style={{ height: 120, display: 'grid', placeItems: 'center' }}>
                 <img src={deliveryImg} alt="Delivery" loading="eager" decoding="async" style={{ maxWidth: '85%', maxHeight: '85%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }} />
@@ -49,7 +50,6 @@ export const FulfillmentModal = ({ open, onChoose }) => {
             ) : (
               <div style={{ fontSize: 32 }}>🚚</div>
             )}
-            <div style={{ fontWeight: 700 }}>Delivery</div>
           </div>
         </button>
       </div>
