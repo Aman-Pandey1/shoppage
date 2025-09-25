@@ -132,9 +132,9 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
 		const tableWidth = colWidths.reduce((a, b) => a + b, 0);
 		const startX = doc.page.margins.left + (availableWidth - tableWidth) / 2;
 
-		function drawItemsHeader() {
-			doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark)
-				.text('Items', startX, doc.y, { width: tableWidth, align: 'center' });
+    function drawItemsHeader() {
+      doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark)
+        .text('Order details', startX, doc.y, { width: tableWidth, align: 'center' });
 			doc.moveDown(0.4);
 			doc.save();
 			doc.rect(startX, doc.y - 2, tableWidth, 18).fill(colors.tableHeader);
@@ -194,6 +194,7 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
     const tax = Number(order.taxCents || 0) / 100;
     const tip = Number(order.tipCents || 0) / 100;
     const grandTotal = Number(order.totalCents || 0) / 100;
+    const coupon = order.meta?.coupon;
 
 		const labelWidth = 220;
 		const valueX = startX + tableWidth - 100;
@@ -208,6 +209,10 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
       doc.moveDown(0.3);
     }
     row('Items Subtotal', itemsSubtotal);
+    if (coupon && typeof coupon.percent === 'number') {
+      const discount = itemsSubtotal * (Number(coupon.percent) / 100);
+      row(`Coupon ${coupon.code ? '('+coupon.code+')' : ''} (-${coupon.percent}% )`, -discount);
+    }
     const taxRatePct = itemsSubtotal > 0 ? Math.round((tax / itemsSubtotal) * 1000) / 10 : null;
     row(`Tax${taxRatePct !== null ? ` (${taxRatePct}% )` : ''}`, tax);
     if (tip > 0) row('Tip', tip);

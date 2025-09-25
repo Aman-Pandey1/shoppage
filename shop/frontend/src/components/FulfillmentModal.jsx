@@ -7,7 +7,7 @@ export const FulfillmentModal = ({ open, onChoose }) => {
   const deliveryImg = getDeliveryImage();
   return (
     <Modal open={open} onClose={() => {}} title={null}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
         <button
           onClick={() => onChoose('pickup')}
           style={{
