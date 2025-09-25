@@ -15,6 +15,15 @@ const allAssets = Object.entries(allAssetModules).map(([path, url]) => ({
   filename: path.split('/').pop()?.toLowerCase() || '',
 }));
 
+// Direct name map for exact lookups (improves matching when user renames files exactly)
+const filenameToUrl = (() => {
+  const map = new Map();
+  for (const asset of allAssets) {
+    map.set(asset.filename, asset.url);
+  }
+  return map;
+})();
+
 /**
  * Find the best-matching asset by checking if the filename contains
  * any of the provided keywords (case-insensitive). Returns the URL or undefined.
@@ -22,6 +31,30 @@ const allAssets = Object.entries(allAssetModules).map(([path, url]) => ({
 export function findAssetByKeywords(keywords) {
   if (!Array.isArray(keywords) || keywords.length === 0) return undefined;
   const lowered = keywords.map((k) => String(k || '').toLowerCase());
+
+  // 1) Prefer exact filename matches for common names
+  //    Accept both with and without extension, and allow spaces/underscores/hyphens
+  const preferredNames = new Set();
+  for (const key of lowered) {
+    if (!key) continue;
+    const normalized = key.replace(/\s+/g, ' ').trim();
+    const variants = [
+      normalized,
+      normalized.replace(/\s+/g, '_'),
+      normalized.replace(/\s+/g, '-'),
+      normalized.replace(/-/g, ' '),
+      normalized.replace(/_/g, ' '),
+    ];
+    for (const base of variants) {
+      for (const ext of ['.png', '.jpg', '.jpeg', '.svg', '.webp', '.gif']) {
+        preferredNames.add(`${base}${ext}`);
+      }
+    }
+  }
+  for (const name of preferredNames) {
+    const hit = filenameToUrl.get(name);
+    if (hit) return hit;
+  }
 
   // Score assets: number of matched keywords, break ties by longer filename match
   let best = undefined;
@@ -111,6 +144,8 @@ export function normalizeSpiceLevel(level) {
  */
 export function getPickupImage() {
   return (
+    // Try exact names first
+    filenameToUrl.get('pickup.png') || filenameToUrl.get('pickup.svg') ||
     findAssetByKeywords(['pickup', 'pick-up', 'counter', 'store', 'shop', 'takeout', 'carryout', 'collection', 'takeaway', 'take-away']) ||
     undefined
   );
@@ -118,6 +153,7 @@ export function getPickupImage() {
 
 export function getDeliveryImage() {
   return (
+    filenameToUrl.get('delivery.png') || filenameToUrl.get('delivery.svg') ||
     findAssetByKeywords(['delivery', 'deliver', 'courier', 'rider', 'driver', 'bike', 'scooter', 'truck', 'van']) ||
     undefined
   );
@@ -126,12 +162,24 @@ export function getDeliveryImage() {
 export function getSpiceBadge(level) {
   const canonical = normalizeSpiceLevel(level);
   if (canonical === 'extra-hot')
-    return findAssetByKeywords(['extra-hot', 'extra_hot', 'xhot', 'x-hot', 'very-hot', 'veryhot', 'extra', 'level4', 'lvl4', '4', 'spice']);
+    return (
+      filenameToUrl.get('extra hot.png') || filenameToUrl.get('extra-hot.png') || filenameToUrl.get('extra_hot.png') ||
+      findAssetByKeywords(['extra-hot', 'extra hot', 'extra_hot', 'xhot', 'x-hot', 'very-hot', 'veryhot', 'extra', 'level4', 'lvl4', '4', 'spice'])
+    );
   if (canonical === 'hot')
-    return findAssetByKeywords(['hot', 'spicy', 'level3', 'lvl3', '3', 'spice']);
+    return (
+      filenameToUrl.get('hot.png') ||
+      findAssetByKeywords(['hot', 'spicy', 'level3', 'lvl3', '3', 'spice'])
+    );
   if (canonical === 'medium')
-    return findAssetByKeywords(['medium', 'moderate', 'level2', 'lvl2', '2', 'spice']);
+    return (
+      filenameToUrl.get('medium.png') ||
+      findAssetByKeywords(['medium', 'moderate', 'level2', 'lvl2', '2', 'spice'])
+    );
   // default/mild
-  return findAssetByKeywords(['mild', 'low', 'level1', 'lvl1', '1', 'spice']);
+  return (
+    filenameToUrl.get('mild.png') ||
+    findAssetByKeywords(['mild', 'low', 'level1', 'lvl1', '1', 'spice'])
+  );
 }
 
