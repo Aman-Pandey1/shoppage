@@ -37,7 +37,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
       className="animate-slideInRight cart-sidebar"
       data-open={open ? 'true' : 'false'}
     >
-      <div className="card" style={{ padding: 14, borderRadius: 12, marginBottom: 12, borderTop: '3px solid var(--primary)' }}>
+      <div className="card cart-header" style={{ padding: 14, borderRadius: 12, marginBottom: 12, borderTop: '3px solid var(--primary)', position: 'sticky', top: 0, background: '#fff', zIndex: 1 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <div style={{ fontSize: 12 }} className="muted">ORDER READY FOR</div>
