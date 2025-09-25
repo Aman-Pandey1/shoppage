@@ -27,6 +27,7 @@ export const FulfillmentModal = ({ open, onChoose }) => {
             ) : (
               <div style={{ fontSize: 32 }}>🏪</div>
             )}
+            <div style={{ fontWeight: 700 }}>Pickup</div>
           </div>
         </button>
         <button
@@ -48,6 +49,7 @@ export const FulfillmentModal = ({ open, onChoose }) => {
             ) : (
               <div style={{ fontSize: 32 }}>🚚</div>
             )}
+            <div style={{ fontWeight: 700 }}>Delivery</div>
           </div>
         </button>
       </div>

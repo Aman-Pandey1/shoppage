@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { deleteJson, fetchJson, postJson, putJson, patchJson, download, postFile, resolveAssetUrl } from '../lib/api';
 import { SiteSettingsPanel } from './SiteSettingsPanel';
 import { Modal } from './Modal';
+import { getSpiceBadge, normalizeSpiceLevel } from '../lib/assetFinder';
 
 export const AdminDashboard = () => {
   const [sites, setSites] = useState([]);
@@ -414,16 +415,25 @@ export const AdminDashboard = () => {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <span>Spice levels</span>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      {['Mild','Medium','Hot','Extra Hot'].map((lvl) => (
-                        <label key={lvl} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)', padding: '6px 10px', borderRadius: 8 }}>
-                          <input type="checkbox" checked={(editing.spiceLevels || []).includes(lvl)} onChange={(e) => {
-                            const set = new Set(editing.spiceLevels || []);
-                            if (e.target.checked) set.add(lvl); else set.delete(lvl);
-                            setEditing({ ...editing, spiceLevels: Array.from(set) });
-                          }} />
-                          <span>{lvl}</span>
-                        </label>
-                      ))}
+                      {['Mild','Medium','Hot','Extra Hot'].map((lvl) => {
+                        const canonical = normalizeSpiceLevel(lvl);
+                        const icon = getSpiceBadge(canonical);
+                        return (
+                          <label key={lvl} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, border: '1px solid var(--border)', padding: '6px 10px', borderRadius: 8 }}>
+                            <input type="checkbox" checked={(editing.spiceLevels || []).includes(lvl)} onChange={(e) => {
+                              const set = new Set(editing.spiceLevels || []);
+                              if (e.target.checked) set.add(lvl); else set.delete(lvl);
+                              setEditing({ ...editing, spiceLevels: Array.from(set) });
+                            }} />
+                            {icon ? (
+                              <img src={icon} alt={canonical} style={{ width: 18, height: 18, objectFit: 'contain' }} />
+                            ) : (
+                              <span aria-hidden>🌶️</span>
+                            )}
+                            <span>{lvl}</span>
+                          </label>
+                        );
+                      })}
                     </div>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span className="muted" style={{ fontSize: 12 }}>Custom:</span>
