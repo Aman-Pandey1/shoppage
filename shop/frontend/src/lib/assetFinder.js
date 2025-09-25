@@ -161,25 +161,42 @@ export function getDeliveryImage() {
 
 export function getSpiceBadge(level) {
   const canonical = normalizeSpiceLevel(level);
-  if (canonical === 'extra-hot')
+  function tryExactBaseNames(bases) {
+    for (const base of bases) {
+      for (const ext of ['.png', '.svg', '.jpg', '.jpeg', '.webp', '.gif']) {
+        const hit = filenameToUrl.get(`${base}${ext}`);
+        if (hit) return hit;
+      }
+    }
+    return undefined;
+  }
+
+  if (canonical === 'extra-hot') {
     return (
-      filenameToUrl.get('extra hot.png') || filenameToUrl.get('extra-hot.png') || filenameToUrl.get('extra_hot.png') ||
-      findAssetByKeywords(['extra-hot', 'extra hot', 'extra_hot', 'xhot', 'x-hot', 'very-hot', 'veryhot', 'extra', 'level4', 'lvl4', '4', 'spice'])
+      // Prefer explicit "extra" assets
+      tryExactBaseNames(['extra hot', 'extra-hot', 'extra_hot', 'chilli-extra', 'chili-extra', 'xhot', 'x-hot', 'xxhot', 'xx-hot']) ||
+      // Otherwise fall back to keywords
+      findAssetByKeywords(['extra-hot', 'extra hot', 'extra_hot', 'very-hot', 'veryhot', 'xhot', 'x-hot', 'extra', 'level4', 'lvl4', '4', 'spice', 'chilli-red', 'chili-red', 'red']) ||
+      // Final fallback to red chilli if present
+      tryExactBaseNames(['chilli-red', 'chili-red'])
     );
-  if (canonical === 'hot')
+  }
+  if (canonical === 'hot') {
     return (
-      filenameToUrl.get('hot.png') ||
-      findAssetByKeywords(['hot', 'spicy', 'level3', 'lvl3', '3', 'spice'])
+      tryExactBaseNames(['hot', 'chilli-red', 'chili-red']) ||
+      findAssetByKeywords(['hot', 'spicy', 'level3', 'lvl3', '3', 'spice', 'red', 'chilli', 'pepper'])
     );
-  if (canonical === 'medium')
+  }
+  if (canonical === 'medium') {
     return (
-      filenameToUrl.get('medium.png') ||
-      findAssetByKeywords(['medium', 'moderate', 'level2', 'lvl2', '2', 'spice'])
+      tryExactBaseNames(['medium', 'chilli-orange', 'chili-orange']) ||
+      findAssetByKeywords(['medium', 'moderate', 'level2', 'lvl2', '2', 'spice', 'orange'])
     );
+  }
   // default/mild
   return (
-    filenameToUrl.get('mild.png') ||
-    findAssetByKeywords(['mild', 'low', 'level1', 'lvl1', '1', 'spice'])
+    tryExactBaseNames(['mild', 'chilli-green', 'chili-green']) ||
+    findAssetByKeywords(['mild', 'low', 'level1', 'lvl1', '1', 'spice', 'green'])
   );
 }
 
