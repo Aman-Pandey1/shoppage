@@ -81,10 +81,7 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
 		doc.restore();
 		doc.font('Helvetica-Bold').fontSize(22).fillColor(colors.primaryText).text('Order Invoice', doc.page.margins.left + 12, headerY + 10);
 		// move the cursor just below the header band
-		doc.y = headerY + 52;
-		doc.font('Helvetica').fontSize(10).fillColor(colors.text).text(`Order #: ${String(order._id)}`);
-		doc.text(`Date: ${new Date(order.createdAt).toLocaleString()}`);
-		doc.text(`Fulfillment: ${order.fulfillmentType || (order.dropoff ? 'delivery' : 'pickup')}`);
+    doc.y = headerY + 52;
 
 		// Two-column block: Customer and Restaurant
 		doc.moveDown(0.6);
@@ -93,32 +90,39 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
 		const leftX = doc.page.margins.left;
 		const rightX = leftX + columnWidth + columnGap;
 		const topY = doc.y;
-		// Left: Customer
-		doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('Customer', leftX, topY);
-		doc.font('Helvetica').fontSize(10).fillColor(colors.text);
-    if (order.dropoff) {
-      const d = order.dropoff || {};
-      const addr = Array.isArray(d?.address?.streetAddress) ? d.address.streetAddress.join(' ') : '';
-			doc.text(`Name: ${d.name || '—'}`, leftX, doc.y, { width: columnWidth });
-			doc.text(`Phone: ${d.phone || '—'}`, leftX, doc.y, { width: columnWidth });
-			doc.text(`Address: ${addr} ${d?.address?.city || ''} ${d?.address?.province || ''} ${d?.address?.postalCode || ''}`, leftX, doc.y, { width: columnWidth });
-    } else if (order.pickup?.location) {
-      const p = order.pickup.location;
-			doc.text('Pickup Order', leftX, doc.y, { width: columnWidth });
-			if (order.userEmail) doc.text(`Customer: ${order.userEmail}`, leftX, doc.y, { width: columnWidth });
-    }
-		const leftEndY = doc.y;
-    // Right: Restaurant address
-    let rightYStart = topY;
-		doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('Restaurant', rightX, rightYStart);
-		doc.font('Helvetica').fontSize(10).fillColor(colors.text);
+    // Left column: Restaurant first, then Customer
+    // Restaurant
+    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('Restaurant', leftX, topY);
+    doc.font('Helvetica').fontSize(10).fillColor(colors.text);
+    let cursorLeft = doc.y;
     if (order.pickup?.location) {
       const p = order.pickup.location;
       const addr = Array.isArray(p?.address?.streetAddress) ? p.address.streetAddress.join(' ') : '';
-			doc.text(`${p.name || 'Restaurant'}`, rightX, doc.y, { width: columnWidth });
-			doc.text(`${addr} ${p?.address?.city || ''} ${p?.address?.province || ''} ${p?.address?.postalCode || ''}`, rightX, doc.y, { width: columnWidth });
+      doc.text(`${p.name || 'Restaurant'}`, leftX, cursorLeft, { width: columnWidth });
+      doc.text(`${addr} ${p?.address?.city || ''} ${p?.address?.province || ''} ${p?.address?.postalCode || ''}`, leftX, doc.y, { width: columnWidth });
     }
-		const rightEndY = doc.y;
+    // small gap then Customer
+    doc.moveDown(0.6);
+    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('Customer', leftX, doc.y);
+    doc.font('Helvetica').fontSize(10).fillColor(colors.text);
+    if (order.dropoff) {
+      const d = order.dropoff || {};
+      const addr = Array.isArray(d?.address?.streetAddress) ? d.address.streetAddress.join(' ') : '';
+      doc.text(`Name: ${d.name || '—'}`, leftX, doc.y, { width: columnWidth });
+      doc.text(`Phone: ${d.phone || '—'}`, leftX, doc.y, { width: columnWidth });
+      doc.text(`Address: ${addr} ${d?.address?.city || ''} ${d?.address?.province || ''} ${d?.address?.postalCode || ''}`, leftX, doc.y, { width: columnWidth });
+    } else if (order.pickup?.location) {
+      if (order.userEmail) doc.text(`Customer: ${order.userEmail}`, leftX, doc.y, { width: columnWidth });
+    }
+    const leftEndY = doc.y;
+
+    // Right column: Order details
+    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('Order details', rightX, topY);
+    doc.font('Helvetica').fontSize(10).fillColor(colors.text);
+    doc.text(`Order #: ${String(order._id)}`, rightX, doc.y, { width: columnWidth });
+    doc.text(`Date: ${new Date(order.createdAt).toLocaleString()}`, rightX, doc.y, { width: columnWidth });
+    doc.text(`Fulfillment: ${order.fulfillmentType || (order.dropoff ? 'delivery' : 'pickup')}`, rightX, doc.y, { width: columnWidth });
+    const rightEndY = doc.y;
 		// Set cursor to the deeper of the two columns to avoid overlap
 		doc.y = Math.max(leftEndY, rightEndY) + 10;
 		doc.moveDown(0.2);

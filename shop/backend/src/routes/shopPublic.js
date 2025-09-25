@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { tenantBySlug, tenantByHost } from '../middleware/tenant.js';
 import Category from '../models/Category.js';
 import Product from '../models/Product.js';
+import Coupon from '../models/Coupon.js';
 
 const router = Router();
 
@@ -140,6 +141,26 @@ router.get('/:slug/products', async (req, res) => {
 	} catch (err) {
 		res.status(400).json({ error: err.message });
 	}
+});
+
+// Public: validate coupon by code for a site
+router.get('/:slug/coupon/:code', async (req, res) => {
+  try {
+    const code = String(req.params.code || '').trim().toUpperCase();
+    const mock = req.app.locals.mockData;
+    if (mock) {
+      const site = req.siteId;
+      const list = mock.coupons || [];
+      const found = list.find((c) => c.site === site && c.code === code);
+      if (!found) return res.status(404).json({ error: 'Invalid coupon' });
+      return res.json({ code: found.code, percent: Number(found.percent) || 0 });
+    }
+    const found = await Coupon.findOne({ site: req.siteId, code });
+    if (!found) return res.status(404).json({ error: 'Invalid coupon' });
+    return res.json({ code: found.code, percent: Number(found.percent) || 0 });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
 });
 
 export default router;

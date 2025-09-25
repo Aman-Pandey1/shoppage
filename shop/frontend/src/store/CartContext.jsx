@@ -45,7 +45,7 @@ function generateItemId(productId, spiceLevel, selectedOptions) {
 }
 
 export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => {
-  const [state, setState] = useState({ items: [], notes: '' });
+  const [state, setState] = useState({ items: [], notes: '', coupon: null });
   const [lastAdded, setLastAdded] = useState(null);
 
   useEffect(() => {
@@ -71,6 +71,14 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
   const setNotes = useCallback((text) => {
     setState((prev) => ({ ...prev, notes: String(text || '').slice(0, 1000) }));
   }, []);
+
+  const applyCoupon = useCallback((code, percent) => {
+    const normalized = String(code || '').trim().toUpperCase();
+    const pct = Math.max(0, Math.min(100, Number(percent) || 0));
+    setState((prev) => ({ ...prev, coupon: normalized && pct > 0 ? { code: normalized, percent: pct } : null }));
+  }, []);
+
+  const clearCoupon = useCallback(() => setState((prev) => ({ ...prev, coupon: null })), []);
 
   const addItem = useCallback(({ product, quantity = 1, spiceLevel, selectedOptions = [] }) => {
     const extraCost = calculateExtraCost(selectedOptions);
@@ -122,12 +130,14 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
   const clearCart = useCallback(() => setState((prev) => ({ ...prev, items: [] })), []);
 
   const getCartTotal = useCallback(() => {
-    return state.items.reduce((sum, it) => sum + it.totalPrice, 0);
-  }, [state.items]);
+    const subtotal = state.items.reduce((sum, it) => sum + it.totalPrice, 0);
+    const discount = state.coupon ? (subtotal * (state.coupon.percent / 100)) : 0;
+    return Math.max(0, subtotal - discount);
+  }, [state.items, state.coupon]);
 
   const value = useMemo(
-    () => ({ state, setFulfillmentType, addItem, removeItem, updateQuantity, clearCart, getCartTotal, lastAdded, setNotes }),
-    [state, setFulfillmentType, addItem, removeItem, updateQuantity, clearCart, getCartTotal, lastAdded, setNotes]
+    () => ({ state, setFulfillmentType, addItem, removeItem, updateQuantity, clearCart, getCartTotal, lastAdded, setNotes, applyCoupon, clearCoupon }),
+    [state, setFulfillmentType, addItem, removeItem, updateQuantity, clearCart, getCartTotal, lastAdded, setNotes, applyCoupon, clearCoupon]
   );
 
   return (<CartContext.Provider value={value}>{children}</CartContext.Provider>);
