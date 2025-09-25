@@ -9,8 +9,9 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) 
   const levels = useMemo(() => {
     const input = Array.isArray(spiceLevels) && spiceLevels.length > 0 ? spiceLevels : baseDefaults;
     const canonicalSet = new Set(input.map((lvl) => normalizeSpiceLevel(lvl)));
-    // Ensure common order and include any custom levels at the end
+    // Ensure we ALWAYS show the four standard levels regardless of backend config
     const ordered = ['mild', 'medium', 'hot', 'extra-hot'];
+    for (const std of ordered) canonicalSet.add(std);
     const result = [];
     for (const key of ordered) {
       if (canonicalSet.has(key)) result.push(key);
@@ -18,7 +19,7 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) 
     for (const key of canonicalSet) {
       if (!ordered.includes(key)) result.push(key);
     }
-    return result.length ? result : ordered;
+    return result;
   }, [spiceLevels]);
 
   return (
@@ -61,7 +62,6 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) 
                   <div style={{ fontSize: 42 }}>🌶️</div>
                 )}
               </div>
-              <div style={{ marginTop: 6, fontWeight: 700, textTransform: 'capitalize' }}>{canonical.replace('-', ' ')}</div>
             </button>
           );
         })}
