@@ -1,7 +1,10 @@
 import React from 'react';
 import { Modal } from './Modal';
+import { getPickupImage, getDeliveryImage } from '../lib/assetFinder';
 
 export const FulfillmentModal = ({ open, onChoose }) => {
+  const pickupImg = getPickupImage();
+  const deliveryImg = getDeliveryImage();
   return (
     <Modal open={open} onClose={() => {}} title="Choose your order type">
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -17,7 +20,13 @@ export const FulfillmentModal = ({ open, onChoose }) => {
           className="animate-fadeInUp"
         >
           <div style={{ padding: 14, display: 'grid', gap: 6, textAlign: 'center' }}>
-            <div style={{ fontSize: 32 }}>🏪</div>
+            {pickupImg ? (
+              <div style={{ height: 90, display: 'grid', placeItems: 'center' }}>
+                <img src={pickupImg} alt="Pickup" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+              </div>
+            ) : (
+              <div style={{ fontSize: 32 }}>🏪</div>
+            )}
             <div style={{ fontWeight: 800 }}>Pickup</div>
             <div className="muted" style={{ fontSize: 12 }}>Choose by location or city</div>
           </div>
@@ -34,7 +43,13 @@ export const FulfillmentModal = ({ open, onChoose }) => {
           className="animate-fadeInUp"
         >
           <div style={{ padding: 14, display: 'grid', gap: 6, textAlign: 'center' }}>
-            <div style={{ fontSize: 32 }}>🚚</div>
+            {deliveryImg ? (
+              <div style={{ height: 90, display: 'grid', placeItems: 'center' }}>
+                <img src={deliveryImg} alt="Delivery" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+              </div>
+            ) : (
+              <div style={{ fontSize: 32 }}>🚚</div>
+            )}
             <div style={{ fontWeight: 800 }}>Delivery</div>
             <div className="muted" style={{ fontSize: 12 }}>Enter your address</div>
           </div>
