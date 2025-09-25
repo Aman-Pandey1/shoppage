@@ -24,6 +24,38 @@ const filenameToUrl = (() => {
   return map;
 })();
 
+// Pre-resolve exact spice images if they exist, to avoid fuzzy duplicates
+const canonicalToExactSpice = {
+  'mild': (
+    filenameToUrl.get('mild.png') ||
+    filenameToUrl.get('mild.svg') ||
+    filenameToUrl.get('mild.webp') ||
+    undefined
+  ),
+  'medium': (
+    filenameToUrl.get('medium.png') ||
+    filenameToUrl.get('medium.svg') ||
+    filenameToUrl.get('medium.webp') ||
+    undefined
+  ),
+  'hot': (
+    filenameToUrl.get('hot.png') ||
+    filenameToUrl.get('hot.svg') ||
+    filenameToUrl.get('hot.webp') ||
+    undefined
+  ),
+  'extra-hot': (
+    filenameToUrl.get('extra hot.png') ||
+    filenameToUrl.get('extra-hot.png') ||
+    filenameToUrl.get('extra_hot.png') ||
+    filenameToUrl.get('xhot.png') ||
+    filenameToUrl.get('x-hot.png') ||
+    filenameToUrl.get('xxhot.png') ||
+    filenameToUrl.get('xx-hot.png') ||
+    undefined
+  ),
+};
+
 /**
  * Find the best-matching asset by checking if the filename contains
  * any of the provided keywords (case-insensitive). Returns the URL or undefined.
@@ -161,6 +193,11 @@ export function getDeliveryImage() {
 
 export function getSpiceBadge(level) {
   const canonical = normalizeSpiceLevel(level);
+
+  // Strong preference: use exact images if provided by the project
+  const exact = canonicalToExactSpice[canonical];
+  if (exact) return exact;
+
   function tryExactBaseNames(bases) {
     for (const base of bases) {
       for (const ext of ['.png', '.svg', '.jpg', '.jpeg', '.webp', '.gif']) {
