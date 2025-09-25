@@ -3,6 +3,7 @@ import { Modal } from './Modal';
 import chilliGreen from '../assets/chilli-green.svg';
 import chilliOrange from '../assets/chilli-orange.svg';
 import chilliRed from '../assets/chilli-red.svg';
+import { getSpiceBadge } from '../lib/assetFinder';
 
 export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) => {
   const [selected, setSelected] = useState(undefined);
@@ -28,7 +29,13 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
         {levels.map((lvl) => {
           const lower = String(lvl || '').toLowerCase();
-          const imgSrc = lower.includes('hot') ? chilliRed : (lower.includes('medium') ? chilliOrange : chilliGreen);
+          const badge = getSpiceBadge(lvl);
+          const fallback = lower.includes('hot')
+            ? chilliRed
+            : (lower.includes('medium') || lower.includes('spicy'))
+              ? chilliOrange
+              : chilliGreen;
+          const imgSrc = badge || fallback;
           const active = selected === lvl;
           return (
             <button
@@ -40,10 +47,24 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) 
                 border: active ? '2px solid var(--primary-600)' : '1px solid var(--border)',
                 background: active ? 'var(--primary-alpha-12)' : 'var(--panel-2)',
                 cursor: 'pointer',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 120
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 140
               }}
             >
-              <img src={imgSrc} alt={`${lvl} chilli`} style={{ width: 28, height: 28 }} />
+              <div style={{
+                width: 180,
+                height: 60,
+                display: 'grid',
+                placeItems: 'center',
+                background: 'linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.70))',
+                borderRadius: 14,
+                border: '1px solid var(--border)'
+              }}>
+                <img
+                  src={imgSrc}
+                  alt={`${lvl} level`}
+                  style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.15))' }}
+                />
+              </div>
               <div style={{ fontWeight: 700 }}>{lvl}</div>
             </button>
           );
