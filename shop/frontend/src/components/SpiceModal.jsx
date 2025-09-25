@@ -4,7 +4,8 @@ import { getSpiceBadge, findAssetByKeywords, normalizeSpiceLevel } from '../lib/
 
 export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) => {
   const [selected, setSelected] = useState(undefined);
-  const levels = spiceLevels && spiceLevels.length > 0 ? spiceLevels : ['Mild', 'Medium', 'Hot'];
+  const baseDefaults = ['Mild', 'Medium', 'Hot'];
+  const levels = Array.from(new Set((Array.isArray(spiceLevels) && spiceLevels.length > 0) ? [...spiceLevels, ...baseDefaults] : baseDefaults));
 
   return (
     <Modal open={open} onClose={onCancel} title={null}>
@@ -22,7 +23,6 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) 
           </div>
         </div>
       ) : null}
-      {/* Label removed per request: show images only */}
       <div className="image-choice-grid">
         {levels.map((lvl) => {
           const canonical = normalizeSpiceLevel(lvl);
@@ -48,6 +48,7 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) 
                   <div style={{ fontSize: 42 }}>🌶️</div>
                 )}
               </div>
+              <div style={{ marginTop: 6, fontWeight: 700, textTransform: 'capitalize' }}>{canonical.replace('-', ' ')}</div>
             </button>
           );
         })}
