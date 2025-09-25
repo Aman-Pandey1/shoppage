@@ -386,6 +386,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                         <option key={c} value={c}>{c}</option>
                       ))}
                     </select>
+
+
                   </label>
                   <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <span>Restaurant address</span>
