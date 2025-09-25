@@ -348,8 +348,9 @@ input:focus, select:focus, textarea:focus {
 .order-bar__input { display: inline-flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 40px; padding: 8px 10px; border-radius: 8px; background: #fff; border: 1px solid var(--border); width: 100%; }
 .order-bar__inline { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 8px; }
 .order-bar .chev { opacity: .7; }
-@media (max-width: 640px) {
+@media (max-width: 900px) {
   .order-bar__row { grid-template-columns: 1fr; }
+  .order-bar__inline { grid-template-columns: 1fr; }
 }
 
 .order-type-card {

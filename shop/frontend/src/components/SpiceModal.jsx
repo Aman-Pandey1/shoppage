@@ -37,7 +37,7 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) 
           </div>
         </div>
       ) : null}
-      <div className="image-choice-grid" style={{ flexWrap: 'nowrap', overflowX: 'auto', justifyContent: 'flex-start' }}>
+      <div className="image-choice-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12 }}>
         {levels.map((canonical) => {
           const imgSrc = getSpiceBadge(canonical) || findAssetByKeywords([canonical, 'spice', 'chilli', 'pepper']);
           const active = normalizeSpiceLevel(selected) === canonical;
@@ -49,7 +49,7 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) 
               className="image-choice"
               data-active={active}
             >
-              <div className="image-square" style={{ width: 100, height: 100 }}>
+              <div className="image-square" style={{ width: '100%', height: 140 }}>
                 {imgSrc ? (
                   <img
                     src={imgSrc}
