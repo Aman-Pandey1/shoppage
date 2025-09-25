@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Modal } from './Modal';
-import { getSpiceBadge, findAssetByKeywords, normalizeSpiceLevel } from '../lib/assetFinder';
+import { normalizeSpiceLevel } from '../lib/assetFinder';
 // Explicit imports for spice level images (preferred usage)
 // If these files are removed/renamed, the code will gracefully fall back to dynamic lookup
 import mildImg from '../assets/mild.png';
@@ -63,7 +63,7 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) 
       ) : null}
       <div className="image-choice-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14 }}>
         {levels.map((canonical) => {
-          const imgSrc = importedSpiceImages[canonical] || getSpiceBadge(canonical) || findAssetByKeywords([canonical, 'spice', 'chilli', 'pepper']);
+          const imgSrc = importedSpiceImages[canonical];
           const active = normalizeSpiceLevel(selected) === canonical;
           return (
             <button
