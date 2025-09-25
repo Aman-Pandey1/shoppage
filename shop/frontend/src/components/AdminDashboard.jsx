@@ -23,6 +23,10 @@ export const AdminDashboard = () => {
   const [ordersFrom, setOrdersFrom] = useState('');
   const [ordersTo, setOrdersTo] = useState('');
 
+  const [coupons, setCoupons] = useState([]);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponPercent, setCouponPercent] = useState(10);
+
   const [isSiteFormOpen, setIsSiteFormOpen] = useState(false);
   const [siteForm, setSiteForm] = useState({ name: '', slug: '', domainsText: '' });
 
@@ -86,6 +90,19 @@ export const AdminDashboard = () => {
     }
     loadOrders();
   }, [activeTab, selectedSiteId, ordersFrom, ordersTo]);
+
+  useEffect(() => {
+    async function loadCoupons() {
+      if (!selectedSiteId || activeTab !== 'coupons') return;
+      try {
+        const data = await fetchJson(`/api/admin/sites/${selectedSiteId}/coupons`);
+        setCoupons(Array.isArray(data) ? data : []);
+      } catch {
+        setCoupons([]);
+      }
+    }
+    loadCoupons();
+  }, [activeTab, selectedSiteId]);
 
   useEffect(() => {
     async function loadBilling() {
@@ -210,6 +227,7 @@ export const AdminDashboard = () => {
           <button className={activeTab === 'products' ? 'primary-btn' : ''} onClick={() => setActiveTab('products')}>Products</button>
           <button className={activeTab === 'orders' ? 'primary-btn' : ''} onClick={() => setActiveTab('orders')}>Orders</button>
           <button className={activeTab === 'billing' ? 'primary-btn' : ''} onClick={() => setActiveTab('billing')}>Billing</button>
+          <button className={activeTab === 'coupons' ? 'primary-btn' : ''} onClick={() => setActiveTab('coupons')}>Coupons</button>
         </div>
         {activeTab === 'billing' ? (
           <div className="card" style={{ padding: 12 }}>
@@ -297,6 +315,54 @@ export const AdminDashboard = () => {
               selectedSiteId={selectedSiteId}
               onSiteUpdated={(updated) => setSites(prev => prev.map(s => s._id === updated._id ? updated : s))}
             />
+          </div>
+        ) : null}
+
+        {activeTab === 'coupons' ? (
+          <div className="card" style={{ padding: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontWeight: 800 }}>Coupons</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input placeholder="Code (e.g., WELCOME10)" value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} />
+                <input type="number" min={0} max={100} value={couponPercent} onChange={(e) => setCouponPercent(Number(e.target.value))} />
+                <button onClick={async () => {
+                  if (!couponCode.trim()) return;
+                  try {
+                    const created = await postJson(`/api/admin/sites/${selectedSiteId}/coupons`, { code: couponCode, percent: Number(couponPercent)||0 });
+                    setCoupons((prev) => [created, ...prev]);
+                    setCouponCode(''); setCouponPercent(10);
+                  } catch (e) { alert('Failed to create coupon'); }
+                }}>Create</button>
+              </div>
+            </div>
+            <div style={{ marginTop: 10, overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>Code</th>
+                    <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>Percent</th>
+                    <th style={{ textAlign: 'right', padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {coupons.map((c) => (
+                    <tr key={c._id}>
+                      <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>{c.code}</td>
+                      <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>{c.percent}%</td>
+                      <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>
+                        <button className="danger" onClick={async () => {
+                          try {
+                            await deleteJson(`/api/admin/sites/${selectedSiteId}/coupons/${c._id}`);
+                            setCoupons((prev) => prev.filter((x) => x._id !== c._id));
+                          } catch { alert('Failed to delete'); }
+                        }}>Delete</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {coupons.length === 0 ? <div className="muted" style={{ marginTop: 8 }}>No coupons yet.</div> : null}
+            </div>
           </div>
         ) : null}
 
