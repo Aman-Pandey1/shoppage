@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Modal } from './Modal';
-import { getSpiceBadge, findAssetByKeywords } from '../lib/assetFinder';
+import { getSpiceBadge, findAssetByKeywords, normalizeSpiceLevel } from '../lib/assetFinder';
 
 export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) => {
   const [selected, setSelected] = useState(undefined);
@@ -23,41 +23,26 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) 
         </div>
       ) : null}
       {/* Label removed per request: show images only */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+      <div className="image-choice-grid">
         {levels.map((lvl) => {
-          const lower = String(lvl || '').toLowerCase();
-          const imgSrc = getSpiceBadge(lvl) || findAssetByKeywords(['extra-hot', 'hot', 'medium', 'mild', 'spice', 'chilli', 'pepper']);
-          const active = selected === lvl;
+          const canonical = normalizeSpiceLevel(lvl);
+          const imgSrc = getSpiceBadge(canonical) || findAssetByKeywords([canonical, 'spice', 'chilli', 'pepper']);
+          const active = normalizeSpiceLevel(selected) === canonical;
           return (
             <button
               key={lvl}
-              onClick={() => setSelected(lvl)}
-              aria-label={lvl}
-              style={{
-                padding: 10,
-                borderRadius: 16,
-                border: active ? '2px solid var(--primary-600)' : '1px solid var(--border)',
-                background: active ? 'var(--primary-alpha-12)' : 'var(--panel-2)',
-                cursor: 'pointer',
-                display: 'grid', placeItems: 'center'
-              }}
+              onClick={() => setSelected(canonical)}
+              aria-label={canonical}
+              className="image-choice"
+              data-active={active}
             >
-              <div style={{
-                width: 120,
-                height: 120,
-                display: 'grid',
-                placeItems: 'center',
-                background: 'linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.70))',
-                borderRadius: 14,
-                border: '1px solid var(--border)'
-              }}>
+              <div className="image-square">
                 {imgSrc ? (
                   <img
                     src={imgSrc}
-                    alt={`${lvl} spice`}
+                    alt={`${canonical} spice`}
                     loading="eager"
                     decoding="async"
-                    style={{ maxWidth: '80%', maxHeight: '80%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }}
                   />
                 ) : (
                   <div style={{ fontSize: 42 }}>🌶️</div>
