@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { tenantBySlug } from '../middleware/tenant.js';
 import { requireUser } from '../middleware/auth.js';
 import Order from '../models/Order.js';
+import Coupon from '../models/Coupon.js';
 import Site from '../models/Site.js';
 import { getDelivery } from '../services/uberDirect.js';
 
@@ -68,9 +69,29 @@ router.get('/:slug/orders/:orderId/tracking', requireUser, async (req, res) => {
 // Create a pickup order (no Uber delivery). Requires user or admin auth.
 router.post('/:slug/orders/pickup', requireUser, async (req, res) => {
   try {
-    const { items, pickup, notes } = req.body || {};
+    const { items, pickup, notes, coupon } = req.body || {};
     if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ error: 'Items required' });
-    const itemsTotal = items.reduce((s, it) => s + (Number(it.priceCents)||0) * (Number(it.quantity)||1), 0);
+    let itemsTotal = items.reduce((s, it) => s + (Number(it.priceCents)||0) * (Number(it.quantity)||1), 0);
+    // Apply coupon discount if valid
+    let appliedCoupon = null;
+    const mock = req.app.locals.mockData;
+    if (coupon && coupon.code && typeof coupon.percent === 'number') {
+      const code = String(coupon.code).trim().toUpperCase();
+      const pct = Math.max(0, Math.min(100, Number(coupon.percent)||0));
+      if (mock) {
+        const found = (mock.coupons || []).find((c) => c.site === req.siteId && c.code === code);
+        if (found && Number(found.percent) === pct) {
+          itemsTotal = Math.max(0, itemsTotal - Math.round(itemsTotal * (pct / 100)));
+          appliedCoupon = { code, percent: pct };
+        }
+      } else {
+        const found = await Coupon.findOne({ site: req.siteId, code });
+        if (found && Number(found.percent) === pct) {
+          itemsTotal = Math.max(0, itemsTotal - Math.round(itemsTotal * (pct / 100)));
+          appliedCoupon = { code, percent: pct };
+        }
+      }
+    }
     if (itemsTotal < 5000) return res.status(400).json({ error: 'Minimum order is $50.00' });
     const taxCents = Math.round(itemsTotal * 0.05);
     const totalCents = itemsTotal + taxCents;
@@ -85,6 +106,7 @@ router.post('/:slug/orders/pickup', requireUser, async (req, res) => {
       fulfillmentType: 'pickup',
       pickup,
       notes: typeof notes === 'string' ? notes.slice(0, 1000) : undefined,
+      meta: appliedCoupon ? { coupon: appliedCoupon } : undefined,
     };
     if (req.app.locals.mockData) {
       if (!Array.isArray(req.app.locals.mockData.orders)) req.app.locals.mockData.orders = [];

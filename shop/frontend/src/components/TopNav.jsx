@@ -48,7 +48,7 @@ export const TopNav = ({ siteSlug = 'default', onSignIn }) => {
           </div>
           <div className="brand__text">
             <div className="brand__name">{name}</div>
-            <div className="brand__tagline">Sweets, Catering & Take out</div>
+            <div className="brand__tagline">Sweets, Catering & Pickup</div>
           </div>
         </div>
 
