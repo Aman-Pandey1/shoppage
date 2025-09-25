@@ -99,6 +99,11 @@ export const MyOrdersPage = () => {
               </ul>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ fontWeight: 900, color: 'var(--primary-600)' }}>${(o.totalCents/100).toFixed(2)}</div>
+                {o.meta?.coupon ? (
+                  <div className="muted" style={{ fontSize: 12, textAlign: 'right' }}>
+                    Coupon: {o.meta.coupon.code} ({o.meta.coupon.percent}% off)
+                  </div>
+                ) : null}
                 {o.fulfillmentType === 'delivery' && o.dropoff?.address ? (
                   <div className="muted" style={{ fontSize: 12, textAlign: 'right' }}>
                     {o.dropoff.address.city}

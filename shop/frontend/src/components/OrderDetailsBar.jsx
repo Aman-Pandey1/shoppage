@@ -11,6 +11,22 @@ export const OrderDetailsBar = ({
   dateOptions = [],
   timeOptions = [],
 }) => {
+  const selectedDateLabel = React.useMemo(() => {
+    try {
+      const arr = Array.isArray(dateOptions) ? dateOptions : [];
+      const found = arr.find((d) => String(d.value) === String(pickupDate));
+      if (found && found.label) return found.label;
+      if (pickupDate) {
+        const [yr, mo, dy] = String(pickupDate).split('-').map(Number);
+        const d = new Date(yr, (mo || 1) - 1, dy || 1);
+        const weekday = d.toLocaleDateString([], { weekday: 'long' });
+        const month = d.toLocaleDateString([], { month: 'short' });
+        const day = d.getDate();
+        return `${weekday} (${month} ${day})`;
+      }
+    } catch {}
+    return '';
+  }, [dateOptions, pickupDate]);
   return (
     <div className="order-bar card animate-fadeInUp" role="region" aria-label="Order details">
       <div className="order-bar__row">
@@ -64,11 +80,20 @@ export const OrderDetailsBar = ({
                 ))}
               </select>
             </label>
+            {/* Show selected date alongside time for clarity (visible box) */}
+            {selectedDateLabel ? (
+              <div aria-label="Selected date" className="order-bar__input" style={{ display: 'flex', alignItems: 'center', fontWeight: 600 }}>
+                {selectedDateLabel}
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
       {addressSummary ? (
-        <div className="muted" style={{ marginTop: 8, textAlign: 'left', fontSize: 12 }}>{addressSummary}</div>
+        <div className="muted" style={{ marginTop: 8, textAlign: 'left', fontSize: 12 }}>
+          <strong style={{ color: 'var(--text)', fontWeight: 700 }}>Restaurant address</strong>
+          <span> — {addressSummary}</span>
+        </div>
       ) : null}
     </div>
   );
