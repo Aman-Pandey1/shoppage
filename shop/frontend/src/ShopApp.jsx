@@ -303,6 +303,13 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       dateOptions={dateOptions}
       timeOptions={timeOptions}
       addressSummary={addressSummary}
+      locations={locations}
+      selectedLocationIndex={Math.max(0, locations.findIndex((l) => l === selectedLocation))}
+      onChangeLocation={(idx) => {
+        const chosen = locations[idx];
+        setSelectedLocation(chosen || null);
+        setSelectedPickupCity((chosen && chosen.address && chosen.address.city) ? chosen.address.city : 'All');
+      }}
       onChangeOrderType={() => setFulfillmentOpen(true)}
       onPickupDateChange={(val) => setPickupDate(val)}
       onPickupTimeChange={(val) => setPickupTime(val)}
@@ -311,7 +318,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
 
   return (
     <div className="shop-app">
-      <div className={`cart-backdrop ${mobileCartOpen ? 'active' : ''}`} onClick={() => setMobileCartOpen(false)} />
+      <div className={`cart-backdrop ${mobileCartOpen ? 'active' : ''}`} data-show={mobileCartOpen ? 'true' : 'false'} onClick={() => setMobileCartOpen(false)} />
 
       <CartSidebar
         open={mobileCartOpen}
@@ -500,6 +507,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       <DeliveryAddressModal
         open={deliveryModalOpen}
         siteSlug={siteSlug}
+        initialPickupIndex={Math.max(0, locations.findIndex((l) => l === selectedLocation))}
         onClose={() => setDeliveryModalOpen(false)}
         onConfirmed={(id, summary) => {
           setLastDeliveryId(id);

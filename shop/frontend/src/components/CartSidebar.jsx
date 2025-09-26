@@ -96,9 +96,9 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
       <div className="card" style={{ marginTop: 12, borderRadius: 'var(--radius-sm)', padding: 12 }}>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
           <span className="muted" style={{ fontSize: 12 }}>Coupon code</span>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g., WELCOME10" style={{ flex: 1 }} />
-            <button disabled={checking || !code.trim()} onClick={async () => {
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g., WELCOME10" style={{ flex: '1 1 160px', minWidth: 0 }} />
+            <button disabled={checking || !code.trim()} style={{ flex: '0 0 auto' }} onClick={async () => {
               setCouponError(''); setChecking(true);
               try {
                 const siteSlug = (window.location.pathname.match(/\/s\/([^/]+)/)?.[1]) || 'default';
@@ -112,7 +112,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
                 setCouponError('Invalid code');
               } finally { setChecking(false); }
             }}>Apply</button>
-            {state.coupon ? <button onClick={() => { clearCoupon(); setCode(''); }}>Remove</button> : null}
+            {state.coupon ? <button style={{ flex: '0 0 auto' }} onClick={() => { clearCoupon(); setCode(''); }}>Remove</button> : null}
           </div>
           {couponError ? <div style={{ color: 'var(--danger)', fontSize: 12 }}>{couponError}</div> : null}
           {state.coupon ? <div className="muted" style={{ fontSize: 12 }}>Applied: {state.coupon.code} ({state.coupon.percent}% off)</div> : null}
