@@ -67,14 +67,7 @@ export const CategoryGrid = ({ onSelect, siteSlug = 'default' }) => {
   }
 
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-        gap: 20,
-        alignItems: 'start'
-      }}
-    >
+    <div className="category-grid">
       {categories.map((cat, idx) => (
         <button
           key={cat._id}
