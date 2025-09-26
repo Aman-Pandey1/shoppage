@@ -507,6 +507,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       <DeliveryAddressModal
         open={deliveryModalOpen}
         siteSlug={siteSlug}
+        initialPickupIndex={Math.max(0, locations.findIndex((l) => l === selectedLocation))}
         onClose={() => setDeliveryModalOpen(false)}
         onConfirmed={(id, summary) => {
           setLastDeliveryId(id);
