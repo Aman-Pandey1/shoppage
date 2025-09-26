@@ -8,6 +8,9 @@ export const MyOrdersPage = () => {
   const params = useParams();
   const siteSlug = params.siteSlug;
   const [orders, setOrders] = React.useState([]);
+  const [page, setPage] = React.useState(1);
+  const [pageSize, setPageSize] = React.useState(12);
+  const [totalPages, setTotalPages] = React.useState(1);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState();
   const [query, setQuery] = React.useState('');
@@ -31,8 +34,16 @@ export const MyOrdersPage = () => {
           }
           return;
         }
-        const data = await fetchJson(`/api/shop/${siteSlug || 'default'}/orders/mine`);
-        if (mounted) setOrders(Array.isArray(data) ? data : []);
+        const data = await fetchJson(`/api/shop/${siteSlug || 'default'}/orders/mine?page=${page}&pageSize=${pageSize}`);
+        if (mounted) {
+          if (Array.isArray(data)) {
+            setOrders(data);
+            setTotalPages(1);
+          } else {
+            setOrders(Array.isArray(data?.items) ? data.items : []);
+            setTotalPages(Number(data?.totalPages) || 1);
+          }
+        }
       } catch (e) {
         const msg = String(e?.message || '');
         if (/401|403/.test(msg)) {
@@ -48,7 +59,7 @@ export const MyOrdersPage = () => {
       }
     })();
     return () => { mounted = false; };
-  }, [siteSlug]);
+  }, [siteSlug, page, pageSize]);
 
   const filtered = React.useMemo(() => {
     let list = Array.isArray(orders) ? orders : [];
@@ -133,6 +144,13 @@ export const MyOrdersPage = () => {
           ))}
         </div>
       )}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+        <div className="muted" style={{ fontSize: 12 }}>Page {page} of {totalPages}</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Prev</button>
+          <button disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Next</button>
+        </div>
+      </div>
       <TrackingModal
         open={trackingModal.open}
         trackingUrl={trackingModal.url}
