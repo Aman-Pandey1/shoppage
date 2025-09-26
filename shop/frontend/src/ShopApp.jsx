@@ -326,16 +326,26 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         onCheckout={() => {
           const hasToken = !!getAuthToken();
           if (!hasToken) {
+            setMobileCartOpen(false);
             setLoginOpen(true);
             return;
           }
-          if (!state.fulfillmentType) setFulfillmentOpen(true);
-          setFulfillmentType('delivery');
-          setDeliveryModalOpen(true);
+          // Close cart before showing next step so modal is visible on mobile
+          setMobileCartOpen(false);
+          if (!state.fulfillmentType) {
+            setFulfillmentOpen(true);
+            return;
+          }
+          if (state.fulfillmentType === 'delivery') {
+            setDeliveryModalOpen(true);
+            return;
+          }
+          // Default to pickup order details if pickup is selected
+          setOrderDetailsOpen(true);
         }}
         readyAt={readyAt}
       />
-      <TopNav siteSlug={siteSlug} onSignIn={() => setLoginOpen(true)} onOpenCart={() => setMobileCartOpen(true)} cartCount={state.items.length} />
+      <TopNav siteSlug={siteSlug} isCartOpen={mobileCartOpen} onSignIn={() => setLoginOpen(true)} onOpenCart={() => setMobileCartOpen(true)} cartCount={state.items.length} />
       <main className="content">
 
         <div className="card order-type-card">
