@@ -335,7 +335,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         }}
         readyAt={readyAt}
       />
-      <TopNav siteSlug={siteSlug} onSignIn={() => setLoginOpen(true)} />
+      <TopNav siteSlug={siteSlug} onSignIn={() => setLoginOpen(true)} onOpenCart={() => setMobileCartOpen(true)} cartCount={state.items.length} />
       <main className="content">
 
         <div className="card order-type-card">

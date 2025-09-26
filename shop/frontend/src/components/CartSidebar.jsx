@@ -143,8 +143,9 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
           </div>
         </div>
         <button
+          type="button"
           className="primary-btn"
-          style={{ width: '100%', padding: '12px 16px', borderRadius: 12, pointerEvents: state.items.length === 0 ? 'none' : 'auto' }}
+          style={{ width: '100%', padding: '12px 16px', borderRadius: 12 }}
           disabled={state.items.length === 0}
           onClick={() => {
             if (typeof onCheckout === 'function') {
