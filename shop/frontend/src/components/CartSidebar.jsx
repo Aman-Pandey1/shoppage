@@ -33,6 +33,8 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
         borderRadius: 'var(--radius)',
         padding: 16,
         overflowY: 'auto',
+        // Ensure desktop cart sits above any fixed bars (header/footer)
+        zIndex: 120,
       }}
       className="animate-slideInRight cart-sidebar"
       data-open={open ? 'true' : 'false'}

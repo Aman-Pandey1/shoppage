@@ -254,7 +254,8 @@ input:focus, select:focus, textarea:focus {
     background: #fff !important;
     transform: translateX(100%);
     transition: transform .25s ease;
-    z-index: 40;
+    /* Ensure cart drawer sits above sticky header on mobile */
+    z-index: 120;
   }
   .cart-sidebar[data-open="true"] {
     transform: translateX(0);
@@ -268,7 +269,8 @@ input:focus, select:focus, textarea:focus {
     opacity: 0;
     pointer-events: none;
     transition: opacity .2s ease;
-    z-index: 30;
+    /* Keep backdrop below the cart drawer but above page */
+    z-index: 110;
   }
   .cart-backdrop[data-show="true"] {
     opacity: 1;
