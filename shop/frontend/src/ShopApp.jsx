@@ -155,8 +155,17 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         if (!cancelled) {
           const arr = Array.isArray(list) ? list : [];
           setLocations(arr);
-          // Default to first location
-          if (!selectedLocation && arr.length) setSelectedLocation(arr[0]);
+          // Respect previously chosen location if stored; do not auto-pick first
+          try {
+            const saved = localStorage.getItem('selectedPickupIndex');
+            const savedIdx = Number(saved);
+            if (Number.isFinite(savedIdx) && savedIdx >= 0 && savedIdx < arr.length) {
+              setSelectedLocation(arr[savedIdx]);
+            } else if (!selectedLocation && arr.length === 1) {
+              setSelectedLocation(arr[0]);
+              localStorage.setItem('selectedPickupIndex', '0');
+            }
+          } catch {}
         }
       } catch {
         if (!cancelled) setLocations([]);
@@ -304,11 +313,12 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       timeOptions={timeOptions}
       addressSummary={addressSummary}
       locations={locations}
-      selectedLocationIndex={Math.max(0, locations.findIndex((l) => l === selectedLocation))}
+      selectedLocationIndex={(idx => (idx >= 0 ? idx : (() => { const s = Number(localStorage.getItem('selectedPickupIndex')); return Number.isFinite(s) ? s : undefined; })()))(locations.findIndex((l) => l === selectedLocation))}
       onChangeLocation={(idx) => {
         const chosen = locations[idx];
         setSelectedLocation(chosen || null);
         setSelectedPickupCity((chosen && chosen.address && chosen.address.city) ? chosen.address.city : 'All');
+        try { localStorage.setItem('selectedPickupIndex', String(idx)); } catch {}
       }}
       onChangeOrderType={() => setFulfillmentOpen(true)}
       onPickupDateChange={(val) => setPickupDate(val)}
@@ -408,11 +418,13 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                   </label>
                   <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <span>Restaurant address</span>
-                    <select value={String(Math.max(0, filteredLocations.findIndex((l) => l === selectedLocation)))} onChange={(e) => {
+                    <select value={(idx => (idx >= 0 ? String(idx) : ''))(filteredLocations.findIndex((l) => l === selectedLocation))} onChange={(e) => {
                       const idx = Number(e.target.value);
                       const chosen = filteredLocations[idx];
                       setSelectedLocation(chosen || null);
+                      try { localStorage.setItem('selectedPickupIndex', String(locations.findIndex((l) => l === chosen))); } catch {}
                     }}>
+                      {filteredLocations.findIndex((l) => l === selectedLocation) < 0 ? <option value="" disabled>Select a location</option> : null}
                       {filteredLocations.map((loc, idx) => (
                         <option key={`${loc.name}-${idx}`} value={String(idx)}>{`${loc.name || 'Restaurant'} — ${(loc.address?.streetAddress || []).join(' ')}, ${loc.address?.city || ''}`}</option>
                       ))}
@@ -422,12 +434,14 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
               ) : (
                 <label style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <span>Restaurant address</span>
-                  <select value={String(Math.max(0, locations.findIndex((l) => l === selectedLocation)))} onChange={(e) => {
+                  <select value={(idx => (idx >= 0 ? String(idx) : ''))(locations.findIndex((l) => l === selectedLocation))} onChange={(e) => {
                     const idx = Number(e.target.value);
                     const chosen = locations[idx];
                     setSelectedLocation(chosen || null);
                     setSelectedPickupCity(chosen?.address?.city || 'All');
+                    try { localStorage.setItem('selectedPickupIndex', String(idx)); } catch {}
                   }}>
+                    {locations.findIndex((l) => l === selectedLocation) < 0 ? <option value="" disabled>Select a location</option> : null}
                     {locations.map((loc, idx) => (
                       <option key={`${loc.name}-${idx}`} value={String(idx)}>{`${loc.name || 'Restaurant'} — ${(loc.address?.streetAddress || []).join(' ')}, ${loc.address?.city || ''}`}</option>
                     ))}
@@ -517,7 +531,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       <DeliveryAddressModal
         open={deliveryModalOpen}
         siteSlug={siteSlug}
-        initialPickupIndex={Math.max(0, locations.findIndex((l) => l === selectedLocation))}
+        initialPickupIndex={(idx => (idx >= 0 ? idx : (() => { const s = Number(localStorage.getItem('selectedPickupIndex')); return Number.isFinite(s) ? s : -1; })()))(locations.findIndex((l) => l === selectedLocation))}
         onClose={() => setDeliveryModalOpen(false)}
         onConfirmed={(id, summary) => {
           setLastDeliveryId(id);

@@ -5,14 +5,22 @@ const geocodeCache = new Map();
 
 function normalizeAddressToQuery(addr) {
   if (!addr) return '';
-  const lines = Array.isArray(addr.streetAddress) ? addr.streetAddress : [addr.streetAddress];
-  const parts = [
-    ...lines.filter(Boolean).map((s) => String(s).trim()),
-    addr.city,
-    addr.province,
-    addr.postalCode,
-    addr.country,
-  ].filter(Boolean);
+  const streetLines = Array.isArray(addr.streetAddress) ? addr.streetAddress : [addr.streetAddress];
+  const clean = (s) => (s == null ? '' : String(s).trim());
+  const street = streetLines.filter(Boolean).map(clean).join(' ');
+  // Some data mixes province/postal. Split if province contains a postal code
+  let province = clean(addr.province);
+  let postal = clean(addr.postalCode);
+  const provinceHasPostal = /\b\d[\w\s-]*\d\b/.test(province) && !postal;
+  if (provinceHasPostal) {
+    // Attempt to extract last token as postal code (e.g., "BC V6Z 2H7")
+    const tokens = province.split(/\s+/);
+    if (tokens.length >= 2) {
+      postal = tokens.slice(1).join(' ');
+      province = tokens[0];
+    }
+  }
+  const parts = [street, clean(addr.city), province, postal, clean(addr.country)].filter(Boolean);
   return parts.join(', ');
 }
 
@@ -22,18 +30,42 @@ export async function geocodeAddress(address) {
   const key = query.toLowerCase();
   const cached = geocodeCache.get(key);
   if (cached) return cached;
-  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
-  const res = await fetch(url, {
+  async function fetchOnce(q) {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`;
+    const res = await fetch(url, {
     headers: {
       // Identify the application per Nominatim usage policy
       'User-Agent': 'ShopApp/1.0 (+https://example.invalid/contact)'
     }
   });
-  if (!res.ok) return null;
-  const data = await res.json();
-  if (!Array.isArray(data) || data.length === 0) return null;
-  const { lat, lon } = data[0] || {};
-  const point = (lat && lon) ? { lat: Number(lat), lon: Number(lon) } : null;
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!Array.isArray(data) || data.length === 0) return null;
+    const { lat, lon } = data[0] || {};
+    return (lat && lon) ? { lat: Number(lat), lon: Number(lon) } : null;
+  }
+  // Try full query first
+  let point = await fetchOnce(query);
+  // Fallback: city + postal + country
+  if (!point) {
+    const city = (address.city || '').trim();
+    const postal = (address.postalCode || '').trim();
+    const country = (address.country || '').trim();
+    const fallbackParts = [city, postal, country].filter(Boolean);
+    if (fallbackParts.length) {
+      point = await fetchOnce(fallbackParts.join(', '));
+    }
+  }
+  // Fallback 2: city + province + country
+  if (!point) {
+    const city = (address.city || '').trim();
+    const province = (address.province || '').trim();
+    const country = (address.country || '').trim();
+    const fallbackParts = [city, province, country].filter(Boolean);
+    if (fallbackParts.length) {
+      point = await fetchOnce(fallbackParts.join(', '));
+    }
+  }
   if (point) geocodeCache.set(key, point);
   return point;
 }
