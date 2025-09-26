@@ -93,10 +93,13 @@ export const OrderDetailsBar = ({
           <select
             className="order-bar__input"
             aria-label="Select restaurant address"
-            value={String(typeof selectedLocationIndex === 'number' ? selectedLocationIndex : 0)}
+            value={(typeof selectedLocationIndex === 'number' && selectedLocationIndex >= 0) ? String(selectedLocationIndex) : ''}
             onChange={(e) => onChangeLocation && onChangeLocation(Number(e.target.value))}
             style={{ padding: '6px 10px', borderRadius: 8 }}
           >
+            {(typeof selectedLocationIndex !== 'number' || selectedLocationIndex < 0) ? (
+              <option value="" disabled>Select a location</option>
+            ) : null}
             {locations.map((loc, idx) => {
               const text = `${loc?.name || 'Restaurant'} — ${(loc?.address?.streetAddress || []).join(' ')}, ${loc?.address?.city || ''}`;
               return (
