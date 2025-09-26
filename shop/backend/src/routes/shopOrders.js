@@ -12,13 +12,23 @@ router.use('/:slug', tenantBySlug);
 
 router.get('/:slug/orders/mine', requireUser, async (req, res) => {
   try {
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const pageSize = Math.min(50, Math.max(1, Number(req.query.pageSize) || 12));
     const mock = req.app.locals.mockData;
     if (mock) {
-      const list = (mock.orders || []).filter((o) => o.site === req.siteId && o.userEmail === req.user?.email);
-      return res.json(list);
+      const all = (mock.orders || []).filter((o) => o.site === req.siteId && o.userEmail === req.user?.email);
+      const total = all.length;
+      const start = (page - 1) * pageSize;
+      const items = all.slice(start, start + pageSize);
+      return res.json({ items, page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) });
     }
-    const list = await Order.find({ site: req.siteId, userId: req.user?.userId }).sort({ createdAt: -1 });
-    res.json(list);
+    const filter = { site: req.siteId, userId: req.user?.userId };
+    const total = await Order.countDocuments(filter);
+    const items = await Order.find(filter)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * pageSize)
+      .limit(pageSize);
+    res.json({ items, page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
