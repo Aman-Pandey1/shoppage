@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Modal } from './Modal';
 import { fetchJson, postJson } from '../lib/api';
 
-export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, manifest }) => {
+export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, manifest, initialPickupIndex }) => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [addr1, setAddr1] = useState('');
@@ -72,7 +72,12 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         if (!cancelled) {
           setLocations(Array.isArray(locs) ? locs : []);
           setCities(Array.isArray(cits) ? cits : []);
-          if (Array.isArray(locs) && locs.length) setSelectedPickupIndex(0);
+          if (Array.isArray(locs) && locs.length) {
+            const idx = (typeof initialPickupIndex === 'number' && initialPickupIndex >= 0 && initialPickupIndex < locs.length)
+              ? initialPickupIndex
+              : 0;
+            setSelectedPickupIndex(idx);
+          }
           if (Array.isArray(cits) && cits.length) setSelectedCity(cits[0]);
         }
       } catch {}
@@ -80,7 +85,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
     loadSite();
     loadLists();
     return () => { cancelled = true; };
-  }, [siteSlug]);
+  }, [siteSlug, initialPickupIndex]);
 
   function isValidPostal(code) {
     const v = code.trim();
@@ -191,7 +196,15 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
       </label>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 14, alignItems: 'flex-start' }}>
         <div style={{ display: 'grid', gap: 8, marginLeft: 'auto', minWidth: 260 }}>
-            <div className="card" style={{ padding: 10, borderRadius: 10, background: 'var(--primary-alpha-04)' }}>
+          <div className="card" style={{ padding: 10, borderRadius: 10, background: 'var(--primary-alpha-04)' }}>
+            {typeof selectedPickupIndex === 'number' && locations[selectedPickupIndex] ? (
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                <span className="muted">Restaurant</span>
+                <span style={{ textAlign: 'right' }}>
+                  {(locations[selectedPickupIndex].name || 'Pickup')}
+                </span>
+              </div>
+            ) : null}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
               <span className="muted">Items</span>
               <span style={{ fontWeight: 700 }}>${(itemsSubtotalCents/100).toFixed(2)}</span>
@@ -204,6 +217,11 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
               <span className="muted">Delivery fee</span>
               <span style={{ fontWeight: 700 }}>{deliveryFeeCents ? `$${(deliveryFeeCents/100).toFixed(2)}` : '—'}</span>
             </div>
+            {typeof distanceKm === 'number' ? (
+              <div className="muted" style={{ fontSize: 12, marginTop: -2, marginBottom: 6 }}>
+                Distance: {distanceKm.toFixed(1)} km (first 8 km = $8, +$1/km after)
+              </div>
+            ) : null}
             <div style={{ height: 1, background: 'var(--border)', margin: '6px 0' }} />
             {quote?.dropoff_estimated_dt ? (
               <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>ETA: {new Date(quote.dropoff_estimated_dt).toLocaleTimeString()}</div>

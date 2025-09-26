@@ -23,6 +23,14 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) 
 
   const handleSelect = (level) => setSelected(level);
 
+  const importedSpiceImages = {
+    mild: mildImage,
+    medium: mediumImage,
+    hot: hotImage,
+    'extra-hot': extraHotImage,
+    'extra hot': extraHotImage,
+  };
+
   return (
     <Modal open={open} onClose={onCancel} title="Select Spice Level">
       {product && (

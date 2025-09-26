@@ -10,6 +10,9 @@ export const OrderDetailsBar = ({
   onPickupTimeChange,
   dateOptions = [],
   timeOptions = [],
+  locations = [],
+  selectedLocationIndex,
+  onChangeLocation,
 }) => {
   const selectedDateLabel = React.useMemo(() => {
     try {
@@ -84,12 +87,30 @@ export const OrderDetailsBar = ({
           </div>
         </div>
       </div>
-      {addressSummary ? (
+      {String(orderType).toLowerCase() === 'pickup' && Array.isArray(locations) && locations.length > 0 ? (
+        <label style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span className="muted" style={{ fontSize: 12 }}>Restaurant address</span>
+          <select
+            className="order-bar__input"
+            aria-label="Select restaurant address"
+            value={String(typeof selectedLocationIndex === 'number' ? selectedLocationIndex : 0)}
+            onChange={(e) => onChangeLocation && onChangeLocation(Number(e.target.value))}
+            style={{ padding: '6px 10px', borderRadius: 8 }}
+          >
+            {locations.map((loc, idx) => {
+              const text = `${loc?.name || 'Restaurant'} — ${(loc?.address?.streetAddress || []).join(' ')}, ${loc?.address?.city || ''}`;
+              return (
+                <option key={`${loc?.name || 'loc'}-${idx}`} value={String(idx)}>{text}</option>
+              );
+            })}
+          </select>
+        </label>
+      ) : (addressSummary ? (
         <div className="muted" style={{ marginTop: 8, textAlign: 'left', fontSize: 12 }}>
           <strong style={{ color: 'var(--text)', fontWeight: 700 }}>Restaurant address</strong>
           <span> — {addressSummary}</span>
         </div>
-      ) : null}
+      ) : null)}
     </div>
   );
 };
