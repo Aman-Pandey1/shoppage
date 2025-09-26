@@ -2047,6 +2047,95 @@
   ],
   "orders": [
     {
+      "_id": "o-1758878716582",
+      "createdAt": "2025-09-26T09:25:16.582Z",
+      "site": "mock-site",
+      "userEmail": "admin@example.com",
+      "items": [
+        {
+          "name": "Pakoda - Chicken (GF)",
+          "quantity": 4,
+          "priceCents": 1495,
+          "size": "small"
+        }
+      ],
+      "totalCents": 7079,
+      "taxCents": 299,
+      "tipCents": 0,
+      "deliveryFeeCents": 800,
+      "externalId": "Default-Site-order-1758878712179",
+      "uberDeliveryId": "d-1758878716581",
+      "uberTrackingUrl": "https://www.uber.com/",
+      "uberStatus": "courier_accepted",
+      "fulfillmentType": "delivery",
+      "dropoff": {
+        "name": "aaa",
+        "phone": "+9115877104641",
+        "address": {
+          "streetAddress": [
+            "10A Main Blvd #200"
+          ],
+          "city": "Sherwood Park",
+          "province": "AB ",
+          "postalCode": "T8A 3W8",
+          "country": "CA"
+        }
+      },
+      "pickup": {
+        "location": {
+          "name": "Varinderjeet Kaur",
+          "phone": "+1 416-868-6937",
+          "address": {
+            "streetAddress": [
+              "100 Queen St W"
+            ],
+            "city": "Toronto",
+            "province": "ON",
+            "postalCode": "2N2",
+            "country": "CA"
+          }
+        }
+      },
+      "meta": {
+        "distanceKm": null
+      },
+      "notes": ""
+    },
+    {
+      "_id": "o-1758877845381",
+      "createdAt": "2025-09-26T09:10:45.381Z",
+      "site": "mock-site",
+      "userEmail": "admin@example.com",
+      "items": [
+        {
+          "name": "Beef Samosa (2 pcs)",
+          "quantity": 9,
+          "priceCents": 695,
+          "size": "small"
+        }
+      ],
+      "totalCents": 6568,
+      "taxCents": 313,
+      "tipCents": 0,
+      "fulfillmentType": "pickup",
+      "pickup": {
+        "location": {
+          "name": "New Assian village",
+          "phone": "+5871234567",
+          "address": {
+            "streetAddress": [
+              "1005,parsons road NW"
+            ],
+            "city": "Edmonton",
+            "province": "AB",
+            "postalCode": "T6X 1S4",
+            "country": "CA"
+          }
+        },
+        "scheduledFor": "2025-09-26T04:30:00.000Z"
+      }
+    },
+    {
       "_id": "o-1758860742863",
       "createdAt": "2025-09-26T04:25:42.863Z",
       "site": "mock-site",
