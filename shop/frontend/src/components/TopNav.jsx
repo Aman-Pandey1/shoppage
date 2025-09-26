@@ -2,7 +2,7 @@ import React from 'react';
 import { fetchJson, getCurrentUser, logout } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 
-export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount = 0 }) => {
+export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount = 0, isCartOpen = false }) => {
   const [site, setSite] = React.useState({ name: 'Store' });
   const [menuOpen, setMenuOpen] = React.useState(false);
   const user = getCurrentUser();
@@ -48,11 +48,11 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
           </div>
           <div className="brand__text">
             <div className="brand__name">{name}</div>
-            <div className="brand__tagline">Sweets, Catering & Pickup</div>
+            <div className="brand__tagline hide-mobile">Sweets, Catering & Pickup</div>
           </div>
         </div>
-
-        <div className="nav-title">ONLINE ORDERING</div>
+        {/* On mobile, when the cart is open we only show "Cart" at top */}
+        <div className="nav-title">{isCartOpen ? 'Cart' : 'ONLINE ORDERING'}</div>
 
         <div className="actions" style={{ position: 'relative' }}>
           <button
