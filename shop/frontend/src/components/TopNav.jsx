@@ -2,7 +2,7 @@ import React from 'react';
 import { fetchJson, getCurrentUser, logout } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 
-export const TopNav = ({ siteSlug = 'default', onSignIn }) => {
+export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount = 0 }) => {
   const [site, setSite] = React.useState({ name: 'Store' });
   const [menuOpen, setMenuOpen] = React.useState(false);
   const user = getCurrentUser();
@@ -55,6 +55,17 @@ export const TopNav = ({ siteSlug = 'default', onSignIn }) => {
         <div className="nav-title">ONLINE ORDERING</div>
 
         <div className="actions" style={{ position: 'relative' }}>
+          <button
+            className="cart-header-btn"
+            aria-label="Open cart"
+            onClick={() => { if (typeof onOpenCart === 'function') onOpenCart(); }}
+            title="Cart"
+          >
+            <span role="img" aria-label="cart">🛒</span>
+            {Number(cartCount) > 0 ? (
+              <span className="cart-header-badge" aria-label={`Items in cart: ${cartCount}`}>{cartCount}</span>
+            ) : null}
+          </button>
           <button className="profile-chip" aria-label="Account" onClick={() => setMenuOpen((v) => !v)}>
             <span>{initials}</span>
           </button>
