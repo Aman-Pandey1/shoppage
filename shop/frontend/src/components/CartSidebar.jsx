@@ -36,7 +36,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
         // Ensure desktop cart sits above any fixed bars (header/footer)
         zIndex: 120,
       }}
-      className="animate-slideInRight cart-sidebar"
+      className="cart-sidebar"
       data-open={open ? 'true' : 'false'}
     >
       <div className="card cart-header" style={{ padding: 14, borderRadius: 12, marginBottom: 12, borderTop: '3px solid var(--primary)', position: 'sticky', top: 0, background: '#fff', zIndex: 1 }}>
