@@ -216,7 +216,7 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
 
     doc.moveDown();
     const tax = Number(order.taxCents||0)/100;
-    const delivery = Number(order.deliveryFeeCents||0)/100;
+    const delivery = Number(order.deliveryFeeCents||0)/100; // show only customer's half if split
     const total = Number(order.totalCents||0)/100;
     const valueX = startX + width - 100;
     const labelWidth = 220;

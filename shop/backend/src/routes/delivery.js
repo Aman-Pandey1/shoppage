@@ -48,12 +48,14 @@ router.post('/:slug/quote', async (req, res) => {
 		let distanceKm = null;
 		try { distanceKm = await distanceBetweenAddressesKm(pickup.address, dropoff.address); } catch {}
 		const distanceFeeCents = calculateDistanceFeeCents(distanceKm);
-		const quote = await requestQuote({
+    const quote = await requestQuote({
 			customerId: site.uberCustomerId,
 			pickup,
 			dropoff,
 		});
-		res.json({ ...quote, distanceKm, distanceFeeCents, pickupLocationIndex: chosenIdx });
+    const split = !!site.splitDeliveryFee;
+    const customerDeliveryFeeCents = split ? Math.round((Number(distanceFeeCents) || 0) / 2) : (Number(distanceFeeCents) || 0);
+    res.json({ ...quote, distanceKm, distanceFeeCents, customerDeliveryFeeCents, pickupLocationIndex: chosenIdx });
 	} catch (err) {
 		res.status(400).json({ error: err.message });
 	}
@@ -101,7 +103,7 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 		let distanceKm = null;
 		try { distanceKm = await distanceBetweenAddressesKm(pickup.address, dropoff.address); } catch {}
 		const distanceFeeCents = calculateDistanceFeeCents(distanceKm);
-		const delivery = await createDelivery({
+    const delivery = await createDelivery({
 			customerId: site.uberCustomerId,
 			pickup: safePickup,
 			dropoff,
@@ -112,9 +114,12 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 		// Record order
     const itemsTotal = (manifestItems || []).reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 1), 0);
 		if (itemsTotal < 5000) return res.status(400).json({ error: 'Minimum order is $50.00' });
-		const deliveryFeeCents = Number(distanceFeeCents) || 0;
+    const split = !!site.splitDeliveryFee;
+    const fullDeliveryFeeCents = Number(distanceFeeCents) || 0;
+    const customerDeliveryFeeCents = split ? Math.round(fullDeliveryFeeCents / 2) : fullDeliveryFeeCents;
+    const restaurantDeliveryFeeCents = split ? (fullDeliveryFeeCents - customerDeliveryFeeCents) : 0;
 		const taxCents = Math.round(itemsTotal * 0.05);
-		const totalCents = itemsTotal + taxCents + deliveryFeeCents;
+    const totalCents = itemsTotal + taxCents + customerDeliveryFeeCents;
 		const trackingUrl = delivery?.tracking_url || delivery?.trackingUrl || delivery?.share_url || delivery?.tracking_url_v2 || '';
 		const deliveryStatus = delivery?.status || delivery?.state || delivery?.current_status || '';
     const orderPayload = {
@@ -125,7 +130,8 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 			totalCents,
 			taxCents,
 			tipCents: 0,
-			deliveryFeeCents,
+      deliveryFeeCents: customerDeliveryFeeCents,
+      deliveryFeeRestaurantCents: restaurantDeliveryFeeCents,
 			externalId,
 			uberDeliveryId: delivery?.id || delivery?.delivery_id,
       uberTrackingUrl: trackingUrl,
@@ -144,7 +150,7 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 		} else {
 			await Order.create(orderPayload);
 		}
-		res.status(201).json({ ...delivery, distanceKm, distanceFeeCents, pickupLocationIndex: chosenIdx });
+    res.status(201).json({ ...delivery, distanceKm, distanceFeeCents: fullDeliveryFeeCents, customerDeliveryFeeCents, pickupLocationIndex: chosenIdx });
 	} catch (err) {
 		res.status(400).json({ error: err.message });
 	}

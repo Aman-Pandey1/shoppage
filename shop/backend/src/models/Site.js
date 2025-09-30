@@ -11,6 +11,8 @@ const SiteSchema = new mongoose.Schema({
 	uberCustomerId: { type: String },
 	// Flat delivery fee in cents applied to delivery orders only
 	deliveryFeeCents: { type: Number, default: 0 },
+	// When true, split delivery fee 50/50 between customer and restaurant
+	splitDeliveryFee: { type: Boolean, default: false },
 	// New: support multiple pickup locations for a site while keeping legacy `pickup`
 	locations: [{
 		name: { type: String },
