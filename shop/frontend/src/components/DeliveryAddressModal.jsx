@@ -15,6 +15,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   const [quote, setQuote] = useState(null);
   const [siteName, setSiteName] = useState('');
   const [deliveryFeeCents, setDeliveryFeeCents] = useState(0);
+  const [splitDeliveryFee, setSplitDeliveryFee] = useState(false);
   const [country, setCountry] = useState('CA');
   const [distanceKm, setDistanceKm] = useState(null);
   const [tab, setTab] = useState('enter'); // delivery: only manual address (enter)
@@ -60,6 +61,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         if (!cancelled) {
           setSiteName(data.name || '');
           setDeliveryFeeCents(Number(data.deliveryFeeCents) || 0);
+          setSplitDeliveryFee(!!data.splitDeliveryFee);
         }
       } catch {}
     }
@@ -120,7 +122,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
       const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { name, phone, address }, pickupLocationIndex: selectedPickupIndex });
       setQuote(q);
       if (typeof q?.distanceKm === 'number') setDistanceKm(q.distanceKm);
-      if (typeof q?.distanceFeeCents === 'number') setDeliveryFeeCents(q.distanceFeeCents);
+      if (typeof q?.customerDeliveryFeeCents === 'number') setDeliveryFeeCents(q.customerDeliveryFeeCents);
     } catch (e) {
       setError(parseServerError(e) || 'Failed to get quote');
     } finally { setLoading(false); }
@@ -214,14 +216,9 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
                 <span style={{ fontWeight: 700 }}>${((itemsSubtotalCents*0.05)/100).toFixed(2)}</span>
               </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-              <span className="muted">Delivery fee</span>
+              <span className="muted">Delivery fee{splitDeliveryFee ? ' (your share)' : ''}</span>
               <span style={{ fontWeight: 700 }}>{deliveryFeeCents ? `$${(deliveryFeeCents/100).toFixed(2)}` : '—'}</span>
             </div>
-            {typeof distanceKm === 'number' ? (
-              <div className="muted" style={{ fontSize: 12, marginTop: -2, marginBottom: 6 }}>
-                Distance: {distanceKm.toFixed(1)} km (first 8 km = $8, +$1/km after)
-              </div>
-            ) : null}
             <div style={{ height: 1, background: 'var(--border)', margin: '6px 0' }} />
             {quote?.dropoff_estimated_dt ? (
               <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>ETA: {new Date(quote.dropoff_estimated_dt).toLocaleTimeString()}</div>

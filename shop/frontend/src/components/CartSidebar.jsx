@@ -73,6 +73,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
                 {item.imageUrl ? <img src={item.imageUrl} alt={item.name} style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8 }} /> : null}
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 700 }}>{item.name}</div>
+                  {item.variant ? <div style={{ fontSize: 12, color: 'var(--muted)' }}>Size: {item.variant.label || item.variant.key}</div> : null}
                   {item.spiceLevel ? <div style={{ fontSize: 12, color: 'var(--muted)' }}>Spice: {item.spiceLevel}</div> : null}
                   {item.selectedOptions.length > 0 ? (
                     <ul style={{ paddingLeft: 18, margin: '6px 0', color: 'var(--text)' }}>

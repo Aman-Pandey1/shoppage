@@ -52,7 +52,7 @@ router.post('/', requireAdmin, async (req, res) => {
 		const { siteId } = req.params;
 		const mock = req.app.locals.mockData;
 		if (mock) {
-			const payload = { ...req.body, site: siteId };
+    const payload = { ...req.body, site: siteId };
 			const catOk = mock.categories.some((c) => c._id === payload.categoryId && c.site === siteId);
 			if (!catOk) return res.status(400).json({ error: 'Invalid category for site' });
 			const created = { _id: `p-${Date.now()}`, ...payload };
@@ -75,7 +75,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
 		const { siteId, id } = req.params;
 		const mock = req.app.locals.mockData;
 		if (mock) {
-			const update = { ...req.body };
+    const update = { ...req.body };
 			if (update.categoryId) {
 				const ok = mock.categories.some((c) => c._id === update.categoryId && c.site === siteId);
 				if (!ok) return res.status(400).json({ error: 'Invalid category for site' });

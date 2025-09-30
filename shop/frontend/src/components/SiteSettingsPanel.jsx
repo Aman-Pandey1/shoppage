@@ -16,6 +16,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
   const [locations, setLocations] = React.useState(Array.isArray(site?.locations) ? site.locations : []);
   const [cities, setCities] = React.useState(Array.isArray(site?.cities) ? site.cities : []);
   const [deliveryFee, setDeliveryFee] = React.useState(((Number(site?.deliveryFeeCents)||0)/100).toFixed(2));
+  const [splitDeliveryFee, setSplitDeliveryFee] = React.useState(!!site?.splitDeliveryFee);
   const [logoUrl, setLogoUrl] = React.useState(site?.logoUrl || '');
   const [logoFile, setLogoFile] = React.useState(null);
   const [hours, setHours] = React.useState(site?.hours || {
@@ -51,6 +52,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
     setLocations(Array.isArray(site?.locations) ? site.locations : []);
     setCities(Array.isArray(site?.cities) ? site.cities : []);
     setDeliveryFee(((Number(site?.deliveryFeeCents)||0)/100).toFixed(2));
+    setSplitDeliveryFee(!!site?.splitDeliveryFee);
     setHours(site?.hours || {
       mon: { open: '10:00', close: '22:00', closed: false },
       tue: { open: '10:00', close: '22:00', closed: false },
@@ -136,6 +138,10 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
         <span>Flat delivery fee (in $)</span>
         <input type="number" step="0.01" min={0} value={deliveryFee} onChange={(e) => setDeliveryFee(e.target.value)} />
         <span className="muted" style={{ fontSize: 12 }}>Applied only to delivery orders. Not shown for pickup.</span>
+      </label>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <input type="checkbox" checked={!!splitDeliveryFee} onChange={(e) => setSplitDeliveryFee(e.target.checked)} />
+        <span>Split delivery fee 50/50 (half customer, half restaurant)</span>
       </label>
 
       <div style={{ gridColumn: '1 / -1', fontWeight: 800, marginTop: 8 }}>Opening hours</div>
@@ -240,6 +246,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
             locations,
             cities,
             deliveryFeeCents: Math.max(0, Math.round(Number(deliveryFee || 0) * 100)),
+            splitDeliveryFee: !!splitDeliveryFee,
             hours,
             logoUrl,
             pickup: {

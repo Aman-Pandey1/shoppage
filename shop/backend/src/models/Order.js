@@ -22,6 +22,8 @@ const OrderSchema = new mongoose.Schema({
     // Tip removed from system; keep field for backward compatibility set to 0
     tipCents: { type: Number, default: 0, select: true },
     deliveryFeeCents: { type: Number, default: 0 },
+    // When splitDeliveryFee is enabled on Site, this stores restaurant's half
+    deliveryFeeRestaurantCents: { type: Number, default: 0 },
     // Freeform notes from customer to restaurant (e.g., extra spicy, no onions)
     notes: { type: String },
     externalId: { type: String },

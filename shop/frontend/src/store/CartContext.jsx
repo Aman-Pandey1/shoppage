@@ -8,7 +8,7 @@ function calculateExtraCost(selectedOptions) {
   return (selectedOptions || []).reduce((sum, opt) => sum + (opt.priceDelta || 0), 0);
 }
 
-function formatOptionsSummary(product, spiceLevel, selectedOptions) {
+function formatOptionsSummary(product, spiceLevel, selectedOptions, variant) {
   try {
     const groups = Array.isArray(product?.extraOptionGroups) ? product.extraOptionGroups : [];
     const groupKeyToLabel = new Map(groups.map((g) => [g.groupKey, g.groupLabel || g.groupKey]));
@@ -23,6 +23,7 @@ function formatOptionsSummary(product, spiceLevel, selectedOptions) {
     });
 
     const parts = [];
+    if (variant && (variant.label || variant.key)) parts.push(`Size: ${variant.label || variant.key}`);
     if (spiceLevel) parts.push(`Spice: ${spiceLevel}`);
     for (const [gk, labels] of perGroupSelections.entries()) {
       const glabel = groupKeyToLabel.get(gk) || gk;
@@ -35,13 +36,14 @@ function formatOptionsSummary(product, spiceLevel, selectedOptions) {
   }
 }
 
-function generateItemId(productId, spiceLevel, selectedOptions) {
+function generateItemId(productId, spiceLevel, selectedOptions, variant) {
   const optsKey = (selectedOptions || [])
     .slice()
     .sort((a, b) => `${a.groupKey}:${a.optionKey}`.localeCompare(`${b.groupKey}:${b.optionKey}`))
     .map((o) => `${o.groupKey}:${o.optionKey}`)
     .join('|');
-  return `${productId}__${spiceLevel || ''}__${optsKey}`;
+  const variantKey = variant?.key || '';
+  return `${productId}__${variantKey}__${spiceLevel || ''}__${optsKey}`;
 }
 
 export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => {
@@ -80,15 +82,18 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
 
   const clearCoupon = useCallback(() => setState((prev) => ({ ...prev, coupon: null })), []);
 
-  const addItem = useCallback(({ product, quantity = 1, spiceLevel, selectedOptions = [] }) => {
+  const addItem = useCallback(({ product, quantity = 1, spiceLevel, selectedOptions = [], variant = null }) => {
     const extraCost = calculateExtraCost(selectedOptions);
-    const totalPrice = (product.price + extraCost) * quantity;
-    const id = generateItemId(product._id, spiceLevel, selectedOptions);
+    const variantDelta = variant?.priceDelta || 0;
+    const unitPrice = product.price + variantDelta + extraCost;
+    const totalPrice = unitPrice * quantity;
+    const id = generateItemId(product._id, spiceLevel, selectedOptions, variant);
     const newItem = {
       id,
       productId: product._id,
       name: product.name,
       basePrice: product.price,
+      variant,
       quantity,
       spiceLevel,
       selectedOptions,
@@ -106,14 +111,14 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
         updated[existingIndex] = {
           ...existing,
           quantity: newQuantity,
-          totalPrice: (existing.basePrice + existing.extraCost) * newQuantity,
+          totalPrice: (existing.basePrice + (existing?.variant?.priceDelta || 0) + existing.extraCost) * newQuantity,
         };
         return { ...prev, items: updated };
       }
       return { ...prev, items: [...prev.items, newItem] };
     });
-    const optionsSummary = formatOptionsSummary(product, spiceLevel, selectedOptions);
-    setLastAdded({ name: product.name, quantity, price: (product.price + extraCost), imageUrl: product.imageUrl, optionsSummary });
+    const optionsSummary = formatOptionsSummary(product, spiceLevel, selectedOptions, variant);
+    setLastAdded({ name: product.name, quantity, price: (product.price + variantDelta + extraCost), imageUrl: product.imageUrl, optionsSummary });
   }, []);
 
   const removeItem = useCallback((id) => {

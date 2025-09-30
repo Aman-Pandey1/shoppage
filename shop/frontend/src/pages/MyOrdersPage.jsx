@@ -106,7 +106,9 @@ export const MyOrdersPage = () => {
               <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>{o.fulfillmentType === 'delivery' ? 'Delivery' : 'Pickup'}</div>
               <ul style={{ margin: '8px 0', paddingLeft: 18 }}>
                 {(Array.isArray(o.items) ? o.items : []).map((it, idx) => (
-                  <li key={idx}>{it.name} × {it.quantity}</li>
+                  <li key={idx}>
+                    {it.name}{it.spiceLevel ? ` [${it.spiceLevel}]` : ''}{it.size ? ` (${it.size})` : ''} × {it.quantity}
+                  </li>
                 ))}
               </ul>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
