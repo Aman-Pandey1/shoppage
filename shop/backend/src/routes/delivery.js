@@ -117,11 +117,11 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 		const totalCents = itemsTotal + taxCents + deliveryFeeCents;
 		const trackingUrl = delivery?.tracking_url || delivery?.trackingUrl || delivery?.share_url || delivery?.tracking_url_v2 || '';
 		const deliveryStatus = delivery?.status || delivery?.state || delivery?.current_status || '';
-		const orderPayload = {
+    const orderPayload = {
 			site: req.siteId,
 			userId: req.user?.userId,
 			userEmail: req.user?.email,
-			items: (manifestItems || []).map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.price, size: m.size })),
+      items: (manifestItems || []).map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.price, size: m.size, spiceLevel: m.spiceLevel })),
 			totalCents,
 			taxCents,
 			tipCents: 0,
