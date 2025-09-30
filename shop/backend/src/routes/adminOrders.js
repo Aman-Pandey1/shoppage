@@ -191,6 +191,7 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
 			doc.addPage();
 		}
     const delivery = Number(order.deliveryFeeCents || 0) / 100;
+    const deliveryRestaurant = Number(order.deliveryFeeRestaurantCents || 0) / 100;
     const tax = Number(order.taxCents || 0) / 100;
     const tip = Number(order.tipCents || 0) / 100;
     const grandTotal = Number(order.totalCents || 0) / 100;
@@ -202,7 +203,7 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
 		doc.save();
 		doc.roundedRect(startX, doc.y - 4, tableWidth, 80, 6).strokeColor(colors.border).stroke();
 		doc.restore();
-		function row(label, value) {
+    function row(label, value) {
       const y = doc.y;
 			doc.font('Helvetica').fillColor(colors.textDark).text(label, valueX - labelWidth, y, { width: labelWidth, align: 'right' });
 			doc.text(`$${(Number(value)||0).toFixed(2)}`, valueX, y, { width: 100, align: 'right' });
@@ -216,7 +217,14 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
     const taxRatePct = itemsSubtotal > 0 ? Math.round((tax / itemsSubtotal) * 1000) / 10 : null;
     row(`Tax${taxRatePct !== null ? ` (${taxRatePct}% )` : ''}`, tax);
     if (tip > 0) row('Tip', tip);
-    if (delivery > 0) row('Delivery Fee', delivery);
+    if (delivery > 0) {
+      if (deliveryRestaurant > 0) {
+        row('Delivery by restaurant', deliveryRestaurant);
+        row('Delivery fee (customer)', delivery);
+      } else {
+        row('Delivery Fee', delivery);
+      }
+    }
     doc.moveDown(0.2);
 		doc.moveTo(startX, doc.y).lineTo(startX + tableWidth, doc.y).strokeColor(colors.border).stroke();
     doc.moveDown(0.2);

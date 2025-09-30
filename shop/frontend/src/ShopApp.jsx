@@ -11,6 +11,7 @@ import { FulfillmentModal } from './components/FulfillmentModal';
 import { Modal } from './components/Modal';
 import { SpiceModal } from './components/SpiceModal';
 import { ExtrasModal } from './components/ExtrasModal';
+import { VariantModal } from './components/VariantModal';
 import { AddToCartToast } from './components/AddToCartToast';
 import { DeliveryAddressModal } from './components/DeliveryAddressModal';
 import { fetchJson, getAuthToken } from './lib/api';
@@ -26,7 +27,9 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [pendingQuantity, setPendingQuantity] = useState(1);
   const [spiceOpen, setSpiceOpen] = useState(false);
   const [extrasOpen, setExtrasOpen] = useState(false);
+  const [variantOpen, setVariantOpen] = useState(false);
   const [pendingSpice, setPendingSpice] = useState(undefined);
+  const [pendingVariant, setPendingVariant] = useState(null);
   const [deliveryModalOpen, setDeliveryModalOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [vegFilter, setVegFilter] = useState('all');
@@ -95,7 +98,9 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   function startAddToCart(product, quantity = 1) {
     setPendingProduct(product);
     setPendingQuantity(Math.max(1, Math.min(99, Number(quantity) || 1)));
-    if (product.spiceLevels && product.spiceLevels.length > 0) {
+    if (Array.isArray(product?.variants) && product.variants.length > 0) {
+      setVariantOpen(true);
+    } else if (product.spiceLevels && product.spiceLevels.length > 0) {
       setSpiceOpen(true);
     } else if (product.extraOptionGroups && product.extraOptionGroups.length > 0) {
       setExtrasOpen(true);
@@ -106,15 +111,31 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     }
   }
 
+  function confirmVariant(variant) {
+    setPendingVariant(variant || null);
+    setVariantOpen(false);
+    if (pendingProduct && pendingProduct.spiceLevels && pendingProduct.spiceLevels.length > 0) {
+      setSpiceOpen(true);
+    } else if (pendingProduct && pendingProduct.extraOptionGroups && pendingProduct.extraOptionGroups.length > 0) {
+      setExtrasOpen(true);
+    } else if (pendingProduct) {
+      addItem({ product: pendingProduct, variant, spiceLevel: undefined, quantity: pendingQuantity });
+      setPendingProduct(null);
+      setPendingVariant(null);
+      setPendingQuantity(1);
+    }
+  }
+
   function confirmSpice(spice) {
     setPendingSpice(spice);
     setSpiceOpen(false);
     if (pendingProduct && pendingProduct.extraOptionGroups && pendingProduct.extraOptionGroups.length > 0) {
       setExtrasOpen(true);
     } else if (pendingProduct) {
-      addItem({ product: pendingProduct, spiceLevel: spice, quantity: pendingQuantity });
+      addItem({ product: pendingProduct, variant: pendingVariant || undefined, spiceLevel: spice, quantity: pendingQuantity });
       setPendingProduct(null);
       setPendingSpice(undefined);
+      setPendingVariant(null);
       setPendingQuantity(1);
     }
   }
@@ -122,10 +143,11 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   function confirmExtras(selected) {
     setExtrasOpen(false);
     if (pendingProduct) {
-      addItem({ product: pendingProduct, spiceLevel: pendingSpice, selectedOptions: selected, quantity: pendingQuantity });
+      addItem({ product: pendingProduct, variant: pendingVariant || undefined, spiceLevel: pendingSpice, selectedOptions: selected, quantity: pendingQuantity });
     }
     setPendingProduct(null);
     setPendingSpice(undefined);
+    setPendingVariant(null);
     setPendingQuantity(1);
   }
 
@@ -547,6 +569,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       ) : null}
       <SpiceModal open={spiceOpen} spiceLevels={pendingProduct?.spiceLevels} product={pendingProduct} onCancel={() => setSpiceOpen(false)} onConfirm={confirmSpice} />
       <ExtrasModal open={extrasOpen} groups={pendingProduct?.extraOptionGroups} product={pendingProduct} onCancel={() => setExtrasOpen(false)} onConfirm={confirmExtras} />
+      <VariantModal open={variantOpen} variants={pendingProduct?.variants || []} product={pendingProduct} onCancel={() => setVariantOpen(false)} onConfirm={confirmVariant} />
       <AddToCartToast />
       <UserAuthModal open={loginOpen} onClose={() => setLoginOpen(false)} onSuccess={() => {
         setLoginOpen(false);

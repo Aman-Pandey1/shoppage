@@ -15,6 +15,12 @@ const ProductSchema = new mongoose.Schema({
 	categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
 	isVeg: { type: Boolean, default: true },
 	spiceLevels: [{ type: String }],
+	// Product variants (e.g., sizes). priceDelta is added on top of base price
+	variants: [{
+		key: { type: String, required: true },
+		label: { type: String, required: true },
+		priceDelta: { type: Number, default: 0 },
+	}],
 	extraOptionGroups: [{
 		groupKey: { type: String, required: true },
 		groupLabel: { type: String, required: true },

@@ -134,7 +134,7 @@ export const AdminDashboard = () => {
   }, [products, filterCategory, vegFilter]);
 
   function startCreate() {
-    setEditing({ name: '', price: 0, categoryId: categories[0]?._id || '', description: '', imageUrl: '', spiceLevels: [], extraOptionGroups: [] });
+    setEditing({ name: '', price: 0, categoryId: categories[0]?._id || '', description: '', imageUrl: '', spiceLevels: [], variants: [], extraOptionGroups: [] });
   }
 
   function startEdit(p) {
@@ -150,6 +150,7 @@ export const AdminDashboard = () => {
       price: Number(editing.price || 0),
       categoryId: editing.categoryId,
       spiceLevels: editing.spiceLevels || [],
+      variants: editing.variants || [],
       extraOptionGroups: editing.extraOptionGroups || [],
     };
     if (editing._id) {
@@ -400,7 +401,7 @@ export const AdminDashboard = () => {
                   <tbody>
                     {(Array.isArray(orders) ? orders : []).map((o) => {
                       const customer = o.dropoff?.name || o.userEmail || '—';
-                      const itemsText = (Array.isArray(o.items) ? o.items : []).map((it) => `${it.name}${it.spiceLevel ? ` [${it.spiceLevel}]` : ''} × ${it.quantity}`).join(', ');
+                      const itemsText = (Array.isArray(o.items) ? o.items : []).map((it) => `${it.name}${it.spiceLevel ? ` [${it.spiceLevel}]` : ''}${it.size ? ` (${it.size})` : ''} × ${it.quantity}`).join(', ');
                       const tax = ((o.taxCents||0)/100).toFixed(2);
                       const notes = o.notes ? String(o.notes).slice(0, 60) : '';
                       return (
@@ -411,6 +412,9 @@ export const AdminDashboard = () => {
                           <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>
                             <div style={{ fontWeight: 800, color: 'var(--primary-600)' }}>${((o.totalCents||0)/100).toFixed(2)}</div>
                             <div className="muted" style={{ fontSize: 12 }}>Tax: ${tax}</div>
+                            {o.deliveryFeeCents ? (
+                              <div className="muted" style={{ fontSize: 12 }}>Delivery: ${((o.deliveryFeeCents||0)/100).toFixed(2)}{o.deliveryFeeRestaurantCents ? ` (Restaurant: ${((o.deliveryFeeRestaurantCents||0)/100).toFixed(2)})` : ''}</div>
+                            ) : null}
                           </td>
                           <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>{itemsText}</td>
                           <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>
@@ -517,6 +521,19 @@ export const AdminDashboard = () => {
                         }
                       }} />
                     </label>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <span>Variants (JSON)</span>
+                    <textarea
+                      rows={4}
+                      value={JSON.stringify(editing.variants || [], null, 2)}
+                      onChange={(e) => {
+                        try {
+                          const parsed = JSON.parse(e.target.value);
+                          setEditing({ ...editing, variants: parsed });
+                        } catch {}
+                      }}
+                    />
                   </div>
                   <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <span>Extra option groups (JSON)</span>
