@@ -24,8 +24,8 @@
     },
     {
       "_id": "mock-site",
-      "name": "Default Site",
-      "slug": "default",
+      "name": "New Asian Village",
+      "slug": "NewAsianVillage",
       "isActive": true,
       "uberCustomerId": "e17d4989-135a-5753-8721-deea80593053",
       "pickup": {
@@ -41,7 +41,7 @@
           "country": "CA"
         }
       },
-      "brandColor": "#0d4fe7",
+      "brandColor": "#e70de0",
       "locations": [
         {
           "name": "Varinderjeet Kaur",
@@ -111,7 +111,8 @@
         }
       },
       "deliveryFeeCents": 804,
-      "logoUrl": "/uploads/site-mock-site-1758728852349-mnxgba.png"
+      "logoUrl": "/uploads/site-mock-site-1758728852349-mnxgba.png",
+      "domains": []
     }
   ],
   "categories": [
@@ -2312,6 +2313,13 @@
       "name": "ap",
       "passwordHash": "$2a$10$Vr9h3dzHzxxiIUMUBa9npOcY2oNl3pwcg8UwsJ4ePaHyTFtRSgzLO",
       "createdAt": "2025-09-21T16:51:28.632Z"
+    },
+    {
+      "_id": "u-1759214774410",
+      "email": "ap1@gmail.com",
+      "name": "ap",
+      "passwordHash": "$2a$10$FNx4Idm2r3El7aAYaoQzf.e.iWr5joz8epwYBo1yiqfPERibR24fW",
+      "createdAt": "2025-09-30T06:46:14.410Z"
     }
   ],
   "coupons": [
