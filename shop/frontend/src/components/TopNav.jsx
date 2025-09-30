@@ -36,7 +36,7 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
   }, [user?.email]);
 
   return (
-    <div className="top-nav" role="banner">
+    <div className="top-nav" data-menu-open={menuOpen ? 'true' : 'false'} role="banner">
       <div className="top-nav__inner">
         <div className="brand" aria-label="Store brand">
           <div className="brand__logo" aria-hidden>
@@ -73,7 +73,7 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
             <button className="signin-btn" onClick={onSignIn}>Sign in</button>
           ) : null}
           {menuOpen ? (
-            <div className="card" style={{ position: 'absolute', right: 0, top: 'calc(100% + 8px)', padding: 8, borderRadius: 12, minWidth: 220 }} onMouseLeave={() => setMenuOpen(false)}>
+            <div className="card" style={{ position: 'absolute', right: 0, top: 'calc(100% + 8px)', padding: 8, borderRadius: 12, minWidth: 220, zIndex: 210 }} onMouseLeave={() => setMenuOpen(false)}>
               <div style={{ padding: '6px 10px', fontWeight: 700 }}>{user?.email || 'Account'}</div>
               <button style={{ width: '100%', textAlign: 'left', marginTop: 4 }} onClick={() => { setMenuOpen(false); navigate(`/s/${siteSlug}/orders`); }}>My Orders</button>
               {!user ? (
