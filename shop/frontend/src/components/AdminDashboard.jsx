@@ -400,7 +400,7 @@ export const AdminDashboard = () => {
                   <tbody>
                     {(Array.isArray(orders) ? orders : []).map((o) => {
                       const customer = o.dropoff?.name || o.userEmail || '—';
-                      const itemsText = (Array.isArray(o.items) ? o.items : []).map((it) => `${it.name} × ${it.quantity}`).join(', ');
+                      const itemsText = (Array.isArray(o.items) ? o.items : []).map((it) => `${it.name}${it.spiceLevel ? ` [${it.spiceLevel}]` : ''} × ${it.quantity}`).join(', ');
                       const tax = ((o.taxCents||0)/100).toFixed(2);
                       const notes = o.notes ? String(o.notes).slice(0, 60) : '';
                       return (
