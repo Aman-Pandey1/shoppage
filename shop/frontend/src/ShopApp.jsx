@@ -290,6 +290,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       quantity: it.quantity,
       priceCents: Math.round(it.basePrice * 100),
       size: 'small',
+      spiceLevel: it.spiceLevel,
     }));
   }, [state.items]);
 
@@ -553,6 +554,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         setFulfillmentType('delivery');
         setDeliveryModalOpen(true);
       }} />
+      <footer className="site-footer">All rights reserved by Blueboxx</footer>
     </div>
   );
 };

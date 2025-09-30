@@ -1,6 +1,7 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { fetchJson, getAuthToken } from '../lib/api';
+import { download } from '../lib/api';
 import { LoginModal } from '../components/LoginModal';
 import { TrackingModal } from '../components/TrackingModal';
 
@@ -120,6 +121,19 @@ export const MyOrdersPage = () => {
                     {o.dropoff.address.city}
                   </div>
                 ) : null}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+                <button onClick={async () => {
+                  try {
+                    const blob = await download(`/api/shop/${siteSlug || 'default'}/orders/${o._id}/pdf`);
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url; a.download = `order-${String(o._id).slice(-6)}.pdf`; a.click();
+                    URL.revokeObjectURL(url);
+                  } catch (e) {
+                    alert('Failed to download invoice');
+                  }
+                }}>Download invoice (PDF)</button>
               </div>
               {o.fulfillmentType === 'delivery' ? (
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
