@@ -6,6 +6,8 @@ const OrderItemSchema = new mongoose.Schema({
     quantity: { type: Number, required: true },
     priceCents: { type: Number, required: true },
     size: { type: String },
+    // Optional: spice level selected by the customer for this item
+    spiceLevel: { type: String },
 }, { _id: false });
 
 const OrderSchema = new mongoose.Schema({

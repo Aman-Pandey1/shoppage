@@ -176,8 +176,8 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
 			doc.restore();
 
 			const rowY = doc.y;
-			doc.font('Helvetica').fillColor(colors.text)
-				.text(`${it.name} ${it.size ? '(' + it.size + ')' : ''}`, startX, rowY, { width: colWidths[0], align: 'center' });
+      doc.font('Helvetica').fillColor(colors.text)
+        .text(`${it.name}${it.spiceLevel ? ' [' + it.spiceLevel + ']' : ''} ${it.size ? '(' + it.size + ')' : ''}`, startX, rowY, { width: colWidths[0], align: 'center' });
 			doc.text(String(qty), startX + colWidths[0], rowY, { width: colWidths[1], align: 'center' });
 			doc.text(`$${unit.toFixed(2)}`, startX + colWidths[0] + colWidths[1], rowY, { width: colWidths[2], align: 'center' });
 			doc.text(`$${line.toFixed(2)}`, startX + colWidths[0] + colWidths[1] + colWidths[2], rowY, { width: colWidths[3], align: 'center' });
