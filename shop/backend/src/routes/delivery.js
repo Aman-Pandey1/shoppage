@@ -97,16 +97,22 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 			...pickup,
 			phone: (pickup?.phone && /^\+?[1-9]\d{7,14}$/.test(String(pickup.phone).replace(/[^\d+]/g, '')))
 				? String(pickup.phone).replace(/[^\d+]/g, '')
-				: '+10000000000',
+				: '+14155550123',
 		};
+		// Sanitize dropoff phone; require valid E.164 from client
+		const dropoffPhone = String(dropoff?.phone || '').replace(/[^\d+]/g, '');
+		if (!/^\+?[1-9]\d{7,14}$/.test(dropoffPhone)) {
+			return res.status(400).json({ error: 'Enter phone as +1XXXXXXXXXX' });
+		}
+		const safeDropoff = { ...dropoff, phone: dropoffPhone.startsWith('+') ? dropoffPhone : ('+' + dropoffPhone) };
 		// Compute distance-based fee
 		let distanceKm = null;
 		try { distanceKm = await distanceBetweenAddressesKm(pickup.address, dropoff.address); } catch {}
 		const distanceFeeCents = calculateDistanceFeeCents(distanceKm);
-    const delivery = await createDelivery({
+	    const delivery = await createDelivery({
 			customerId: site.uberCustomerId,
 			pickup: safePickup,
-			dropoff,
+			dropoff: safeDropoff,
 			manifestItems,
 			tip: 0,
 			externalId,
