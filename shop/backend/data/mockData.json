@@ -1228,7 +1228,19 @@
         "Extra Hot"
       ],
       "isVeg": true,
-      "extraOptionGroups": []
+      "extraOptionGroups": [],
+      "variants": [
+        {
+          "key": "leg_piece",
+          "label": "leg piece",
+          "priceDelta": 0
+        },
+        {
+          "key": "nonvege",
+          "label": "nonvege",
+          "priceDelta": 0
+        }
+      ]
     },
     {
       "_id": "p-1758638422977-vk1r",
