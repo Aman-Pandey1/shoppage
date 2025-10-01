@@ -27,6 +27,9 @@ export const AdminDashboard = () => {
   const [couponCode, setCouponCode] = useState('');
   const [couponPercent, setCouponPercent] = useState(10);
 
+  // Simple variants CSV editor state
+  const [variantsCsv, setVariantsCsv] = useState('');
+
   const [isSiteFormOpen, setIsSiteFormOpen] = useState(false);
   const [siteForm, setSiteForm] = useState({ name: '', slug: '', domainsText: '' });
 
@@ -140,6 +143,57 @@ export const AdminDashboard = () => {
   function startEdit(p) {
     setEditing({ ...p });
   }
+
+  // Build a CSV-like string from variants for quick editing
+  function serializeVariantsToCsv(variants) {
+    try {
+      const list = Array.isArray(variants) ? variants : [];
+      return list.map((v) => {
+        const label = String(v?.label || v?.key || '').trim();
+        const delta = Number(v?.priceDelta || 0);
+        if (!label) return '';
+        if (delta === 0) return label;
+        const sign = delta >= 0 ? '+' : '-';
+        const abs = Math.abs(delta).toFixed(2).replace(/\.00$/, '');
+        return `${label} ${sign}${abs}`;
+      }).filter(Boolean).join(', ');
+    } catch { return ''; }
+  }
+
+  // Parse CSV into structured variants
+  function parseCsvToVariants(csv) {
+    const seen = new Set();
+    return String(csv || '')
+      .replace(/\$/g, '')
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean)
+      .map((token) => {
+        const cleaned = token.replace(/\$/g, '').trim();
+        const match = cleaned.match(/^(.+?)(?:\s*([+-])\s*(\d+(?:\.\d+)?))?$/);
+        const rawLabel = (match ? match[1] : cleaned).trim();
+        const sign = match && match[2] ? match[2] : '+';
+        const num = match && match[3] ? Number(match[3]) : 0;
+        const priceDelta = (sign === '-' ? -1 : 1) * (Number.isFinite(num) ? num : 0);
+        // Generate a stable key from label
+        let baseKey = rawLabel.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+        if (!baseKey) baseKey = 'variant';
+        let key = baseKey;
+        let idx = 1;
+        while (seen.has(key)) { key = `${baseKey}_${idx++}`; }
+        seen.add(key);
+        return { key, label: rawLabel, priceDelta };
+      });
+  }
+
+  // Keep CSV text in sync when switching between products
+  useEffect(() => {
+    if (editing && Array.isArray(editing.variants)) {
+      setVariantsCsv(serializeVariantsToCsv(editing.variants));
+    } else {
+      setVariantsCsv('');
+    }
+  }, [editing && editing._id, Array.isArray(editing?.variants) ? editing.variants.length : 0]);
 
   async function saveEditing() {
     if (!editing) return;
@@ -523,6 +577,25 @@ export const AdminDashboard = () => {
                     </label>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <span>Variants (comma-separated)</span>
+                    <input
+                      placeholder="e.g. small, medium +1.50, large +3"
+                      value={variantsCsv}
+                      onChange={(e) => setVariantsCsv(e.target.value)}
+                    />
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={() => {
+                        try {
+                          const parsed = parseCsvToVariants(variantsCsv);
+                          setEditing({ ...editing, variants: parsed });
+                        } catch {}
+                      }}>Apply</button>
+                      <button onClick={() => {
+                        setVariantsCsv(serializeVariantsToCsv(editing?.variants || []));
+                      }}>Reset</button>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <span>Variants (JSON)</span>
                     <textarea
                       rows={4}
@@ -531,6 +604,7 @@ export const AdminDashboard = () => {
                         try {
                           const parsed = JSON.parse(e.target.value);
                           setEditing({ ...editing, variants: parsed });
+                          setVariantsCsv(serializeVariantsToCsv(parsed));
                         } catch {}
                       }}
                     />
