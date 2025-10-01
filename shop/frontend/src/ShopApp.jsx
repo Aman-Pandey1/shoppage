@@ -310,8 +310,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     return state.items.map((it) => ({
       name: it.name,
       quantity: it.quantity,
-      priceCents: Math.round(it.basePrice * 100),
-      size: 'small',
+      priceCents: Math.round(((Number(it.basePrice) || 0) + (Number(it?.variant?.priceDelta) || 0) + (Number(it?.extraCost) || 0)) * 100),
+      size: (it?.variant?.label || it?.variant?.key || undefined),
       spiceLevel: it.spiceLevel,
     }));
   }, [state.items]);
@@ -521,7 +521,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                   if (!selectedLocation) setSelectedLocation(chosenLocation);
                   // Build pickup order payload
                   const payload = {
-                    items: manifest.map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.priceCents || 0, size: m.size || 'small' })),
+                    items: manifest.map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.priceCents || 0, size: m.size, spiceLevel: m.spiceLevel })),
                     tipCents: 0,
                     pickup: {
                       location: chosenLocation,
