@@ -112,7 +112,8 @@
       },
       "deliveryFeeCents": 804,
       "logoUrl": "/uploads/site-mock-site-1758728852349-mnxgba.png",
-      "domains": []
+      "domains": [],
+      "splitDeliveryFee": true
     }
   ],
   "categories": [
@@ -2047,6 +2048,62 @@
     }
   ],
   "orders": [
+    {
+      "_id": "o-1759241586544",
+      "createdAt": "2025-09-30T14:13:06.544Z",
+      "site": "mock-site",
+      "userEmail": "admin@example.com",
+      "items": [
+        {
+          "name": "Beef Samosa (2 pcs)",
+          "quantity": 11,
+          "priceCents": 695,
+          "size": "small"
+        }
+      ],
+      "totalCents": 8827,
+      "taxCents": 382,
+      "tipCents": 0,
+      "deliveryFeeCents": 800,
+      "deliveryFeeRestaurantCents": 0,
+      "externalId": "New-Asian-Village-order-1759241585347",
+      "uberDeliveryId": "del_gjkrAMkUQ-mD2Fgl7AeU4A",
+      "uberTrackingUrl": "https://delivery.uber.com/ca/orders/82392b00-c914-43e9-83d8-5825ec0794e0?tenancyOverride=uber%2Ftesting%2Fdirect%2Fe17d4989-135a-5753-8721-deea80593053",
+      "uberStatus": "pending",
+      "fulfillmentType": "delivery",
+      "dropoff": {
+        "name": "test final",
+        "phone": "+9115877104641",
+        "address": {
+          "streetAddress": [
+            "100 Queen St W"
+          ],
+          "city": "Toronto",
+          "province": "ON",
+          "postalCode": " A1A 1A1",
+          "country": "CA"
+        }
+      },
+      "pickup": {
+        "location": {
+          "name": "Varinderjeet Kaur",
+          "phone": "+1 416-868-6937",
+          "address": {
+            "streetAddress": [
+              "100 Queen St W"
+            ],
+            "city": "Toronto",
+            "province": "ON",
+            "postalCode": "2N2",
+            "country": "CA"
+          }
+        }
+      },
+      "meta": {
+        "distanceKm": 0.01466185297694789
+      },
+      "notes": ""
+    },
     {
       "_id": "o-1758878716582",
       "createdAt": "2025-09-26T09:25:16.582Z",
