@@ -13,7 +13,30 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
     async function load() {
       try {
         const data = await fetchJson(`/api/shop/${siteSlug}/site`);
-        if (!cancelled) setSite(data || {});
+        if (!cancelled) {
+          setSite(data || {});
+          try {
+            const base = (data && data.brandColor) ? data.brandColor : '#0ea5e9';
+            document.documentElement.style.setProperty('--primary', base);
+            document.documentElement.style.setProperty('--primary-600', base);
+            const rgba = (hex, a) => {
+              const h = String(hex || '').replace('#','');
+              if (!/^([\da-fA-F]{6}|[\da-fA-F]{3})$/.test(h)) return `rgba(14,165,233,${a})`;
+              const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+              const bigint = parseInt(full, 16);
+              const r = (bigint >> 16) & 255;
+              const g = (bigint >> 8) & 255;
+              const b = bigint & 255;
+              return `rgba(${r},${g},${b},${a})`;
+            };
+            document.documentElement.style.setProperty('--primary-alpha-04', rgba(base, 0.04));
+            document.documentElement.style.setProperty('--primary-alpha-08', rgba(base, 0.08));
+            document.documentElement.style.setProperty('--primary-alpha-12', rgba(base, 0.12));
+            document.documentElement.style.setProperty('--primary-alpha-18', rgba(base, 0.18));
+            document.documentElement.style.setProperty('--primary-alpha-22', rgba(base, 0.22));
+            document.documentElement.style.setProperty('--primary-alpha-25', rgba(base, 0.25));
+          } catch {}
+        }
       } catch {}
     }
     load();
