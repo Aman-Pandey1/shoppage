@@ -120,7 +120,8 @@ function sanitizeManifestItems(items) {
 			const quantityNum = Number(m?.quantity);
 			const quantity = Number.isFinite(quantityNum) && quantityNum > 0 ? Math.floor(quantityNum) : 1;
 			const out = { name, quantity };
-			const rawSize = typeof m?.size === 'string' ? m.size.trim().toLowerCase() : '';
+			const rawSizeLabel = typeof m?.size === 'string' ? m.size.trim() : '';
+			const rawSize = rawSizeLabel ? rawSizeLabel.toLowerCase() : '';
 			let normalizedSize = '';
 			if (rawSize) {
 				if (['s', 'sm'].includes(rawSize)) normalizedSize = 'small';
@@ -129,6 +130,10 @@ function sanitizeManifestItems(items) {
 			}
 			if (normalizedSize && allowedSizes.has(normalizedSize)) {
 				out.size = normalizedSize;
+			} else if (rawSizeLabel) {
+				// Preserve non-size variant labels by appending to the item name,
+				// while ensuring we never send an unsupported size enum to Uber.
+				out.name = `${name} (${rawSizeLabel})`;
 			}
 			return out;
 		});
