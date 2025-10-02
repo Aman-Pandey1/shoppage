@@ -90,15 +90,17 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 				} catch {}
 			}
 		}
-		let pickup = locs[chosenIdx];
+    let pickup = locs[chosenIdx];
 		if (!pickup) return res.status(400).json({ error: 'No pickup location configured' });
 		// Ensure pickup has a valid E.164 phone for Uber
-		const safePickup = {
-			...pickup,
-			phone: (pickup?.phone && /^\+?[1-9]\d{7,14}$/.test(String(pickup.phone).replace(/[^\d+]/g, '')))
-				? String(pickup.phone).replace(/[^\d+]/g, '')
-				: '+14155550123',
-		};
+    const normalizedPickupPhoneRaw = String(pickup?.phone || '').replace(/[^\d+]/g, '');
+    const normalizedPickupPhone = normalizedPickupPhoneRaw
+      ? (normalizedPickupPhoneRaw.startsWith('+') ? normalizedPickupPhoneRaw : ('+' + normalizedPickupPhoneRaw))
+      : '+14155550123';
+    const safePickup = {
+      ...pickup,
+      phone: /^\+[1-9]\d{7,14}$/.test(normalizedPickupPhone) ? normalizedPickupPhone : '+14155550123',
+    };
 		// Sanitize dropoff phone; require valid E.164 from client
 		const dropoffPhone = String(dropoff?.phone || '').replace(/[^\d+]/g, '');
 		if (!/^\+?[1-9]\d{7,14}$/.test(dropoffPhone)) {
