@@ -63,6 +63,7 @@ export async function requestQuote({ customerId, pickup, dropoff }) {
 export async function createDelivery({ customerId, pickup, dropoff, manifestItems, tip, externalId }) {
 	const token = await getAccessToken();
 	const url = `${UBER_BASE}/${encodeURIComponent(customerId)}/deliveries`; // POST
+	const safeManifestItems = sanitizeManifestItems(manifestItems);
 	const payload = {
 		pickup_name: pickup.name,
 		pickup_phone_number: pickup.phone,
@@ -70,13 +71,16 @@ export async function createDelivery({ customerId, pickup, dropoff, manifestItem
 		dropoff_name: dropoff.name,
 		dropoff_phone_number: dropoff.phone,
 		dropoff_address: formatAddress(dropoff.address),
-		manifest_items: manifestItems,
+		manifest_items: safeManifestItems,
 		tip_by_customer: tip || 0,
 		external_id: externalId,
 	};
   const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
   if (!res.ok) {
     const text = await safeText(res);
+    if (res.status === 400 && /manifest_items|toField:\s*size|unknown enum value/i.test(text)) {
+      throw new Error('One or more items have an unsupported size. Use Small/Medium/Large or remove size.');
+    }
     if ((UBER_ENV === 'sandbox' || isUsingMock()) && (res.status >= 500 || /address_undeliverable|Cannot find eligible product|internal_server_error/i.test(text))) {
       // Simulate delivery object for testing
       const id = `d-${Date.now()}`;
@@ -105,6 +109,32 @@ export async function getDelivery({ customerId, deliveryId }) {
         throw new Error(`Uber get delivery error ${res.status} ${text}`);
     }
     return res.json();
+}
+
+function sanitizeManifestItems(items) {
+	try {
+		const allowedSizes = new Set(['small', 'medium', 'large']);
+		const list = Array.isArray(items) ? items : [];
+		return list.map((m) => {
+			const name = String(m?.name || '').trim() || 'Item';
+			const quantityNum = Number(m?.quantity);
+			const quantity = Number.isFinite(quantityNum) && quantityNum > 0 ? Math.floor(quantityNum) : 1;
+			const out = { name, quantity };
+			const rawSize = typeof m?.size === 'string' ? m.size.trim().toLowerCase() : '';
+			let normalizedSize = '';
+			if (rawSize) {
+				if (['s', 'sm'].includes(rawSize)) normalizedSize = 'small';
+				else if (['m', 'md', 'medium'].includes(rawSize)) normalizedSize = 'medium';
+				else if (['l', 'lg', 'xl', 'x-large', 'xlarge', 'extra large', 'extra-large', 'large'].includes(rawSize)) normalizedSize = 'large';
+			}
+			if (normalizedSize && allowedSizes.has(normalizedSize)) {
+				out.size = normalizedSize;
+			}
+			return out;
+		});
+	} catch {
+		return [];
+	}
 }
 
 function formatAddress(addr) {
