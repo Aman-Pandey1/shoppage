@@ -373,6 +373,14 @@ input:focus, select:focus, textarea:focus {
 }
 .signin-btn { border: 1px solid rgba(255,255,255,0.65); color: #fff; background: transparent; }
 
+/* Mobile adjustments for centering cart icon */
+@media (max-width: 1024px) {
+  .top-nav__inner { grid-template-columns: 1fr 1fr 1fr; }
+  .nav-title { grid-column: 2 / 3; justify-self: center; }
+  .top-nav .actions { justify-self: center; }
+  .top-nav .cart-header-btn { margin: 0 auto; }
+}
+
 /* Footer */
 .site-footer {
   margin-top: 16px;
