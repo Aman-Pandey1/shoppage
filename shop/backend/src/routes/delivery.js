@@ -65,7 +65,9 @@ router.post('/:slug/quote', async (req, res) => {
 			site = await Site.findById(req.siteId);
 		}
 		const hasPickupCfg = !!(site?.pickup?.address) || (Array.isArray(site?.locations) && site.locations.length && site.locations[0]?.address);
-		if (!site?.uberCustomerId || !hasPickupCfg) return res.status(400).json({ error: 'Site not configured for Uber Direct' });
+		// Allow in mock mode even if Uber config missing
+		const isMock = !!req.app?.locals?.mockData;
+		if ((!site?.uberCustomerId || !hasPickupCfg) && !isMock) return res.status(400).json({ error: 'Site not configured for Uber Direct' });
 		const { dropoff, pickupLocationIndex } = req.body || {};
 		if (!dropoff?.address?.streetAddress) return res.status(400).json({ error: 'Invalid dropoff address' });
 		// Determine pickup location: use provided index if valid, otherwise choose nearest to dropoff
@@ -115,7 +117,9 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 			site = await Site.findById(req.siteId);
 		}
 		const hasPickupCfg = !!(site?.pickup?.address) || (Array.isArray(site?.locations) && site.locations.length && site.locations[0]?.address);
-		if (!site?.uberCustomerId || !hasPickupCfg) return res.status(400).json({ error: 'Site not configured for Uber Direct' });
+		// Allow in mock mode even if Uber config missing
+		const isMock = !!req.app?.locals?.mockData;
+		if ((!site?.uberCustomerId || !hasPickupCfg) && !isMock) return res.status(400).json({ error: 'Site not configured for Uber Direct' });
 		const { dropoff, manifestItems, externalId, pickupLocationIndex, notes } = req.body || {};
 		const locs = (Array.isArray(site.locations) && site.locations.length)
 			? site.locations
@@ -165,8 +169,10 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 			externalId,
 		});
 		// Record order
-    const itemsTotal = (manifestItems || []).reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 1), 0);
-		if (itemsTotal < 5000) return res.status(400).json({ error: 'Minimum order is $50.00' });
+		const itemsTotal = (manifestItems || []).reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 1), 0);
+		const isMockEnv = !!req.app?.locals?.mockData;
+		const minOrderCents = isMockEnv ? 0 : Math.max(0, Number(process.env.MIN_ORDER_CENTS) || 5000);
+		if (itemsTotal < minOrderCents) return res.status(400).json({ error: `Minimum order is $${(minOrderCents/100).toFixed(2)}` });
     const split = !!site.splitDeliveryFee;
     const fullDeliveryFeeCents = Number(distanceFeeCents) || 0;
     const customerDeliveryFeeCents = split ? Math.round(fullDeliveryFeeCents / 2) : fullDeliveryFeeCents;
