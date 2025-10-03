@@ -15,7 +15,11 @@ cd backend
 # Use mock data (no Mongo needed)
 echo "PORT=4000
 USE_MOCK_DATA=true
-MONGO_URI=mongodb://127.0.0.1:27017/shopdb" > .env
+MONGO_URI=mongodb://127.0.0.1:27017/shopdb
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+# Optional: default currency (usd, cad, etc.)
+STRIPE_CURRENCY=usd" > .env
 npm install
 npm run dev
 ```

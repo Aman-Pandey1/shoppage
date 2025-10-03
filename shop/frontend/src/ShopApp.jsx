@@ -546,14 +546,19 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                     notes: state.notes || undefined,
                     coupon: state.coupon || undefined,
                   };
-                  const res = await fetchJson(`/api/shop/${siteSlug}/site`).catch(() => ({}));
-                  await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/shop/${siteSlug}/orders/pickup`, {
+                  // Create Stripe checkout session and redirect
+                  await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/payments/stripe/${siteSlug}/checkout/pickup`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
                     body: JSON.stringify(payload),
-                  }).then(async (r) => { if (!r.ok) throw new Error(await r.text()); return r.json(); });
-                  setOrderDetailsOpen(false);
-                  try { window.location.href = `/s/${siteSlug}/orders`; } catch {}
+                  })
+                  .then(async (r) => { if (!r.ok) throw new Error(await r.text()); return r.json(); })
+                  .then((data) => {
+                    const url = data?.url;
+                    if (!url) throw new Error('Failed to start payment');
+                    setOrderDetailsOpen(false);
+                    window.location.href = url;
+                  });
                 } catch (e) {
                   let msg = e?.message || 'Failed to place pickup order';
                   try {
