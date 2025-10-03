@@ -103,7 +103,9 @@ router.post('/:slug/orders/pickup', requireUser, async (req, res) => {
         }
       }
     }
-    if (itemsTotal < 5000) return res.status(400).json({ error: 'Minimum order is $50.00' });
+    const isMockEnv = !!req.app?.locals?.mockData;
+    const minOrderCents = isMockEnv ? 0 : Math.max(0, Number(process.env.MIN_ORDER_CENTS) || 5000);
+    if (itemsTotal < minOrderCents) return res.status(400).json({ error: `Minimum order is $${(minOrderCents/100).toFixed(2)}` });
     const taxCents = Math.round(itemsTotal * 0.05);
     const totalCents = itemsTotal + taxCents;
     const orderPayload = {

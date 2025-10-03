@@ -9,6 +9,13 @@ function isUsingMock() {
   const val = String(process.env.USE_MOCK_DATA || '').toLowerCase();
   return val === 'true';
 }
+function isMissingUberCreds() {
+	try {
+		return !process.env.UBER_CLIENT_ID || !process.env.UBER_CLIENT_SECRET;
+	} catch {
+		return true;
+	}
+}
 const UBER_BASE = UBER_ENV === 'sandbox'
   ? 'https://sandbox-api.uber.com/v1/customers'
   : 'https://api.uber.com/v1/customers';
@@ -52,6 +59,15 @@ function normalizeE164Phone(raw, fallback) {
 }
 
 export async function requestQuote({ customerId, pickup, dropoff }) {
+	// In mock/sandbox environments or when credentials are missing, return a simulated quote
+	if (isUsingMock() || isMissingUberCreds() || UBER_ENV === 'sandbox') {
+		return {
+			id: `q-${Date.now()}`,
+			fee: { amount: 799, currency_code: 'CAD' },
+			dropoff_estimated_dt: new Date(Date.now() + 45 * 60 * 1000).toISOString(),
+			simulated: true,
+		};
+	}
 	const token = await getAccessToken();
 	const url = `${UBER_BASE}/${encodeURIComponent(customerId)}/delivery_quotes`; // POST
 	const payload = {
@@ -77,6 +93,20 @@ export async function requestQuote({ customerId, pickup, dropoff }) {
 }
 
 export async function createDelivery({ customerId, pickup, dropoff, manifestItems, tip, externalId }) {
+	// In mock/sandbox environments or when credentials are missing, return a simulated delivery
+	if (isUsingMock() || isMissingUberCreds() || UBER_ENV === 'sandbox') {
+		const id = `d-${Date.now()}`;
+		return {
+			id,
+			delivery_id: id,
+			status: 'courier_accepted',
+			tracking_url: `https://www.uber.com/`,
+			share_url: `https://www.uber.com/`,
+			tip_by_customer: tip || 0,
+			external_id: externalId,
+			simulated: true,
+		};
+	}
 	const token = await getAccessToken();
 	const url = `${UBER_BASE}/${encodeURIComponent(customerId)}/deliveries`; // POST
 	const safeManifestItems = sanitizeManifestItems(manifestItems);
