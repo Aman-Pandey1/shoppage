@@ -79,7 +79,7 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
 
         <div className="actions" style={{ position: 'relative' }}>
           <button
-            className="cart-header-btn"
+            className="cart-header-btn hide-desktop"
             aria-label="Open cart"
             onClick={() => { if (typeof onOpenCart === 'function') onOpenCart(); }}
             title="Cart"
