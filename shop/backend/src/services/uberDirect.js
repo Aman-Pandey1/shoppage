@@ -35,6 +35,22 @@ async function getAccessToken() {
 	return cachedToken;
 }
 
+function normalizeE164Phone(raw, fallback) {
+	try {
+		const cleaned = String(raw || '').replace(/[^\d+]/g, '');
+		if (!cleaned) return fallback ?? '';
+		// Ensure a single leading plus and only digits after
+		let withPlus = cleaned.startsWith('+') ? cleaned : ('+' + cleaned);
+		if (/^\+[1-9]\d{7,14}$/.test(withPlus)) return withPlus;
+		// Collapse multiple plus signs if present
+		withPlus = '+' + cleaned.replace(/\+/g, '');
+		if (/^\+[1-9]\d{7,14}$/.test(withPlus)) return withPlus;
+		return fallback ?? '';
+	} catch {
+		return fallback ?? '';
+	}
+}
+
 export async function requestQuote({ customerId, pickup, dropoff }) {
 	const token = await getAccessToken();
 	const url = `${UBER_BASE}/${encodeURIComponent(customerId)}/delivery_quotes`; // POST
@@ -66,10 +82,10 @@ export async function createDelivery({ customerId, pickup, dropoff, manifestItem
 	const safeManifestItems = sanitizeManifestItems(manifestItems);
 	const payload = {
 		pickup_name: pickup.name,
-		pickup_phone_number: pickup.phone,
+		pickup_phone_number: normalizeE164Phone(pickup.phone, '+14155550123'),
 		pickup_address: formatAddress(pickup.address),
 		dropoff_name: dropoff.name,
-		dropoff_phone_number: dropoff.phone,
+		dropoff_phone_number: normalizeE164Phone(dropoff.phone),
 		dropoff_address: formatAddress(dropoff.address),
 		manifest_items: safeManifestItems,
 		tip_by_customer: tip || 0,
