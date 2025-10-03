@@ -79,7 +79,7 @@ export const OrderDetailsBar = ({
                   }
                   return out;
                 })()).map((t) => (
-                  <option key={t.value || t} value={t.value || t}>{t.label || t}</option>
+                  <option key={(t.value || t)} value={(t.value || t)} disabled={!!t.disabled}>{t.label || t}</option>
                 ))}
               </select>
             </label>
