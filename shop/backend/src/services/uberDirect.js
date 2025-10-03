@@ -80,9 +80,11 @@ export async function createDelivery({ customerId, pickup, dropoff, manifestItem
 	const token = await getAccessToken();
 	const url = `${UBER_BASE}/${encodeURIComponent(customerId)}/deliveries`; // POST
 	const safeManifestItems = sanitizeManifestItems(manifestItems);
+	// Ensure pickup phone is valid E.164. In sandbox or when missing/invalid, use a fixed test number.
+	const normalizedPickupPhone = normalizeE164Phone(pickup?.phone, '+14155550123');
 	const payload = {
 		pickup_name: pickup.name,
-		pickup_phone_number: normalizeE164Phone(pickup.phone, '+14155550123'),
+		pickup_phone_number: normalizedPickupPhone,
 		pickup_address: formatAddress(pickup.address),
 		dropoff_name: dropoff.name,
 		dropoff_phone_number: normalizeE164Phone(dropoff.phone),
@@ -94,9 +96,13 @@ export async function createDelivery({ customerId, pickup, dropoff, manifestItem
   const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
   if (!res.ok) {
     const text = await safeText(res);
-    if (res.status === 400 && /manifest_items|toField:\s*size|unknown enum value/i.test(text)) {
+		if (res.status === 400 && /manifest_items|toField:\s*size|unknown enum value/i.test(text)) {
       throw new Error('One or more items have an unsupported size. Use Small/Medium/Large or remove size.');
     }
+		// Surface Uber's invalid phone message more clearly
+		if (res.status === 400 && /pickup_phone_number|dropoff_phone_number|invalid_params/i.test(text)) {
+			throw new Error('Phone number is invalid. Use E.164 format like +14155550123.');
+		}
     if ((UBER_ENV === 'sandbox' || isUsingMock()) && (res.status >= 500 || /address_undeliverable|Cannot find eligible product|internal_server_error/i.test(text))) {
       // Simulate delivery object for testing
       const id = `d-${Date.now()}`;
