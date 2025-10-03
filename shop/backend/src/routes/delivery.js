@@ -9,6 +9,50 @@ import { distanceBetweenAddressesKm, calculateDistanceFeeCents } from '../servic
 
 const router = Router();
 
+// Normalize a raw phone number to E.164 using the provided country code
+// Supports common cases for CA/US (+1), IN (+91), GB (+44), AU (+61)
+function normalizePhoneForCountry(raw, country) {
+	try {
+		const cleaned = String(raw || '').replace(/[^\d+]/g, '');
+		const c = String(country || 'CA').toUpperCase();
+		const ccMap = { CA: '1', US: '1', IN: '91', GB: '44', AU: '61' };
+		const usesTrunkZero = new Set(['GB', 'IN', 'AU']);
+		const defaultCc = ccMap[c] || '';
+		if (!cleaned) return '';
+		if (cleaned.startsWith('+')) {
+			let withPlus = '+' + cleaned.replace(/\+/g, '');
+			// Drop a single trunk '0' immediately after country code for countries that use it
+			if (defaultCc && usesTrunkZero.has(c)) {
+				const afterCcIdx = 1 + defaultCc.length;
+				if (withPlus.slice(1, afterCcIdx) === defaultCc && withPlus[afterCcIdx] === '0') {
+					withPlus = '+' + defaultCc + withPlus.slice(afterCcIdx + 1);
+				}
+			}
+			return /^\+[1-9]\d{7,14}$/.test(withPlus) ? withPlus : '';
+		}
+		// No plus provided: assume selected country, strip trunk '0' if applicable
+		let national = cleaned;
+		if (usesTrunkZero.has(c) && national.startsWith('0')) {
+			national = national.replace(/^0+/, '');
+		}
+		if (defaultCc) {
+			// Special handling for Canada/US: treat 11 digits starting with 1 as full intl already,
+			// and 10 digits as local North American Numbering Plan.
+			if (defaultCc === '1') {
+				if (/^1\d{10}$/.test(national)) return '+' + national;
+				if (/^\d{10}$/.test(national)) return '+1' + national;
+			}
+			const combined = '+' + defaultCc + national;
+			return /^\+[1-9]\d{7,14}$/.test(combined) ? combined : '';
+		}
+		// Fallback: if already looks like an international number without plus, add it
+		if (/^[1-9]\d{7,14}$/.test(national)) return '+' + national;
+		return '';
+	} catch {
+		return '';
+	}
+}
+
 router.use('/:slug', tenantBySlug);
 
 router.post('/:slug/quote', async (req, res) => {
@@ -101,12 +145,13 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
       ...pickup,
       phone: /^\+[1-9]\d{7,14}$/.test(normalizedPickupPhone) ? normalizedPickupPhone : '+14155550123',
     };
-		// Sanitize dropoff phone; require valid E.164 from client
-		const dropoffPhone = String(dropoff?.phone || '').replace(/[^\d+]/g, '');
-		if (!/^\+?[1-9]\d{7,14}$/.test(dropoffPhone)) {
-			return res.status(400).json({ error: 'Enter phone as +1XXXXXXXXXX' });
+		// Normalize dropoff phone to E.164 using dropoff country
+		const dropCountry = String(dropoff?.address?.country || 'CA').toUpperCase();
+		const normalizedDropoffPhone = normalizePhoneForCountry(dropoff?.phone, dropCountry);
+		if (!normalizedDropoffPhone) {
+			return res.status(400).json({ error: 'Phone number is invalid. Use E.164 format like +14155550123.' });
 		}
-		const safeDropoff = { ...dropoff, phone: dropoffPhone.startsWith('+') ? dropoffPhone : ('+' + dropoffPhone) };
+		const safeDropoff = { ...dropoff, phone: normalizedDropoffPhone };
 		// Compute distance-based fee
 		let distanceKm = null;
 		try { distanceKm = await distanceBetweenAddressesKm(pickup.address, dropoff.address); } catch {}
