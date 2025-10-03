@@ -270,6 +270,10 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       return ['sun','mon','tue','wed','thu','fri','sat'][d.getDay()];
     }
     if (!pickupDate) { setTimeOptions([]); return; }
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    const isTodaySelected = pickupDate === todayStr;
+    const [selYr, selMo, selDy] = pickupDate.split('-').map(Number);
     const key = dayKeyFromDateString(pickupDate);
     const cfg = hours?.[key] || { open: '10:00', close: '22:00', closed: false };
     if (cfg.closed) { setTimeOptions([]); return; }
@@ -278,14 +282,25 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     const options = [];
     let curH = openH, curM = openM;
     while (curH < closeH || (curH === closeH && curM <= closeM)) {
-      options.push({ value: format12h(curH, curM), label: format12h(curH, curM) });
+      const value = format12h(curH, curM);
+      let disabled = false;
+      if (isTodaySelected) {
+        const candidate = new Date(selYr, (selMo || 1) - 1, selDy || 1);
+        candidate.setHours(curH, curM, 0, 0);
+        disabled = candidate < now;
+      }
+      options.push({ value, label: value, disabled });
       curM += 45;
       if (curM >= 60) { curM -= 60; curH += 1; }
     }
     setTimeOptions(options);
-    if (!pickupTime && options.length) setPickupTime(options[0].value);
-    if (pickupTime && options.length && !options.find(o => o.value === pickupTime)) {
-      setPickupTime(options[0].value);
+    const firstEnabled = options.find(o => !o.disabled);
+    if (!pickupTime && firstEnabled) setPickupTime(firstEnabled.value);
+    if (pickupTime && options.length) {
+      const cur = options.find(o => o.value === pickupTime);
+      if (!cur || cur.disabled) {
+        if (firstEnabled) setPickupTime(firstEnabled.value);
+      }
     }
   }, [hours, pickupDate]);
 
@@ -497,11 +512,12 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                     }
                     return out;
                   })();
-                  const value = pickupTime || (times[0]?.value || '');
+                  const firstEnabled = times.find((t) => !t.disabled);
+                  const value = pickupTime || (firstEnabled?.value || '');
                   return (
                     <select value={value} onChange={(e) => setPickupTime(e.target.value)}>
                       {times.map((t) => (
-                        <option key={t.value} value={t.value}>{t.label}</option>
+                        <option key={t.value} value={t.value} disabled={!!t.disabled}>{t.label}</option>
                       ))}
                     </select>
                   );
