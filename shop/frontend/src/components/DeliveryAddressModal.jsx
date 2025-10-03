@@ -121,6 +121,10 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
       let national = cleaned;
       if (usesTrunkZero.has(c) && national.startsWith('0')) national = national.replace(/^0+/, '');
       if (defaultCc) {
+        if (defaultCc === '1') {
+          if (/^1\d{10}$/.test(national)) return '+' + national;
+          if (/^\d{10}$/.test(national)) return '+1' + national;
+        }
         const combined = '+' + defaultCc + national;
         return /^\+[1-9]\d{7,14}$/.test(combined) ? combined : '';
       }

@@ -36,6 +36,12 @@ function normalizePhoneForCountry(raw, country) {
 			national = national.replace(/^0+/, '');
 		}
 		if (defaultCc) {
+			// Special handling for Canada/US: treat 11 digits starting with 1 as full intl already,
+			// and 10 digits as local North American Numbering Plan.
+			if (defaultCc === '1') {
+				if (/^1\d{10}$/.test(national)) return '+' + national;
+				if (/^\d{10}$/.test(national)) return '+1' + national;
+			}
 			const combined = '+' + defaultCc + national;
 			return /^\+[1-9]\d{7,14}$/.test(combined) ? combined : '';
 		}
