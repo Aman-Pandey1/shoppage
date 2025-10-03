@@ -250,15 +250,15 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
             ) : null}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
               <span className="muted">Items</span>
-              <span style={{ fontWeight: 700 }}>${(itemsSubtotalCents/100).toFixed(2)}</span>
+              <span style={{ fontWeight: 600 }}>${(itemsSubtotalCents/100).toFixed(2)}</span>
             </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                 <span className="muted">Tax (5%)</span>
-                <span style={{ fontWeight: 700 }}>${((itemsSubtotalCents*0.05)/100).toFixed(2)}</span>
+                <span style={{ fontWeight: 600 }}>${((itemsSubtotalCents*0.05)/100).toFixed(2)}</span>
               </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
               <span className="muted">Delivery fee{splitDeliveryFee ? ' (your share)' : ''}</span>
-              <span style={{ fontWeight: 700 }}>{deliveryFeeCents ? `$${(deliveryFeeCents/100).toFixed(2)}` : '—'}</span>
+              <span style={{ fontWeight: 600 }}>{deliveryFeeCents ? `$${(deliveryFeeCents/100).toFixed(2)}` : '—'}</span>
             </div>
             <div style={{ height: 1, background: 'var(--border)', margin: '6px 0' }} />
             {quote?.dropoff_estimated_dt ? (

@@ -71,13 +71,13 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
             <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'start' }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ fontSize: 16 }}>{p.isVeg === false ? '🔴' : '🟢'}</div>
-                  <div style={{ fontWeight: 800 }}>{p.name}</div>
+                <div style={{ fontSize: 16 }}>{p.isVeg === false ? '🔴' : '🟢'}</div>
+                <div style={{ fontWeight: 700 }}>{p.name}</div>
                 </div>
                 {p.description ? <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>{p.description}</div> : null}
               </div>
               <div style={{ display: 'grid', justifyItems: 'end', gap: 6 }}>
-                <div style={{ fontWeight: 900, color: 'var(--primary-600)' }}>${p.price.toFixed(2)}</div>
+                <div style={{ fontWeight: 800, color: 'var(--primary-600)' }}>${p.price.toFixed(2)}</div>
                 <button
                   onClick={() => { setActiveProduct(p); setQuickAddOpen(true); }}
                   className="primary-btn hover-float"
