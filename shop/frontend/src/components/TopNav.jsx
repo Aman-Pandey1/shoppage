@@ -89,11 +89,11 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
               <span className="cart-header-badge" aria-label={`Items in cart: ${cartCount}`}>{cartCount}</span>
             ) : null}
           </button>
-          <button className="profile-chip" aria-label="Account" onClick={() => setMenuOpen((v) => !v)}>
+          <button className="profile-chip hide-mobile" aria-label="Account" onClick={() => setMenuOpen((v) => !v)}>
             <span>{initials}</span>
           </button>
           {!user ? (
-            <button className="signin-btn" onClick={onSignIn}>Sign in</button>
+            <button className="signin-btn hide-mobile" onClick={onSignIn}>Sign in</button>
           ) : null}
           {menuOpen ? (
             <div className="card" style={{ position: 'absolute', right: 0, top: 'calc(100% + 8px)', padding: 8, borderRadius: 12, minWidth: 220, zIndex: 210 }} onMouseLeave={() => setMenuOpen(false)}>
