@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import path from 'path';
 import webhookUberRouter from './routes/webhookUber.js';
+import webhookStripeRouter from './routes/webhookStripe.js';
 import morgan from 'morgan';
 import categoriesRouter from './routes/categories.js';
 import productsRouter from './routes/products.js';
@@ -17,6 +18,7 @@ import shopPublicRouter from './routes/shopPublic.js';
 import shopOrdersRouter from './routes/shopOrders.js';
 import deliveryRouter from './routes/delivery.js';
 import adminUberRouter from './routes/adminUber.js';
+import paymentsStripeRouter from './routes/paymentsStripe.js';
 import Site from './models/Site.js';
 import Category from './models/Category.js';
 import Product from './models/Product.js';
@@ -28,6 +30,7 @@ const app = express();
 app.use(cors());
 // Mount webhook with raw body BEFORE JSON parser
 app.use('/webhook/uber', express.raw({ type: '*/*' }), webhookUberRouter);
+app.use('/webhook/stripe', express.raw({ type: 'application/json' }), webhookStripeRouter);
 app.use(express.json());
 app.use(morgan("dev"));
 
@@ -224,6 +227,8 @@ app.use('/api/admin', adminUberRouter);
 app.use("/api/shop", shopPublicRouter);
 // Orders (user)
 app.use("/api/shop", shopOrdersRouter);
+// Payments
+app.use('/api/payments/stripe', paymentsStripeRouter);
 // Delivery endpoints by site slug (Uber Direct)
 app.use("/api/delivery", deliveryRouter);
 
