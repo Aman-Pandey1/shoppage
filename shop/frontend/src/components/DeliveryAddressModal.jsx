@@ -100,6 +100,35 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
     return /^\+?[1-9]\d{7,14}$/.test(ph.replace(/[^\d+]/g, ''));
   }
 
+  function normalizePhoneForCountry(raw, countryCode) {
+    try {
+      const cleaned = String(raw || '').replace(/[^\d+]/g, '');
+      const c = String(countryCode || 'CA').toUpperCase();
+      const ccMap = { CA: '1', US: '1', IN: '91', GB: '44', AU: '61' };
+      const usesTrunkZero = new Set(['GB', 'IN', 'AU']);
+      const defaultCc = ccMap[c] || '';
+      if (!cleaned) return '';
+      if (cleaned.startsWith('+')) {
+        let withPlus = '+' + cleaned.replace(/\+/g, '');
+        if (defaultCc && usesTrunkZero.has(c)) {
+          const afterCcIdx = 1 + defaultCc.length;
+          if (withPlus.slice(1, afterCcIdx) === defaultCc && withPlus[afterCcIdx] === '0') {
+            withPlus = '+' + defaultCc + withPlus.slice(afterCcIdx + 1);
+          }
+        }
+        return /^\+[1-9]\d{7,14}$/.test(withPlus) ? withPlus : '';
+      }
+      let national = cleaned;
+      if (usesTrunkZero.has(c) && national.startsWith('0')) national = national.replace(/^0+/, '');
+      if (defaultCc) {
+        const combined = '+' + defaultCc + national;
+        return /^\+[1-9]\d{7,14}$/.test(combined) ? combined : '';
+      }
+      if (/^[1-9]\d{7,14}$/.test(national)) return '+' + national;
+      return '';
+    } catch { return ''; }
+  }
+
   function validate() {
     if (!name.trim()) return 'Name is required';
     if (!isValidPhone(phone)) return 'Enter phone as +1XXXXXXXXXX';
@@ -119,7 +148,8 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         if (invalid) { setError(invalid); setLoading(false); return; }
         address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
       }
-      const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { name, phone, address }, pickupLocationIndex: selectedPickupIndex });
+      const normalizedPhone = normalizePhoneForCountry(phone, country);
+      const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { name, phone: normalizedPhone || phone, address }, pickupLocationIndex: selectedPickupIndex });
       setQuote(q);
       if (typeof q?.distanceKm === 'number') setDistanceKm(q.distanceKm);
       if (typeof q?.customerDeliveryFeeCents === 'number') setDeliveryFeeCents(q.customerDeliveryFeeCents);
@@ -133,8 +163,9 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
     setLoading(true); setError(undefined);
     try {
       const address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
+      const normalizedPhone = normalizePhoneForCountry(phone, country);
       const result = await postJson(`/api/delivery/${siteSlug}/create`, {
-        dropoff: { name, phone, address },
+        dropoff: { name, phone: normalizedPhone || phone, address },
         manifestItems: manifest.map(m => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents || 0, spiceLevel: m.spiceLevel })),
         externalId: `${siteName ? siteName.replace(/\s+/g, '-') : siteSlug}-order-${Date.now()}`,
         pickupLocationIndex: (quote && typeof quote.pickupLocationIndex === 'number') ? quote.pickupLocationIndex : selectedPickupIndex,
