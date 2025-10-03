@@ -168,11 +168,17 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
     try {
       const address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
       const normalizedPhone = normalizePhoneForCountry(phone, country);
+      if (!normalizedPhone) {
+        setError('Enter phone in E.164 format like +14155550123');
+        setLoading(false);
+        return;
+      }
       const result = await postJson(`/api/delivery/${siteSlug}/create`, {
-        dropoff: { name, phone: normalizedPhone || phone, address },
+        dropoff: { name, phone: normalizedPhone, address },
         manifestItems: manifest.map(m => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents || 0, spiceLevel: m.spiceLevel })),
         externalId: `${siteName ? siteName.replace(/\s+/g, '-') : siteSlug}-order-${Date.now()}`,
         pickupLocationIndex: (quote && typeof quote.pickupLocationIndex === 'number') ? quote.pickupLocationIndex : selectedPickupIndex,
+        notes,
       });
       const summary = [addr1, city, postalCode].filter(Boolean).join(', ');
       onConfirmed(result.id || result.delivery_id || '', summary);
@@ -267,25 +273,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
           <button className="primary-btn" disabled={loading} onClick={getQuote} style={{ padding: '12px 16px', borderRadius: 12 }}>{loading ? 'Requesting…' : 'Get quote'}</button>
         ) : (
           <>
-            <button className="primary-btn" disabled={loading} onClick={async () => {
-              // Wrap createDelivery to include notes in payload
-              setLoading(true); setError(undefined);
-              try {
-                const address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
-                const result = await postJson(`/api/delivery/${siteSlug}/create`, {
-                  dropoff: { name, phone, address },
-                  manifestItems: manifest.map(m => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents || 0, spiceLevel: m.spiceLevel })),
-                  externalId: `${siteName ? siteName.replace(/\s+/g, '-') : siteSlug}-order-${Date.now()}`,
-                  pickupLocationIndex: (quote && typeof quote.pickupLocationIndex === 'number') ? quote.pickupLocationIndex : selectedPickupIndex,
-                  notes,
-                });
-                const summary = [addr1, city, postalCode].filter(Boolean).join(', ');
-                onConfirmed(result.id || result.delivery_id || '', summary);
-                onClose();
-              } catch (e) {
-                setError(parseServerError(e) || 'Failed to create delivery');
-              } finally { setLoading(false); }
-            }} style={{ padding: '12px 16px', borderRadius: 12 }}>{loading ? 'Creating…' : 'Confirm delivery'}</button>
+            <button className="primary-btn" disabled={loading} onClick={createDelivery} style={{ padding: '12px 16px', borderRadius: 12 }}>{loading ? 'Creating…' : 'Confirm delivery'}</button>
           </>
         )}
         </div>
