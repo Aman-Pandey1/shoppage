@@ -361,9 +361,9 @@ input:focus, select:focus, textarea:focus {
   display: grid; place-items: center; font-size: 20px; border: 1px solid rgba(255,255,255,0.25);
 }
 .brand__logo img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
-.brand__name { font-weight: 800; letter-spacing: .02em; }
+.brand__name { font-weight: 700; letter-spacing: .01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 52vw; }
 .brand__tagline { font-size: 12px; opacity: .95; }
-.nav-title { justify-self: center; font-weight: 700; letter-spacing: .06em; }
+.nav-title { justify-self: center; font-weight: 600; letter-spacing: .05em; }
 .actions { justify-self: end; display: flex; align-items: center; gap: 8px; }
 .cart-header-btn { position: relative; display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 9999px; border: 1px solid rgba(255,255,255,0.65); background: rgba(255,255,255,0.08); color: #fff; }
 .cart-header-btn:hover { background: rgba(255,255,255,0.15); }
