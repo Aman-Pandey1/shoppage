@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Modal } from './Modal';
 import { normalizeSpiceLevel } from '../lib/assetFinder';
+import { resolveAssetUrl } from '../lib/api';
 // Explicit imports for spice level images (preferred usage)
 // If these files are removed/renamed, the code will gracefully fall back to dynamic lookup
 import mildImg from '../assets/mild.png';
@@ -8,7 +9,7 @@ import mediumImg from '../assets/medium.png';
 import hotImg from '../assets/Hot.png';
 import extraHotImg from '../assets/extra hot.png';
 
-export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) => {
+export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, category }) => {
   const [selected, setSelected] = useState(undefined);
   const baseDefaults = ['Mild', 'Medium', 'Hot'];
   // Dedupe by canonical name and keep a stable order (single set of options)
@@ -50,9 +51,13 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) 
       {product ? (
         <div style={{ position: 'relative', height: 200, borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border)', marginBottom: 12 }}>
           {product.imageUrl ? (
-            <img src={product.imageUrl} alt={product.name} className="img-cover" />
+            <img src={resolveAssetUrl(product.imageUrl)} alt={product.name} className="img-cover" />
           ) : (
-            <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', fontSize: 42, background: 'var(--primary-alpha-08)' }}>🌶️</div>
+            category?.imageUrl ? (
+              <img src={resolveAssetUrl(category.imageUrl)} alt={category?.name || 'Category'} className="img-cover" />
+            ) : (
+              <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', fontSize: 42, background: 'var(--primary-alpha-08)' }}>🌶️</div>
+            )
           )}
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(2,6,23,0.00), rgba(2,6,23,0.35))' }} />
           <div style={{ position: 'absolute', left: 12, bottom: 12, right: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -82,7 +87,16 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) 
                     decoding="async"
                   />
                 ) : (
-                  <div style={{ fontSize: 42 }}>🌶️</div>
+                  category?.imageUrl ? (
+                    <img
+                      src={resolveAssetUrl(category.imageUrl)}
+                      alt={category?.name || 'Category'}
+                      loading="eager"
+                      decoding="async"
+                    />
+                  ) : (
+                    <div style={{ fontSize: 42 }}>🌶️</div>
+                  )
                 )}
               </div>
             </button>
