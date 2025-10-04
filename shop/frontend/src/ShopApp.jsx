@@ -588,7 +588,14 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       {lastDeliveryId ? (
         <div className="muted" style={{ textAlign: 'center', marginTop: 10, fontSize: 12 }}>Last delivery ID: {lastDeliveryId}</div>
       ) : null}
-      <SpiceModal open={spiceOpen} spiceLevels={pendingProduct?.spiceLevels} product={pendingProduct} onCancel={() => setSpiceOpen(false)} onConfirm={confirmSpice} />
+      <SpiceModal
+        open={spiceOpen}
+        spiceLevels={pendingProduct?.spiceLevels}
+        product={pendingProduct}
+        category={(pendingProduct && allCategories.find(c => String(c._id) === String(pendingProduct.categoryId))) || selectedCategory || null}
+        onCancel={() => setSpiceOpen(false)}
+        onConfirm={confirmSpice}
+      />
       <ExtrasModal open={extrasOpen} groups={pendingProduct?.extraOptionGroups} product={pendingProduct} onCancel={() => setExtrasOpen(false)} onConfirm={confirmExtras} />
       <VariantModal open={variantOpen} variants={pendingProduct?.variants || []} product={pendingProduct} onCancel={() => setVariantOpen(false)} onConfirm={confirmVariant} />
       <AddToCartToast />
