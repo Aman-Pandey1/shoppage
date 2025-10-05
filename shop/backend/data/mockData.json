@@ -2061,6 +2061,63 @@
   ],
   "orders": [
     {
+      "_id": "o-1759550732971",
+      "createdAt": "2025-10-04T04:05:32.971Z",
+      "site": "mock-site",
+      "userEmail": "admin@example.com",
+      "items": [
+        {
+          "name": "Flavoured Chai",
+          "quantity": 12,
+          "priceCents": 495,
+          "spiceLevel": "extra-hot"
+        }
+      ],
+      "totalCents": 6737,
+      "taxCents": 297,
+      "tipCents": 0,
+      "deliveryFeeCents": 500,
+      "deliveryFeeRestaurantCents": 500,
+      "externalId": "New-Asian-Village-order-1759550732958",
+      "uberDeliveryId": "d-1759550732970",
+      "uberTrackingUrl": "https://www.uber.com/",
+      "uberStatus": "courier_accepted",
+      "fulfillmentType": "delivery",
+      "dropoff": {
+        "name": "New Assian village",
+        "phone": "+16046624700",
+        "address": {
+          "streetAddress": [
+            "1005,parsons road NW",
+            "aMAN"
+          ],
+          "city": "Edmonton",
+          "province": "AB",
+          "postalCode": "T6X 1S4",
+          "country": "CA"
+        }
+      },
+      "pickup": {
+        "location": {
+          "name": "New Assian village",
+          "phone": "+5871234567",
+          "address": {
+            "streetAddress": [
+              "1005,parsons road NW"
+            ],
+            "city": "Edmonton",
+            "province": "AB",
+            "postalCode": "T6X 1S4",
+            "country": "CA"
+          }
+        }
+      },
+      "meta": {
+        "distanceKm": 9.904462398520788
+      },
+      "notes": ""
+    },
+    {
       "_id": "o-1759510139468",
       "createdAt": "2025-10-03T16:48:59.468Z",
       "site": "mock-site",
