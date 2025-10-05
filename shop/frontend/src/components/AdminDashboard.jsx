@@ -224,6 +224,9 @@ export const AdminDashboard = () => {
   if (loading) return <div>Loading admin...</div>;
   if (error) return <div style={{ color: 'red' }}>Failed to load admin: {error}</div>;
 
+  const selectedSite = sites.find(s => s._id === selectedSiteId);
+  const siteLogoSrc = selectedSite?.logoUrl ? resolveAssetUrl(selectedSite.logoUrl) : '';
+
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 16 }}>
       <aside className="card" style={{ padding: 12, borderRadius: 'var(--radius)' }}>
@@ -541,7 +544,6 @@ export const AdminDashboard = () => {
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       {['Mild','Medium','Hot','Extra Hot'].map((lvl) => {
                         const canonical = normalizeSpiceLevel(lvl);
-                        const icon = getSpiceBadge(canonical);
                         return (
                           <label key={lvl} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, border: '1px solid var(--border)', padding: '6px 10px', borderRadius: 8 }}>
                             <input type="checkbox" checked={(editing.spiceLevels || []).includes(lvl)} onChange={(e) => {
@@ -549,11 +551,9 @@ export const AdminDashboard = () => {
                               if (e.target.checked) set.add(lvl); else set.delete(lvl);
                               setEditing({ ...editing, spiceLevels: Array.from(set) });
                             }} />
-                            {icon ? (
-                              <img src={icon} alt={canonical} style={{ width: 18, height: 18, objectFit: 'contain' }} />
-                            ) : (
-                              <span aria-hidden>🌶️</span>
-                            )}
+                            {siteLogoSrc ? (
+                              <img src={siteLogoSrc} alt={canonical} style={{ width: 18, height: 18, objectFit: 'contain' }} />
+                            ) : null}
                             <span>{lvl}</span>
                           </label>
                         );
