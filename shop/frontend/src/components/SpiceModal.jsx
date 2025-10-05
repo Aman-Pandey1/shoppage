@@ -1,20 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import { Modal } from './Modal';
-import { getSpiceBadge, normalizeSpiceLevel } from '../lib/assetFinder';
+import { getSpiceBadge } from '../lib/assetFinder';
 
 // Show the site's logo instead of chilli icons for spice options
 export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, siteLogoSrc }) => {
   const [selected, setSelected] = useState(undefined);
 
   const levels = useMemo(() => {
-    const defaults = ['mild', 'medium', 'hot', 'extra-hot'];
-    try {
-      const raw = Array.isArray(spiceLevels) ? spiceLevels : Array.isArray(product?.spiceLevels) ? product.spiceLevels : [];
-      const canonical = raw.map((lvl) => normalizeSpiceLevel(lvl));
-      const unique = Array.from(new Set(canonical)).filter(Boolean);
-      return unique.length ? unique : defaults;
-    } catch { return defaults; }
-  }, [spiceLevels, product && product.spiceLevels && product.spiceLevels.length]);
+    // Always show full set to ensure consistency across products
+    return ['mild', 'medium', 'hot', 'extra-hot'];
+  }, []);
 
   // Resolve per-level image from assets; fallback to site's logo if provided
   const getSpiceImage = (level) => {
