@@ -273,7 +273,41 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
           <button className="primary-btn" disabled={loading} onClick={getQuote} style={{ padding: '12px 16px', borderRadius: 12 }}>{loading ? 'Requesting…' : 'Get quote'}</button>
         ) : (
           <>
-            <button className="primary-btn" disabled={loading} onClick={createDelivery} style={{ padding: '12px 16px', borderRadius: 12 }}>{loading ? 'Creating…' : 'Confirm delivery'}</button>
+            <button
+              className="primary-btn"
+              disabled={loading}
+              onClick={async () => {
+                setLoading(true); setError(undefined);
+                try {
+                  const token = localStorage.getItem('auth_token');
+                  const payload = {
+                    dropoff: {
+                      name,
+                      phone: normalizePhoneForCountry(phone, country) || phone,
+                      address: { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country },
+                    },
+                    manifestItems: (Array.isArray(manifest) ? manifest : []).map(m => ({ name: m.name, quantity: m.quantity, size: m.size, priceCents: m.priceCents || 0, spiceLevel: m.spiceLevel })),
+                    pickupLocationIndex: selectedPickupIndex,
+                    notes,
+                  };
+                  const resp = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/payments/stripe/${siteSlug}/checkout/delivery`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+                    body: JSON.stringify(payload),
+                  });
+                  if (!resp.ok) throw new Error(await resp.text());
+                  const data = await resp.json();
+                  const url = data?.url;
+                  if (!url) throw new Error('Failed to start payment');
+                  window.location.href = url;
+                } catch (e) {
+                  setError(parseServerError(e) || 'Failed to start payment');
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              style={{ padding: '12px 16px', borderRadius: 12 }}
+            >{loading ? 'Redirecting…' : 'Pay & place delivery order'}</button>
           </>
         )}
         </div>

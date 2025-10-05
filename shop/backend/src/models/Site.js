@@ -8,6 +8,8 @@ const SiteSchema = new mongoose.Schema({
 	brandColor: { type: String, default: '#0ea5e9' },
 	// Optional logo URL displayed in the shop header
 	logoUrl: { type: String },
+	// Stripe Connect: connected account for this site (acct_...)
+	stripeAccountId: { type: String },
 	uberCustomerId: { type: String },
 	// Flat delivery fee in cents applied to delivery orders only
 	deliveryFeeCents: { type: Number, default: 0 },

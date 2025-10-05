@@ -26,7 +26,7 @@ router.get('/', requireAdmin, async (_req, res) => {
 
 router.post('/', requireAdmin, async (req, res) => {
 	try {
-		const { name, slug, domains, uberCustomerId, pickup, brandColor, locations, cities, hours, deliveryFeeCents, splitDeliveryFee, logoUrl } = req.body || {};
+		const { name, slug, domains, uberCustomerId, pickup, brandColor, locations, cities, hours, deliveryFeeCents, splitDeliveryFee, logoUrl, stripeAccountId } = req.body || {};
 		if (!name || !slug) return res.status(400).json({ error: 'name and slug are required' });
 		const mock = req.app.locals.mockData;
     if (mock) {
@@ -35,7 +35,7 @@ router.post('/', requireAdmin, async (req, res) => {
 			try { saveMockData(req.app.locals.mockData); } catch {}
 			return res.status(201).json(created);
 		}
-		const site = await Site.create({ name, slug, domains: domains || [], uberCustomerId, pickup, locations: Array.isArray(locations) ? locations : [], cities: Array.isArray(cities) ? cities : [], hours, deliveryFeeCents: Number(deliveryFeeCents) || 0, splitDeliveryFee: !!splitDeliveryFee, brandColor: brandColor || '#0ea5e9', logoUrl, isActive: true });
+		const site = await Site.create({ name, slug, domains: domains || [], uberCustomerId, pickup, locations: Array.isArray(locations) ? locations : [], cities: Array.isArray(cities) ? cities : [], hours, deliveryFeeCents: Number(deliveryFeeCents) || 0, splitDeliveryFee: !!splitDeliveryFee, brandColor: brandColor || '#0ea5e9', logoUrl, stripeAccountId, isActive: true });
 		res.status(201).json(site);
 	} catch (err) {
 		res.status(400).json({ error: err.message });
@@ -45,17 +45,17 @@ router.post('/', requireAdmin, async (req, res) => {
 router.patch('/:siteId', requireAdmin, async (req, res) => {
 	try {
 		const { siteId } = req.params;
-		const { name, slug, domains, isActive, uberCustomerId, pickup, brandColor, locations, cities, hours, deliveryFeeCents, splitDeliveryFee, logoUrl } = req.body || {};
+		const { name, slug, domains, isActive, uberCustomerId, pickup, brandColor, locations, cities, hours, deliveryFeeCents, splitDeliveryFee, logoUrl, stripeAccountId } = req.body || {};
 		const mock = req.app.locals.mockData;
 		if (mock) {
 			const idx = mock.sites.findIndex((s) => s._id === siteId);
 			if (idx === -1) return res.status(404).json({ error: 'Not found' });
-			const updated = { ...mock.sites[idx], ...(name !== undefined ? { name } : {}), ...(slug !== undefined ? { slug } : {}), ...(domains !== undefined ? { domains } : {}), ...(isActive !== undefined ? { isActive } : {}), ...(uberCustomerId !== undefined ? { uberCustomerId } : {}), ...(pickup !== undefined ? { pickup } : {}), ...(brandColor !== undefined ? { brandColor } : {}), ...(locations !== undefined ? { locations } : {}), ...(cities !== undefined ? { cities } : {}), ...(hours !== undefined ? { hours } : {}), ...(deliveryFeeCents !== undefined ? { deliveryFeeCents: Number(deliveryFeeCents) || 0 } : {}), ...(splitDeliveryFee !== undefined ? { splitDeliveryFee: !!splitDeliveryFee } : {}), ...(logoUrl !== undefined ? { logoUrl } : {}) };
+			const updated = { ...mock.sites[idx], ...(name !== undefined ? { name } : {}), ...(slug !== undefined ? { slug } : {}), ...(domains !== undefined ? { domains } : {}), ...(isActive !== undefined ? { isActive } : {}), ...(uberCustomerId !== undefined ? { uberCustomerId } : {}), ...(pickup !== undefined ? { pickup } : {}), ...(brandColor !== undefined ? { brandColor } : {}), ...(locations !== undefined ? { locations } : {}), ...(cities !== undefined ? { cities } : {}), ...(hours !== undefined ? { hours } : {}), ...(deliveryFeeCents !== undefined ? { deliveryFeeCents: Number(deliveryFeeCents) || 0 } : {}), ...(splitDeliveryFee !== undefined ? { splitDeliveryFee: !!splitDeliveryFee } : {}), ...(logoUrl !== undefined ? { logoUrl } : {}), ...(stripeAccountId !== undefined ? { stripeAccountId } : {}) };
 			mock.sites[idx] = updated;
 			try { saveMockData(req.app.locals.mockData); } catch {}
 			return res.json(updated);
 		}
-		const site = await Site.findByIdAndUpdate(siteId, { name, slug, domains, isActive, uberCustomerId, pickup, brandColor, locations, cities, hours, deliveryFeeCents: deliveryFeeCents !== undefined ? Number(deliveryFeeCents) || 0 : undefined, splitDeliveryFee: splitDeliveryFee !== undefined ? !!splitDeliveryFee : undefined, logoUrl }, { new: true });
+		const site = await Site.findByIdAndUpdate(siteId, { name, slug, domains, isActive, uberCustomerId, pickup, brandColor, locations, cities, hours, deliveryFeeCents: deliveryFeeCents !== undefined ? Number(deliveryFeeCents) || 0 : undefined, splitDeliveryFee: splitDeliveryFee !== undefined ? !!splitDeliveryFee : undefined, logoUrl, stripeAccountId }, { new: true });
 		if (!site) return res.status(404).json({ error: 'Not found' });
 		res.json(site);
 	} catch (err) {

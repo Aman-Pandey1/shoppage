@@ -1,35 +1,18 @@
 import React, { useMemo, useState } from 'react';
 import { Modal } from './Modal';
 
-import mildImage from '../assets/mild.png';
-import mediumImage from '../assets/medium.png';
-import hotImage from '../assets/Hot.png';
-import extraHotImage from '../assets/extra hot.png';
-
-export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) => {
+// Show the site's logo instead of chilli icons for spice options
+export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, siteLogoSrc }) => {
   const [selected, setSelected] = useState(undefined);
-
-  const spiceImages = {
-    mild: mildImage,
-    medium: mediumImage,
-    hot: hotImage,
-    'extra-hot': extraHotImage,
-    'extra hot': extraHotImage,
-  };
 
   const levels = useMemo(() => ['mild', 'medium', 'hot', 'extra-hot'], []);
 
-  const getSpiceImage = (canonicalLevel) => spiceImages[canonicalLevel] || mildImage;
+  const getSpiceImage = () => siteLogoSrc || '';
 
   const handleSelect = (level) => setSelected(level);
 
-  const importedSpiceImages = {
-    mild: mildImage,
-    medium: mediumImage,
-    hot: hotImage,
-    'extra-hot': extraHotImage,
-    'extra hot': extraHotImage,
-  };
+  // Unused now that we always show logo, kept for compatibility
+  const importedSpiceImages = {};
 
   return (
     <Modal open={open} onClose={onCancel} title="Select Spice Level">
@@ -57,11 +40,12 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) 
                 height: '100%',
                 display: 'grid',
                 placeItems: 'center',
-                fontSize: 42,
-                background: 'rgba(255, 68, 68, 0.08)',
+                background: 'rgba(14, 165, 233, 0.06)',
               }}
             >
-              🌶️
+              {siteLogoSrc ? (
+                <img src={siteLogoSrc} alt="logo" style={{ width: 96, height: 96, objectFit: 'contain', opacity: 0.85 }} />
+              ) : null}
             </div>
           )}
           <div
@@ -115,7 +99,7 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) 
         }}
       >
         {levels.map((canonical) => {
-          const imgSrc = getSpiceImage(canonical);
+          const imgSrc = getSpiceImage();
           const active = selected === canonical;
           const displayName = canonical
             .split('-')
@@ -142,18 +126,22 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product }) 
                 justifyContent: 'center',
               }}
             >
-              {/* IMAGE BIG + CENTER */}
-              <img
-                src={imgSrc}
-                alt={`${canonical} spice level`}
-                style={{
-                  width: '140px',
-                  height: '140px',
-                  objectFit: 'contain',
-                  filter: active ? 'none' : 'grayscale(25%)',
-                  transition: 'all 0.2s ease',
-                }}
-              />
+              {/* IMAGE BIG + CENTER (logo) */}
+              {imgSrc ? (
+                <img
+                  src={imgSrc}
+                  alt={`${canonical} spice level`}
+                  style={{
+                    width: '140px',
+                    height: '140px',
+                    objectFit: 'contain',
+                    filter: active ? 'none' : 'grayscale(25%)',
+                    transition: 'all 0.2s ease',
+                  }}
+                />
+              ) : (
+                <div style={{ width: 140, height: 140 }} />
+              )}
               {/* TEXT */}
               <div
                 style={{
