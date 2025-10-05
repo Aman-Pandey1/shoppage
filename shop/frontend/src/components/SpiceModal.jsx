@@ -1,13 +1,29 @@
 import React, { useMemo, useState } from 'react';
 import { Modal } from './Modal';
+import { getSpiceBadge, normalizeSpiceLevel } from '../lib/assetFinder';
 
 // Show the site's logo instead of chilli icons for spice options
 export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, siteLogoSrc }) => {
   const [selected, setSelected] = useState(undefined);
 
-  const levels = useMemo(() => ['mild', 'medium', 'hot', 'extra-hot'], []);
+  const levels = useMemo(() => {
+    const defaults = ['mild', 'medium', 'hot', 'extra-hot'];
+    try {
+      const raw = Array.isArray(spiceLevels) ? spiceLevels : Array.isArray(product?.spiceLevels) ? product.spiceLevels : [];
+      const canonical = raw.map((lvl) => normalizeSpiceLevel(lvl));
+      const unique = Array.from(new Set(canonical)).filter(Boolean);
+      return unique.length ? unique : defaults;
+    } catch { return defaults; }
+  }, [spiceLevels, product && product.spiceLevels && product.spiceLevels.length]);
 
-  const getSpiceImage = () => siteLogoSrc || '';
+  // Resolve per-level image from assets; fallback to site's logo if provided
+  const getSpiceImage = (level) => {
+    try {
+      return getSpiceBadge(level) || siteLogoSrc || '';
+    } catch {
+      return siteLogoSrc || '';
+    }
+  };
 
   const handleSelect = (level) => setSelected(level);
 
@@ -99,7 +115,7 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
         }}
       >
         {levels.map((canonical) => {
-          const imgSrc = getSpiceImage();
+          const imgSrc = getSpiceImage(canonical);
           const active = selected === canonical;
           const displayName = canonical
             .split('-')
@@ -135,6 +151,8 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
                     width: '140px',
                     height: '140px',
                     objectFit: 'contain',
+                    background: 'transparent',
+                    borderRadius: 12,
                     filter: active ? 'none' : 'grayscale(25%)',
                     transition: 'all 0.2s ease',
                   }}

@@ -41,6 +41,25 @@ echo "VITE_API_URL=http://localhost:4000" > .env
 npm install
 npm run dev
 ```
+## Stripe Connect (money flow per-restaurant)
+
+- Each site can have its own Stripe connected account. In Admin → Settings, set `Stripe Account ID (acct_...)` for that site.
+- Pickup checkout: if `stripeAccountId` is set, payments are created on behalf of that account and funds are routed directly to the restaurant.
+- Delivery checkout: if `stripeAccountId` is set, the payment is created on behalf of the restaurant and we collect our delivery fee via `application_fee_amount`. If `splitDeliveryFee` is enabled for the site, the customer pays half and the remainder is charged as an application fee; otherwise, the full delivery fee is charged to the customer and we still collect it via the application fee.
+
+### Required env vars (backend/.env)
+- `STRIPE_SECRET_KEY`: Your platform secret key.
+- `STRIPE_WEBHOOK_SECRET`: Webhook signing secret from the Stripe Dashboard.
+- `STRIPE_CURRENCY`: Optional, like `usd`.
+- `FRONTEND_URL`: Public URL of the frontend (used for redirect URLs), optional in dev.
+- `MIN_ORDER_CENTS`: Optional minimum order (e.g., 5000 for $50).
+- `USE_MOCK_DATA`: `true` to run without MongoDB.
+- `MONGO_URI`: Provide when `USE_MOCK_DATA=false`.
+
+### Webhook
+- Expose `POST /webhook/stripe` publicly and configure the endpoint in Stripe with the same signing secret.
+- On `checkout.session.completed`, the order is marked paid and, for delivery orders, Uber Direct is created if configured.
+
 Open the printed local URL.
 
 ## Switch to real MongoDB
