@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import Stripe from 'stripe';
 import Order from '../models/Order.js';
+import Site from '../models/Site.js';
+import { createDelivery } from '../services/uberDirect.js';
+import { sendOrderEmail } from '../utils/mailer.js';
 
 const router = Router();
 
@@ -43,9 +46,39 @@ router.post('/', async (req, res) => {
             const idx = list.findIndex((o) => String(o._id) === String(orderId));
             if (idx >= 0) {
               list[idx].status = 'paid';
+              try {
+                const site = (req.app.locals.mockData.sites || []).find((s) => s._id === String(list[idx].site));
+                const siteName = site?.name || '';
+                await sendOrderEmail({ to: list[idx].userEmail, siteName, orderId, items: list[idx].items, totalCents: list[idx].totalCents, deliveryFeeCents: list[idx].deliveryFeeCents, fulfillmentType: list[idx].fulfillmentType, trackingUrl: list[idx].uberTrackingUrl });
+              } catch {}
             }
           } else {
-            await Order.findByIdAndUpdate(orderId, { status: 'paid' });
+            const order = await Order.findByIdAndUpdate(orderId, { status: 'paid' }, { new: true });
+            try {
+              // If delivery order without Uber delivery yet, create it now
+              if (order && order.fulfillmentType === 'delivery' && !order.uberDeliveryId) {
+                const site = await Site.findById(order.site);
+                if (site?.uberCustomerId && order?.dropoff && order?.pickup?.location) {
+                  const delivery = await createDelivery({
+                    customerId: site.uberCustomerId,
+                    pickup: order.pickup.location,
+                    dropoff: order.dropoff,
+                    manifestItems: (order.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel })),
+                    tip: 0,
+                    externalId: String(order._id),
+                  });
+                  const trackingUrl = delivery?.tracking_url || delivery?.trackingUrl || delivery?.share_url || '';
+                  const status = delivery?.status || delivery?.state || delivery?.current_status || '';
+                  await Order.findByIdAndUpdate(order._id, { uberDeliveryId: delivery?.id || delivery?.delivery_id, uberTrackingUrl: trackingUrl, uberStatus: status });
+                }
+              }
+            } catch (e) {
+              // swallow Uber errors; order remains paid
+            }
+            try {
+              const site = await Site.findById(order.site);
+              await sendOrderEmail({ to: order.userEmail, siteName: site?.name || '', orderId: order._id, items: order.items, totalCents: order.totalCents, deliveryFeeCents: order.deliveryFeeCents, fulfillmentType: order.fulfillmentType, trackingUrl: order.uberTrackingUrl });
+            } catch {}
           }
         }
         break;

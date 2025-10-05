@@ -13,6 +13,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
   const [country, setCountry] = React.useState(site?.pickup?.address?.country || 'CA');
   const [uberCustomerId, setUberCustomerId] = React.useState(site?.uberCustomerId || '');
   const [brandColor, setBrandColor] = React.useState(site?.brandColor || '#0ea5e9');
+  const [stripeAccountId, setStripeAccountId] = React.useState(site?.stripeAccountId || '');
   const [locations, setLocations] = React.useState(Array.isArray(site?.locations) ? site.locations : []);
   const [cities, setCities] = React.useState(Array.isArray(site?.cities) ? site.cities : []);
   const [deliveryFee, setDeliveryFee] = React.useState(((Number(site?.deliveryFeeCents)||0)/100).toFixed(2));
@@ -53,6 +54,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
     setCities(Array.isArray(site?.cities) ? site.cities : []);
     setDeliveryFee(((Number(site?.deliveryFeeCents)||0)/100).toFixed(2));
     setSplitDeliveryFee(!!site?.splitDeliveryFee);
+    setStripeAccountId(site?.stripeAccountId || '');
     setHours(site?.hours || {
       mon: { open: '10:00', close: '22:00', closed: false },
       tue: { open: '10:00', close: '22:00', closed: false },
@@ -132,6 +134,13 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
           <div className="muted" style={{ fontSize: 12 }}>Preview</div>
         </div>
       ) : null}
+
+      <div style={{ gridColumn: '1 / -1', fontWeight: 800, marginTop: 8 }}>Payments</div>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span>Stripe Account ID (acct_...)</span>
+        <input value={stripeAccountId} onChange={(e) => setStripeAccountId(e.target.value)} placeholder="acct_123..." />
+        <span className="muted" style={{ fontSize: 12 }}>Each website should have its own connected Stripe account.</span>
+      </label>
 
       <div style={{ gridColumn: '1 / -1', fontWeight: 800, marginTop: 8 }}>Delivery settings</div>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -249,6 +258,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
             splitDeliveryFee: !!splitDeliveryFee,
             hours,
             logoUrl,
+            stripeAccountId,
             pickup: {
               name: pickupName,
               phone: pickupPhone,

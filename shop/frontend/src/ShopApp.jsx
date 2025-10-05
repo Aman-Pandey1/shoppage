@@ -593,6 +593,12 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         spiceLevels={pendingProduct?.spiceLevels}
         product={pendingProduct}
         category={(pendingProduct && allCategories.find(c => String(c._id) === String(pendingProduct.categoryId))) || selectedCategory || null}
+        siteLogoSrc={(function(){
+          try {
+            const el = document.querySelector('.brand__logo img');
+            return el ? el.getAttribute('src') : '';
+          } catch { return ''; }
+        })()}
         onCancel={() => setSpiceOpen(false)}
         onConfirm={confirmSpice}
       />
