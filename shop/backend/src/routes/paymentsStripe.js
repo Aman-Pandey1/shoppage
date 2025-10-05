@@ -230,7 +230,7 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
       totalCents,
       taxCents,
       deliveryFeeCents: customerDeliveryFeeCents,
-      deliveryFeeRestaurantCents,
+      deliveryFeeRestaurantCents: restaurantDeliveryFeeCents,
       fulfillmentType: 'delivery',
       dropoff,
       pickup: { location: pickup },
