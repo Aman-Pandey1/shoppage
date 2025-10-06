@@ -111,121 +111,122 @@
         }
       },
       "deliveryFeeCents": 804,
-      "logoUrl": "/uploads/site-mock-site-1759510612981-er8l9i.png",
+      "logoUrl": "/uploads/site-mock-site-1759720954109-yfutpv.png",
       "domains": [],
-      "splitDeliveryFee": true
+      "splitDeliveryFee": true,
+      "stripeAccountId": ""
     }
   ],
   "categories": [
     {
       "_id": "c-1758638422977-4ydn",
       "name": "Indo Chinese",
-      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-4ydn-1758858490679-tqz60w.png",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-4ydn-1759721076257-p4go78.png",
       "sortIndex": 0,
       "site": "mock-site"
     },
     {
       "_id": "c-1758638422977-vtms",
       "name": "Daily Special",
-      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-vtms-1758858484418-hv20qu.png",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-vtms-1759721060382-0hcezm.png",
       "sortIndex": 0,
       "site": "mock-site"
     },
     {
       "_id": "c-1758638422977-o0ko",
       "name": "Beverages",
-      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-o0ko-1758858469602-paajlo.png",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-o0ko-1759721043395-82w4id.png",
       "sortIndex": 0,
       "site": "mock-site"
     },
     {
       "_id": "c-1758638422977-js5s",
       "name": "Speciality Desserts",
-      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-js5s-1758858570007-dq0b5e.png",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-js5s-1759721141768-bb4ra2.png",
       "sortIndex": 0,
       "site": "mock-site"
     },
     {
       "_id": "c-1758638422977-uor7",
       "name": "Sides",
-      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-uor7-1758858534769-f3ieum.png",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-uor7-1759721121664-iy4tn4.png",
       "sortIndex": 0,
       "site": "mock-site"
     },
     {
       "_id": "c-1758638422977-xa2a",
       "name": "Naan-Roti-Other Breads",
-      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-xa2a-1758858498531-n30txq.png",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-xa2a-1759721085572-icgdtr.png",
       "sortIndex": 0,
       "site": "mock-site"
     },
     {
       "_id": "c-1758638422977-znnl",
       "name": "Rice and Biryani",
-      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-znnl-1758858505956-r2ytha.png",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-znnl-1759721094247-0pbf1r.png",
       "sortIndex": 0,
       "site": "mock-site"
     },
     {
       "_id": "c-1758638422977-kbd8",
       "name": "Tandoori",
-      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-kbd8-1758858592015-b0zybs.png",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-kbd8-1759721150685-qtutsv.png",
       "sortIndex": 0,
       "site": "mock-site"
     },
     {
       "_id": "c-1758638422977-2p6q",
       "name": "Vegetarian Dishes",
-      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-2p6q-1758858600297-6vj9nj.png",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-2p6q-1759721160006-h790hp.png",
       "sortIndex": 0,
       "site": "mock-site"
     },
     {
       "_id": "c-1758638422977-ktks",
       "name": "Wraps",
-      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-ktks-1758858609125-qgyj4b.png",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-ktks-1759721167168-wb946p.png",
       "sortIndex": 0,
       "site": "mock-site"
     },
     {
       "_id": "c-1758638422977-1pjc",
       "name": "Salads",
-      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-1pjc-1758858513168-0vlg9f.png",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-1pjc-1759721103338-2h590w.png",
       "sortIndex": 0,
       "site": "mock-site"
     },
     {
       "_id": "c-1758638422977-agpv",
       "name": "Curry",
-      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-agpv-1758858476705-2acu6t.png",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-agpv-1759721051027-3d7j7f.png",
       "sortIndex": 0,
       "site": "mock-site"
     },
     {
       "_id": "c-1758638422977-8jsv",
       "name": "Shorba Soups",
-      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-8jsv-1758858522849-i9ipkj.png",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-8jsv-1759721111979-65jnot.png",
       "sortIndex": 0,
       "site": "mock-site"
     },
     {
       "_id": "c-1758638422977-v6tv",
       "name": "Specialities",
-      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-v6tv-1758858545267-743g40.png",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-v6tv-1759721132601-13bazz.png",
       "sortIndex": 0,
       "site": "mock-site"
     },
     {
       "_id": "c-1758638422977-dg9k",
       "name": "Appetizers (Part-2)",
-      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-dg9k-1758858461207-o4xivx.png",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-dg9k-1759721033898-0yu5kv.png",
       "sortIndex": 0,
       "site": "mock-site"
     },
     {
       "_id": "c-1758638422976-x7gs",
       "name": "Appetizers (Part-1)",
-      "imageUrl": "/uploads/cat-mock-site-c-1758638422976-x7gs-1758858453263-3q2sn4.png",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422976-x7gs-1759721024396-q6my05.png",
       "sortIndex": 0,
       "site": "mock-site"
     },
@@ -1238,6 +1239,11 @@
         {
           "key": "nonvege",
           "label": "nonvege",
+          "priceDelta": 0
+        },
+        {
+          "key": "test",
+          "label": "test",
           "priceDelta": 0
         }
       ]

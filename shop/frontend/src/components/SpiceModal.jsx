@@ -1,8 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { Modal } from './Modal';
-import { getSpiceBadge } from '../lib/assetFinder';
 
-// Show the site's logo instead of chilli icons for spice options
+// Import spice images from assets folder
+import mildImage from '../assets/mild.png';
+import mediumImage from '../assets/medium.png';
+import hotImage from '../assets/Hot.png';
+import extraHotImage from '../assets/extra hot.png';
+
 export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, siteLogoSrc }) => {
   const [selected, setSelected] = useState(undefined);
 
@@ -11,19 +15,18 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
     return ['mild', 'medium', 'hot', 'extra-hot'];
   }, []);
 
-  // Resolve per-level image from assets; fallback to site's logo if provided
+  // Direct image mapping from imported assets
   const getSpiceImage = (level) => {
-    try {
-      return getSpiceBadge(level) || siteLogoSrc || '';
-    } catch {
-      return siteLogoSrc || '';
-    }
+    const imageMap = {
+      'mild': mildImage,
+      'medium': mediumImage,
+      'hot': hotImage,
+      'extra-hot': extraHotImage
+    };
+    return imageMap[level] || siteLogoSrc || '';
   };
 
   const handleSelect = (level) => setSelected(level);
-
-  // Unused now that we always show logo, kept for compatibility
-  const importedSpiceImages = {};
 
   return (
     <Modal open={open} onClose={onCancel} title="Select Spice Level">
@@ -137,7 +140,7 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
                 justifyContent: 'center',
               }}
             >
-              {/* IMAGE BIG + CENTER (logo) */}
+              {/* IMAGE FROM ASSETS FOLDER */}
               {imgSrc ? (
                 <img
                   src={imgSrc}
