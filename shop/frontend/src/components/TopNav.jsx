@@ -207,7 +207,7 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
       </div>
 
       {/* Add CSS for responsive behavior */}
-      <style jsx>{`
+      <style>{`
         @media (min-width: 1024px) {
           .cart-header-btn {
             display: none !important;
