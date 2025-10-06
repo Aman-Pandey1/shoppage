@@ -60,9 +60,12 @@ const canonicalToExactSpice = {
  * Find the best-matching asset by checking if the filename contains
  * any of the provided keywords (case-insensitive). Returns the URL or undefined.
  */
-export function findAssetByKeywords(keywords) {
+export function findAssetByKeywords(keywords, options = {}) {
   if (!Array.isArray(keywords) || keywords.length === 0) return undefined;
   const lowered = keywords.map((k) => String(k || '').toLowerCase());
+  const excludeList = Array.isArray(options.exclude)
+    ? options.exclude.map((k) => String(k || '').toLowerCase())
+    : [];
 
   // 1) Prefer exact filename matches for common names
   //    Accept both with and without extension, and allow spaces/underscores/hyphens
@@ -92,17 +95,29 @@ export function findAssetByKeywords(keywords) {
   let best = undefined;
   let bestScore = 0;
   for (const asset of allAssets) {
+    const filename = asset.filename;
+    // Exclude filenames that contain any excluded tokens
+    if (excludeList.length > 0) {
+      let isExcluded = false;
+      for (const ex of excludeList) {
+        if (!ex) continue;
+        if (filename.includes(ex)) { isExcluded = true; break; }
+      }
+      if (isExcluded) continue;
+    }
+
     let score = 0;
     for (const key of lowered) {
       if (!key) continue;
-      if (asset.filename.includes(key)) score += 1;
+      if (filename.includes(key)) score += 1;
     }
     if (score > bestScore) {
       best = asset;
       bestScore = score;
     }
   }
-  return best?.url;
+  // Only return a result if at least one keyword matched
+  return bestScore > 0 ? best?.url : undefined;
 }
 
 // --- Fuzzy helpers for robust spice detection ---
@@ -221,19 +236,31 @@ export function getSpiceBadge(level) {
   if (canonical === 'hot') {
     return (
       tryExactBaseNames(['hot', 'chilli-red', 'chili-red']) ||
-      findAssetByKeywords(['hot', 'spicy', 'level3', 'lvl3', '3', 'spice', 'red', 'chilli', 'pepper'])
+      // Avoid selecting extra-hot variants when looking for hot
+      findAssetByKeywords(
+        ['hot', 'spicy', 'level3', 'lvl3', '3', 'spice', 'red', 'chilli', 'pepper'],
+        { exclude: ['extra', 'xhot', 'x-hot', 'xxhot', 'xx-hot'] }
+      )
     );
   }
   if (canonical === 'medium') {
     return (
       tryExactBaseNames(['medium', 'chilli-orange', 'chili-orange']) ||
-      findAssetByKeywords(['medium', 'moderate', 'level2', 'lvl2', '2', 'spice', 'orange'])
+      // Avoid mild/hot/extra-hot and off-color picks
+      findAssetByKeywords(
+        ['medium', 'moderate', 'level2', 'lvl2', '2', 'spice', 'orange'],
+        { exclude: ['mild', 'hot', 'extra', 'xhot', 'x-hot', 'xxhot', 'xx-hot', 'red', 'green'] }
+      )
     );
   }
   // default/mild
   return (
     tryExactBaseNames(['mild', 'chilli-green', 'chili-green']) ||
-    findAssetByKeywords(['mild', 'low', 'level1', 'lvl1', '1', 'spice', 'green'])
+    // Avoid medium/hot/extra-hot and off-color picks
+    findAssetByKeywords(
+      ['mild', 'low', 'level1', 'lvl1', '1', 'spice', 'green'],
+      { exclude: ['medium', 'hot', 'extra', 'xhot', 'x-hot', 'xxhot', 'xx-hot', 'red', 'orange'] }
+    )
   );
 }
 
