@@ -126,13 +126,15 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     }
   }
 
-  function confirmSpice(spice) {
+  function confirmSpice(spice, quantityFromModal) {
+    const confirmedQty = Math.max(1, Math.min(99, Number(quantityFromModal || pendingQuantity) || 1));
     setPendingSpice(spice);
+    setPendingQuantity(confirmedQty);
     setSpiceOpen(false);
     if (pendingProduct && pendingProduct.extraOptionGroups && pendingProduct.extraOptionGroups.length > 0) {
       setExtrasOpen(true);
     } else if (pendingProduct) {
-      addItem({ product: pendingProduct, variant: pendingVariant || undefined, spiceLevel: spice, quantity: pendingQuantity });
+      addItem({ product: pendingProduct, variant: pendingVariant || undefined, spiceLevel: spice, quantity: confirmedQty });
       setPendingProduct(null);
       setPendingSpice(undefined);
       setPendingVariant(null);
@@ -599,6 +601,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
             return el ? el.getAttribute('src') : '';
           } catch { return ''; }
         })()}
+        initialQuantity={pendingQuantity}
         onCancel={() => setSpiceOpen(false)}
         onConfirm={confirmSpice}
       />

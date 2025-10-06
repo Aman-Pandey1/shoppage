@@ -191,7 +191,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   return (
     <Modal open={open} onClose={onClose} title="Delivery details">
       {error ? <div style={{ color: 'var(--danger)', marginBottom: 8 }}>{error}</div> : null}
-      <div className="muted" style={{ marginBottom: 8, fontSize: 12 }}>Enter your delivery address.</div>
+      <div className="muted" style={{ marginBottom: 8, fontSize: 12 }}>Enter your delivery address. Delivery will be fulfilled by the website's selected provider.</div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

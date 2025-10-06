@@ -24,7 +24,7 @@ npm install
 npm run dev
 ```
 
-Uber Direct integration (set these in backend/.env when using real API):
+Delivery provider integration (set these in backend/.env when using real API):
 
 ```
 # Uber Direct API (Client Credentials)
@@ -32,7 +32,7 @@ UBER_CLIENT_ID=your_uber_client_id
 UBER_CLIENT_SECRET=your_uber_client_secret
 ```
 
-Then in the Admin Dashboard → Site Settings, set the site's Uber Customer ID and Pickup address. Use "Test Uber" to validate.
+Then in the Admin Dashboard → Site Settings, choose a delivery provider per website (Uber Direct or DoorDash Drive). For Uber, set the site's Uber Customer ID and Pickup address. For DoorDash, set the DoorDash Store ID. Only one provider is active per website at a time.
 
 ### Frontend
 ```
@@ -77,8 +77,8 @@ Open the printed local URL.
 - GET `/api/shop/host-site` → Resolves current request host to `{ siteId, slug, name }`.
 - GET `/api/shop/:slug/categories`
 - GET `/api/shop/:slug/products?categoryId=<id>`
-- POST `/api/delivery/:slug/quote` (Uber Direct)
-- POST `/api/delivery/:slug/create` (Uber Direct)
+- POST `/api/delivery/:slug/quote` (uses selected provider)
+- POST `/api/delivery/:slug/create` (uses selected provider)
 
 ## API
 - GET `/api/categories`

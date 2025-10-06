@@ -14,6 +14,8 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
   const [uberCustomerId, setUberCustomerId] = React.useState(site?.uberCustomerId || '');
   const [brandColor, setBrandColor] = React.useState(site?.brandColor || '#0ea5e9');
   const [stripeAccountId, setStripeAccountId] = React.useState(site?.stripeAccountId || '');
+  const [deliveryProvider, setDeliveryProvider] = React.useState(site?.deliveryProvider || 'uber');
+  const [doordashStoreId, setDoordashStoreId] = React.useState(site?.doordashStoreId || '');
   const [locations, setLocations] = React.useState(Array.isArray(site?.locations) ? site.locations : []);
   const [cities, setCities] = React.useState(Array.isArray(site?.cities) ? site.cities : []);
   const [deliveryFee, setDeliveryFee] = React.useState(((Number(site?.deliveryFeeCents)||0)/100).toFixed(2));
@@ -55,6 +57,8 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
     setDeliveryFee(((Number(site?.deliveryFeeCents)||0)/100).toFixed(2));
     setSplitDeliveryFee(!!site?.splitDeliveryFee);
     setStripeAccountId(site?.stripeAccountId || '');
+    setDeliveryProvider(site?.deliveryProvider || 'uber');
+    setDoordashStoreId(site?.doordashStoreId || '');
     setHours(site?.hours || {
       mon: { open: '10:00', close: '22:00', closed: false },
       tue: { open: '10:00', close: '22:00', closed: false },
@@ -143,6 +147,20 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
       </label>
 
       <div style={{ gridColumn: '1 / -1', fontWeight: 800, marginTop: 8 }}>Delivery settings</div>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span>Provider</span>
+        <select value={deliveryProvider} onChange={(e) => setDeliveryProvider(e.target.value)}>
+          <option value="uber">Uber Direct</option>
+          <option value="doordash">DoorDash Drive</option>
+        </select>
+        <span className="muted" style={{ fontSize: 12 }}>Only one provider is active at a time per website.</span>
+      </label>
+      {deliveryProvider === 'doordash' ? (
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span>DoorDash Store ID</span>
+          <input value={doordashStoreId} onChange={(e) => setDoordashStoreId(e.target.value)} placeholder="store-..." />
+        </label>
+      ) : null}
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span>Flat delivery fee (in $)</span>
         <input type="number" step="0.01" min={0} value={deliveryFee} onChange={(e) => setDeliveryFee(e.target.value)} />
@@ -252,6 +270,8 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
           const payload = {
             uberCustomerId,
             brandColor,
+            deliveryProvider,
+            doordashStoreId,
             locations,
             cities,
             deliveryFeeCents: Math.max(0, Math.round(Number(deliveryFee || 0) * 100)),
