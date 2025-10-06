@@ -2,7 +2,8 @@ import { Router } from 'express';
 import Stripe from 'stripe';
 import Order from '../models/Order.js';
 import Site from '../models/Site.js';
-import { createDelivery } from '../services/uberDirect.js';
+import { createDelivery as uberCreateDelivery } from '../services/uberDirect.js';
+import { createDelivery as ddCreateDelivery } from '../services/doordashDrive.js';
 import { sendOrderEmail } from '../utils/mailer.js';
 
 const router = Router();
@@ -55,21 +56,36 @@ router.post('/', async (req, res) => {
           } else {
             const order = await Order.findByIdAndUpdate(orderId, { status: 'paid' }, { new: true });
             try {
-              // If delivery order without Uber delivery yet, create it now
+              // If delivery order without provider delivery yet, create it now
               if (order && order.fulfillmentType === 'delivery' && !order.uberDeliveryId) {
                 const site = await Site.findById(order.site);
-                if (site?.uberCustomerId && order?.dropoff && order?.pickup?.location) {
-                  const delivery = await createDelivery({
-                    customerId: site.uberCustomerId,
-                    pickup: order.pickup.location,
-                    dropoff: order.dropoff,
-                    manifestItems: (order.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel })),
-                    tip: 0,
-                    externalId: String(order._id),
-                  });
-                  const trackingUrl = delivery?.tracking_url || delivery?.trackingUrl || delivery?.share_url || '';
-                  const status = delivery?.status || delivery?.state || delivery?.current_status || '';
-                  await Order.findByIdAndUpdate(order._id, { uberDeliveryId: delivery?.id || delivery?.delivery_id, uberTrackingUrl: trackingUrl, uberStatus: status });
+                if (order?.dropoff && order?.pickup?.location && site) {
+                  const provider = site.deliveryProvider || 'uber';
+                  let delivery = null;
+                  if (provider === 'doordash' && site.doordashStoreId) {
+                    delivery = await ddCreateDelivery({
+                      storeId: site.doordashStoreId,
+                      pickup: order.pickup.location,
+                      dropoff: order.dropoff,
+                      manifestItems: (order.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel })),
+                      tip: 0,
+                      externalId: String(order._id),
+                    });
+                  } else if (site.uberCustomerId) {
+                    delivery = await uberCreateDelivery({
+                      customerId: site.uberCustomerId,
+                      pickup: order.pickup.location,
+                      dropoff: order.dropoff,
+                      manifestItems: (order.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel })),
+                      tip: 0,
+                      externalId: String(order._id),
+                    });
+                  }
+                  if (delivery) {
+                    const trackingUrl = delivery?.tracking_url || delivery?.trackingUrl || delivery?.share_url || '';
+                    const status = delivery?.status || delivery?.state || delivery?.current_status || '';
+                    await Order.findByIdAndUpdate(order._id, { uberDeliveryId: delivery?.id || delivery?.delivery_id, uberTrackingUrl: trackingUrl, uberStatus: status });
+                  }
                 }
               }
             } catch (e) {

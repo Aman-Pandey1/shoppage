@@ -4,7 +4,8 @@ import { requireAuth } from '../middleware/auth.js';
 import Order from '../models/Order.js';
 import { saveMockData } from '../utils/mockStore.js';
 import Site from '../models/Site.js';
-import { requestQuote, createDelivery } from '../services/uberDirect.js';
+import { requestQuote as uberRequestQuote, createDelivery as uberCreateDelivery } from '../services/uberDirect.js';
+import { requestQuote as ddRequestQuote, createDelivery as ddCreateDelivery } from '../services/doordashDrive.js';
 import { distanceBetweenAddressesKm, calculateDistanceFeeCents } from '../services/geo.js';
 
 const router = Router();
@@ -64,10 +65,15 @@ router.post('/:slug/quote', async (req, res) => {
 		} else {
 			site = await Site.findById(req.siteId);
 		}
-		const hasPickupCfg = !!(site?.pickup?.address) || (Array.isArray(site?.locations) && site.locations.length && site.locations[0]?.address);
-		// Allow in mock mode even if Uber config missing
-		const isMock = !!req.app?.locals?.mockData;
-		if ((!site?.uberCustomerId || !hasPickupCfg) && !isMock) return res.status(400).json({ error: 'Site not configured for Uber Direct' });
+    const hasPickupCfg = !!(site?.pickup?.address) || (Array.isArray(site?.locations) && site.locations.length && site.locations[0]?.address);
+    // Allow in mock mode even if provider config missing
+    const isMock = !!req.app?.locals?.mockData;
+    const provider = site?.deliveryProvider || 'uber';
+    if (provider === 'uber') {
+      if ((!site?.uberCustomerId || !hasPickupCfg) && !isMock) return res.status(400).json({ error: 'Site not configured for Uber Direct' });
+    } else if (provider === 'doordash') {
+      if ((!site?.doordashStoreId || !hasPickupCfg) && !isMock) return res.status(400).json({ error: 'Site not configured for DoorDash Drive' });
+    }
 		const { dropoff, pickupLocationIndex } = req.body || {};
 		if (!dropoff?.address?.streetAddress) return res.status(400).json({ error: 'Invalid dropoff address' });
 		// Determine pickup location: use provided index if valid, otherwise choose nearest to dropoff
@@ -94,11 +100,10 @@ router.post('/:slug/quote', async (req, res) => {
 		let distanceKm = null;
 		try { distanceKm = await distanceBetweenAddressesKm(pickup.address, dropoff.address); } catch {}
 		const distanceFeeCents = calculateDistanceFeeCents(distanceKm);
-    const quote = await requestQuote({
-			customerId: site.uberCustomerId,
-			pickup,
-			dropoff,
-		});
+    // Use selected provider
+    const quote = provider === 'doordash'
+      ? await ddRequestQuote({ storeId: site.doordashStoreId, pickup, dropoff })
+      : await uberRequestQuote({ customerId: site.uberCustomerId, pickup, dropoff });
     const split = !!site.splitDeliveryFee;
     const customerDeliveryFeeCents = split ? Math.round((Number(distanceFeeCents) || 0) / 2) : (Number(distanceFeeCents) || 0);
     res.json({ ...quote, distanceKm, distanceFeeCents, customerDeliveryFeeCents, pickupLocationIndex: chosenIdx });
@@ -119,7 +124,12 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 		const hasPickupCfg = !!(site?.pickup?.address) || (Array.isArray(site?.locations) && site.locations.length && site.locations[0]?.address);
 		// Allow in mock mode even if Uber config missing
 		const isMock = !!req.app?.locals?.mockData;
-		if ((!site?.uberCustomerId || !hasPickupCfg) && !isMock) return res.status(400).json({ error: 'Site not configured for Uber Direct' });
+    const provider = site?.deliveryProvider || 'uber';
+    if (provider === 'uber') {
+      if ((!site?.uberCustomerId || !hasPickupCfg) && !isMock) return res.status(400).json({ error: 'Site not configured for Uber Direct' });
+    } else if (provider === 'doordash') {
+      if ((!site?.doordashStoreId || !hasPickupCfg) && !isMock) return res.status(400).json({ error: 'Site not configured for DoorDash Drive' });
+    }
 		const { dropoff, manifestItems, externalId, pickupLocationIndex, notes } = req.body || {};
 		const locs = (Array.isArray(site.locations) && site.locations.length)
 			? site.locations
@@ -160,14 +170,10 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 		let distanceKm = null;
 		try { distanceKm = await distanceBetweenAddressesKm(pickup.address, dropoff.address); } catch {}
 		const distanceFeeCents = calculateDistanceFeeCents(distanceKm);
-	    const delivery = await createDelivery({
-			customerId: site.uberCustomerId,
-			pickup: safePickup,
-			dropoff: safeDropoff,
-			manifestItems,
-			tip: 0,
-			externalId,
-		});
+    // Use selected provider
+    const delivery = provider === 'doordash'
+      ? await ddCreateDelivery({ storeId: site.doordashStoreId, pickup: safePickup, dropoff: safeDropoff, manifestItems, tip: 0, externalId })
+      : await uberCreateDelivery({ customerId: site.uberCustomerId, pickup: safePickup, dropoff: safeDropoff, manifestItems, tip: 0, externalId });
 		// Record order
 		const itemsTotal = (manifestItems || []).reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 1), 0);
 		const isMockEnv = !!req.app?.locals?.mockData;
