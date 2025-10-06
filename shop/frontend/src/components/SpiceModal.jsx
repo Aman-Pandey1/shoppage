@@ -7,7 +7,7 @@ import mediumImage from '../assets/medium.png';
 import hotImage from '../assets/Hot.png';
 import extraHotImage from '../assets/extra hot.png';
 
-export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, siteLogoSrc }) => {
+export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, siteLogoSrc, initialQuantity = 1 }) => {
   const [selected, setSelected] = useState(undefined);
   const [qty, setQty] = useState(() => {
     const n = Number(initialQuantity) || 1;
