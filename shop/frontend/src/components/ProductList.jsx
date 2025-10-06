@@ -79,7 +79,16 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
               <div style={{ display: 'grid', justifyItems: 'end', gap: 6 }}>
                 <div style={{ fontWeight: 800, color: 'var(--primary-600)' }}>${p.price.toFixed(2)}</div>
                 <button
-                  onClick={() => { setActiveProduct(p); setQuickAddOpen(true); }}
+                  onClick={() => {
+                    // If product requires spice selection, skip the quick-add popup and
+                    // go straight into the add-to-cart flow; quantity will be chosen in the spice modal.
+                    if (Array.isArray(p?.spiceLevels) && p.spiceLevels.length > 0) {
+                      onAdd(p, 1);
+                      return;
+                    }
+                    setActiveProduct(p);
+                    setQuickAddOpen(true);
+                  }}
                   className="primary-btn hover-float"
                   aria-label={`Add ${p.name}`}
                   title={`Add ${p.name}`}

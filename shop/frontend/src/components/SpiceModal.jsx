@@ -3,8 +3,13 @@ import { Modal } from './Modal';
 import { getSpiceBadge } from '../lib/assetFinder';
 
 // Show the site's logo instead of chilli icons for spice options
-export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, siteLogoSrc }) => {
+export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, siteLogoSrc, initialQuantity = 1 }) => {
   const [selected, setSelected] = useState(undefined);
+  const [qty, setQty] = useState(() => {
+    const n = Number(initialQuantity) || 1;
+    return Math.max(1, Math.min(99, n));
+  });
+  const [bump, setBump] = useState(false);
 
   const levels = useMemo(() => {
     // Always show full set to ensure consistency across products
@@ -171,6 +176,31 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
         })}
       </div>
 
+      {/* Quantity controls */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12, marginTop: 8 }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, border: '1px solid var(--border)', borderRadius: 999, padding: 6, background: 'var(--panel-2)' }}>
+          <button
+            onClick={() => setQty((q) => { const next = Math.max(1, q - 1); if (next !== q) { setBump(true); setTimeout(() => setBump(false), 200); } return next; })}
+            aria-label="Decrease"
+            title="Decrease"
+            className="hover-float"
+            style={{ width: 32, height: 32, borderRadius: 999, display: 'grid', placeItems: 'center' }}
+          >
+            –
+          </button>
+          <div className={bump ? 'animate-bump' : ''} style={{ minWidth: 24, textAlign: 'center', fontWeight: 800 }}>{qty}</div>
+          <button
+            onClick={() => setQty((q) => { const next = Math.min(99, q + 1); if (next !== q) { setBump(true); setTimeout(() => setBump(false), 200); } return next; })}
+            aria-label="Increase"
+            title="Increase"
+            className="hover-float"
+            style={{ width: 32, height: 32, borderRadius: 999, display: 'grid', placeItems: 'center' }}
+          >
+            +
+          </button>
+        </div>
+      </div>
+
       {/* Buttons */}
       <div
         style={{
@@ -196,7 +226,7 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
           Cancel
         </button>
         <button
-          onClick={() => onConfirm(selected)}
+          onClick={() => onConfirm(selected, qty)}
           style={{
             padding: '12px 24px',
             borderRadius: 12,
@@ -211,7 +241,7 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
           disabled={!selected}
         >
           {selected
-            ? `Select ${selected.charAt(0).toUpperCase() + selected.slice(1)}`
+            ? `Add ${qty} • ${selected.charAt(0).toUpperCase() + selected.slice(1)}`
             : 'Select Spice Level'}
         </button>
       </div>
