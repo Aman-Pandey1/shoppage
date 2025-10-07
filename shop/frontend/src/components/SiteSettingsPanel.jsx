@@ -35,6 +35,8 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
   const [savedAt, setSavedAt] = React.useState(null);
   const [testingUber, setTestingUber] = React.useState(false);
   const [uberStatus, setUberStatus] = React.useState(null);
+  const [testingDoorDash, setTestingDoorDash] = React.useState(false);
+  const [doorDashStatus, setDoorDashStatus] = React.useState(null);
 
   // Location modal state
   const [isLocFormOpen, setIsLocFormOpen] = React.useState(false);
@@ -262,6 +264,26 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
           }}>{testingUber ? 'Testing…' : 'Test Uber'}</button>
           {uberStatus ? (
             <div style={{ fontSize: 12, color: uberStatus.ok ? 'var(--green-600)' : 'var(--red-600)' }}>{uberStatus.message}</div>
+          ) : null}
+          <button disabled={testingDoorDash} onClick={async () => {
+            setTestingDoorDash(true);
+            setDoorDashStatus(null);
+            try {
+              const res = await fetchJsonAllowError(`/api/admin/sites/${site._id}/health/doordash`);
+              if (res.ok) {
+                const sim = res.simulated ? ' (simulated)' : '';
+                setDoorDashStatus({ ok: true, message: `DoorDash OK${sim}${res.eta ? ` · ETA ${new Date(res.eta).toLocaleTimeString()}` : ''}` });
+              } else {
+                setDoorDashStatus({ ok: false, message: `DoorDash error: ${res.error}` });
+              }
+            } catch (e) {
+              setDoorDashStatus({ ok: false, message: e?.message || 'DoorDash error' });
+            } finally {
+              setTestingDoorDash(false);
+            }
+          }}>{testingDoorDash ? 'Testing…' : 'Test DoorDash'}</button>
+          {doorDashStatus ? (
+            <div style={{ fontSize: 12, color: doorDashStatus.ok ? 'var(--green-600)' : 'var(--red-600)' }}>{doorDashStatus.message}</div>
           ) : null}
         </div>
         {savedAt ? <div className="muted" style={{ alignSelf: 'center', fontSize: 12 }}>Saved {new Date(savedAt).toLocaleTimeString()}</div> : null}
