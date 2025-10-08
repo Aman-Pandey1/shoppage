@@ -5,6 +5,7 @@ import Order from '../models/Order.js';
 import Coupon from '../models/Coupon.js';
 import Site from '../models/Site.js';
 import { getDelivery } from '../services/uberDirect.js';
+import { sendOrderEmail } from '../utils/mailer.js';
 import PDFDocument from 'pdfkit';
 
 const router = Router();
@@ -124,11 +125,18 @@ router.post('/:slug/orders/pickup', requireUser, async (req, res) => {
     if (req.app.locals.mockData) {
       if (!Array.isArray(req.app.locals.mockData.orders)) req.app.locals.mockData.orders = [];
       const createdAt = new Date().toISOString();
-      const created = { _id: `o-${Date.now()}`, createdAt, ...orderPayload };
+      const created = { _id: `o-${Date.now()}`, createdAt, status: 'confirmed', ...orderPayload };
       req.app.locals.mockData.orders.unshift(created);
+      try {
+        await sendOrderEmail({ to: created.userEmail, siteName: (req.app.locals.mockData.sites || []).find(s => s._id === req.siteId)?.name || '', orderId: created._id, items: created.items, totalCents: created.totalCents, fulfillmentType: 'pickup' });
+      } catch {}
       return res.status(201).json(created);
     }
-    const created = await Order.create(orderPayload);
+    const created = await Order.create({ ...orderPayload, status: 'confirmed' });
+    try {
+      const site = await Site.findById(req.siteId);
+      await sendOrderEmail({ to: created.userEmail, siteName: site?.name || '', orderId: created._id, items: created.items, totalCents: created.totalCents, fulfillmentType: 'pickup' });
+    } catch {}
     res.status(201).json(created);
   } catch (err) {
     res.status(400).json({ error: err.message });
