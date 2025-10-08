@@ -2621,6 +2621,13 @@
       "name": "ap",
       "passwordHash": "$2a$10$FNx4Idm2r3El7aAYaoQzf.e.iWr5joz8epwYBo1yiqfPERibR24fW",
       "createdAt": "2025-09-30T06:46:14.410Z"
+    },
+    {
+      "_id": "u-1759894183651",
+      "email": "aman.techkriti@gmail.com",
+      "name": "aman",
+      "passwordHash": "$2a$10$ZbRydTuEjPjyHAzMrkmpYOpQwKuNvm8dIwHGkS5zv6jSTze2e.dWm",
+      "createdAt": "2025-10-08T03:29:43.651Z"
     }
   ],
   "coupons": [
