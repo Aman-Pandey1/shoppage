@@ -36,6 +36,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [lastDeliveryId, setLastDeliveryId] = useState(null);
   const [deliveryAddressSummary, setDeliveryAddressSummary] = useState('');
   const [orderError, setOrderError] = useState('');
+  const [pickupPaymentMethod, setPickupPaymentMethod] = useState('online'); // 'online' | 'cod'
 
   // Additional UI state brought from the alternate implementation
   // Order details state
@@ -526,6 +527,30 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                 })()}
               </label>
             </div>
+            {/* Payment method for pickup */}
+            <div className="card" style={{ display: 'grid', gap: 8, padding: 10, borderRadius: 12, marginTop: 10 }}>
+              <div style={{ fontWeight: 700 }}>Payment method</div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="radio"
+                  name="pickupPay"
+                  value="online"
+                  checked={pickupPaymentMethod === 'online'}
+                  onChange={() => setPickupPaymentMethod('online')}
+                />
+                <span>Pay online</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="radio"
+                  name="pickupPay"
+                  value="cod"
+                  checked={pickupPaymentMethod === 'cod'}
+                  onChange={() => setPickupPaymentMethod('cod')}
+                />
+                <span>Cash on pickup</span>
+              </label>
+            </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16, gap: 8 }}>
               <button onClick={() => setOrderDetailsOpen(false)}>OK</button>
               <button className="primary-btn" disabled={!selectedLocation || manifest.length === 0} onClick={async () => {
@@ -548,19 +573,33 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                     notes: state.notes || undefined,
                     coupon: state.coupon || undefined,
                   };
-                  // Create Stripe checkout session and redirect
-                  await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/payments/stripe/${siteSlug}/checkout/pickup`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-                    body: JSON.stringify(payload),
-                  })
-                  .then(async (r) => { if (!r.ok) throw new Error(await r.text()); return r.json(); })
-                  .then((data) => {
-                    const url = data?.url;
-                    if (!url) throw new Error('Failed to start payment');
-                    setOrderDetailsOpen(false);
-                    window.location.href = url;
-                  });
+                  if (pickupPaymentMethod === 'online') {
+                    // Stripe checkout for pickup
+                    await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/payments/stripe/${siteSlug}/checkout/pickup`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+                      body: JSON.stringify(payload),
+                    })
+                    .then(async (r) => { if (!r.ok) throw new Error(await r.text()); return r.json(); })
+                    .then((data) => {
+                      const url = data?.url;
+                      if (!url) throw new Error('Failed to start payment');
+                      setOrderDetailsOpen(false);
+                      window.location.href = url;
+                    });
+                  } else {
+                    // Cash on pickup: create order directly (no payment gateway)
+                    await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/shop/${siteSlug}/orders/pickup`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+                      body: JSON.stringify(payload),
+                    })
+                    .then(async (r) => { if (!r.ok) throw new Error(await r.text()); return r.json(); })
+                    .then(() => {
+                      setOrderDetailsOpen(false);
+                      try { window.location.href = `/s/${siteSlug}/orders?status=placed`; } catch {}
+                    });
+                  }
                 } catch (e) {
                   let msg = e?.message || 'Failed to place pickup order';
                   try {
