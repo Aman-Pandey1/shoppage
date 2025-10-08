@@ -1,5 +1,5 @@
 import React from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import { fetchJson, getAuthToken } from '../lib/api';
 import { download } from '../lib/api';
 import { LoginModal } from '../components/LoginModal';
@@ -8,6 +8,7 @@ import { TrackingModal } from '../components/TrackingModal';
 export const MyOrdersPage = () => {
   const params = useParams();
   const siteSlug = params.siteSlug;
+  const location = useLocation();
   const [orders, setOrders] = React.useState([]);
   const [page, setPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(12);
@@ -21,6 +22,23 @@ export const MyOrdersPage = () => {
   const [trackingLoadingId, setTrackingLoadingId] = React.useState('');
   const [trackingError, setTrackingError] = React.useState('');
   const [trackingModal, setTrackingModal] = React.useState({ open: false, url: '', status: '' });
+  const [successMsg, setSuccessMsg] = React.useState('');
+
+  // Detect success status in query params (e.g., from COD or Stripe)
+  React.useEffect(() => {
+    try {
+      const sp = new URLSearchParams(location.search || window.location.search || '');
+      const status = (sp.get('status') || '').toLowerCase();
+      if (status === 'placed' || status === 'success') {
+        setSuccessMsg(status === 'success' ? 'Payment successful! Your order has been placed.' : 'Order placed! Your order has been created.');
+        // Clean the query param from the URL without reload
+        try {
+          const clean = window.location.pathname + window.location.hash;
+          window.history.replaceState({}, document.title, clean || '/');
+        } catch {}
+      }
+    } catch {}
+  }, [location.search]);
 
   React.useEffect(() => {
     let mounted = true;
@@ -79,6 +97,15 @@ export const MyOrdersPage = () => {
 
   return (
     <div className="container" style={{ paddingTop: 20 }}>
+      {successMsg ? (
+        <div className="card" style={{ padding: 12, marginBottom: 12, borderLeft: '4px solid var(--green-600)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} role="status" aria-live="polite">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span>✅</span>
+            <div style={{ fontWeight: 700 }}>{successMsg}</div>
+          </div>
+          <button onClick={() => setSuccessMsg('')}>Dismiss</button>
+        </div>
+      ) : null}
       <div className="card" style={{ padding: 12, marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ fontWeight: 900, fontSize: 18 }}>My Orders</div>
         <div style={{ display: 'flex', gap: 8 }}>
