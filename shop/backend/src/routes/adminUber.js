@@ -3,6 +3,7 @@ import { requireAdmin } from '../middleware/auth.js';
 import { tenantBySlug } from '../middleware/tenant.js';
 import Site from '../models/Site.js';
 import { requestQuote } from '../services/uberDirect.js';
+import Stripe from 'stripe';
 import { requestQuote as ddRequestQuote } from '../services/doordashDrive.js';
 
 const router = Router();
@@ -87,4 +88,30 @@ router.get('/sites/:siteId/health/doordash', requireAdmin, async (req, res) => {
 });
 
 export default router;
+
+// Stripe account status for site (charges_enabled etc.)
+router.get('/sites/:siteId/health/stripe', requireAdmin, async (req, res) => {
+  try {
+    const secret = process.env.STRIPE_SECRET_KEY;
+    if (!secret) return res.status(400).json({ ok: false, error: 'Missing STRIPE_SECRET_KEY' });
+    const stripe = new Stripe(secret);
+    const mock = req.app.locals.mockData;
+    let site;
+    if (mock) {
+      site = mock.sites.find((s) => s._id === req.params.siteId);
+    } else {
+      site = await Site.findById(req.params.siteId);
+    }
+    if (!site) return res.status(404).json({ ok: false, error: 'Site not found' });
+    const acct = site?.stripeAccountId;
+    if (!acct) return res.json({ ok: false, error: 'Stripe Account ID not set' });
+    const account = await stripe.accounts.retrieve(acct);
+    const enabled = !!account?.charges_enabled;
+    const payouts = !!account?.payouts_enabled;
+    const detailsSubmitted = !!account?.details_submitted;
+    return res.json({ ok: enabled, charges_enabled: enabled, payouts_enabled: payouts, details_submitted: detailsSubmitted, accountId: account?.id });
+  } catch (err) {
+    return res.status(400).json({ ok: false, error: err.message });
+  }
+});
 

@@ -37,6 +37,8 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
   const [uberStatus, setUberStatus] = React.useState(null);
   const [testingDoorDash, setTestingDoorDash] = React.useState(false);
   const [doorDashStatus, setDoorDashStatus] = React.useState(null);
+  const [testingStripe, setTestingStripe] = React.useState(false);
+  const [stripeStatus, setStripeStatus] = React.useState(null);
 
   // Location modal state
   const [isLocFormOpen, setIsLocFormOpen] = React.useState(false);
@@ -284,6 +286,30 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
           }}>{testingDoorDash ? 'Testing…' : 'Test DoorDash'}</button>
           {doorDashStatus ? (
             <div style={{ fontSize: 12, color: doorDashStatus.ok ? 'var(--green-600)' : 'var(--red-600)' }}>{doorDashStatus.message}</div>
+          ) : null}
+          <button disabled={testingStripe} onClick={async () => {
+            setTestingStripe(true);
+            setStripeStatus(null);
+            try {
+              const res = await fetchJsonAllowError(`/api/admin/sites/${site._id}/health/stripe`);
+              if (res.ok) {
+                const flags = [];
+                if (res.charges_enabled) flags.push('charges');
+                if (res.payouts_enabled) flags.push('payouts');
+                if (res.details_submitted) flags.push('details');
+                const msg = flags.length ? `Stripe OK · ${flags.join(', ')}` : 'Stripe OK';
+                setStripeStatus({ ok: true, message: msg });
+              } else {
+                setStripeStatus({ ok: false, message: `Stripe error: ${res.error}` });
+              }
+            } catch (e) {
+              setStripeStatus({ ok: false, message: e?.message || 'Stripe error' });
+            } finally {
+              setTestingStripe(false);
+            }
+          }}>{testingStripe ? 'Testing…' : 'Test Stripe'}</button>
+          {stripeStatus ? (
+            <div style={{ fontSize: 12, color: stripeStatus.ok ? 'var(--green-600)' : 'var(--red-600)' }}>{stripeStatus.message}</div>
           ) : null}
         </div>
         {savedAt ? <div className="muted" style={{ alignSelf: 'center', fontSize: 12 }}>Saved {new Date(savedAt).toLocaleTimeString()}</div> : null}
