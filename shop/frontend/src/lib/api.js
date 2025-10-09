@@ -1,4 +1,15 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const API_BASE_URL = (() => {
+  const fromEnv = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL)
+    ? String(import.meta.env.VITE_API_URL).trim()
+    : '';
+  if (fromEnv) {
+    return fromEnv.replace(/\/$/, '');
+  }
+  if (typeof window !== 'undefined' && /\.onrender\.com$/i.test(window.location.hostname)) {
+    return 'https://shoppagebackend-aru0.onrender.com';
+  }
+  return 'http://localhost:4000';
+})();
 
 export function getAuthToken() {
   try {
