@@ -740,17 +740,8 @@ export const AdminDashboard = () => {
                   // If a file is selected, upload it and update imageUrl
                   if (categoryForm.file) {
                     try {
-                      const form = new FormData();
-                      form.append('file', categoryForm.file);
-                      const resp = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/admin/sites/${selectedSiteId}/categories/${cat._id}/image`, {
-                        method: 'POST',
-                        headers: { ...(localStorage.getItem('auth_token') ? { Authorization: `Bearer ${localStorage.getItem('auth_token')}` } : {}) },
-                        body: form,
-                      });
-                      if (resp.ok) {
-                        const data = await resp.json();
-                        cat = data.category || cat;
-                      }
+                      const data = await postFile(`/api/admin/sites/${selectedSiteId}/categories/${cat._id}/image`, categoryForm.file);
+                      cat = data.category || cat;
                     } catch {}
                   }
                   // Apply to list and close

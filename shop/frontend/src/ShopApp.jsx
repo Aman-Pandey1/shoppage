@@ -575,30 +575,20 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                   };
                   if (pickupPaymentMethod === 'online') {
                     // Stripe checkout for pickup
-                    await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/payments/stripe/${siteSlug}/checkout/pickup`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-                      body: JSON.stringify(payload),
-                    })
-                    .then(async (r) => { if (!r.ok) throw new Error(await r.text()); return r.json(); })
-                    .then((data) => {
-                      const url = data?.url;
-                      if (!url) throw new Error('Failed to start payment');
-                      setOrderDetailsOpen(false);
-                      window.location.href = url;
-                    });
+                    await postJson(`/api/payments/stripe/${siteSlug}/checkout/pickup`, payload)
+                      .then((data) => {
+                        const url = data?.url;
+                        if (!url) throw new Error('Failed to start payment');
+                        setOrderDetailsOpen(false);
+                        window.location.href = url;
+                      });
                   } else {
                     // Cash on pickup: create order directly (no payment gateway)
-                    await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/shop/${siteSlug}/orders/pickup`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-                      body: JSON.stringify(payload),
-                    })
-                    .then(async (r) => { if (!r.ok) throw new Error(await r.text()); return r.json(); })
-                    .then(() => {
-                      setOrderDetailsOpen(false);
-                      try { window.location.href = `/s/${siteSlug}/orders?status=placed`; } catch {}
-                    });
+                    await postJson(`/api/shop/${siteSlug}/orders/pickup`, payload)
+                      .then(() => {
+                        setOrderDetailsOpen(false);
+                        try { window.location.href = `/s/${siteSlug}/orders?status=placed`; } catch {}
+                      });
                   }
                 } catch (e) {
                   let msg = e?.message || 'Failed to place pickup order';

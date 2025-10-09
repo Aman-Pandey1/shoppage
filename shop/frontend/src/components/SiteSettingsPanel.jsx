@@ -342,18 +342,9 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
           let updated = await patchJson(`/api/admin/sites/${selectedSiteId}`, payload);
           if (logoFile) {
             try {
-              const form = new FormData();
-              form.append('file', logoFile);
-              const resp = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/admin/sites/${selectedSiteId}/logo`, {
-                method: 'POST',
-                headers: { ...(localStorage.getItem('auth_token') ? { Authorization: `Bearer ${localStorage.getItem('auth_token')}` } : {}) },
-                body: form,
-              });
-              if (resp.ok) {
-                const data = await resp.json();
-                updated = data.site || updated;
-                setLogoUrl(data.logoUrl || updated.logoUrl || '');
-              }
+              const data = await postFile(`/api/admin/sites/${selectedSiteId}/logo`, logoFile);
+              updated = data.site || updated;
+              setLogoUrl(data.logoUrl || updated.logoUrl || '');
             } catch {}
           }
           onSiteUpdated(updated);
