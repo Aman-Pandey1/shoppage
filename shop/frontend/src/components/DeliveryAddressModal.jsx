@@ -290,13 +290,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
                     pickupLocationIndex: selectedPickupIndex,
                     notes,
                   };
-                  const resp = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/payments/stripe/${siteSlug}/checkout/delivery`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-                    body: JSON.stringify(payload),
-                  });
-                  if (!resp.ok) throw new Error(await resp.text());
-                  const data = await resp.json();
+                  const data = await postJson(`/api/payments/stripe/${siteSlug}/checkout/delivery`, payload);
                   const url = data?.url;
                   if (!url) throw new Error('Failed to start payment');
                   window.location.href = url;

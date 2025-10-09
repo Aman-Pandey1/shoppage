@@ -23,7 +23,8 @@ export default router;
 
 // User auth endpoints
 export const userAuthRouter = Router();
-const isMock = process.env.USE_MOCK_DATA === 'true' || !process.env.MONGO_URI;
+// Only use mock mode if explicitly enabled via USE_MOCK_DATA=true
+const isMock = process.env.USE_MOCK_DATA === 'true';
 
 userAuthRouter.post('/register', async (req, res) => {
   try {

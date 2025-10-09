@@ -1,5 +1,5 @@
 import React from 'react';
-import { fetchJson, getCurrentUser, logout } from '../lib/api';
+import { fetchJson, getCurrentUser, logout, resolveAssetUrl } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 
 export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount = 0, isCartOpen = false }) => {
@@ -52,14 +52,7 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
   }, []);
 
   const name = site?.name || 'Store';
-  const apiBase = (import.meta.env.VITE_API_URL || 'http://localhost:4000').replace(/\/$/, '');
-  const logoSrc = React.useMemo(() => {
-    const url = site?.logoUrl || '';
-    if (!url) return '';
-    if (/^https?:\/\//i.test(url)) return url;
-    // For relative URLs like "/uploads/...", prefix API base so the image loads correctly in the frontend app
-    return `${apiBase}${url.startsWith('/') ? url : `/${url}`}`;
-  }, [site?.logoUrl, apiBase]);
+  const logoSrc = React.useMemo(() => resolveAssetUrl(site?.logoUrl || ''), [site?.logoUrl]);
   const initials = React.useMemo(() => {
     if (!user?.email) return 'FR';
     const base = (user?.email?.split('@')[0] || '').replace(/[^A-Za-z]/g, '');
