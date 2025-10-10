@@ -414,7 +414,56 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       <PrivacyPolicyModal open={privacyOpen} onAccept={handleAcceptPrivacy} />
       <FulfillmentModal open={fulfillmentOpen} onChoose={handleChooseFulfillment} />
       {/* Order Details Modal: Takeout/Delivery UI like screenshots */}
-      <Modal open={orderDetailsOpen} onClose={() => setOrderDetailsOpen(false)} title="ORDER DETAILS">
+      <Modal open={orderDetailsOpen} onClose={() => setOrderDetailsOpen(false)} title="ORDER DETAILS" footer={(
+        state.fulfillmentType === 'pickup' ? (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, width: '100%' }}>
+            {/* Removed OK button; Confirm remains */}
+            <button className="primary-btn" disabled={!selectedLocation || manifest.length === 0} onClick={async () => {
+              try {
+                setOrderError('');
+                const token = getAuthToken();
+                if (!token) { setLoginOpen(true); return; }
+                const chosenLocation = selectedLocation || filteredLocations[0] || locations[0] || null;
+                if (!chosenLocation) { setOrderError('Please choose a pickup location'); return; }
+                if (!manifest.length) { setOrderError('Please add items to your cart before confirming'); return; }
+                if (!selectedLocation) setSelectedLocation(chosenLocation);
+                const payload = {
+                  items: manifest.map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.priceCents || 0, size: m.size, spiceLevel: m.spiceLevel })),
+                  tipCents: 0,
+                  pickup: {
+                    location: chosenLocation,
+                    scheduledFor: readyAt,
+                  },
+                  notes: state.notes || undefined,
+                  coupon: state.coupon || undefined,
+                };
+                if (pickupPaymentMethod === 'online') {
+                  await postJson(`/api/payments/stripe/${siteSlug}/checkout/pickup`, payload)
+                    .then((data) => {
+                      const url = data?.url;
+                      if (!url) throw new Error('Failed to start payment');
+                      setOrderDetailsOpen(false);
+                      window.location.href = url;
+                    });
+                } else {
+                  await postJson(`/api/shop/${siteSlug}/orders/pickup`, payload)
+                    .then(() => {
+                      setOrderDetailsOpen(false);
+                      try { window.location.href = `/s/${siteSlug}/orders?status=placed`; } catch {}
+                    });
+                }
+              } catch (e) {
+                let msg = e?.message || 'Failed to place pickup order';
+                try {
+                  const parsed = JSON.parse(msg);
+                  if (parsed && parsed.error) msg = parsed.error;
+                } catch {}
+                setOrderError(msg);
+              }
+            }}>Confirm</button>
+          </div>
+        ) : null
+      )}>
         {state.fulfillmentType === 'delivery' ? (
           <div style={{ display: 'grid', gap: 12 }}>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -528,6 +577,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
               </label>
             </div>
             {/* Payment method for pickup */}
+            {/* Payment method simplified: remove Cash on pickup option */}
             <div className="card" style={{ display: 'grid', gap: 8, padding: 10, borderRadius: 12, marginTop: 10 }}>
               <div style={{ fontWeight: 700 }}>Payment method</div>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -540,65 +590,6 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                 />
                 <span>Pay online</span>
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input
-                  type="radio"
-                  name="pickupPay"
-                  value="cod"
-                  checked={pickupPaymentMethod === 'cod'}
-                  onChange={() => setPickupPaymentMethod('cod')}
-                />
-                <span>Cash on pickup</span>
-              </label>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16, gap: 8 }}>
-              <button onClick={() => setOrderDetailsOpen(false)}>OK</button>
-              <button className="primary-btn" disabled={!selectedLocation || manifest.length === 0} onClick={async () => {
-                try {
-                  setOrderError('');
-                  const token = getAuthToken();
-                  if (!token) { setLoginOpen(true); return; }
-                  const chosenLocation = selectedLocation || filteredLocations[0] || locations[0] || null;
-                  if (!chosenLocation) { setOrderError('Please choose a pickup location'); return; }
-                  if (!manifest.length) { setOrderError('Please add items to your cart before confirming'); return; }
-                  if (!selectedLocation) setSelectedLocation(chosenLocation);
-                  // Build pickup order payload
-                  const payload = {
-                    items: manifest.map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.priceCents || 0, size: m.size, spiceLevel: m.spiceLevel })),
-                    tipCents: 0,
-                    pickup: {
-                      location: chosenLocation,
-                      scheduledFor: readyAt,
-                    },
-                    notes: state.notes || undefined,
-                    coupon: state.coupon || undefined,
-                  };
-                  if (pickupPaymentMethod === 'online') {
-                    // Stripe checkout for pickup
-                    await postJson(`/api/payments/stripe/${siteSlug}/checkout/pickup`, payload)
-                      .then((data) => {
-                        const url = data?.url;
-                        if (!url) throw new Error('Failed to start payment');
-                        setOrderDetailsOpen(false);
-                        window.location.href = url;
-                      });
-                  } else {
-                    // Cash on pickup: create order directly (no payment gateway)
-                    await postJson(`/api/shop/${siteSlug}/orders/pickup`, payload)
-                      .then(() => {
-                        setOrderDetailsOpen(false);
-                        try { window.location.href = `/s/${siteSlug}/orders?status=placed`; } catch {}
-                      });
-                  }
-                } catch (e) {
-                  let msg = e?.message || 'Failed to place pickup order';
-                  try {
-                    const parsed = JSON.parse(msg);
-                    if (parsed && parsed.error) msg = parsed.error;
-                  } catch {}
-                  setOrderError(msg);
-                }
-              }}>Confirm</button>
             </div>
           </div>
         )}
@@ -643,7 +634,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         setFulfillmentType('delivery');
         setDeliveryModalOpen(true);
       }} />
-      <footer className="site-footer">All rights reserved by Blueboxx</footer>
+      <footer className="site-footer">© All Rights Reserved By Blue Boxx</footer>
     </div>
   );
 };

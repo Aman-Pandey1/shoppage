@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Modal } from './Modal';
+import { resolveAssetUrl } from '../lib/api';
 
 // Import spice images from assets folder
 import mildImage from '../assets/mild.png';
@@ -14,6 +15,16 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
     return Math.max(1, Math.min(99, n));
   });
   const [bump, setBump] = useState(false);
+
+  // Reset selection and quantity every time the modal opens or product changes
+  useEffect(() => {
+    if (open) {
+      setSelected(undefined);
+      const n = Number(initialQuantity) || 1;
+      setQty(Math.max(1, Math.min(99, n)));
+      setBump(false);
+    }
+  }, [open, product, initialQuantity]);
 
   const levels = useMemo(() => {
     // Always show full set to ensure consistency across products
@@ -34,7 +45,47 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
   const handleSelect = (level) => setSelected(level);
 
   return (
-    <Modal open={open} onClose={onCancel} title="Select Spice Level">
+    <Modal
+      open={open}
+      onClose={onCancel}
+      title={(product && product.name) ? product.name : 'Select Spice Level'}
+      footer={(
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, width: '100%' }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: '12px 24px',
+              borderRadius: 12,
+              border: '2px solid #e2e8f0',
+              background: '#f7fafc',
+              fontWeight: 600,
+              color: '#4a5568',
+              cursor: 'pointer',
+            }}
+          >Cancel</button>
+          <button
+            onClick={() => onConfirm(selected, qty)}
+            disabled={!selected}
+            style={{
+              padding: '12px 24px',
+              borderRadius: 12,
+              minWidth: 160,
+              fontWeight: 600,
+              background: selected ? '#ff4444' : '#cbd5e0',
+              color: 'white',
+              border: 'none',
+              cursor: selected ? 'pointer' : 'not-allowed',
+            }}
+          >{selected ? `Add ${qty} • ${selected.charAt(0).toUpperCase() + selected.slice(1)}` : 'Select Spice Level'}</button>
+        </div>
+      )}
+    >
+      {/* Site logo at the top */}
+      {siteLogoSrc ? (
+        <div style={{ display: 'grid', placeItems: 'center', marginBottom: 8 }}>
+          <img src={siteLogoSrc} alt="logo" style={{ width: 72, height: 72, objectFit: 'contain', opacity: 0.95 }} />
+        </div>
+      ) : null}
       {product && (
         <div
           style={{
@@ -46,9 +97,9 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
             marginBottom: 12,
           }}
         >
-          {product.imageUrl ? (
+          {product?.imageUrl ? (
             <img
-              src={product.imageUrl}
+              src={resolveAssetUrl(product.imageUrl)}
               alt={product.name}
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
@@ -74,39 +125,44 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
               background: 'linear-gradient(180deg, rgba(2,6,23,0.00), rgba(2,6,23,0.35))',
             }}
           />
-          <div
-            style={{
-              position: 'absolute',
-              left: 12,
-              bottom: 12,
-              right: 12,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
+          {product ? (
             <div
               style={{
-                fontWeight: 900,
-                fontSize: 18,
-                color: '#fff',
-                textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                position: 'absolute',
+                left: 12,
+                bottom: 12,
+                right: 12,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
               }}
             >
-              {product.name}
+              <div
+                style={{
+                  fontWeight: 900,
+                  fontSize: 18,
+                  color: '#fff',
+                  textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                }}
+              >
+                {product.name}
+              </div>
+              <div
+                style={{
+                  fontWeight: 900,
+                  color: '#fff',
+                  textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                }}
+              >
+                ${product.price.toFixed(2)}
+              </div>
             </div>
-            <div
-              style={{
-                fontWeight: 900,
-                color: '#fff',
-                textShadow: '0 1px 2px rgba(0,0,0,0.3)',
-              }}
-            >
-              ${product.price.toFixed(2)}
-            </div>
-          </div>
+          ) : null}
         </div>
       )}
+
+      {/* Spice level label just above icons */}
+      <div style={{ marginTop: 4, marginBottom: 6, fontWeight: 800 }}>Spice Level</div>
 
       {/* Spice Options */}
       <div
@@ -204,50 +260,6 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
         </div>
       </div>
 
-      {/* Buttons */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          gap: 12,
-          marginTop: 24,
-        }}
-      >
-        <button
-          onClick={onCancel}
-          style={{
-            padding: '12px 24px',
-            borderRadius: 12,
-            border: '2px solid #e2e8f0',
-            background: '#f7fafc',
-            fontWeight: '600',
-            color: '#4a5568',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-          }}
-        >
-          Cancel
-        </button>
-        <button
-          onClick={() => onConfirm(selected, qty)}
-          style={{
-            padding: '12px 24px',
-            borderRadius: 12,
-            minWidth: 160,
-            fontWeight: '600',
-            background: selected ? '#ff4444' : '#cbd5e0',
-            color: 'white',
-            border: 'none',
-            cursor: selected ? 'pointer' : 'not-allowed',
-            transition: 'all 0.2s ease',
-          }}
-          disabled={!selected}
-        >
-          {selected
-            ? `Add ${qty} • ${selected.charAt(0).toUpperCase() + selected.slice(1)}`
-            : 'Select Spice Level'}
-        </button>
-      </div>
     </Modal>
   );
 };
