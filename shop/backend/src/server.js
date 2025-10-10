@@ -59,7 +59,9 @@ app.use((req, res, next) => {
   next();
 });
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+// Express 5 uses path-to-regexp v8, which does not allow a bare "*" path.
+// Use a catch-all parameter to match all routes for OPTIONS preflight.
+app.options('/:path*', cors(corsOptions));
 // Mount webhook with raw body BEFORE JSON parser
 app.use('/webhook/uber', express.raw({ type: '*/*' }), webhookUberRouter);
 app.use('/webhook/stripe', express.raw({ type: 'application/json' }), webhookStripeRouter);
