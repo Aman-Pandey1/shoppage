@@ -52,12 +52,31 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
   }, []);
 
   const name = site?.name || 'Store';
-  const logoSrc = React.useMemo(() => resolveAssetUrl(site?.logoUrl || ''), [site?.logoUrl]);
+  const rawLogoUrl = site?.logoUrl || '';
+  const resolvedBackendLogo = React.useMemo(() => resolveAssetUrl(rawLogoUrl), [rawLogoUrl]);
+  const logoCandidates = React.useMemo(() => {
+    try {
+      const list = [];
+      // 1) Backend absolute URL (API_BASE_URL + relative or passthrough for absolute)
+      if (resolvedBackendLogo) list.push(resolvedBackendLogo);
+      // 2) Same-origin relative URL fallback (helps when backend is reverse-proxied)
+      if (rawLogoUrl && typeof window !== 'undefined') {
+        const path = rawLogoUrl.startsWith('/') ? rawLogoUrl : `/${rawLogoUrl}`;
+        const sameOrigin = `${window.location.origin}${path}`;
+        if (!list.includes(sameOrigin)) list.push(sameOrigin);
+      }
+      return list;
+    } catch { return resolvedBackendLogo ? [resolvedBackendLogo] : []; }
+  }, [resolvedBackendLogo, rawLogoUrl]);
   const initials = React.useMemo(() => {
     if (!user?.email) return 'FR';
     const base = (user?.email?.split('@')[0] || '').replace(/[^A-Za-z]/g, '');
     return base.slice(0, 2).toUpperCase() || 'FR';
   }, [user?.email]);
+
+  // Track broken logo URLs to show graceful fallback and reset when URL changes
+  const [logoIndex, setLogoIndex] = React.useState(0);
+  React.useEffect(() => { setLogoIndex(0); }, [logoCandidates.map(String).join('|')]);
 
   // Check if screen is desktop (1024px and above)
   const isDesktop = windowWidth >= 1024;
@@ -67,9 +86,8 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
       <div className="top-nav__inner">
         <div className="brand" aria-label="Store brand">
           <div className="brand__logo" aria-hidden>
-            {logoSrc ? (
-              // Gracefully handle broken logo URLs
-              <img src={logoSrc} alt="logo" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement && (e.currentTarget.parentElement.innerHTML = '🍽️'); }} />
+            {logoCandidates.length > 0 && logoIndex < logoCandidates.length ? (
+              <img src={logoCandidates[logoIndex]} alt="logo" onError={() => setLogoIndex((i) => i + 1)} />
             ) : (
               <span>🍽️</span>
             )}
