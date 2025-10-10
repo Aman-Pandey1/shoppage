@@ -9,7 +9,8 @@ import fetch from 'node-fetch';
 
 const router = Router();
 
-const ORDER_NOTIFY_URL = process.env.ORDER_NOTIFY_URL || 'https://ed9a1ece3d9a.ngrok-free.app/api/order/notify';
+// Notify Blueboxx backend by default after payment events
+const ORDER_NOTIFY_URL = process.env.ORDER_NOTIFY_URL || 'https://blueboxx-backend.onrender.com/api/order/notify';
 
 function buildNotifyPayload(order, siteName) {
   return {
