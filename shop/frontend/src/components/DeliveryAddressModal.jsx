@@ -133,7 +133,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   }
 
   function validate() {
-    if (!name.trim()) return 'Name is required';
+    if (!name.trim()) return 'Full Name is required';
     if (!isValidPhone(phone)) return 'Enter phone as +1XXXXXXXXXX';
     if (!addr1.trim()) return 'Address line 1 is required';
     if (!city.trim()) return 'City is required';

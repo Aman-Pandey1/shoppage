@@ -422,7 +422,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
               try {
                 setOrderError('');
                 const token = getAuthToken();
-                if (!token) { setLoginOpen(true); return; }
+                if (!token) { setOrderDetailsOpen(false); setLoginOpen(true); return; }
                 const chosenLocation = selectedLocation || filteredLocations[0] || locations[0] || null;
                 if (!chosenLocation) { setOrderError('Please choose a pickup location'); return; }
                 if (!manifest.length) { setOrderError('Please add items to your cart before confirming'); return; }
@@ -507,7 +507,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
 
                   </label>
                   <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <span>Restaurant address</span>
+                    <span>Restaurant location</span>
                     <select value={(idx => (idx >= 0 ? String(idx) : ''))(filteredLocations.findIndex((l) => l === selectedLocation))} onChange={(e) => {
                       const idx = Number(e.target.value);
                       const chosen = filteredLocations[idx];
@@ -522,8 +522,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                   </label>
                 </>
               ) : (
-                <label style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <span>Restaurant address</span>
+                  <label style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span>Restaurant location</span>
                   <select value={(idx => (idx >= 0 ? String(idx) : ''))(locations.findIndex((l) => l === selectedLocation))} onChange={(e) => {
                     const idx = Number(e.target.value);
                     const chosen = locations[idx];
@@ -550,7 +550,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                 </select>
               </label>
               <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <span style={{ color: 'var(--primary-600)' }}>Pickup time</span>
+                <span style={{ color: 'var(--primary-600)' }}>Pickup Time</span>
                 {(() => {
                   const times = (timeOptions && timeOptions.length) ? timeOptions : (() => {
                     const out = [];

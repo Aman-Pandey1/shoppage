@@ -80,7 +80,7 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
         </div>
       )}
     >
-      {/* Site logo at the top */}
+      {/* Site logo at the top (show only once) */}
       {siteLogoSrc ? (
         <div style={{ display: 'grid', placeItems: 'center', marginBottom: 8 }}>
           <img src={siteLogoSrc} alt="logo" style={{ width: 72, height: 72, objectFit: 'contain', opacity: 0.95 }} />
@@ -104,19 +104,14 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
           ) : (
+            // When product has no image, keep empty background without duplicating logo
             <div
               style={{
                 width: '100%',
                 height: '100%',
-                display: 'grid',
-                placeItems: 'center',
                 background: 'rgba(14, 165, 233, 0.06)',
               }}
-            >
-              {siteLogoSrc ? (
-                <img src={siteLogoSrc} alt="logo" style={{ width: 96, height: 96, objectFit: 'contain', opacity: 0.85 }} />
-              ) : null}
-            </div>
+            />
           )}
           <div
             style={{

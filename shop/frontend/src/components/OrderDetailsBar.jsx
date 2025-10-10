@@ -31,17 +31,17 @@ export const OrderDetailsBar = ({
     return '';
   }, [dateOptions, pickupDate]);
   return (
-    <div className="order-bar card animate-fadeInUp" role="region" aria-label="Order details">
+    <div className="order-bar card animate-fadeInUp" role="region" aria-label="Order Details">
       <div className="order-bar__row">
         <div className="order-bar__group">
-          <div className="order-bar__label">Order details</div>
+          <div className="order-bar__label">Order Details</div>
           <button className="order-bar__input" onClick={onChangeOrderType}>
             <span>{orderType}</span>
             <span className="chev">▾</span>
           </button>
         </div>
         <div className="order-bar__group">
-          <div className="order-bar__label">Pickup time</div>
+          <div className="order-bar__label">Pickup Time</div>
           <div className="order-bar__inline" style={{ gap: 8 }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span className="muted" style={{ fontSize: 12 }}>Day</span>
@@ -89,10 +89,10 @@ export const OrderDetailsBar = ({
       </div>
       {Array.isArray(locations) && locations.length > 1 ? (
         <label style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <span className="muted" style={{ fontSize: 12 }}>Restaurant address</span>
+          <span className="muted" style={{ fontSize: 12 }}>Restaurant location</span>
           <select
             className="order-bar__input"
-            aria-label="Select restaurant address"
+            aria-label="Select restaurant location"
             value={(typeof selectedLocationIndex === 'number' && selectedLocationIndex >= 0) ? String(selectedLocationIndex) : ''}
             onChange={(e) => onChangeLocation && onChangeLocation(Number(e.target.value))}
             style={{ padding: '6px 10px', borderRadius: 8 }}
@@ -110,12 +110,12 @@ export const OrderDetailsBar = ({
         </label>
       ) : (Array.isArray(locations) && locations.length === 1 ? (
         <div className="muted" style={{ marginTop: 8, textAlign: 'left', fontSize: 12 }}>
-          <strong style={{ color: 'var(--text)', fontWeight: 700 }}>Restaurant address</strong>
+          <strong style={{ color: 'var(--text)', fontWeight: 700 }}>Restaurant location</strong>
           <span> — {`${locations[0]?.name || 'Restaurant'} — ${(locations[0]?.address?.streetAddress || []).join(' ')}, ${locations[0]?.address?.city || ''}`}</span>
         </div>
       ) : (addressSummary ? (
         <div className="muted" style={{ marginTop: 8, textAlign: 'left', fontSize: 12 }}>
-          <strong style={{ color: 'var(--text)', fontWeight: 700 }}>Restaurant address</strong>
+          <strong style={{ color: 'var(--text)', fontWeight: 700 }}>Restaurant location</strong>
           <span> — {addressSummary}</span>
         </div>
       ) : null))}
