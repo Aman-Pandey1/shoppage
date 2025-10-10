@@ -1,5 +1,5 @@
 import React from 'react';
-import { fetchJsonAllowError, patchJson, resolveAssetUrl } from '../lib/api';
+import { fetchJsonAllowError, patchJson, resolveAssetUrl, postFile } from '../lib/api';
 import { Modal } from './Modal';
 
 export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
