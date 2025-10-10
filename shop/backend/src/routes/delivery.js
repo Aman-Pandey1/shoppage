@@ -170,6 +170,16 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 		let distanceKm = null;
 		try { distanceKm = await distanceBetweenAddressesKm(pickup.address, dropoff.address); } catch {}
 		const distanceFeeCents = calculateDistanceFeeCents(distanceKm);
+    // Enforce payment before creating real delivery in non-mock environments
+    if (!isMock) {
+      // If an externalId corresponds to an order, ensure it is paid. Otherwise block.
+      if (externalId) {
+        const maybeOrder = await Order.findOne({ externalId });
+        if (maybeOrder && maybeOrder.status !== 'paid') {
+          return res.status(402).json({ error: 'Payment required before creating delivery' });
+        }
+      }
+    }
     // Use selected provider
     const delivery = provider === 'doordash'
       ? await ddCreateDelivery({ storeId: site.doordashStoreId, pickup: safePickup, dropoff: safeDropoff, manifestItems, tip: 0, externalId })
