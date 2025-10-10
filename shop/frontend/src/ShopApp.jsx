@@ -108,9 +108,12 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       addItem({ product, quantity: Math.max(1, Math.min(99, Number(quantity) || 1)) });
       setPendingProduct(null);
       setPendingQuantity(1);
-      // If pickup is selected, open the pickup order details popup
+      // If pickup is selected, open order details; if delivery, go straight to delivery details (then payment)
       if (state.fulfillmentType === 'pickup') {
         setOrderDetailsOpen(true);
+      } else if (state.fulfillmentType === 'delivery') {
+        if (!getAuthToken()) { setLoginOpen(true); return; }
+        setDeliveryModalOpen(true);
       }
     }
   }
@@ -126,6 +129,9 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       addItem({ product: pendingProduct, variant, spiceLevel: undefined, quantity: pendingQuantity });
       if (state.fulfillmentType === 'pickup') {
         setOrderDetailsOpen(true);
+      } else if (state.fulfillmentType === 'delivery') {
+        if (!getAuthToken()) { setLoginOpen(true); return; }
+        setDeliveryModalOpen(true);
       }
       setPendingProduct(null);
       setPendingVariant(null);
@@ -144,6 +150,9 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       addItem({ product: pendingProduct, variant: pendingVariant || undefined, spiceLevel: spice, quantity: confirmedQty });
       if (state.fulfillmentType === 'pickup') {
         setOrderDetailsOpen(true);
+      } else if (state.fulfillmentType === 'delivery') {
+        if (!getAuthToken()) { setLoginOpen(true); return; }
+        setDeliveryModalOpen(true);
       }
       setPendingProduct(null);
       setPendingSpice(undefined);
@@ -158,6 +167,9 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       addItem({ product: pendingProduct, variant: pendingVariant || undefined, spiceLevel: pendingSpice, selectedOptions: selected, quantity: pendingQuantity });
       if (state.fulfillmentType === 'pickup') {
         setOrderDetailsOpen(true);
+      } else if (state.fulfillmentType === 'delivery') {
+        if (!getAuthToken()) { setLoginOpen(true); return; }
+        setDeliveryModalOpen(true);
       }
     }
     setPendingProduct(null);
