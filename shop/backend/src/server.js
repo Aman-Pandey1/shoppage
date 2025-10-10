@@ -60,8 +60,8 @@ app.use((req, res, next) => {
 });
 app.use(cors(corsOptions));
 // Express 5 uses path-to-regexp v8, which is stricter about wildcard params.
-// Use a regex param to match any path for OPTIONS preflight.
-app.options('/:path(.*)', cors(corsOptions));
+// Use a wildcard matcher for OPTIONS preflight across all routes.
+app.options('*', cors(corsOptions));
 // Mount webhook with raw body BEFORE JSON parser
 app.use('/webhook/uber', express.raw({ type: '*/*' }), webhookUberRouter);
 app.use('/webhook/stripe', express.raw({ type: 'application/json' }), webhookStripeRouter);
