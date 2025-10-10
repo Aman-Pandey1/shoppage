@@ -88,12 +88,11 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
 
   function handleChooseFulfillment(type) {
     setFulfillmentType(type);
+    // Close the selection modal only; do not redirect to payment/details here.
+    // The selection should simply update the header bar. User proceeds from cart.
     setFulfillmentOpen(false);
-    if (type === 'delivery') {
-      setDeliveryModalOpen(true);
-    } else {
-      setOrderDetailsOpen(true);
-    }
+    setOrderDetailsOpen(false);
+    setDeliveryModalOpen(false);
   }
 
   function startAddToCart(product, quantity = 1) {
