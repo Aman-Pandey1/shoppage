@@ -25,36 +25,49 @@ router.get('/', requireAdmin, async (req, res) => {
 });
 
 router.post('/', requireAdmin, async (req, res) => {
-	try {
-		const { siteId } = req.params;
-		const mock = req.app.locals.mockData;
-		if (mock) {
-			const created = { _id: `c-${Date.now()}`, ...req.body, site: siteId };
-			mock.categories.unshift(created);
-			try { saveMockData(req.app.locals.mockData); } catch {}
-			return res.status(201).json(created);
-		}
-		const payload = { ...req.body, site: siteId };
-		const created = await Category.create(payload);
-		res.status(201).json(created);
-	} catch (err) {
-		res.status(400).json({ error: err.message });
-	}
+  try {
+    const { siteId } = req.params;
+    const name = String(req.body?.name || '').trim();
+    const providedImage = String(req.body?.imageUrl || '').trim();
+    const imageUrl = providedImage || `https://picsum.photos/seed/${encodeURIComponent((name || 'category').toLowerCase())}/400/400`;
+    const sortIndex = Number(req.body?.sortIndex) || 0;
+    const mock = req.app.locals.mockData;
+    if (mock) {
+      const created = { _id: `c-${Date.now()}`, name, imageUrl, sortIndex, site: siteId };
+      mock.categories.unshift(created);
+      try { saveMockData(req.app.locals.mockData); } catch {}
+      return res.status(201).json(created);
+    }
+    const payload = { site: siteId, name, imageUrl, sortIndex };
+    const created = await Category.create(payload);
+    res.status(201).json(created);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
 router.patch('/:id', requireAdmin, async (req, res) => {
 	try {
 		const { siteId, id } = req.params;
 		const mock = req.app.locals.mockData;
-		if (mock) {
-			const idx = mock.categories.findIndex((c) => c._id === id && c.site === siteId);
-			if (idx === -1) return res.status(404).json({ error: 'Not found' });
-			const updated = { ...mock.categories[idx], ...req.body };
-			mock.categories[idx] = updated;
-			try { saveMockData(req.app.locals.mockData); } catch {}
-			return res.json(updated);
-		}
-		const updated = await Category.findOneAndUpdate({ _id: id, site: siteId }, req.body, { new: true });
+        if (mock) {
+            const idx = mock.categories.findIndex((c) => c._id === id && c.site === siteId);
+            if (idx === -1) return res.status(404).json({ error: 'Not found' });
+            const incoming = { ...req.body };
+            // Prevent wiping imageUrl when an empty string is sent from UI
+            if (!(typeof incoming.imageUrl === 'string' && incoming.imageUrl.trim().length > 0)) {
+              delete incoming.imageUrl;
+            }
+            const updated = { ...mock.categories[idx], ...incoming };
+            mock.categories[idx] = updated;
+            try { saveMockData(req.app.locals.mockData); } catch {}
+            return res.json(updated);
+        }
+        const incoming = { ...req.body };
+        if (incoming.imageUrl !== undefined && !String(incoming.imageUrl || '').trim()) {
+          delete incoming.imageUrl;
+        }
+        const updated = await Category.findOneAndUpdate({ _id: id, site: siteId }, incoming, { new: true });
 		if (!updated) return res.status(404).json({ error: 'Not found' });
 		res.json(updated);
 	} catch (err) {
