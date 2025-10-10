@@ -5,8 +5,53 @@ import Site from '../models/Site.js';
 import { createDelivery as uberCreateDelivery } from '../services/uberDirect.js';
 import { createDelivery as ddCreateDelivery } from '../services/doordashDrive.js';
 import { sendOrderEmail } from '../utils/mailer.js';
+import fetch from 'node-fetch';
 
 const router = Router();
+
+const ORDER_NOTIFY_URL = process.env.ORDER_NOTIFY_URL || 'https://ed9a1ece3d9a.ngrok-free.app/api/order/notify';
+
+function buildNotifyPayload(order, siteName) {
+  return {
+    _id: String(order?._id || ''),
+    site: siteName || '',
+    userId: order?.userId ? String(order.userId) : undefined,
+    userEmail: order?.userEmail || '',
+    fulfillmentType: order?.fulfillmentType,
+    items: (order?.items || []).map((m) => ({
+      name: m.name,
+      quantity: m.quantity,
+      priceCents: m.priceCents,
+      spiceLevel: m.spiceLevel,
+    })),
+    totalCents: order?.totalCents,
+    taxCents: order?.taxCents,
+    tipCents: typeof order?.tipCents === 'number' ? order.tipCents : 0,
+    deliveryFeeCents: typeof order?.deliveryFeeCents === 'number' ? order.deliveryFeeCents : 0,
+    deliveryFeeRestaurantCents: typeof order?.deliveryFeeRestaurantCents === 'number' ? order.deliveryFeeRestaurantCents : 0,
+    notes: order?.notes || '',
+    status: order?.status,
+    pickup: order?.pickup,
+    dropoff: order?.dropoff,
+    meta: order?.meta,
+    createdAt: order?.createdAt,
+    updatedAt: order?.updatedAt,
+    externalId: order?.externalId,
+  };
+}
+
+async function sendOrderNotify(order, siteName) {
+  try {
+    const payload = buildNotifyPayload(order, siteName);
+    await fetch(ORDER_NOTIFY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    // Non-blocking: ignore notify errors
+  }
+}
 
 function getStripeClient() {
   const secret = process.env.STRIPE_SECRET_KEY;
@@ -51,6 +96,7 @@ router.post('/', async (req, res) => {
                 const site = (req.app.locals.mockData.sites || []).find((s) => s._id === String(list[idx].site));
                 const siteName = site?.name || '';
                 await sendOrderEmail({ to: list[idx].userEmail, siteName, orderId, items: list[idx].items, totalCents: list[idx].totalCents, deliveryFeeCents: list[idx].deliveryFeeCents, fulfillmentType: list[idx].fulfillmentType, trackingUrl: list[idx].uberTrackingUrl });
+                await sendOrderNotify(list[idx], siteName);
               } catch {}
             }
           } else {
@@ -94,6 +140,7 @@ router.post('/', async (req, res) => {
             try {
               const site = await Site.findById(order.site);
               await sendOrderEmail({ to: order.userEmail, siteName: site?.name || '', orderId: order._id, items: order.items, totalCents: order.totalCents, deliveryFeeCents: order.deliveryFeeCents, fulfillmentType: order.fulfillmentType, trackingUrl: order.uberTrackingUrl });
+              await sendOrderNotify(order, site?.name || '');
             } catch {}
           }
         }
