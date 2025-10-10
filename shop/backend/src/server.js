@@ -27,7 +27,39 @@ import { loadMockData, saveMockData } from './utils/mockStore.js';
 dotenv.config();
 
 const app = express();
-app.use(cors());
+
+// Robust CORS configuration to support preflight and explicit origins
+const defaultAllowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173',
+  'https://shoppage.onrender.com',
+];
+const envAllowed = (process.env.CORS_ALLOW_ORIGINS || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+const allowedOrigins = envAllowed.length ? envAllowed : defaultAllowedOrigins;
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Authorization', 'Content-Type', 'X-Requested-With'],
+  credentials: true,
+  optionsSuccessStatus: 204,
+};
+// Always vary by Origin so caches don't mix responses
+app.use((req, res, next) => {
+  res.header('Vary', 'Origin');
+  next();
+});
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 // Mount webhook with raw body BEFORE JSON parser
 app.use('/webhook/uber', express.raw({ type: '*/*' }), webhookUberRouter);
 app.use('/webhook/stripe', express.raw({ type: 'application/json' }), webhookStripeRouter);
