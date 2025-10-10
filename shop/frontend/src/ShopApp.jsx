@@ -108,6 +108,10 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       addItem({ product, quantity: Math.max(1, Math.min(99, Number(quantity) || 1)) });
       setPendingProduct(null);
       setPendingQuantity(1);
+      // If pickup is selected, open the pickup order details popup
+      if (state.fulfillmentType === 'pickup') {
+        setOrderDetailsOpen(true);
+      }
     }
   }
 
@@ -120,6 +124,9 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       setExtrasOpen(true);
     } else if (pendingProduct) {
       addItem({ product: pendingProduct, variant, spiceLevel: undefined, quantity: pendingQuantity });
+      if (state.fulfillmentType === 'pickup') {
+        setOrderDetailsOpen(true);
+      }
       setPendingProduct(null);
       setPendingVariant(null);
       setPendingQuantity(1);
@@ -135,6 +142,9 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       setExtrasOpen(true);
     } else if (pendingProduct) {
       addItem({ product: pendingProduct, variant: pendingVariant || undefined, spiceLevel: spice, quantity: confirmedQty });
+      if (state.fulfillmentType === 'pickup') {
+        setOrderDetailsOpen(true);
+      }
       setPendingProduct(null);
       setPendingSpice(undefined);
       setPendingVariant(null);
@@ -146,6 +156,9 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     setExtrasOpen(false);
     if (pendingProduct) {
       addItem({ product: pendingProduct, variant: pendingVariant || undefined, spiceLevel: pendingSpice, selectedOptions: selected, quantity: pendingQuantity });
+      if (state.fulfillmentType === 'pickup') {
+        setOrderDetailsOpen(true);
+      }
     }
     setPendingProduct(null);
     setPendingSpice(undefined);
@@ -601,8 +614,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         onConfirmed={(id, summary) => {
           setLastDeliveryId(id);
           if (summary) setDeliveryAddressSummary(summary);
-          // After delivery order is placed, navigate to My Orders
-          try { window.location.href = `/s/${siteSlug}/orders`; } catch {}
+          // Do not navigate away; user continues payment in Stripe
         }}
         manifest={manifest}
       />
@@ -629,9 +641,16 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       <AddToCartToast />
       <UserAuthModal open={loginOpen} onClose={() => setLoginOpen(false)} onSuccess={() => {
         setLoginOpen(false);
-        if (!state.fulfillmentType) setFulfillmentOpen(true);
-        setFulfillmentType('delivery');
-        setDeliveryModalOpen(true);
+        // Stay on the same page. If no order type yet, prompt selection.
+        if (!state.fulfillmentType) {
+          setFulfillmentOpen(true);
+          return;
+        }
+        // If delivery was selected before login, continue to delivery details.
+        if (state.fulfillmentType === 'delivery') {
+          setDeliveryModalOpen(true);
+        }
+        // If pickup, keep user here; they can open order details from cart.
       }} />
       <footer className="site-footer">© All Rights Reserved By Blue Boxx</footer>
     </div>
