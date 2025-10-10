@@ -29,8 +29,17 @@ export const MyOrdersPage = () => {
     try {
       const sp = new URLSearchParams(location.search || window.location.search || '');
       const status = (sp.get('status') || '').toLowerCase();
+      const cs = sp.get('cs'); // Stripe checkout session id
       if (status === 'placed' || status === 'success') {
         setSuccessMsg(status === 'success' ? 'Payment successful! Your order has been placed.' : 'Order placed! Your order has been created.');
+        // If coming from Stripe success, confirm on backend in case webhook missed
+        if (cs) {
+          (async () => {
+            try {
+              await fetchJson(`/api/payments/stripe/confirm/${encodeURIComponent(cs)}`);
+            } catch {}
+          })();
+        }
         // Clean the query param from the URL without reload
         try {
           const clean = window.location.pathname + window.location.hash;

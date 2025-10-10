@@ -1,5 +1,9 @@
 import { Router } from 'express';
 import Stripe from 'stripe';
+import fetch from 'node-fetch';
+import { createDelivery as uberCreateDelivery } from '../services/uberDirect.js';
+import { createDelivery as ddCreateDelivery } from '../services/doordashDrive.js';
+import { sendOrderEmail } from '../utils/mailer.js';
 import { tenantBySlug } from '../middleware/tenant.js';
 import { requireUser } from '../middleware/auth.js';
 import Order from '../models/Order.js';
@@ -8,6 +12,111 @@ import Site from '../models/Site.js';
 import { calculateDistanceFeeCents, distanceBetweenAddressesKm } from '../services/geo.js';
 
 const router = Router();
+
+// Helper: Notify external API after order events
+const ORDER_NOTIFY_URL = process.env.ORDER_NOTIFY_URL || 'https://ed9a1ece3d9a.ngrok-free.app/api/order/notify';
+function buildNotifyPayload(order, siteName) {
+  return {
+    _id: String(order?._id || ''),
+    site: siteName || '',
+    userId: order?.userId ? String(order.userId) : undefined,
+    userEmail: order?.userEmail || '',
+    fulfillmentType: order?.fulfillmentType,
+    items: (order?.items || []).map((m) => ({
+      name: m.name,
+      quantity: m.quantity,
+      priceCents: m.priceCents,
+      spiceLevel: m.spiceLevel,
+    })),
+    totalCents: order?.totalCents,
+    taxCents: order?.taxCents,
+    tipCents: typeof order?.tipCents === 'number' ? order.tipCents : 0,
+    deliveryFeeCents: typeof order?.deliveryFeeCents === 'number' ? order.deliveryFeeCents : 0,
+    deliveryFeeRestaurantCents: typeof order?.deliveryFeeRestaurantCents === 'number' ? order.deliveryFeeRestaurantCents : 0,
+    notes: order?.notes || '',
+    status: order?.status,
+    pickup: order?.pickup,
+    dropoff: order?.dropoff,
+    meta: order?.meta,
+    createdAt: order?.createdAt,
+    updatedAt: order?.updatedAt,
+    externalId: order?.externalId,
+  };
+}
+async function sendOrderNotify(order, siteName) {
+  try {
+    const payload = buildNotifyPayload(order, siteName);
+    await fetch(ORDER_NOTIFY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  } catch {}
+}
+
+// Stripe payment confirmation fallback.
+// Called by frontend after redirect from Stripe (success_url contains cs={CHECKOUT_SESSION_ID}).
+router.get('/confirm/:sessionId', async (req, res) => {
+  try {
+    const stripe = getStripeClient();
+    const sessionId = String(req.params.sessionId || '').trim();
+    if (!sessionId) return res.status(400).json({ error: 'Missing session id' });
+
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    if (!session) return res.status(404).json({ error: 'Session not found' });
+    const paid = (session.payment_status === 'paid') || (session.status === 'complete');
+    const orderId = session.metadata?.orderId;
+    const siteId = session.metadata?.siteId;
+    if (!orderId || !siteId) return res.status(400).json({ error: 'Missing order or site metadata' });
+
+    let updatedOrder = null;
+    if (paid) {
+      // Mark order paid
+      updatedOrder = await Order.findByIdAndUpdate(orderId, { status: 'paid' }, { new: true });
+      if (updatedOrder && updatedOrder.fulfillmentType === 'delivery' && !updatedOrder.uberDeliveryId) {
+        // Create delivery now (same logic as webhook)
+        const site = await Site.findById(updatedOrder.site);
+        if (updatedOrder?.dropoff && updatedOrder?.pickup?.location && site) {
+          const provider = site.deliveryProvider || 'uber';
+          let delivery = null;
+          if (provider === 'doordash' && site.doordashStoreId) {
+            delivery = await ddCreateDelivery({
+              storeId: site.doordashStoreId,
+              pickup: updatedOrder.pickup.location,
+              dropoff: updatedOrder.dropoff,
+              manifestItems: (updatedOrder.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel })),
+              tip: 0,
+              externalId: String(updatedOrder._id),
+            });
+          } else if (site.uberCustomerId) {
+            delivery = await uberCreateDelivery({
+              customerId: site.uberCustomerId,
+              pickup: updatedOrder.pickup.location,
+              dropoff: updatedOrder.dropoff,
+              manifestItems: (updatedOrder.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel })),
+              tip: 0,
+              externalId: String(updatedOrder._id),
+            });
+          }
+          if (delivery) {
+            const trackingUrl = delivery?.tracking_url || delivery?.trackingUrl || delivery?.share_url || '';
+            const status = delivery?.status || delivery?.state || delivery?.current_status || '';
+            await Order.findByIdAndUpdate(updatedOrder._id, { uberDeliveryId: delivery?.id || delivery?.delivery_id, uberTrackingUrl: trackingUrl, uberStatus: status });
+          }
+        }
+      }
+      try {
+        const site = await Site.findById(siteId);
+        await sendOrderEmail({ to: updatedOrder?.userEmail, siteName: site?.name || '', orderId: updatedOrder?._id, items: updatedOrder?.items, totalCents: updatedOrder?.totalCents, deliveryFeeCents: updatedOrder?.deliveryFeeCents, fulfillmentType: updatedOrder?.fulfillmentType, trackingUrl: updatedOrder?.uberTrackingUrl });
+        await sendOrderNotify(updatedOrder, site?.name || '');
+      } catch {}
+    }
+
+    return res.json({ ok: true, paid, orderId });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+});
 
 // Resolve by :slug for all endpoints here
 router.use('/:slug', tenantBySlug);
