@@ -13,8 +13,8 @@ import { calculateDistanceFeeCents, distanceBetweenAddressesKm } from '../servic
 
 const router = Router();
 
-// Helper: Notify external API after order events
-const ORDER_NOTIFY_URL = process.env.ORDER_NOTIFY_URL || 'https://ed9a1ece3d9a.ngrok-free.app/api/order/notify';
+// Helper: Notify external API after order events (default to Blueboxx backend)
+const ORDER_NOTIFY_URL = process.env.ORDER_NOTIFY_URL || 'https://blueboxx-backend.onrender.com/api/order/notify';
 function buildNotifyPayload(order, siteName) {
   return {
     _id: String(order?._id || ''),
