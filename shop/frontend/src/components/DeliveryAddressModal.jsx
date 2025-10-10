@@ -192,21 +192,39 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, width: '100%' }}>
         <button onClick={onClose}>Cancel</button>
         <button className="primary-btn" disabled={loading} onClick={async () => {
-          // Save address without showing quotes or delivery provider info
           setLoading(true); setError(undefined);
           try {
-            const address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
-            const normalizedPhone = normalizePhoneForCountry(phone, country);
+            // Validate and build dropoff
             if (!name.trim()) throw new Error('Full Name is required');
-            if (!normalizedPhone) throw new Error('Enter phone in E.164 like +14155550123');
             if (!addr1.trim() || !city.trim() || !province.trim() || !isValidPostal(postalCode)) throw new Error('Enter a valid full address');
+            const normalizedPhone = normalizePhoneForCountry(phone, country);
+            if (!normalizedPhone) throw new Error('Enter phone in E.164 like +14155550123');
+            const address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
+            const dropoff = { name, phone: normalizedPhone, address };
+
+            // Create Stripe checkout session for delivery
+            const payload = {
+              dropoff,
+              manifestItems: (Array.isArray(manifest) ? manifest : []).map(m => ({
+                name: m.name,
+                quantity: m.quantity,
+                priceCents: m.priceCents || 0,
+                size: m.size,
+                spiceLevel: m.spiceLevel,
+              })),
+              pickupLocationIndex: typeof selectedPickupIndex === 'number' ? selectedPickupIndex : 0,
+            };
+            const res = await postJson(`/api/payments/stripe/${siteSlug}/checkout/delivery`, payload);
+            const url = res?.url;
+            if (!url) throw new Error('Failed to start payment');
             const summary = [addr1, city, postalCode].filter(Boolean).join(', ');
-            onConfirmed(`addr-${Date.now()}`, summary);
-            onClose();
+            try { onConfirmed(`addr-${Date.now()}`, summary); } catch {}
+            try { onClose(); } catch {}
+            window.location.href = url;
           } catch (e) {
-            setError(e?.message || 'Failed to save address');
+            setError(parseServerError(e) || 'Failed to start payment');
           } finally { setLoading(false); }
-        }}>Confirm Address</button>
+        }}>Continue to payment</button>
       </div>
     )}>
       {error ? <div style={{ color: 'var(--danger)', marginBottom: 8 }}>{error}</div> : null}
