@@ -60,6 +60,7 @@ if (USE_MOCK_DATA) {
         _id: "mock-site",
         name: "Default Site",
         slug: "default",
+        tagline: "Sweets, Catering & Pickup",
         isActive: true,
         locations: [
           {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { fetchJsonAllowError, patchJson, resolveAssetUrl } from '../lib/api';
+import { fetchJsonAllowError, patchJson, resolveAssetUrl, postFile } from '../lib/api';
 import { Modal } from './Modal';
 
 export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
@@ -14,6 +14,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
   const [uberCustomerId, setUberCustomerId] = React.useState(site?.uberCustomerId || '');
   const [brandColor, setBrandColor] = React.useState(site?.brandColor || '#0ea5e9');
   const [stripeAccountId, setStripeAccountId] = React.useState(site?.stripeAccountId || '');
+  const [tagline, setTagline] = React.useState(site?.tagline || '');
   const [deliveryProvider, setDeliveryProvider] = React.useState(site?.deliveryProvider || 'uber');
   const [doordashStoreId, setDoordashStoreId] = React.useState(site?.doordashStoreId || '');
   const [locations, setLocations] = React.useState(Array.isArray(site?.locations) ? site.locations : []);
@@ -73,6 +74,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
       sun: { open: '10:00', close: '22:00', closed: false },
     });
     setLogoUrl(site?.logoUrl || '');
+    setTagline(site?.tagline || '');
     setLogoFile(null);
   }, [site?._id]);
 
@@ -128,6 +130,10 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
       </div>
 
       <div style={{ gridColumn: '1 / -1', fontWeight: 800, marginTop: 8 }}>Branding</div>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span>Header title (optional)</span>
+        <input value={tagline} onChange={(e) => setTagline(e.target.value)} placeholder="Shown next to logo; leave blank to hide" />
+      </label>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span>Logo URL</span>
         <input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." />
@@ -326,6 +332,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
             splitDeliveryFee: !!splitDeliveryFee,
             hours,
             logoUrl,
+            tagline,
             stripeAccountId,
             pickup: {
               name: pickupName,

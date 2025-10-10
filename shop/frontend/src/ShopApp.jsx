@@ -14,7 +14,7 @@ import { ExtrasModal } from './components/ExtrasModal';
 import { VariantModal } from './components/VariantModal';
 import { AddToCartToast } from './components/AddToCartToast';
 import { DeliveryAddressModal } from './components/DeliveryAddressModal';
-import { fetchJson, getAuthToken } from './lib/api';
+import { fetchJson, getAuthToken, postJson } from './lib/api';
 import { UserAuthModal } from './components/UserAuthModal';
 
 const Main = ({ siteSlug = 'default', initialCategoryId }) => {
