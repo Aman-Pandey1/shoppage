@@ -23,6 +23,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   const [cities, setCities] = useState([]);
   const [selectedPickupIndex, setSelectedPickupIndex] = useState(null);
   const [selectedCity, setSelectedCity] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const itemsSubtotalCents = React.useMemo(() => {
     try {
@@ -190,23 +191,39 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   return (
     <Modal open={open} onClose={onClose} title="Delivery details" footer={(
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, width: '100%' }}>
-        <button onClick={onClose}>Cancel</button>
-        <button className="primary-btn" disabled={loading} onClick={async () => {
-          // Save address without showing quotes or delivery provider info
-          setLoading(true); setError(undefined);
-          try {
-            const address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
-            const normalizedPhone = normalizePhoneForCountry(phone, country);
-            if (!name.trim()) throw new Error('Full Name is required');
-            if (!normalizedPhone) throw new Error('Enter phone in E.164 like +14155550123');
-            if (!addr1.trim() || !city.trim() || !province.trim() || !isValidPostal(postalCode)) throw new Error('Enter a valid full address');
-            const summary = [addr1, city, postalCode].filter(Boolean).join(', ');
-            onConfirmed(`addr-${Date.now()}`, summary);
-            onClose();
-          } catch (e) {
-            setError(e?.message || 'Failed to save address');
-          } finally { setLoading(false); }
-        }}>Confirm Address</button>
+        <button onClick={onClose} disabled={submitting}>Cancel</button>
+        <button
+          className="primary-btn"
+          disabled={loading || submitting}
+          onClick={async () => {
+            if (submitting) return;
+            setSubmitting(true); setError(undefined);
+            try {
+              // Validate address
+              const normalizedPhone = normalizePhoneForCountry(phone, country);
+              if (!name.trim()) throw new Error('Full Name is required');
+              if (!normalizedPhone) throw new Error('Enter phone in E.164 like +14155550123');
+              if (!addr1.trim() || !city.trim() || !province.trim() || !isValidPostal(postalCode)) throw new Error('Enter a valid full address');
+              const address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
+              const dropoff = { name, phone: normalizedPhone, address };
+              const pickupLocationIndex = (typeof selectedPickupIndex === 'number' && selectedPickupIndex >= 0) ? selectedPickupIndex : 0;
+              const payload = { dropoff, manifestItems: Array.isArray(manifest) ? manifest : [], pickupLocationIndex };
+              const res = await postJson(`/api/payments/stripe/${siteSlug}/checkout/delivery`, payload);
+              const url = res?.url;
+              if (!url) throw new Error('Failed to start payment');
+              // Update summary in header so user sees their address before redirect
+              try {
+                const summary = [addr1, city, postalCode].filter(Boolean).join(', ');
+                onConfirmed && onConfirmed(`addr-${Date.now()}`, summary);
+              } catch {}
+              onClose && onClose();
+              window.location.href = url;
+            } catch (e) {
+              setError(e?.message || 'Failed to start payment');
+            } finally { setSubmitting(false); }
+          }}
+          aria-busy={submitting ? 'true' : 'false'}
+        >{submitting ? 'Processing…' : 'Proceed to Payment'}</button>
       </div>
     )}>
       {error ? <div style={{ color: 'var(--danger)', marginBottom: 8 }}>{error}</div> : null}

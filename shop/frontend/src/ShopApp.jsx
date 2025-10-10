@@ -37,6 +37,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [deliveryAddressSummary, setDeliveryAddressSummary] = useState('');
   const [orderError, setOrderError] = useState('');
   const [pickupPaymentMethod, setPickupPaymentMethod] = useState('online'); // 'online' | 'cod'
+  const [pickupSubmitting, setPickupSubmitting] = useState(false);
 
   // Additional UI state brought from the alternate implementation
   // Order details state
@@ -417,7 +418,9 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         state.fulfillmentType === 'pickup' ? (
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, width: '100%' }}>
             {/* Removed OK button; Confirm remains */}
-            <button className="primary-btn" disabled={!selectedLocation || manifest.length === 0} onClick={async () => {
+            <button className="primary-btn" disabled={!selectedLocation || manifest.length === 0 || pickupSubmitting} onClick={async () => {
+              if (pickupSubmitting) return;
+              setPickupSubmitting(true);
               try {
                 setOrderError('');
                 const token = getAuthToken();
@@ -458,7 +461,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                   if (parsed && parsed.error) msg = parsed.error;
                 } catch {}
                 setOrderError(msg);
-              }
+              } finally { setPickupSubmitting(false); }
             }}>Confirm</button>
           </div>
         ) : null
@@ -601,8 +604,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         onConfirmed={(id, summary) => {
           setLastDeliveryId(id);
           if (summary) setDeliveryAddressSummary(summary);
-          // After delivery order is placed, navigate to My Orders
-          try { window.location.href = `/s/${siteSlug}/orders`; } catch {}
+          // Do not navigate here; payment flow will redirect after success
         }}
         manifest={manifest}
       />

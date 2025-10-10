@@ -20,6 +20,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
     return `(in ${mins} min)`;
   }, [readyAt, now]);
 
+  const [placing, setPlacing] = React.useState(false);
   return (
     <aside
       style={{
@@ -149,20 +150,25 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
           type="button"
           className="primary-btn"
           style={{ width: '100%', padding: '12px 16px', borderRadius: 12 }}
-          disabled={state.items.length === 0}
-          onClick={() => {
-            if (typeof onCheckout === 'function') {
-              try { onCheckout(); } catch {}
-            } else {
-              try {
+          disabled={state.items.length === 0 || placing}
+          onClick={async () => {
+            if (placing) return;
+            setPlacing(true);
+            try {
+              if (typeof onCheckout === 'function') {
+                await onCheckout();
+              } else {
                 const evt = new CustomEvent('cart:confirm');
                 window.dispatchEvent(evt);
-              } catch {}
+              }
+            } finally {
+              // Do not reset immediately if navigation occurs; small delay
+              setTimeout(() => setPlacing(false), 1500);
             }
           }}
-          aria-disabled={state.items.length === 0 ? 'true' : 'false'}
+          aria-disabled={state.items.length === 0 || placing ? 'true' : 'false'}
         >
-          Confirm →
+          {placing ? 'Processing…' : 'Confirm →'}
         </button>
       </div>
     </aside>
