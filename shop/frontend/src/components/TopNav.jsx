@@ -68,7 +68,8 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
         <div className="brand" aria-label="Store brand">
           <div className="brand__logo" aria-hidden>
             {logoSrc ? (
-              <img src={logoSrc} alt="logo" />
+              // Gracefully handle broken logo URLs
+              <img src={logoSrc} alt="logo" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement && (e.currentTarget.parentElement.innerHTML = '🍽️'); }} />
             ) : (
               <span>🍽️</span>
             )}
