@@ -101,25 +101,34 @@ router.post('/:id/image', requireAdmin, upload.single('file'), async (req, res) 
   try {
     const { siteId, id } = req.params;
     if (!req.file) return res.status(400).json({ error: 'Missing file' });
-    const dir = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads');
-    try { await mkdir(dir, { recursive: true }); } catch {}
-    const ext = path.extname(req.file.originalname || '') || '.png';
-    const fileName = `cat-${siteId}-${id}-${Date.now()}-${Math.random().toString(36).slice(2,8)}${ext}`;
-    const filePath = path.join(dir, fileName);
-    await writeFile(filePath, req.file.buffer);
-    const publicUrl = `/uploads/${fileName}`;
+    // Decide storage: inline data URL in DB (default) or filesystem path
+    const STORE_IN_DB = String(process.env.STORE_CATEGORY_IMAGE_IN_DB || process.env.STORE_IMAGES_IN_DB || 'true').toLowerCase() === 'true';
+    let storedUrl = '';
+    if (STORE_IN_DB) {
+      const mime = (req.file.mimetype && /^image\//.test(req.file.mimetype)) ? req.file.mimetype : 'image/png';
+      const base64 = req.file.buffer.toString('base64');
+      storedUrl = `data:${mime};base64,${base64}`;
+    } else {
+      const dir = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads');
+      try { await mkdir(dir, { recursive: true }); } catch {}
+      const ext = path.extname(req.file.originalname || '') || '.png';
+      const fileName = `cat-${siteId}-${id}-${Date.now()}-${Math.random().toString(36).slice(2,8)}${ext}`;
+      const filePath = path.join(dir, fileName);
+      await writeFile(filePath, req.file.buffer);
+      storedUrl = `/uploads/${fileName}`;
+    }
 
     const mock = req.app.locals.mockData;
     if (mock) {
       const idx = mock.categories.findIndex((c) => c._id === id && c.site === siteId);
       if (idx === -1) return res.status(404).json({ error: 'Not found' });
-      mock.categories[idx].imageUrl = publicUrl;
+      mock.categories[idx].imageUrl = storedUrl;
       try { saveMockData(req.app.locals.mockData); } catch {}
-      return res.json({ ok: true, imageUrl: publicUrl, category: mock.categories[idx] });
+      return res.json({ ok: true, imageUrl: storedUrl, category: mock.categories[idx] });
     }
-    const updated = await Category.findOneAndUpdate({ _id: id, site: siteId }, { imageUrl: publicUrl }, { new: true });
+    const updated = await Category.findOneAndUpdate({ _id: id, site: siteId }, { imageUrl: storedUrl }, { new: true });
     if (!updated) return res.status(404).json({ error: 'Not found' });
-    res.json({ ok: true, imageUrl: publicUrl, category: updated });
+    res.json({ ok: true, imageUrl: storedUrl, category: updated });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
