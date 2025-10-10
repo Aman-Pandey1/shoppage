@@ -52,6 +52,7 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
   }, []);
 
   const name = site?.name || 'Store';
+  const tagline = (typeof site?.tagline === 'string') ? site.tagline : '';
   const rawLogoUrl = site?.logoUrl || '';
   const resolvedBackendLogo = React.useMemo(() => resolveAssetUrl(rawLogoUrl), [rawLogoUrl]);
   const logoCandidates = React.useMemo(() => {
@@ -94,7 +95,9 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
           </div>
           <div className="brand__text">
             <div className="brand__name">{name}</div>
-            <div className="brand__tagline hide-mobile">Sweets, Catering & Pickup</div>
+            {tagline ? (
+              <div className="brand__tagline hide-mobile">{tagline}</div>
+            ) : null}
           </div>
         </div>
         {/* On mobile, when the cart is open we only show "Cart" at top */}

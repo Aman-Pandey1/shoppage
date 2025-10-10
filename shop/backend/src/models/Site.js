@@ -6,6 +6,8 @@ const SiteSchema = new mongoose.Schema({
 	domains: [{ type: String }],
 	isActive: { type: Boolean, default: true },
 	brandColor: { type: String, default: '#0ea5e9' },
+	// Optional short text shown next to logo in header
+	tagline: { type: String },
 	// Optional logo URL displayed in the shop header
 	logoUrl: { type: String },
 	// Stripe Connect: connected account for this site (acct_...)

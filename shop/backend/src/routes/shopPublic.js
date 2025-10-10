@@ -23,7 +23,7 @@ router.use('/:slug', tenantBySlug);
 router.get('/:slug/site', async (req, res) => {
   try {
     const { site } = req;
-    return res.json({ siteId: req.siteId, slug: site.slug, name: site.name, brandColor: site.brandColor, deliveryFeeCents: Number(site.deliveryFeeCents) || 0, splitDeliveryFee: !!site.splitDeliveryFee, logoUrl: site.logoUrl });
+    return res.json({ siteId: req.siteId, slug: site.slug, name: site.name, brandColor: site.brandColor, deliveryFeeCents: Number(site.deliveryFeeCents) || 0, splitDeliveryFee: !!site.splitDeliveryFee, logoUrl: site.logoUrl, tagline: site.tagline || '' });
   } catch (err) {
     return res.status(400).json({ error: err.message });
   }
