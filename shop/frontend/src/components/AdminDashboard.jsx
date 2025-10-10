@@ -732,10 +732,14 @@ export const AdminDashboard = () => {
                   if (!categoryForm.name) return;
                   // First create/update the category basic fields
                   let cat;
+                  const payload = { name: categoryForm.name };
+                  if (typeof categoryForm.imageUrl === 'string' && categoryForm.imageUrl.trim()) {
+                    payload.imageUrl = categoryForm.imageUrl.trim();
+                  }
                   if (categoryForm.id) {
-                    cat = await patchJson(`/api/admin/sites/${selectedSiteId}/categories/${categoryForm.id}`, { name: categoryForm.name, imageUrl: categoryForm.imageUrl });
+                    cat = await patchJson(`/api/admin/sites/${selectedSiteId}/categories/${categoryForm.id}`, payload);
                   } else {
-                    cat = await postJson(`/api/admin/sites/${selectedSiteId}/categories`, { name: categoryForm.name, imageUrl: categoryForm.imageUrl });
+                    cat = await postJson(`/api/admin/sites/${selectedSiteId}/categories`, payload);
                   }
                   // If a file is selected, upload it and update imageUrl
                   if (categoryForm.file) {
