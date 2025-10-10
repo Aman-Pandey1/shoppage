@@ -59,10 +59,9 @@ app.use((req, res, next) => {
   next();
 });
 app.use(cors(corsOptions));
-// Express 5 uses path-to-regexp v8, which is stricter about wildcard params.
-// Use a compliant wildcard matcher for OPTIONS preflight across all routes.
-// NOTE: `*` is invalid in v8; use `(.*)` instead.
-app.options('(.*)', cors(corsOptions));
+// Handle CORS preflight for all routes using a RegExp to avoid
+// path-to-regexp string parsing issues in Express 5.
+app.options(/.*/, cors(corsOptions));
 // Mount webhook with raw body BEFORE JSON parser
 app.use('/webhook/uber', express.raw({ type: '*/*' }), webhookUberRouter);
 app.use('/webhook/stripe', express.raw({ type: 'application/json' }), webhookStripeRouter);
@@ -243,7 +242,7 @@ if (USE_MOCK_DATA) {
   }
 }
 
-app.get("/health", (_req, res) =>
+app.use("/health", (_req, res) =>
   res.json({ ok: true, mock: !!app.locals.mockData })
 );
 app.use("/api/auth", authRouter);
