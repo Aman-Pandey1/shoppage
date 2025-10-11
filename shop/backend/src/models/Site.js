@@ -12,11 +12,22 @@ const SiteSchema = new mongoose.Schema({
 	logoUrl: { type: String },
 	// Stripe Connect: connected account for this site (acct_...)
 	stripeAccountId: { type: String },
+	// Optional: per-site Stripe keys (fallback to process.env if absent)
+	stripePublishableKey: { type: String },
+	stripeSecretKey: { type: String },
 	uberCustomerId: { type: String },
+	// Optional: per-site Uber Direct API credentials and env override
+	uberClientId: { type: String },
+	uberClientSecret: { type: String },
+	uberEnv: { type: String, enum: ['production', 'sandbox'], default: undefined },
 	// Which delivery provider to use for this site: 'uber' or 'doordash'
 	deliveryProvider: { type: String, enum: ['uber', 'doordash'], default: 'uber' },
 	// DoorDash Drive configuration per site (non-secret identifiers)
 	doordashStoreId: { type: String },
+	// Optional: per-site DoorDash Drive API credentials
+	doordashDeveloperId: { type: String },
+	doordashKeyId: { type: String },
+	doordashSigningSecret: { type: String },
 	// Flat delivery fee in cents applied to delivery orders only
 	deliveryFeeCents: { type: Number, default: 0 },
 	// When true, split delivery fee 50/50 between customer and restaurant

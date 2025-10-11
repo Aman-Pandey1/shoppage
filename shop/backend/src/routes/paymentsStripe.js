@@ -58,9 +58,17 @@ async function sendOrderNotify(order, siteName) {
 // Called by frontend after redirect from Stripe (success_url contains cs={CHECKOUT_SESSION_ID}).
 router.get('/confirm/:sessionId', async (req, res) => {
   try {
-    const stripe = getStripeClient();
     const sessionId = String(req.params.sessionId || '').trim();
     if (!sessionId) return res.status(400).json({ error: 'Missing session id' });
+    // Try to resolve site from order by externalId to use per-site Stripe key if configured
+    let siteForClient = null;
+    try {
+      const byExternal = await Order.findOne({ externalId: sessionId });
+      if (byExternal) {
+        siteForClient = await Site.findById(byExternal.site);
+      }
+    } catch {}
+    const stripe = getStripeClient(siteForClient);
 
     const session = await stripe.checkout.sessions.retrieve(sessionId);
     if (!session) return res.status(404).json({ error: 'Session not found' });
@@ -96,6 +104,7 @@ router.get('/confirm/:sessionId', async (req, res) => {
               manifestItems: (updatedOrder.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel })),
               tip: 0,
               externalId: String(updatedOrder._id),
+              creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv }
             });
           }
           if (delivery) {
@@ -121,8 +130,9 @@ router.get('/confirm/:sessionId', async (req, res) => {
 // Resolve by :slug for all endpoints here
 router.use('/:slug', tenantBySlug);
 
-function getStripeClient() {
-  const secret = process.env.STRIPE_SECRET_KEY;
+function getStripeClient(site) {
+  const siteSecret = site?.stripeSecretKey;
+  const secret = siteSecret || process.env.STRIPE_SECRET_KEY;
   if (!secret) throw new Error('Missing STRIPE_SECRET_KEY');
   return new Stripe(secret);
 }
@@ -135,7 +145,7 @@ function getCurrency() {
 // Create Stripe Checkout session for a pickup order
 router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
   try {
-    const stripe = getStripeClient();
+    const stripe = getStripeClient(req.site);
     const currency = getCurrency();
     const { items = [], pickup, notes, coupon } = req.body || {};
 
@@ -234,16 +244,20 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
       }] : []),
     ];
 
+    // Build PI data depending on per-site vs Connect
+    const usePerSiteStripe = !!req.site?.stripeSecretKey;
+    const piDataPickup = (!usePerSiteStripe && req.site?.stripeAccountId) ? {
+      transfer_data: { destination: req.site.stripeAccountId },
+      on_behalf_of: req.site.stripeAccountId,
+    } : undefined;
+
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       line_items: lineItems,
       success_url: `${origin}/s/${encodeURIComponent(slug)}/orders?status=success&cs={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/s/${encodeURIComponent(slug)}?status=cancelled`,
       customer_email: req.user?.email || undefined,
-      payment_intent_data: req.site?.stripeAccountId ? {
-        transfer_data: { destination: req.site.stripeAccountId },
-        on_behalf_of: req.site.stripeAccountId,
-      } : undefined,
+      payment_intent_data: piDataPickup,
       metadata: {
         orderId: String(orderId),
         siteId: String(req.siteId),
@@ -270,7 +284,7 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
 // Create Stripe Checkout session for a delivery order (Uber created after payment via webhook)
 router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
   try {
-    const stripe = getStripeClient();
+    const stripe = getStripeClient(req.site);
     const currency = getCurrency();
     const { dropoff, manifestItems = [], pickupLocationIndex, notes, coupon } = req.body || {};
     const mock = req.app.locals.mockData;
@@ -379,17 +393,20 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
       }] : []),
     ];
 
+    const usePerSiteStripeDel = !!site?.stripeSecretKey;
+    const piDataDelivery = (!usePerSiteStripeDel && site?.stripeAccountId) ? {
+      transfer_data: { destination: site.stripeAccountId },
+      application_fee_amount: fullDeliveryFeeCents,
+      on_behalf_of: site.stripeAccountId,
+    } : undefined;
+
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       line_items: lineItems,
       success_url: `${origin}/s/${encodeURIComponent(slug)}/orders?status=success&cs={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/s/${encodeURIComponent(slug)}?status=cancelled`,
       customer_email: req.user?.email || undefined,
-      payment_intent_data: site?.stripeAccountId ? {
-        transfer_data: { destination: site.stripeAccountId },
-        application_fee_amount: fullDeliveryFeeCents,
-        on_behalf_of: site.stripeAccountId,
-      } : undefined,
+      payment_intent_data: piDataDelivery,
       metadata: {
         orderId: String(orderId),
         siteId: String(req.siteId),
