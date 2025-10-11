@@ -57,13 +57,14 @@ router.get('/:slug/hours', async (req, res) => {
   try {
     const { site } = req;
     const defaultHours = {
-      mon: { open: '10:00', close: '22:00', closed: false },
-      tue: { open: '10:00', close: '22:00', closed: false },
-      wed: { open: '10:00', close: '22:00', closed: false },
-      thu: { open: '10:00', close: '22:00', closed: false },
-      fri: { open: '10:00', close: '22:00', closed: false },
-      sat: { open: '10:00', close: '22:00', closed: false },
-      sun: { open: '10:00', close: '22:00', closed: false },
+      // Default last online order at 21:30
+      mon: { open: '10:00', close: '21:30', closed: false },
+      tue: { open: '10:00', close: '21:30', closed: false },
+      wed: { open: '10:00', close: '21:30', closed: false },
+      thu: { open: '10:00', close: '21:30', closed: false },
+      fri: { open: '10:00', close: '21:30', closed: false },
+      sat: { open: '10:00', close: '21:30', closed: false },
+      sun: { open: '10:00', close: '21:30', closed: false },
     };
     const mock = req.app.locals.mockData;
     if (mock) {
@@ -157,6 +158,30 @@ router.get('/:slug/coupon/:code', async (req, res) => {
     }
     const found = await Coupon.findOne({ site: req.siteId, code });
     if (!found) return res.status(404).json({ error: 'Invalid coupon' });
+    return res.json({ code: found.code, percent: Number(found.percent) || 0 });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+});
+
+// Public: get the latest coupon for a site (for auto-apply)
+router.get('/:slug/default-coupon', async (req, res) => {
+  try {
+    const mock = req.app.locals.mockData;
+    if (mock) {
+      const site = req.siteId;
+      const list = (mock.coupons || []).filter((c) => c.site === site);
+      if (!list.length) return res.status(404).json({ error: 'No coupons' });
+      const sorted = list.slice().sort((a, b) => {
+        const ta = new Date(a.createdAt || 0).getTime();
+        const tb = new Date(b.createdAt || 0).getTime();
+        return tb - ta;
+      });
+      const chosen = sorted[0];
+      return res.json({ code: chosen.code, percent: Number(chosen.percent) || 0 });
+    }
+    const found = await Coupon.findOne({ site: req.siteId }).sort({ createdAt: -1 });
+    if (!found) return res.status(404).json({ error: 'No coupons' });
     return res.json({ code: found.code, percent: Number(found.percent) || 0 });
   } catch (err) {
     return res.status(400).json({ error: err.message });
