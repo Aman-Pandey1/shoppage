@@ -63,9 +63,10 @@ function normalizeE164Phone(raw, fallback) {
 }
 
 export async function requestQuote({ customerId, pickup, dropoff, creds }) {
-    // Simulate only when explicitly using mock data or missing credentials.
-    // In sandbox, we should exercise Uber's sandbox API using real calls.
-    if (isUsingMock() || isMissingUberCreds(creds)) {
+    // Simulate only when credentials are missing. Even if mock mode is on,
+    // prefer calling Uber's sandbox/production when creds are provided so
+    // admin tests and dashboards reflect real deliveries.
+    if (isMissingUberCreds(creds)) {
         return {
             id: `q-${Date.now()}`,
             fee: { amount: 799, currency_code: 'CAD' },
@@ -102,9 +103,10 @@ export async function requestQuote({ customerId, pickup, dropoff, creds }) {
 }
 
 export async function createDelivery({ customerId, pickup, dropoff, manifestItems, tip, externalId, creds }) {
-    // Simulate only when explicitly using mock data or missing credentials.
-    // In sandbox, call the Uber sandbox API using real network requests.
-    if (isUsingMock() || isMissingUberCreds(creds)) {
+    // Simulate only when credentials are missing. Even if mock mode is on,
+    // prefer calling Uber's sandbox/production when creds are provided so
+    // admin tests and dashboards reflect real deliveries.
+    if (isMissingUberCreds(creds)) {
         const id = `d-${Date.now()}`;
         return {
             id,
