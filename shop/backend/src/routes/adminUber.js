@@ -101,18 +101,49 @@ router.get('/sites/:siteId/health/stripe', requireAdmin, async (req, res) => {
       site = await Site.findById(req.params.siteId);
     }
     if (!site) return res.status(404).json({ ok: false, error: 'Site not found' });
-    const siteSecret = site?.stripeSecretKey;
-    const secret = siteSecret || process.env.STRIPE_SECRET_KEY;
-    if (!secret) return res.status(400).json({ ok: false, error: 'Missing STRIPE_SECRET_KEY' });
-    const stripe = new Stripe(secret);
-    // site already loaded above
+
     const acct = site?.stripeAccountId;
-    if (!acct) return res.json({ ok: false, error: 'Stripe Account ID not set' });
-    const account = await stripe.accounts.retrieve(acct);
-    const enabled = !!account?.charges_enabled;
-    const payouts = !!account?.payouts_enabled;
-    const detailsSubmitted = !!account?.details_submitted;
-    return res.json({ ok: enabled, charges_enabled: enabled, payouts_enabled: payouts, details_submitted: detailsSubmitted, accountId: account?.id });
+    const perSiteSecret = site?.stripeSecretKey;
+    const platformSecret = process.env.STRIPE_SECRET_KEY;
+
+    // Two supported modes:
+    // 1) Connect mode: use platform key and site's connected account id
+    // 2) Per-site key mode: no connected account id required; verify the per-site key's own account
+
+    // Per-site key mode (no connected account id). Verify the key's own account.
+    if (!acct && perSiteSecret) {
+      const stripeForSite = new Stripe(perSiteSecret);
+      const account = await stripeForSite.accounts.retrieve();
+      const enabled = !!account?.charges_enabled;
+      const payouts = !!account?.payouts_enabled;
+      const detailsSubmitted = !!account?.details_submitted;
+      return res.json({ ok: enabled, charges_enabled: enabled, payouts_enabled: payouts, details_submitted: detailsSubmitted, accountId: account?.id, mode: 'per-site-key' });
+    }
+
+    // Connect mode requires platform secret and a connected account id
+    if (!acct) {
+      return res.json({ ok: false, error: 'Stripe Account ID not set. Either set a connected account (acct_...) or use a per-site secret key.' });
+    }
+    if (!platformSecret) {
+      return res.status(400).json({ ok: false, error: 'Missing STRIPE_SECRET_KEY (platform key) in environment' });
+    }
+    const stripe = new Stripe(platformSecret);
+    try {
+      const account = await stripe.accounts.retrieve(acct);
+      const enabled = !!account?.charges_enabled;
+      const payouts = !!account?.payouts_enabled;
+      const detailsSubmitted = !!account?.details_submitted;
+      return res.json({ ok: enabled, charges_enabled: enabled, payouts_enabled: payouts, details_submitted: detailsSubmitted, accountId: account?.id, mode: 'connect' });
+    } catch (e) {
+      const msg = String(e?.message || '');
+      if (/does not have access to account|No such account/i.test(msg)) {
+        return res.status(400).json({
+          ok: false,
+          error: 'Platform key does not have access to this Stripe account. Ensure the account is connected to your platform in the same mode (test/live) or re-authorize access.'
+        });
+      }
+      throw e;
+    }
   } catch (err) {
     return res.status(400).json({ ok: false, error: err.message });
   }
