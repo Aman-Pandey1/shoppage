@@ -92,8 +92,44 @@ router.post('/', async (req, res) => {
             const list = req.app.locals.mockData.orders || [];
             const idx = list.findIndex((o) => String(o._id) === String(orderId));
             if (idx >= 0) {
+              // Mark paid
               list[idx].status = 'paid';
               try {
+                // If delivery order without provider delivery yet, create it now (real API if creds exist)
+                if (list[idx].fulfillmentType === 'delivery' && !list[idx].uberDeliveryId) {
+                  const site = (req.app.locals.mockData.sites || []).find((s) => s._id === String(list[idx].site));
+                  if (site && list[idx]?.dropoff && list[idx]?.pickup?.location) {
+                    const provider = site.deliveryProvider || 'uber';
+                    let delivery = null;
+                    if (provider === 'doordash' && site.doordashStoreId) {
+                      delivery = await ddCreateDelivery({
+                        storeId: site.doordashStoreId,
+                        pickup: list[idx].pickup.location,
+                        dropoff: list[idx].dropoff,
+                        manifestItems: (list[idx].items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel })),
+                        tip: 0,
+                        externalId: String(list[idx]._id),
+                      });
+                    } else if (site.uberCustomerId) {
+                      delivery = await uberCreateDelivery({
+                        customerId: site.uberCustomerId,
+                        pickup: list[idx].pickup.location,
+                        dropoff: list[idx].dropoff,
+                        manifestItems: (list[idx].items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel })),
+                        tip: 0,
+                        externalId: String(list[idx]._id),
+                        creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv }
+                      });
+                    }
+                    if (delivery) {
+                      const trackingUrl = delivery?.tracking_url || delivery?.trackingUrl || delivery?.share_url || '';
+                      const status = delivery?.status || delivery?.state || delivery?.current_status || '';
+                      list[idx].uberDeliveryId = delivery?.id || delivery?.delivery_id;
+                      list[idx].uberTrackingUrl = trackingUrl;
+                      list[idx].uberStatus = status;
+                    }
+                  }
+                }
                 const site = (req.app.locals.mockData.sites || []).find((s) => s._id === String(list[idx].site));
                 const siteName = site?.name || '';
                 await sendOrderEmail({ to: list[idx].userEmail, siteName, orderId, items: list[idx].items, totalCents: list[idx].totalCents, deliveryFeeCents: list[idx].deliveryFeeCents, fulfillmentType: list[idx].fulfillmentType, trackingUrl: list[idx].uberTrackingUrl });
