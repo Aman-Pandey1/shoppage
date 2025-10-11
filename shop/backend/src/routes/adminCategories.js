@@ -101,7 +101,8 @@ router.post('/:id/image', requireAdmin, upload.single('file'), async (req, res) 
   try {
     const { siteId, id } = req.params;
     if (!req.file) return res.status(400).json({ error: 'Missing file' });
-    // Decide storage: inline data URL in DB (default) or filesystem path
+    // Decide storage: inline data URL in DB (default) or filesystem path. Inline avoids
+    // ephemeral FS issues on platforms like Render where files can disappear on redeploy.
     const STORE_IN_DB = String(process.env.STORE_CATEGORY_IMAGE_IN_DB || process.env.STORE_IMAGES_IN_DB || 'true').toLowerCase() === 'true';
     let storedUrl = '';
     if (STORE_IN_DB) {

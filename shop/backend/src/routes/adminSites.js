@@ -63,18 +63,31 @@ router.patch('/:siteId', requireAdmin, async (req, res) => {
 	}
 });
 
-// Upload site logo file and set logoUrl
+// Upload site logo and set logoUrl. Defaults to storing inline base64 to avoid
+// ephemeral filesystem issues on hosts like Render. To store on disk instead,
+// set STORE_SITE_LOGO_IN_DB=false (or STORE_IMAGES_IN_DB=false).
 router.post('/:siteId/logo', requireAdmin, upload.single('file'), async (req, res) => {
   try {
     const { siteId } = req.params;
     if (!req.file) return res.status(400).json({ error: 'Missing file' });
-    const dir = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads');
-    try { await mkdir(dir, { recursive: true }); } catch {}
-    const ext = path.extname(req.file.originalname || '') || '.png';
-    const fileName = `site-${siteId}-${Date.now()}-${Math.random().toString(36).slice(2,8)}${ext}`;
-    const filePath = path.join(dir, fileName);
-    await writeFile(filePath, req.file.buffer);
-    const publicUrl = `/uploads/${fileName}`;
+
+    const STORE_IN_DB = String(process.env.STORE_SITE_LOGO_IN_DB || process.env.STORE_IMAGES_IN_DB || 'true')
+      .toLowerCase() === 'true';
+
+    let publicUrl = '';
+    if (STORE_IN_DB) {
+      const mime = (req.file.mimetype && /^image\//.test(req.file.mimetype)) ? req.file.mimetype : 'image/png';
+      const base64 = req.file.buffer.toString('base64');
+      publicUrl = `data:${mime};base64,${base64}`;
+    } else {
+      const dir = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads');
+      try { await mkdir(dir, { recursive: true }); } catch {}
+      const ext = path.extname(req.file.originalname || '') || '.png';
+      const fileName = `site-${siteId}-${Date.now()}-${Math.random().toString(36).slice(2,8)}${ext}`;
+      const filePath = path.join(dir, fileName);
+      await writeFile(filePath, req.file.buffer);
+      publicUrl = `/uploads/${fileName}`;
+    }
 
     const mock = req.app.locals.mockData;
     if (mock) {
