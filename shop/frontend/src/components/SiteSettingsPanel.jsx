@@ -14,9 +14,17 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
   const [uberCustomerId, setUberCustomerId] = React.useState(site?.uberCustomerId || '');
   const [brandColor, setBrandColor] = React.useState(site?.brandColor || '#0ea5e9');
   const [stripeAccountId, setStripeAccountId] = React.useState(site?.stripeAccountId || '');
+  const [stripePublishableKey, setStripePublishableKey] = React.useState(site?.stripePublishableKey || '');
+  const [stripeSecretKey, setStripeSecretKey] = React.useState(site?.stripeSecretKey || '');
   const [tagline, setTagline] = React.useState(site?.tagline || '');
   const [deliveryProvider, setDeliveryProvider] = React.useState(site?.deliveryProvider || 'uber');
+  const [uberClientId, setUberClientId] = React.useState(site?.uberClientId || '');
+  const [uberClientSecret, setUberClientSecret] = React.useState(site?.uberClientSecret || '');
+  const [uberEnv, setUberEnv] = React.useState(site?.uberEnv || 'production');
   const [doordashStoreId, setDoordashStoreId] = React.useState(site?.doordashStoreId || '');
+  const [doordashDeveloperId, setDoordashDeveloperId] = React.useState(site?.doordashDeveloperId || '');
+  const [doordashKeyId, setDoordashKeyId] = React.useState(site?.doordashKeyId || '');
+  const [doordashSigningSecret, setDoordashSigningSecret] = React.useState(site?.doordashSigningSecret || '');
   const [locations, setLocations] = React.useState(Array.isArray(site?.locations) ? site.locations : []);
   const [cities, setCities] = React.useState(Array.isArray(site?.cities) ? site.cities : []);
   const [deliveryFee, setDeliveryFee] = React.useState(((Number(site?.deliveryFeeCents)||0)/100).toFixed(2));
@@ -62,8 +70,16 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
     setDeliveryFee(((Number(site?.deliveryFeeCents)||0)/100).toFixed(2));
     setSplitDeliveryFee(!!site?.splitDeliveryFee);
     setStripeAccountId(site?.stripeAccountId || '');
+    setStripePublishableKey(site?.stripePublishableKey || '');
+    setStripeSecretKey(site?.stripeSecretKey || '');
     setDeliveryProvider(site?.deliveryProvider || 'uber');
     setDoordashStoreId(site?.doordashStoreId || '');
+    setDoordashDeveloperId(site?.doordashDeveloperId || '');
+    setDoordashKeyId(site?.doordashKeyId || '');
+    setDoordashSigningSecret(site?.doordashSigningSecret || '');
+    setUberClientId(site?.uberClientId || '');
+    setUberClientSecret(site?.uberClientSecret || '');
+    setUberEnv(site?.uberEnv || 'production');
     setHours(site?.hours || {
       mon: { open: '10:00', close: '22:00', closed: false },
       tue: { open: '10:00', close: '22:00', closed: false },
@@ -155,6 +171,17 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
         <input value={stripeAccountId} onChange={(e) => setStripeAccountId(e.target.value)} placeholder="acct_123..." />
         <span className="muted" style={{ fontSize: 12 }}>Each website should have its own connected Stripe account.</span>
       </label>
+      <div className="card" style={{ gridColumn: '1 / -1', padding: 10, display: 'grid', gap: 8 }}>
+        <div style={{ fontWeight: 700 }}>Stripe keys (optional per-site override)</div>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span>Publishable key</span>
+          <input value={stripePublishableKey} onChange={(e) => setStripePublishableKey(e.target.value)} placeholder="pk_live_... or pk_test_..." />
+        </label>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span>Secret key</span>
+          <input value={stripeSecretKey} onChange={(e) => setStripeSecretKey(e.target.value)} placeholder="sk_live_... or sk_test_..." />
+        </label>
+      </div>
 
       <div style={{ gridColumn: '1 / -1', fontWeight: 800, marginTop: 8 }}>Delivery settings</div>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -165,11 +192,46 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
         </select>
         <span className="muted" style={{ fontSize: 12 }}>Only one provider is active at a time per website.</span>
       </label>
+      {deliveryProvider === 'uber' ? (
+        <div className="card" style={{ gridColumn: '1 / -1', padding: 10, display: 'grid', gap: 8 }}>
+          <div style={{ fontWeight: 700 }}>Uber Direct credentials (optional per-site override)</div>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>Uber Client ID</span>
+            <input value={uberClientId} onChange={(e) => setUberClientId(e.target.value)} placeholder="client_id" />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>Uber Client Secret</span>
+            <input value={uberClientSecret} onChange={(e) => setUberClientSecret(e.target.value)} placeholder="client_secret" />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>Uber Environment</span>
+            <select value={uberEnv} onChange={(e) => setUberEnv(e.target.value)}>
+              <option value="production">Production</option>
+              <option value="sandbox">Sandbox</option>
+            </select>
+          </label>
+        </div>
+      ) : null}
       {deliveryProvider === 'doordash' ? (
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <span>DoorDash Store ID</span>
-          <input value={doordashStoreId} onChange={(e) => setDoordashStoreId(e.target.value)} placeholder="store-..." />
-        </label>
+        <div className="card" style={{ gridColumn: '1 / -1', padding: 10, display: 'grid', gap: 8 }}>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>DoorDash Store ID</span>
+            <input value={doordashStoreId} onChange={(e) => setDoordashStoreId(e.target.value)} placeholder="store-..." />
+          </label>
+          <div style={{ fontWeight: 700 }}>DoorDash Drive credentials (optional per-site override)</div>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>Developer ID</span>
+            <input value={doordashDeveloperId} onChange={(e) => setDoordashDeveloperId(e.target.value)} placeholder="developer-id" />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>Key ID</span>
+            <input value={doordashKeyId} onChange={(e) => setDoordashKeyId(e.target.value)} placeholder="key-id" />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>Signing Secret</span>
+            <input value={doordashSigningSecret} onChange={(e) => setDoordashSigningSecret(e.target.value)} placeholder="signing-secret" />
+          </label>
+        </div>
       ) : null}
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span>Flat delivery fee (in $)</span>
@@ -326,6 +388,14 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
             brandColor,
             deliveryProvider,
             doordashStoreId,
+            doordashDeveloperId,
+            doordashKeyId,
+            doordashSigningSecret,
+            uberClientId,
+            uberClientSecret,
+            uberEnv,
+            stripePublishableKey,
+            stripeSecretKey,
             locations,
             cities,
             deliveryFeeCents: Math.max(0, Math.round(Number(deliveryFee || 0) * 100)),

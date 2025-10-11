@@ -103,7 +103,7 @@ router.post('/:slug/quote', async (req, res) => {
     // Use selected provider
     const quote = provider === 'doordash'
       ? await ddRequestQuote({ storeId: site.doordashStoreId, pickup, dropoff })
-      : await uberRequestQuote({ customerId: site.uberCustomerId, pickup, dropoff });
+      : await uberRequestQuote({ customerId: site.uberCustomerId, pickup, dropoff, creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv } });
     const split = !!site.splitDeliveryFee;
     const customerDeliveryFeeCents = split ? Math.round((Number(distanceFeeCents) || 0) / 2) : (Number(distanceFeeCents) || 0);
     res.json({ ...quote, distanceKm, distanceFeeCents, customerDeliveryFeeCents, pickupLocationIndex: chosenIdx });
@@ -183,7 +183,7 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
     // Use selected provider
     const delivery = provider === 'doordash'
       ? await ddCreateDelivery({ storeId: site.doordashStoreId, pickup: safePickup, dropoff: safeDropoff, manifestItems, tip: 0, externalId })
-      : await uberCreateDelivery({ customerId: site.uberCustomerId, pickup: safePickup, dropoff: safeDropoff, manifestItems, tip: 0, externalId });
+      : await uberCreateDelivery({ customerId: site.uberCustomerId, pickup: safePickup, dropoff: safeDropoff, manifestItems, tip: 0, externalId, creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv } });
 		// Record order
 		const itemsTotal = (manifestItems || []).reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 1), 0);
 		const isMockEnv = !!req.app?.locals?.mockData;

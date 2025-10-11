@@ -126,6 +126,7 @@ router.post('/', async (req, res) => {
                       manifestItems: (order.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel })),
                       tip: 0,
                       externalId: String(order._id),
+                      creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv }
                     });
                   }
                   if (delivery) {
