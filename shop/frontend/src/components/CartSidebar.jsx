@@ -8,6 +8,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
   const [couponError, setCouponError] = React.useState('');
   const [checking, setChecking] = React.useState(false);
   const [now, setNow] = React.useState(Date.now());
+  const [autoTried, setAutoTried] = React.useState(false);
   React.useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 30000);
     return () => clearInterval(t);
@@ -19,6 +20,29 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
     const mins = Math.max(0, Math.round(diffMs / 60000));
     return `(in ${mins} min)`;
   }, [readyAt, now]);
+
+  // Auto-apply latest coupon if subtotal >= $50 and no coupon applied
+  React.useEffect(() => {
+    const subtotal = state.items.reduce((s, it) => s + it.totalPrice, 0);
+    if (autoTried) return;
+    if (state.coupon) return;
+    if (subtotal < 50) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const siteSlug = (window.location.pathname.match(/\/s\/([^/]+)/)?.[1]) || 'default';
+        const res = await fetchJson(`/api/shop/${siteSlug}/default-coupon`);
+        if (!cancelled && res && res.code && typeof res.percent === 'number' && res.percent > 0) {
+          applyCoupon(res.code, res.percent);
+          setCode(res.code);
+        }
+      } catch {}
+      finally {
+        if (!cancelled) setAutoTried(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [state.items, state.coupon, applyCoupon, autoTried]);
 
   return (
     <aside

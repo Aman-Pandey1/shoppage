@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Modal } from './Modal';
+import { useCart } from '../store/CartContext';
 import { fetchJson, postJson } from '../lib/api';
 
 export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, manifest, initialPickupIndex }) => {
+  const { state } = useCart();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [addr1, setAddr1] = useState('');
@@ -213,6 +215,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
                 spiceLevel: m.spiceLevel,
               })),
               pickupLocationIndex: typeof selectedPickupIndex === 'number' ? selectedPickupIndex : 0,
+              coupon: state?.coupon || undefined,
             };
             const res = await postJson(`/api/payments/stripe/${siteSlug}/checkout/delivery`, payload);
             const url = res?.url;

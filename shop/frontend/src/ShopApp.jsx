@@ -45,6 +45,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [hours, setHours] = useState(null);
   const [dateOptions, setDateOptions] = useState([]);
   const [timeOptions, setTimeOptions] = useState([]);
+  const [isClosedNow, setIsClosedNow] = useState(false);
   const readyAt = React.useMemo(() => {
     try {
       if (!pickupDate || !pickupTime) return null;
@@ -250,6 +251,27 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     return () => { cancelled = true; };
   }, [siteSlug]);
 
+  // Determine if restaurant is currently closed (based on today and now)
+  useEffect(() => {
+    function parse24h(s, fallback) {
+      if (!s || !/^\d{2}:\d{2}$/.test(s)) return fallback;
+      const [hh, mm] = s.split(':').map(Number);
+      return { hh, mm };
+    }
+    function keyForToday(d) {
+      return ['sun','mon','tue','wed','thu','fri','sat'][d.getDay()];
+    }
+    const now = new Date();
+    const key = keyForToday(now);
+    const cfg = hours?.[key];
+    if (!cfg || cfg.closed) { setIsClosedNow(true); return; }
+    const { hh: oh = 10, mm: om = 0 } = parse24h(cfg.open, { hh: 10, mm: 0 });
+    const { hh: ch = 22, mm: cm = 0 } = parse24h(cfg.close, { hh: 22, mm: 0 });
+    const open = new Date(now); open.setHours(oh, om, 0, 0);
+    const close = new Date(now); close.setHours(ch, cm, 0, 0);
+    setIsClosedNow(!(now >= open && now <= close));
+  }, [hours]);
+
   // Compute date options (today + next 6 days, respecting closed days)
   useEffect(() => {
     function formatDateLabel(date, isToday) {
@@ -405,6 +427,10 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
             setLoginOpen(true);
             return;
           }
+          if (isClosedNow) {
+            alert('Restaurant is closed. Online ordering resumes tomorrow.');
+            return;
+          }
           // Close cart before showing next step so modal is visible on mobile
           setMobileCartOpen(false);
           if (!state.fulfillmentType) {
@@ -422,6 +448,12 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       />
       <TopNav siteSlug={siteSlug} isCartOpen={mobileCartOpen} onSignIn={() => setLoginOpen(true)} onOpenCart={() => setMobileCartOpen(true)} cartCount={state.items.length} />
       <main className="content">
+        {isClosedNow ? (
+          <div className="card" style={{ marginBottom: 12, borderLeft: '3px solid var(--danger)', padding: 10 }}>
+            <div style={{ fontWeight: 700 }}>Restaurant closed</div>
+            <div className="muted" style={{ fontSize: 12 }}>Online ordering is closed for today. Last order at 9:30 PM.</div>
+          </div>
+        ) : null}
 
         <div className="card order-type-card">
           <OrderTypeSelection />
