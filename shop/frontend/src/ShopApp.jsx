@@ -301,7 +301,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     if (!pickupDate && opts.length) setPickupDate(opts[0].value);
   }, [hours]);
 
-  // Compute time options for selected date from hours (default 10:00-22:00) with 45-minute intervals
+  // Compute time options for selected date from hours (default 10:00-22:00) with 30-minute intervals
   useEffect(() => {
     function parse24h(s, fallback) {
       if (!s || !/^\d{2}:\d{2}$/.test(s)) return fallback;
@@ -328,9 +328,13 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     if (cfg.closed) { setTimeOptions([]); return; }
     const { hh: openH = 10, mm: openM = 0 } = parse24h(cfg.open, { hh: 10, mm: 0 });
     const { hh: closeH = 22, mm: closeM = 0 } = parse24h(cfg.close, { hh: 22, mm: 0 });
+    // Last selectable slot should be 30 minutes before close
+    let endH = closeH;
+    let endM = closeM - 30;
+    if (endM < 0) { endH -= 1; endM += 60; }
     const options = [];
     let curH = openH, curM = openM;
-    while (curH < closeH || (curH === closeH && curM <= closeM)) {
+    while (curH < endH || (curH === endH && curM <= endM)) {
       const value = format12h(curH, curM);
       let disabled = false;
       if (isTodaySelected) {
@@ -339,7 +343,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         disabled = candidate < now;
       }
       options.push({ value, label: value, disabled });
-      curM += 45;
+      curM += 30;
       if (curM >= 60) { curM -= 60; curH += 1; }
     }
     setTimeOptions(options);
@@ -610,13 +614,16 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                 {(() => {
                   const times = (timeOptions && timeOptions.length) ? timeOptions : (() => {
                     const out = [];
-                    let h = 10, m = 0; // 10:00 AM to 10:00 PM fallback
-                    while (h < 22 || (h === 22 && m === 0)) {
+                    let h = 10, m = 0; // 10:00 AM to 9:30 PM fallback
+                    let endH = 22, endM = 0; // 22:00 close by default
+                    // last slot 30 minutes before close
+                    endM -= 30; if (endM < 0) { endH -= 1; endM += 60; }
+                    while (h < endH || (h === endH && m <= endM)) {
                       const mod = h >= 12 ? 'PM' : 'AM';
                       const h12 = h % 12 === 0 ? 12 : h % 12;
                       const label = `${h12}:${String(m).padStart(2,'0')} ${mod}`;
                       out.push({ value: label, label });
-                      m += 45; if (m >= 60) { m -= 60; h += 1; }
+                      m += 30; if (m >= 60) { m -= 60; h += 1; }
                     }
                     return out;
                   })();
