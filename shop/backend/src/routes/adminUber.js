@@ -110,10 +110,16 @@ router.get('/sites/:siteId/health/stripe', requireAdmin, async (req, res) => {
     // 1) Connect mode: use platform key and site's connected account id
     // 2) Per-site key mode: no connected account id required; verify the per-site key's own account
 
-    // Per-site key mode (no connected account id). Verify the key's own account.
-    if (!acct && perSiteSecret) {
+    // Prefer per-site key if present. If acct is also set, ensure it matches.
+    if (perSiteSecret) {
       const stripeForSite = new Stripe(perSiteSecret);
       const account = await stripeForSite.accounts.retrieve();
+      if (acct && account?.id && acct !== account.id) {
+        return res.status(400).json({
+          ok: false,
+          error: 'Per-site Stripe secret does not match the provided Stripe Account ID. Update one to match the other.'
+        });
+      }
       const enabled = !!account?.charges_enabled;
       const payouts = !!account?.payouts_enabled;
       const detailsSubmitted = !!account?.details_submitted;
