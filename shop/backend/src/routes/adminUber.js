@@ -105,7 +105,6 @@ router.get('/sites/:siteId/health/stripe', requireAdmin, async (req, res) => {
     const secret = siteSecret || process.env.STRIPE_SECRET_KEY;
     if (!secret) return res.status(400).json({ ok: false, error: 'Missing STRIPE_SECRET_KEY' });
     const stripe = new Stripe(secret);
-    const mock = req.app.locals.mockData;
     // site already loaded above
     const acct = site?.stripeAccountId;
     if (!acct) return res.json({ ok: false, error: 'Stripe Account ID not set' });
