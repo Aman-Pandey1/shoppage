@@ -106,7 +106,23 @@ export const CategoryGrid = ({ onSelect, siteSlug = 'default' }) => {
             }}
           >
           {cat.imageUrl ? (
-              <img src={resolveAssetUrl(cat.imageUrl)} alt={cat.name} className="img-cover" loading="lazy" />
+              <img
+                src={resolveAssetUrl(cat.imageUrl)}
+                alt={cat.name}
+                className="img-cover"
+                loading="lazy"
+                onError={(e) => {
+                  try {
+                    const raw = String(cat.imageUrl || '');
+                    if (raw.startsWith('/') && typeof window !== 'undefined') {
+                      e.currentTarget.src = `${window.location.origin}${raw}`;
+                    } else {
+                      const seed = encodeURIComponent(String(cat.name || 'category').toLowerCase());
+                      e.currentTarget.src = `https://picsum.photos/seed/${seed}/400/400`;
+                    }
+                  } catch {}
+                }}
+              />
             ) : (
               <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', fontSize: 42 }}>{getIcon(cat.name)}</div>
             )}

@@ -52,7 +52,22 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
       <div className="card animate-fadeInUp" style={{ padding: 0, overflow: 'hidden', borderLeft: '3px solid var(--primary)', position: 'relative' }}>
         <div style={{ width: '100%', height: 240, background: 'linear-gradient(180deg, var(--primary-alpha-08), var(--primary-alpha-04))', position: 'relative' }}>
           {category.imageUrl ? (
-            <img src={resolveAssetUrl(category.imageUrl)} alt={category.name} className="img-cover" />
+            <img
+              src={resolveAssetUrl(category.imageUrl)}
+              alt={category.name}
+              className="img-cover"
+              onError={(e) => {
+                try {
+                  const raw = String(category.imageUrl || '');
+                  if (raw.startsWith('/') && typeof window !== 'undefined') {
+                    e.currentTarget.src = `${window.location.origin}${raw}`;
+                  } else {
+                    const seed = encodeURIComponent(String(category.name || 'category').toLowerCase());
+                    e.currentTarget.src = `https://picsum.photos/seed/${seed}/800/600`;
+                  }
+                } catch {}
+              }}
+            />
           ) : (
             <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', fontSize: 48 }}>🛍️</div>
           )}

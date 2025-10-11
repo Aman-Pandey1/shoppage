@@ -88,7 +88,11 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
         <div className="brand" aria-label="Store brand">
           <div className="brand__logo" aria-hidden>
             {logoCandidates.length > 0 && logoIndex < logoCandidates.length ? (
-              <img src={logoCandidates[logoIndex]} alt="logo" onError={() => setLogoIndex((i) => i + 1)} />
+              <img
+                src={logoCandidates[logoIndex]}
+                alt="logo"
+                onError={() => setLogoIndex((i) => i + 1)}
+              />
             ) : (
               <span>🍽️</span>
             )}

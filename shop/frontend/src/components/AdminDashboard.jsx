@@ -349,7 +349,24 @@ export const AdminDashboard = () => {
               {categories.map((c) => (
                 <div key={c._id} className="card" style={{ padding: 12 }}>
                   <div style={{ width: '100%', aspectRatio: '4 / 3', borderRadius: 'var(--radius-sm)', overflow: 'hidden', background: 'linear-gradient(180deg, rgba(59,130,246,0.08), rgba(236,72,153,0.08))', marginBottom: 10 }}>
-                    {c.imageUrl ? <img src={resolveAssetUrl(c.imageUrl)} alt={c.name} className="img-cover" /> : null}
+                    {c.imageUrl ? (
+                      <img
+                        src={resolveAssetUrl(c.imageUrl)}
+                        alt={c.name}
+                        className="img-cover"
+                        onError={(e) => {
+                          try {
+                            const raw = String(c.imageUrl || '');
+                            if (raw.startsWith('/') && typeof window !== 'undefined') {
+                              e.currentTarget.src = `${window.location.origin}${raw}`;
+                            } else {
+                              const seed = encodeURIComponent(String(c.name || 'category').toLowerCase());
+                              e.currentTarget.src = `https://picsum.photos/seed/${seed}/400/300`;
+                            }
+                          } catch {}
+                        }}
+                      />
+                    ) : null}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ fontWeight: 800 }}>{c.name}</div>
