@@ -355,15 +355,10 @@ export const AdminDashboard = () => {
                         alt={c.name}
                         className="img-cover"
                         onError={(e) => {
-                          try {
-                            const raw = String(c.imageUrl || '');
-                            if (raw.startsWith('/') && typeof window !== 'undefined') {
-                              e.currentTarget.src = `${window.location.origin}${raw}`;
-                            } else {
-                              const seed = encodeURIComponent(String(c.name || 'category').toLowerCase());
-                              e.currentTarget.src = `https://picsum.photos/seed/${seed}/400/300`;
-                            }
-                          } catch {}
+                          // Avoid retry loops and use a stable placeholder
+                          e.currentTarget.onerror = null;
+                          const seed = encodeURIComponent(String(c.name || 'category').toLowerCase());
+                          e.currentTarget.src = `https://picsum.photos/seed/${seed}/400/300`;
                         }}
                       />
                     ) : null}

@@ -57,15 +57,10 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
               alt={category.name}
               className="img-cover"
               onError={(e) => {
-                try {
-                  const raw = String(category.imageUrl || '');
-                  if (raw.startsWith('/') && typeof window !== 'undefined') {
-                    e.currentTarget.src = `${window.location.origin}${raw}`;
-                  } else {
-                    const seed = encodeURIComponent(String(category.name || 'category').toLowerCase());
-                    e.currentTarget.src = `https://picsum.photos/seed/${seed}/800/600`;
-                  }
-                } catch {}
+                // Avoid retry loops and use a stable placeholder
+                e.currentTarget.onerror = null;
+                const seed = encodeURIComponent(String(category.name || 'category').toLowerCase());
+                e.currentTarget.src = `https://picsum.photos/seed/${seed}/800/600`;
               }}
             />
           ) : (
