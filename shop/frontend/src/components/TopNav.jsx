@@ -109,6 +109,19 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
               <span>🍽️</span>
             )}
           </a>
+          {logoLinkUrl ? (
+            <button
+              className="brand__back"
+              aria-label="Back"
+              title="Back"
+              onClick={() => {
+                if (logoLinkUrl.startsWith('http')) { window.location.href = logoLinkUrl; return; }
+                try { navigate(logoLinkUrl); } catch { window.location.href = logoLinkUrl; }
+              }}
+            >
+              ←
+            </button>
+          ) : null}
           <div className="brand__text">
             <div className="brand__name">{name}</div>
             {tagline ? (
@@ -120,25 +133,6 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
         <div className="nav-title">{isCartOpen ? 'Cart' : 'ONLINE ORDERING'}</div>
 
         <div className="actions" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 6 }}>
-          {logoLinkUrl ? (
-            <button
-              aria-label="Back"
-              title="Back"
-              onClick={() => {
-                if (logoLinkUrl.startsWith('http')) { window.location.href = logoLinkUrl; return; }
-                try { navigate(logoLinkUrl); } catch { window.location.href = logoLinkUrl; }
-              }}
-              style={{
-                background: 'transparent',
-                border: '1px solid #e2e8f0',
-                borderRadius: 8,
-                padding: '6px 8px',
-                cursor: 'pointer'
-              }}
-            >
-              ←
-            </button>
-          ) : null}
           {/* Cart button - hidden on desktop, visible on mobile and tablet */}
           {!isDesktop && (
             <button
