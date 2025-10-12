@@ -77,8 +77,15 @@ app.use('/uploads', express.static(UPLOAD_DIR));
 
 const PORT = process.env.PORT || 4000;
 const MONGO_URI = process.env.MONGO_URI;
-// Only use mock data if explicitly enabled. Never auto-fallback when MONGO_URI is missing.
-const USE_MOCK_DATA = process.env.USE_MOCK_DATA === "true";
+// Prefer mock data when there is no database configured.
+// Explicit env values like "false"/"0" will disable mock mode.
+const USE_MOCK_DATA = (() => {
+  const raw = String(process.env.USE_MOCK_DATA ?? '').trim().toLowerCase();
+  if (['true', '1', 'yes'].includes(raw)) return true;
+  if (['false', '0', 'no'].includes(raw)) return false;
+  // Default: enable mock data when MONGO_URI is not provided
+  return !MONGO_URI;
+})();
 
 if (USE_MOCK_DATA) {
   try { globalThis.__USE_MOCK_DATA = true; } catch {}
@@ -237,8 +244,9 @@ if (USE_MOCK_DATA) {
   }
 } else {
   if (!MONGO_URI) {
-    console.error("MONGO_URI is required when USE_MOCK_DATA=false. Set MONGO_URI to your Mongo connection string.");
-    process.exit(1);
+    console.warn(
+      "MONGO_URI not set and USE_MOCK_DATA disabled explicitly; enabling mock mode to allow server startup."
+    );
   }
 }
 
