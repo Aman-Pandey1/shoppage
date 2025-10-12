@@ -87,6 +87,19 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
     <div className="top-nav" data-menu-open={menuOpen ? 'true' : 'false'} role="banner">
       <div className="top-nav__inner">
         <div className="brand" aria-label="Store brand">
+          {logoLinkUrl ? (
+            <button
+              className="brand__back"
+              aria-label="Back"
+              title="Back"
+              onClick={() => {
+                if (logoLinkUrl.startsWith('http')) { window.location.href = logoLinkUrl; return; }
+                try { navigate(logoLinkUrl); } catch { window.location.href = logoLinkUrl; }
+              }}
+            >
+              ←
+            </button>
+          ) : null}
           <a
             className="brand__logo"
             aria-label="Home"
@@ -109,19 +122,6 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
               <span>🍽️</span>
             )}
           </a>
-          {logoLinkUrl ? (
-            <button
-              className="brand__back"
-              aria-label="Back"
-              title="Back"
-              onClick={() => {
-                if (logoLinkUrl.startsWith('http')) { window.location.href = logoLinkUrl; return; }
-                try { navigate(logoLinkUrl); } catch { window.location.href = logoLinkUrl; }
-              }}
-            >
-              ←
-            </button>
-          ) : null}
           <div className="brand__text">
             <div className="brand__name">{name}</div>
             {tagline ? (
