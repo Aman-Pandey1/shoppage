@@ -247,6 +247,37 @@ if (USE_MOCK_DATA) {
     console.warn(
       "MONGO_URI not set and USE_MOCK_DATA disabled explicitly; enabling mock mode to allow server startup."
     );
+    try { globalThis.__USE_MOCK_DATA = true; } catch {}
+    const persisted = typeof loadMockData === "function" ? loadMockData() : null;
+    if (persisted) {
+      app.locals.mockData = persisted;
+      console.log(
+        "Running with mock data (persisted). Set USE_MOCK_DATA=false to use MongoDB."
+      );
+    } else {
+      app.locals.mockData = {
+        sites: [
+          {
+            _id: "mock-site",
+            name: "Default Site",
+            slug: "default",
+            tagline: "Sweets, Catering & Pickup",
+            isActive: true,
+          },
+        ],
+        categories: [],
+        products: [],
+        users: [],
+        orders: [],
+        coupons: [
+          { _id: 'cp-1', site: 'mock-site', code: 'WELCOME10', percent: 10 },
+        ],
+      };
+      try { if (typeof saveMockData === "function") saveMockData(app.locals.mockData); } catch {}
+      console.log(
+        "Running with mock data. Set USE_MOCK_DATA=false to use MongoDB."
+      );
+    }
   }
 }
 
@@ -304,8 +335,41 @@ async function start() {
         );
       }
     } catch (err) {
-      console.error("MongoDB connection error:", err);
-      process.exit(1);
+      console.error("MongoDB connection error:", err?.message || err);
+      console.warn(
+        "Falling back to mock data mode due to MongoDB connection failure."
+      );
+      try { globalThis.__USE_MOCK_DATA = true; } catch {}
+      const persisted = typeof loadMockData === "function" ? loadMockData() : null;
+      if (persisted) {
+        app.locals.mockData = persisted;
+        console.log(
+          "Running with mock data (persisted). Set USE_MOCK_DATA=false to use MongoDB."
+        );
+      } else {
+        app.locals.mockData = {
+          sites: [
+            {
+              _id: "mock-site",
+              name: "Default Site",
+              slug: "default",
+              tagline: "Sweets, Catering & Pickup",
+              isActive: true,
+            },
+          ],
+          categories: [],
+          products: [],
+          users: [],
+          orders: [],
+          coupons: [
+            { _id: 'cp-1', site: 'mock-site', code: 'WELCOME10', percent: 10 },
+          ],
+        };
+        try { if (typeof saveMockData === "function") saveMockData(app.locals.mockData); } catch {}
+        console.log(
+          "Running with mock data. Set USE_MOCK_DATA=false to use MongoDB."
+        );
+      }
     }
   }
   app.listen(PORT, () => {
