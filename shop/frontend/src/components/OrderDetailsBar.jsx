@@ -87,9 +87,9 @@ export const OrderDetailsBar = ({
           </div>
         </div>
       </div>
-      {Array.isArray(locations) && locations.length > 1 ? (
+      {Array.isArray(locations) && locations.length > 0 ? (
         <label style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <span className="muted" style={{ fontSize: 12 }}>Restaurant location</span>
+          <span className="muted" style={{ fontSize: 12 }}>Restaurant Location</span>
           <select
             className="order-bar__input"
             aria-label="Select restaurant location"
@@ -108,17 +108,12 @@ export const OrderDetailsBar = ({
             })}
           </select>
         </label>
-      ) : (Array.isArray(locations) && locations.length === 1 ? (
-        <div className="muted" style={{ marginTop: 8, textAlign: 'left', fontSize: 12 }}>
-          <strong style={{ color: 'var(--text)', fontWeight: 700 }}>Restaurant location</strong>
-          <span> — {`${locations[0]?.name || 'Restaurant'} — ${(locations[0]?.address?.streetAddress || []).join(' ')}, ${locations[0]?.address?.city || ''}`}</span>
-        </div>
       ) : (addressSummary ? (
         <div className="muted" style={{ marginTop: 8, textAlign: 'left', fontSize: 12 }}>
-          <strong style={{ color: 'var(--text)', fontWeight: 700 }}>Restaurant location</strong>
+          <strong style={{ color: 'var(--text)', fontWeight: 700 }}>Restaurant Location</strong>
           <span> — {addressSummary}</span>
         </div>
-      ) : null))}
+      ) : null)}
     </div>
   );
 };
