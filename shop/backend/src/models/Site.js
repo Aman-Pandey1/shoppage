@@ -10,6 +10,8 @@ const SiteSchema = new mongoose.Schema({
 	tagline: { type: String },
 	// Optional logo URL displayed in the shop header
 	logoUrl: { type: String },
+	// Optional: when set, clicking the logo/back arrow redirects to this URL
+	logoLinkUrl: { type: String },
 	// Stripe Connect: connected account for this site (acct_...)
 	stripeAccountId: { type: String },
 	// Optional: per-site Stripe keys (fallback to process.env if absent)

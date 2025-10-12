@@ -30,6 +30,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
   const [deliveryFee, setDeliveryFee] = React.useState(((Number(site?.deliveryFeeCents)||0)/100).toFixed(2));
   const [splitDeliveryFee, setSplitDeliveryFee] = React.useState(!!site?.splitDeliveryFee);
   const [logoUrl, setLogoUrl] = React.useState(site?.logoUrl || '');
+  const [logoLinkUrl, setLogoLinkUrl] = React.useState(site?.logoLinkUrl || '');
   const [logoFile, setLogoFile] = React.useState(null);
   const [hours, setHours] = React.useState(site?.hours || {
     mon: { open: '10:00', close: '22:00', closed: false },
@@ -90,6 +91,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
       sun: { open: '10:00', close: '22:00', closed: false },
     });
     setLogoUrl(site?.logoUrl || '');
+    setLogoLinkUrl(site?.logoLinkUrl || '');
     setTagline(site?.tagline || '');
     setLogoFile(null);
   }, [site?._id]);
@@ -153,6 +155,11 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span>Logo URL</span>
         <input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." />
+      </label>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span>Logo link (redirect URL)</span>
+        <input value={logoLinkUrl} onChange={(e) => setLogoLinkUrl(e.target.value)} placeholder="https://restaurant-website.com/" />
+        <span className="muted" style={{ fontSize: 12 }}>Logo and back arrow will redirect to this link.</span>
       </label>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span>Or upload logo</span>
@@ -402,6 +409,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
             splitDeliveryFee: !!splitDeliveryFee,
             hours,
             logoUrl,
+            logoLinkUrl,
             tagline,
             stripeAccountId,
             pickup: {
