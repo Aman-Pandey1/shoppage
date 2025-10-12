@@ -40,6 +40,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [orderError, setOrderError] = useState('');
   const [pickupPaymentMethod, setPickupPaymentMethod] = useState('online'); // 'online' | 'cod'
   const [closedAlertOpen, setClosedAlertOpen] = useState(false);
+  const [pickupSubmitting, setPickupSubmitting] = useState(false);
 
   // Additional UI state brought from the alternate implementation
   // Order details state
@@ -474,7 +475,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         state.fulfillmentType === 'pickup' ? (
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, width: '100%' }}>
             {/* Removed OK button; Confirm remains */}
-            <button className="primary-btn" disabled={!selectedLocation || manifest.length === 0} onClick={async () => {
+            <button className="primary-btn" disabled={pickupSubmitting || !selectedLocation || manifest.length === 0} aria-busy={pickupSubmitting} onClick={async () => {
+              setPickupSubmitting(true);
               try {
                 setOrderError('');
                 const token = getAuthToken();
@@ -515,8 +517,23 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                   if (parsed && parsed.error) msg = parsed.error;
                 } catch {}
                 setOrderError(msg);
+              } finally {
+                setPickupSubmitting(false);
               }
-            }}>Confirm</button>
+            }}>
+              {pickupSubmitting ? (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  <svg width="16" height="16" viewBox="0 0 50 50" aria-hidden="true" focusable="false">
+                    <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeDasharray="31.415 31.415">
+                      <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.8s" repeatCount="indefinite" />
+                    </circle>
+                  </svg>
+                  Processing…
+                </span>
+              ) : (
+                'Confirm'
+              )}
+            </button>
           </div>
         ) : null
       )}>
