@@ -4,7 +4,7 @@ import { useCart } from '../store/CartContext';
 import { fetchJson, postJson } from '../lib/api';
 
 export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, manifest, initialPickupIndex }) => {
-  const { state } = useCart();
+  const { state, setDeliveryFeeCents } = useCart();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [addr1, setAddr1] = useState('');
@@ -16,7 +16,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   const [error, setError] = useState();
   const [quote, setQuote] = useState(null);
   const [siteName, setSiteName] = useState('');
-  const [deliveryFeeCents, setDeliveryFeeCents] = useState(0);
+  const [deliveryFeeCentsLocal, setDeliveryFeeCentsLocal] = useState(0);
   const [splitDeliveryFee, setSplitDeliveryFee] = useState(false);
   const [country, setCountry] = useState('CA');
   const [distanceKm, setDistanceKm] = useState(null);
@@ -61,7 +61,9 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         const data = await fetchJson(`/api/shop/${siteSlug}/site`);
         if (!cancelled) {
           setSiteName(data.name || '');
-          setDeliveryFeeCents(Number(data.deliveryFeeCents) || 0);
+          const baseFee = Number(data.deliveryFeeCents) || 0;
+          setDeliveryFeeCents(baseFee);
+          setDeliveryFeeCentsLocal(baseFee);
           setSplitDeliveryFee(!!data.splitDeliveryFee);
         }
       } catch {}
@@ -157,7 +159,10 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
       const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { name, phone: normalizedPhone || phone, address }, pickupLocationIndex: selectedPickupIndex });
       setQuote(q);
       if (typeof q?.distanceKm === 'number') setDistanceKm(q.distanceKm);
-      if (typeof q?.customerDeliveryFeeCents === 'number') setDeliveryFeeCents(q.customerDeliveryFeeCents);
+      if (typeof q?.customerDeliveryFeeCents === 'number') {
+        setDeliveryFeeCents(q.customerDeliveryFeeCents);
+        setDeliveryFeeCentsLocal(q.customerDeliveryFeeCents);
+      }
     } catch (e) {
       setError(parseServerError(e) || 'Failed to get quote');
     } finally { setLoading(false); }

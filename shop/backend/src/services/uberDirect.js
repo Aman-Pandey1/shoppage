@@ -81,6 +81,11 @@ async function getAccessToken(creds) {
       // Do not retry in this case; break
     }
   }
+  // Improve guidance for common invalid_scope issues
+  if (/invalid_scope/i.test(String(lastError || ''))) {
+    const hint = ' Hint: Ensure your Uber app has the "eats.deliveries" permission enabled, and try leaving the scope blank in settings. Also verify the environment (Sandbox vs Production) matches your credentials.';
+    throw new Error((lastError || 'Uber token error') + hint);
+  }
   throw new Error(lastError || 'Uber token error');
 }
 

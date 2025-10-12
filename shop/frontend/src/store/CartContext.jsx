@@ -47,7 +47,7 @@ function generateItemId(productId, spiceLevel, selectedOptions, variant) {
 }
 
 export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => {
-  const [state, setState] = useState({ items: [], notes: '', coupon: null });
+  const [state, setState] = useState({ items: [], notes: '', coupon: null, fulfillmentType: undefined, deliveryFeeCents: 0 });
   const [lastAdded, setLastAdded] = useState(null);
 
   useEffect(() => {
@@ -67,7 +67,17 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
   }, [state, storageKey]);
 
   const setFulfillmentType = useCallback((type) => {
-    setState((prev) => ({ ...prev, fulfillmentType: type }));
+    setState((prev) => ({
+      ...prev,
+      fulfillmentType: type,
+      // Clear delivery fee when switching away from delivery
+      deliveryFeeCents: type === 'delivery' ? prev.deliveryFeeCents : 0,
+    }));
+  }, []);
+
+  const setDeliveryFeeCents = useCallback((cents) => {
+    const value = Math.max(0, Math.round(Number(cents) || 0));
+    setState((prev) => ({ ...prev, deliveryFeeCents: value }));
   }, []);
 
   const setNotes = useCallback((text) => {
@@ -142,7 +152,7 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
   }, [state.items, state.coupon]);
 
   const value = useMemo(
-    () => ({ state, setFulfillmentType, addItem, removeItem, updateQuantity, clearCart, getCartTotal, lastAdded, setNotes, applyCoupon, clearCoupon }),
+    () => ({ state, setFulfillmentType, addItem, removeItem, updateQuantity, clearCart, getCartTotal, lastAdded, setNotes, applyCoupon, clearCoupon, setDeliveryFeeCents }),
     [state, setFulfillmentType, addItem, removeItem, updateQuantity, clearCart, getCartTotal, lastAdded, setNotes, applyCoupon, clearCoupon]
   );
 

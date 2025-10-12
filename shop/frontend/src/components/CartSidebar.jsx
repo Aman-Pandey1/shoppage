@@ -47,6 +47,17 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
     return () => { cancelled = true; };
   }, [state.items, state.coupon, applyCoupon, autoTried]);
 
+  // Derived pricing
+  const itemsSubtotal = React.useMemo(() => state.items.reduce((s, it) => s + it.totalPrice, 0), [state.items]);
+  const discount = React.useMemo(() => {
+    if (!state.coupon || itemsSubtotal < 50) return 0;
+    return itemsSubtotal * (state.coupon.percent / 100);
+  }, [state.coupon, itemsSubtotal]);
+  const itemsAfterDiscount = Math.max(0, itemsSubtotal - discount);
+  const tax = itemsAfterDiscount * 0.05;
+  const deliveryFee = state.fulfillmentType === 'delivery' ? (Number(state.deliveryFeeCents || 0) / 100) : 0;
+  const grandTotal = itemsAfterDiscount + tax + deliveryFee;
+
   return (
     <aside
       style={{
@@ -75,7 +86,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: 12 }} className="muted">TOTAL</div>
-            <div style={{ fontWeight: 800 }}>${getCartTotal().toFixed(2)}</div>
+            <div style={{ fontWeight: 800 }}>${grandTotal.toFixed(2)}</div>
           </div>
         </div>
       </div>
@@ -156,22 +167,28 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
         <div style={{ display: 'grid', gap: 6, marginTop: 10 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span className="muted">Items</span>
-            <span>${state.items.reduce((s, it) => s + it.totalPrice, 0).toFixed(2)}</span>
+            <span>${itemsSubtotal.toFixed(2)}</span>
           </div>
           {couponEligible ? (
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span className="muted">Discount ({state.coupon.percent}% )</span>
-              <span>-${(subtotal * (state.coupon.percent/100)).toFixed(2)}</span>
+              <span>-${discount.toFixed(2)}</span>
             </div>
           ) : null}
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span className="muted">Tax (5%)</span>
-            <span>${(getCartTotal() * 0.05).toFixed(2)}</span>
+            <span>${tax.toFixed(2)}</span>
           </div>
+          {state.fulfillmentType === 'delivery' ? (
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span className="muted">Delivery fee</span>
+              <span>${deliveryFee.toFixed(2)}</span>
+            </div>
+          ) : null}
           <div style={{ height: 1, background: 'var(--border)' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800 }}>
             <span>Total</span>
-            <span>${(getCartTotal() * 1.05).toFixed(2)}</span>
+            <span>${grandTotal.toFixed(2)}</span>
           </div>
         </div>
         <button
