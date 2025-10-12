@@ -21,6 +21,9 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
     return `(in ${mins} min)`;
   }, [readyAt, now]);
 
+  const subtotal = React.useMemo(() => state.items.reduce((s, it) => s + it.totalPrice, 0), [state.items]);
+  const couponEligible = !!state.coupon && subtotal >= 50;
+
   // Auto-apply latest coupon if subtotal >= $50 and no coupon applied
   React.useEffect(() => {
     const subtotal = state.items.reduce((s, it) => s + it.totalPrice, 0);
@@ -126,7 +129,9 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g., WELCOME10" style={{ flex: '1 1 160px', minWidth: 0 }} />
             <button disabled={checking || !code.trim()} style={{ flex: '0 0 auto' }} onClick={async () => {
-              setCouponError(''); setChecking(true);
+              setCouponError('');
+              if (subtotal < 50) { setCouponError('Minimum $50 subtotal required to apply discount'); return; }
+              setChecking(true);
               try {
                 const siteSlug = (window.location.pathname.match(/\/s\/([^/]+)/)?.[1]) || 'default';
                 const res = await fetchJson(`/api/shop/${siteSlug}/coupon/${encodeURIComponent(code.trim())}`);
@@ -142,7 +147,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
             {state.coupon ? <button style={{ flex: '0 0 auto' }} onClick={() => { clearCoupon(); setCode(''); }}>Remove</button> : null}
           </div>
           {couponError ? <div style={{ color: 'var(--danger)', fontSize: 12 }}>{couponError}</div> : null}
-          {state.coupon ? <div className="muted" style={{ fontSize: 12 }}>Applied: {state.coupon.code} ({state.coupon.percent}% off)</div> : null}
+          {state.coupon ? <div className="muted" style={{ fontSize: 12 }}>Applied: {state.coupon.code} ({state.coupon.percent}% off){subtotal < 50 ? ' — Add items to reach $50 for discount' : ''}</div> : null}
         </label>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <span className="muted" style={{ fontSize: 12 }}>Notes for restaurant</span>
@@ -153,10 +158,10 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
             <span className="muted">Items</span>
             <span>${state.items.reduce((s, it) => s + it.totalPrice, 0).toFixed(2)}</span>
           </div>
-          {state.coupon ? (
+          {couponEligible ? (
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span className="muted">Discount ({state.coupon.percent}% )</span>
-              <span>-${(state.items.reduce((s, it) => s + it.totalPrice, 0) * (state.coupon.percent/100)).toFixed(2)}</span>
+              <span>-${(subtotal * (state.coupon.percent/100)).toFixed(2)}</span>
             </div>
           ) : null}
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>

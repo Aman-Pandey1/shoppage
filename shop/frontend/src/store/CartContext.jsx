@@ -136,7 +136,8 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
 
   const getCartTotal = useCallback(() => {
     const subtotal = state.items.reduce((sum, it) => sum + it.totalPrice, 0);
-    const discount = state.coupon ? (subtotal * (state.coupon.percent / 100)) : 0;
+    const isEligibleForCoupon = subtotal >= 50;
+    const discount = (state.coupon && isEligibleForCoupon) ? (subtotal * (state.coupon.percent / 100)) : 0;
     return Math.max(0, subtotal - discount);
   }, [state.items, state.coupon]);
 

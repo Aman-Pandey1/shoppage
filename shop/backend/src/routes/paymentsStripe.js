@@ -155,13 +155,15 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
 
     // Compute items total in cents
     let itemsTotal = items.reduce((sum, it) => sum + (Number(it.priceCents) || 0) * (Number(it.quantity) || 1), 0);
+    const COUPON_MIN_SUBTOTAL_CENTS = Math.max(0, Number(process.env.COUPON_MIN_SUBTOTAL_CENTS) || 5000);
+    const subtotalBeforeDiscount = itemsTotal;
 
     // Apply coupon if valid
     let appliedCoupon = null;
     const code = coupon?.code ? String(coupon.code).trim().toUpperCase() : null;
     const pct = typeof coupon?.percent === 'number' ? Math.max(0, Math.min(100, Number(coupon.percent) || 0)) : null;
     const mock = req.app.locals.mockData;
-    if (code && typeof pct === 'number') {
+    if (code && typeof pct === 'number' && subtotalBeforeDiscount >= COUPON_MIN_SUBTOTAL_CENTS) {
       if (mock) {
         const found = (mock.coupons || []).find((c) => c.site === req.siteId && c.code === code);
         if (found && Number(found.percent) === pct) {
@@ -310,8 +312,10 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
 
     // Items total and coupon
     let itemsTotal = manifestItems.reduce((sum, it) => sum + (Number(it.priceCents) || 0) * (Number(it.quantity) || 1), 0);
+    const COUPON_MIN_SUBTOTAL_CENTS = Math.max(0, Number(process.env.COUPON_MIN_SUBTOTAL_CENTS) || 5000);
+    const subtotalBeforeDiscount = itemsTotal;
     let appliedCoupon = null;
-    if (coupon && coupon.code && typeof coupon.percent === 'number') {
+    if (coupon && coupon.code && typeof coupon.percent === 'number' && subtotalBeforeDiscount >= COUPON_MIN_SUBTOTAL_CENTS) {
       const code = String(coupon.code).trim().toUpperCase();
       const pct = Math.max(0, Math.min(100, Number(coupon.percent)||0));
       if (mock) {
