@@ -84,10 +84,12 @@ router.post('/:slug/orders/pickup', requireUser, async (req, res) => {
     const { items, pickup, notes, coupon } = req.body || {};
     if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ error: 'Items required' });
     let itemsTotal = items.reduce((s, it) => s + (Number(it.priceCents)||0) * (Number(it.quantity)||1), 0);
+    const COUPON_MIN_SUBTOTAL_CENTS = Math.max(0, Number(process.env.COUPON_MIN_SUBTOTAL_CENTS) || 5000);
+    const subtotalBeforeDiscount = itemsTotal;
     // Apply coupon discount if valid
     let appliedCoupon = null;
     const mock = req.app.locals.mockData;
-    if (coupon && coupon.code && typeof coupon.percent === 'number') {
+    if (coupon && coupon.code && typeof coupon.percent === 'number' && subtotalBeforeDiscount >= COUPON_MIN_SUBTOTAL_CENTS) {
       const code = String(coupon.code).trim().toUpperCase();
       const pct = Math.max(0, Math.min(100, Number(coupon.percent)||0));
       if (mock) {
