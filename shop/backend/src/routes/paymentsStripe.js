@@ -333,9 +333,12 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
     const minOrderCents = isMockEnv ? 0 : Math.max(0, Number(process.env.MIN_ORDER_CENTS) || 5000);
     if (itemsTotal < minOrderCents) return res.status(400).json({ error: `Minimum order is $${(minOrderCents/100).toFixed(2)}` });
 
-    // Compute delivery fee based on distance
+    // Compute delivery fee based on distance and enforce 10km max
     let distanceKm = null;
     try { distanceKm = await distanceBetweenAddressesKm(pickup.address, dropoff?.address); } catch {}
+    if (typeof distanceKm === 'number' && distanceKm > 10) {
+      return res.status(400).json({ error: 'Delivery is only available within 10 km of the restaurant.' });
+    }
     const fullDeliveryFeeCents = calculateDistanceFeeCents(distanceKm);
     const split = !!site.splitDeliveryFee;
     const customerDeliveryFeeCents = split ? Math.round(fullDeliveryFeeCents / 2) : fullDeliveryFeeCents;

@@ -567,7 +567,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
 
                   </label>
                   <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <span>Restaurant location</span>
+                    <span>Restaurant Location</span>
                     <select value={(idx => (idx >= 0 ? String(idx) : ''))(filteredLocations.findIndex((l) => l === selectedLocation))} onChange={(e) => {
                       const idx = Number(e.target.value);
                       const chosen = filteredLocations[idx];
@@ -583,7 +583,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                 </>
               ) : (
                   <label style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <span>Restaurant location</span>
+                  <span>Restaurant Location</span>
                   <select value={(idx => (idx >= 0 ? String(idx) : ''))(locations.findIndex((l) => l === selectedLocation))} onChange={(e) => {
                     const idx = Number(e.target.value);
                     const chosen = locations[idx];
