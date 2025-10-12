@@ -54,6 +54,7 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
   const name = site?.name || 'Store';
   const tagline = (typeof site?.tagline === 'string') ? site.tagline : '';
   const rawLogoUrl = site?.logoUrl || '';
+  const logoLinkUrl = (typeof site?.logoLinkUrl === 'string' ? site.logoLinkUrl : '').trim();
   const resolvedBackendLogo = React.useMemo(() => resolveAssetUrl(rawLogoUrl), [rawLogoUrl]);
   const logoCandidates = React.useMemo(() => {
     try {
@@ -86,7 +87,18 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
     <div className="top-nav" data-menu-open={menuOpen ? 'true' : 'false'} role="banner">
       <div className="top-nav__inner">
         <div className="brand" aria-label="Store brand">
-          <div className="brand__logo" aria-hidden>
+          <a
+            className="brand__logo"
+            aria-label="Home"
+            href={logoLinkUrl || undefined}
+            onClick={(e) => {
+              if (!logoLinkUrl) return; // no link configured
+              if (logoLinkUrl.startsWith('http')) return; // let browser handle external link
+              e.preventDefault();
+              try { navigate(logoLinkUrl); } catch { window.location.href = logoLinkUrl; }
+            }}
+            style={{ cursor: logoLinkUrl ? 'pointer' : 'default' }}
+          >
             {logoCandidates.length > 0 && logoIndex < logoCandidates.length ? (
               <img
                 src={logoCandidates[logoIndex]}
@@ -96,7 +108,7 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
             ) : (
               <span>🍽️</span>
             )}
-          </div>
+          </a>
           <div className="brand__text">
             <div className="brand__name">{name}</div>
             {tagline ? (
@@ -107,7 +119,26 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
         {/* On mobile, when the cart is open we only show "Cart" at top */}
         <div className="nav-title">{isCartOpen ? 'Cart' : 'ONLINE ORDERING'}</div>
 
-        <div className="actions" style={{ position: 'relative' }}>
+        <div className="actions" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 6 }}>
+          {logoLinkUrl ? (
+            <button
+              aria-label="Back"
+              title="Back"
+              onClick={() => {
+                if (logoLinkUrl.startsWith('http')) { window.location.href = logoLinkUrl; return; }
+                try { navigate(logoLinkUrl); } catch { window.location.href = logoLinkUrl; }
+              }}
+              style={{
+                background: 'transparent',
+                border: '1px solid #e2e8f0',
+                borderRadius: 8,
+                padding: '6px 8px',
+                cursor: 'pointer'
+              }}
+            >
+              ←
+            </button>
+          ) : null}
           {/* Cart button - hidden on desktop, visible on mobile and tablet */}
           {!isDesktop && (
             <button
