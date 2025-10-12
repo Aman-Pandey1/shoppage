@@ -32,22 +32,56 @@ async function getAccessToken(creds) {
   const now = Date.now();
   const existing = tokenCache.get(clientId);
   if (existing && now < (existing.expiryMs - 30000)) return existing.token;
-  const body = new URLSearchParams();
-  body.append('grant_type', 'client_credentials');
-  body.append('client_id', clientId);
-  body.append('client_secret', clientSecret);
-  body.append('scope', 'eats.deliveries');
-  const res = await fetch(UBER_TOKEN_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
-  if (!res.ok) {
-    let text = '';
-    try { text = await res.text(); } catch {}
-    throw new Error(`Uber token error ${res.status} ${String(text).slice(0,200)}`);
+
+  // Some Uber apps do not accept explicit scopes and will reply with
+  // { error: "invalid_scope" }. To be resilient, try configured/default
+  // scopes first, then retry without a scope parameter.
+  const configuredScopes = String(creds?.scopes || process.env.UBER_TOKEN_SCOPES || '')
+    .trim();
+  const candidates = [];
+  if (configuredScopes) candidates.push(configuredScopes);
+  // Keep "eats.deliveries" as the common default scope
+  if (!configuredScopes || configuredScopes !== 'eats.deliveries') {
+    candidates.push('eats.deliveries');
   }
-  const data = await res.json();
-  const token = data.access_token;
-  const expiryMs = now + (Number(data.expires_in) * 1000);
-  tokenCache.set(clientId, { token, expiryMs });
-  return token;
+  // Final fallback: omit scope entirely
+  candidates.push('');
+
+  let lastError = '';
+  for (const scopeCandidate of candidates) {
+    const body = new URLSearchParams();
+    body.append('grant_type', 'client_credentials');
+    body.append('client_id', clientId);
+    body.append('client_secret', clientSecret);
+    if (scopeCandidate) body.append('scope', scopeCandidate);
+    const res = await fetch(UBER_TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const token = data.access_token;
+      const expiryMs = now + (Number(data.expires_in) * 1000);
+      tokenCache.set(clientId, { token, expiryMs });
+      return token;
+    }
+    try {
+      const text = await res.text();
+      lastError = `Uber token error ${res.status} ${String(text).slice(0, 200)}`;
+      // Retry on invalid_scope only; otherwise, surface the error immediately
+      if (!/invalid_scope/i.test(text)) {
+        throw new Error(lastError);
+      }
+      // Otherwise continue to next candidate
+    } catch (e) {
+      // If reading body failed, surface a concise error
+      if (!(e instanceof Error)) throw e;
+      lastError = e.message;
+      // Do not retry in this case; break
+    }
+  }
+  throw new Error(lastError || 'Uber token error');
 }
 
 function normalizeE164Phone(raw, fallback) {
