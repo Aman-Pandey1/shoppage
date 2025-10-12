@@ -3,7 +3,7 @@ import { Modal } from './Modal';
 import { useCart } from '../store/CartContext';
 import { fetchJson, postJson } from '../lib/api';
 
-export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, manifest, initialPickupIndex }) => {
+export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, manifest, initialPickupIndex, mode = 'checkout' }) => {
   const { state, setDeliveryFeeCents } = useCart();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -198,54 +198,78 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
     <Modal open={open} onClose={onClose} title="Delivery details" footer={(
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, width: '100%' }}>
         <button onClick={onClose} disabled={loading}>Cancel</button>
-        <button className="primary-btn" disabled={loading} aria-busy={loading} onClick={async () => {
-          setLoading(true); setError(undefined);
-          try {
-            // Validate and build dropoff
-            if (!name.trim()) throw new Error('Full Name is required');
-            if (!addr1.trim() || !city.trim() || !province.trim() || !isValidPostal(postalCode)) throw new Error('Enter a valid full address');
-            const normalizedPhone = normalizePhoneForCountry(phone, country);
-            if (!normalizedPhone) throw new Error('Enter phone in E.164 like +14155550123');
-            const address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
-            const dropoff = { name, phone: normalizedPhone, address };
+        {mode === 'checkout' ? (
+          <button className="primary-btn" disabled={loading} aria-busy={loading} onClick={async () => {
+            setLoading(true); setError(undefined);
+            try {
+              // Validate and build dropoff
+              if (!name.trim()) throw new Error('Full Name is required');
+              if (!addr1.trim() || !city.trim() || !province.trim() || !isValidPostal(postalCode)) throw new Error('Enter a valid full address');
+              const normalizedPhone = normalizePhoneForCountry(phone, country);
+              if (!normalizedPhone) throw new Error('Enter phone in E.164 like +14155550123');
+              const address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
+              const dropoff = { name, phone: normalizedPhone, address };
 
-            // Create Stripe checkout session for delivery
-            const payload = {
-              dropoff,
-              manifestItems: (Array.isArray(manifest) ? manifest : []).map(m => ({
-                name: m.name,
-                quantity: m.quantity,
-                priceCents: m.priceCents || 0,
-                size: m.size,
-                spiceLevel: m.spiceLevel,
-              })),
-              pickupLocationIndex: typeof selectedPickupIndex === 'number' ? selectedPickupIndex : 0,
-              coupon: state?.coupon || undefined,
-            };
-            const res = await postJson(`/api/payments/stripe/${siteSlug}/checkout/delivery`, payload);
-            const url = res?.url;
-            if (!url) throw new Error('Failed to start payment');
-            const summary = [addr1, city, postalCode].filter(Boolean).join(', ');
-            try { onConfirmed(`addr-${Date.now()}`, summary); } catch {}
-            try { onClose(); } catch {}
-            window.location.href = url;
-          } catch (e) {
-            setError(parseServerError(e) || 'Failed to start payment');
-          } finally { setLoading(false); }
-        }}>
-          {loading ? (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              <svg width="16" height="16" viewBox="0 0 50 50" aria-hidden="true" focusable="false">
-                <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeDasharray="31.415 31.415">
-                  <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.8s" repeatCount="indefinite" />
-                </circle>
-              </svg>
-              Redirecting…
-            </span>
-          ) : (
-            'Continue to payment'
-          )}
-        </button>
+              // Create Stripe checkout session for delivery
+              const payload = {
+                dropoff,
+                manifestItems: (Array.isArray(manifest) ? manifest : []).map(m => ({
+                  name: m.name,
+                  quantity: m.quantity,
+                  priceCents: m.priceCents || 0,
+                  size: m.size,
+                  spiceLevel: m.spiceLevel,
+                })),
+                pickupLocationIndex: typeof selectedPickupIndex === 'number' ? selectedPickupIndex : 0,
+                coupon: state?.coupon || undefined,
+              };
+              const res = await postJson(`/api/payments/stripe/${siteSlug}/checkout/delivery`, payload);
+              const url = res?.url;
+              if (!url) throw new Error('Failed to start payment');
+              const summary = [addr1, city, postalCode].filter(Boolean).join(', ');
+              try { onConfirmed(`addr-${Date.now()}`, summary); } catch {}
+              try { onClose(); } catch {}
+              window.location.href = url;
+            } catch (e) {
+              setError(parseServerError(e) || 'Failed to start payment');
+            } finally { setLoading(false); }
+          }}>
+            {loading ? (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <svg width="16" height="16" viewBox="0 0 50 50" aria-hidden="true" focusable="false">
+                  <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeDasharray="31.415 31.415">
+                    <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.8s" repeatCount="indefinite" />
+                  </circle>
+                </svg>
+                Redirecting…
+              </span>
+            ) : (
+              'Continue to payment'
+            )}
+          </button>
+        ) : (
+          <button className="primary-btn" disabled={loading} onClick={async () => {
+            setLoading(true); setError(undefined);
+            try {
+              // Validate and compute quote to set delivery fee, then go back to menu
+              if (!name.trim()) throw new Error('Full Name is required');
+              if (!addr1.trim() || !city.trim() || !province.trim() || !isValidPostal(postalCode)) throw new Error('Enter a valid full address');
+              const normalizedPhone = normalizePhoneForCountry(phone, country);
+              if (!normalizedPhone) throw new Error('Enter phone in E.164 like +14155550123');
+              const address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
+              const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { name, phone: normalizedPhone, address }, pickupLocationIndex: selectedPickupIndex });
+              if (typeof q?.customerDeliveryFeeCents === 'number') {
+                setDeliveryFeeCents(q.customerDeliveryFeeCents);
+                setDeliveryFeeCentsLocal(q.customerDeliveryFeeCents);
+              }
+              const summary = [addr1, city, postalCode].filter(Boolean).join(', ');
+              try { onConfirmed(`addr-${Date.now()}`, summary); } catch {}
+              onClose();
+            } catch (e) {
+              setError(parseServerError(e) || 'Invalid address');
+            } finally { setLoading(false); }
+          }}>Proceed to menu</button>
+        )}
       </div>
     )}>
       {error ? <div style={{ color: 'var(--danger)', marginBottom: 8 }}>{error}</div> : null}

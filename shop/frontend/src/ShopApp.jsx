@@ -32,6 +32,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [pendingSpice, setPendingSpice] = useState(undefined);
   const [pendingVariant, setPendingVariant] = useState(null);
   const [deliveryModalOpen, setDeliveryModalOpen] = useState(false);
+  const [deliveryModalMode, setDeliveryModalMode] = useState('checkout'); // 'prefill' | 'checkout'
   const [loginOpen, setLoginOpen] = useState(false);
   const [vegFilter, setVegFilter] = useState('all');
   const [lastDeliveryId, setLastDeliveryId] = useState(null);
@@ -91,11 +92,15 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
 
   function handleChooseFulfillment(type) {
     setFulfillmentType(type);
-    // Close the selection modal only; do not redirect to payment/details here.
-    // The selection should simply update the header bar. User proceeds from cart.
+    // Close the selection modal only. If delivery is selected, collect address now and then let user browse menu.
     setFulfillmentOpen(false);
     setOrderDetailsOpen(false);
-    setDeliveryModalOpen(false);
+    if (type === 'delivery') {
+      setDeliveryModalMode('prefill');
+      setDeliveryModalOpen(true);
+    } else {
+      setDeliveryModalOpen(false);
+    }
   }
 
   function startAddToCart(product, quantity = 1) {
@@ -132,9 +137,6 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       addItem({ product: pendingProduct, variant, spiceLevel: undefined, quantity: pendingQuantity });
       if (state.fulfillmentType === 'pickup') {
         setOrderDetailsOpen(true);
-      } else if (state.fulfillmentType === 'delivery') {
-        if (!getAuthToken()) { setLoginOpen(true); return; }
-        setDeliveryModalOpen(true);
       }
       setPendingProduct(null);
       setPendingVariant(null);
@@ -153,9 +155,6 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       addItem({ product: pendingProduct, variant: pendingVariant || undefined, spiceLevel: spice, quantity: confirmedQty });
       if (state.fulfillmentType === 'pickup') {
         setOrderDetailsOpen(true);
-      } else if (state.fulfillmentType === 'delivery') {
-        if (!getAuthToken()) { setLoginOpen(true); return; }
-        setDeliveryModalOpen(true);
       }
       setPendingProduct(null);
       setPendingSpice(undefined);
@@ -170,9 +169,6 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       addItem({ product: pendingProduct, variant: pendingVariant || undefined, spiceLevel: pendingSpice, selectedOptions: selected, quantity: pendingQuantity });
       if (state.fulfillmentType === 'pickup') {
         setOrderDetailsOpen(true);
-      } else if (state.fulfillmentType === 'delivery') {
-        if (!getAuthToken()) { setLoginOpen(true); return; }
-        setDeliveryModalOpen(true);
       }
     }
     setPendingProduct(null);
@@ -441,6 +437,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
             return;
           }
           if (state.fulfillmentType === 'delivery') {
+            setDeliveryModalMode('checkout');
             setDeliveryModalOpen(true);
             return;
           }
@@ -667,6 +664,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
           // Do not navigate away; user continues payment in Stripe
         }}
         manifest={manifest}
+        mode={deliveryModalMode}
       />
       {lastDeliveryId ? (
         <div className="muted" style={{ textAlign: 'center', marginTop: 10, fontSize: 12 }}>Last delivery ID: {lastDeliveryId}</div>
@@ -704,6 +702,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         }
         // If delivery was selected before login, continue to delivery details.
         if (state.fulfillmentType === 'delivery') {
+          setDeliveryModalMode('checkout');
           setDeliveryModalOpen(true);
         }
         // If pickup, keep user here; they can open order details from cart.

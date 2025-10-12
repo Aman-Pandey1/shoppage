@@ -100,6 +100,11 @@ router.post('/:slug/quote', async (req, res) => {
 		let distanceKm = null;
 		try { distanceKm = await distanceBetweenAddressesKm(pickup.address, dropoff.address); } catch {}
 		const distanceFeeCents = calculateDistanceFeeCents(distanceKm);
+    // Enforce max delivery distance if configured
+    const maxKm = typeof site?.maxDeliveryDistanceKm === 'number' && site.maxDeliveryDistanceKm > 0 ? site.maxDeliveryDistanceKm : null;
+    if (maxKm != null && typeof distanceKm === 'number' && distanceKm > maxKm) {
+      return res.status(400).json({ error: `Delivery is only available within ${maxKm} km of the restaurant.` });
+    }
     // Use selected provider
     const quote = provider === 'doordash'
       ? await ddRequestQuote({ storeId: site.doordashStoreId, pickup, dropoff })
