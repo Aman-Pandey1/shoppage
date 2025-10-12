@@ -22,6 +22,8 @@ const SiteSchema = new mongoose.Schema({
 	uberClientId: { type: String },
 	uberClientSecret: { type: String },
 	uberEnv: { type: String, enum: ['production', 'sandbox'], default: undefined },
+	// Optional: per-site Uber webhook signing secret
+	uberWebhookSecret: { type: String },
 	// Which delivery provider to use for this site: 'uber' or 'doordash'
 	deliveryProvider: { type: String, enum: ['uber', 'doordash'], default: 'uber' },
 	// DoorDash Drive configuration per site (non-secret identifiers)

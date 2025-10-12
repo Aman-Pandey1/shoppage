@@ -1,5 +1,5 @@
 import React from 'react';
-import { fetchJsonAllowError, patchJson, resolveAssetUrl, postFile } from '../lib/api';
+import { fetchJsonAllowError, patchJson, resolveAssetUrl, postFile, API_BASE_URL } from '../lib/api';
 import { Modal } from './Modal';
 
 export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
@@ -21,6 +21,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
   const [uberClientId, setUberClientId] = React.useState(site?.uberClientId || '');
   const [uberClientSecret, setUberClientSecret] = React.useState(site?.uberClientSecret || '');
   const [uberEnv, setUberEnv] = React.useState(site?.uberEnv || 'production');
+  const [uberWebhookSecret, setUberWebhookSecret] = React.useState(site?.uberWebhookSecret || '');
   const [doordashStoreId, setDoordashStoreId] = React.useState(site?.doordashStoreId || '');
   const [doordashDeveloperId, setDoordashDeveloperId] = React.useState(site?.doordashDeveloperId || '');
   const [doordashKeyId, setDoordashKeyId] = React.useState(site?.doordashKeyId || '');
@@ -81,6 +82,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
     setUberClientId(site?.uberClientId || '');
     setUberClientSecret(site?.uberClientSecret || '');
     setUberEnv(site?.uberEnv || 'production');
+    setUberWebhookSecret(site?.uberWebhookSecret || '');
     setHours(site?.hours || {
       mon: { open: '10:00', close: '22:00', closed: false },
       tue: { open: '10:00', close: '22:00', closed: false },
@@ -216,6 +218,18 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
               <option value="production">Production</option>
               <option value="sandbox">Sandbox</option>
             </select>
+          </label>
+          <div className="sep" style={{ height: 1, background: 'var(--gray-200)', margin: '8px 0' }} />
+          <div style={{ fontWeight: 700 }}>Uber Webhook</div>
+          <div className="muted" style={{ fontSize: 12 }}>
+            Point Uber Direct webhooks to:
+          </div>
+          <div className="code" style={{ fontFamily: 'monospace', fontSize: 12, background: 'var(--gray-50)', padding: 8, borderRadius: 6 }}>
+            {`${API_BASE_URL}/webhook/uber/${site?._id || 'SITE_ID'}`}
+          </div>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>Uber Webhook Signing Secret</span>
+            <input value={uberWebhookSecret} onChange={(e) => setUberWebhookSecret(e.target.value)} placeholder="signing-secret from Uber" />
           </label>
         </div>
       ) : null}
@@ -401,6 +415,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
             uberClientId,
             uberClientSecret,
             uberEnv,
+            uberWebhookSecret,
             stripePublishableKey,
             stripeSecretKey,
             locations,

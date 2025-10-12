@@ -38,7 +38,11 @@ async function getAccessToken(creds) {
   body.append('client_secret', clientSecret);
   body.append('scope', 'eats.deliveries');
   const res = await fetch(UBER_TOKEN_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
-  if (!res.ok) throw new Error(`Uber token error ${res.status}`);
+  if (!res.ok) {
+    let text = '';
+    try { text = await res.text(); } catch {}
+    throw new Error(`Uber token error ${res.status} ${String(text).slice(0,200)}`);
+  }
   const data = await res.json();
   const token = data.access_token;
   const expiryMs = now + (Number(data.expires_in) * 1000);

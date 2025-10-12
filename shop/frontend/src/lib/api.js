@@ -1,4 +1,4 @@
-const API_BASE_URL = (() => {
+export const API_BASE_URL = (() => {
   const fromEnv = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL)
     ? String(import.meta.env.VITE_API_URL).trim()
     : '';
