@@ -106,9 +106,28 @@ router.post('/:slug/quote', async (req, res) => {
       return res.status(400).json({ error: `Delivery is only available within ${maxKm} km of the restaurant.` });
     }
     // Use selected provider
-    const quote = provider === 'doordash'
-      ? await ddRequestQuote({ storeId: site.doordashStoreId, pickup, dropoff })
-      : await uberRequestQuote({ customerId: site.uberCustomerId, pickup, dropoff, creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv } });
+    let quote;
+    try {
+      quote = provider === 'doordash'
+        ? await ddRequestQuote({ storeId: site.doordashStoreId, pickup, dropoff })
+        : await uberRequestQuote({ customerId: site.uberCustomerId, pickup, dropoff, creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv } });
+    } catch (e) {
+      const msg = String(e?.message || '');
+      // Allow customers to proceed to the menu even if the Uber app
+      // is misconfigured with scopes by returning a simulated quote.
+      // We only do this for the quote endpoint (pre-payment) and keep
+      // createDelivery strict to avoid charging without a courier.
+      if (provider === 'uber' && /invalid_scope|Uber token error/i.test(msg)) {
+        quote = {
+          id: `q-${Date.now()}`,
+          fee: { amount: 799, currency_code: 'CAD' },
+          dropoff_estimated_dt: null,
+          simulated: true,
+        };
+      } else {
+        throw e;
+      }
+    }
     const split = !!site.splitDeliveryFee;
     const customerDeliveryFeeCents = split ? Math.round((Number(distanceFeeCents) || 0) / 2) : (Number(distanceFeeCents) || 0);
     res.json({ ...quote, distanceKm, distanceFeeCents, customerDeliveryFeeCents, pickupLocationIndex: chosenIdx });
