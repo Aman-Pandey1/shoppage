@@ -192,8 +192,8 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   return (
     <Modal open={open} onClose={onClose} title="Delivery details" footer={(
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, width: '100%' }}>
-        <button onClick={onClose}>Cancel</button>
-        <button className="primary-btn" disabled={loading} onClick={async () => {
+        <button onClick={onClose} disabled={loading}>Cancel</button>
+        <button className="primary-btn" disabled={loading} aria-busy={loading} onClick={async () => {
           setLoading(true); setError(undefined);
           try {
             // Validate and build dropoff
@@ -227,7 +227,20 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
           } catch (e) {
             setError(parseServerError(e) || 'Failed to start payment');
           } finally { setLoading(false); }
-        }}>Continue to payment</button>
+        }}>
+          {loading ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <svg width="16" height="16" viewBox="0 0 50 50" aria-hidden="true" focusable="false">
+                <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeDasharray="31.415 31.415">
+                  <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.8s" repeatCount="indefinite" />
+                </circle>
+              </svg>
+              Redirecting…
+            </span>
+          ) : (
+            'Continue to payment'
+          )}
+        </button>
       </div>
     )}>
       {error ? <div style={{ color: 'var(--danger)', marginBottom: 8 }}>{error}</div> : null}
