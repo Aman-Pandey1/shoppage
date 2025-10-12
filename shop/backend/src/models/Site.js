@@ -38,6 +38,8 @@ const SiteSchema = new mongoose.Schema({
 	deliveryFeeCents: { type: Number, default: 0 },
 	// When true, split delivery fee 50/50 between customer and restaurant
 	splitDeliveryFee: { type: Boolean, default: false },
+	// Maximum delivery distance allowed in kilometers (if set)
+	maxDeliveryDistanceKm: { type: Number },
 	// New: support multiple pickup locations for a site while keeping legacy `pickup`
 	locations: [{
 		name: { type: String },

@@ -31,6 +31,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
   const [cities, setCities] = React.useState(Array.isArray(site?.cities) ? site.cities : []);
   const [deliveryFee, setDeliveryFee] = React.useState(((Number(site?.deliveryFeeCents)||0)/100).toFixed(2));
   const [splitDeliveryFee, setSplitDeliveryFee] = React.useState(!!site?.splitDeliveryFee);
+  const [maxDeliveryDistanceKm, setMaxDeliveryDistanceKm] = React.useState(site?.maxDeliveryDistanceKm ?? '');
   const [logoUrl, setLogoUrl] = React.useState(site?.logoUrl || '');
   const [logoLinkUrl, setLogoLinkUrl] = React.useState(site?.logoLinkUrl || '');
   const [logoFile, setLogoFile] = React.useState(null);
@@ -72,6 +73,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
     setCities(Array.isArray(site?.cities) ? site.cities : []);
     setDeliveryFee(((Number(site?.deliveryFeeCents)||0)/100).toFixed(2));
     setSplitDeliveryFee(!!site?.splitDeliveryFee);
+    setMaxDeliveryDistanceKm(site?.maxDeliveryDistanceKm ?? '');
     setStripeAccountId(site?.stripeAccountId || '');
     setStripePublishableKey(site?.stripePublishableKey || '');
     setStripeSecretKey(site?.stripeSecretKey || '');
@@ -273,6 +275,11 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
         <input type="number" step="0.01" min={0} value={deliveryFee} onChange={(e) => setDeliveryFee(e.target.value)} />
         <span className="muted" style={{ fontSize: 12 }}>Applied only to delivery orders. Not shown for pickup.</span>
       </label>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span>Max delivery distance (km)</span>
+        <input type="number" min={0} value={maxDeliveryDistanceKm} onChange={(e) => setMaxDeliveryDistanceKm(e.target.value)} placeholder="e.g., 8" />
+        <span className="muted" style={{ fontSize: 12 }}>Orders beyond this distance will be blocked.</span>
+      </label>
       <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <input type="checkbox" checked={!!splitDeliveryFee} onChange={(e) => setSplitDeliveryFee(e.target.checked)} />
         <span>Split delivery fee 50/50 (half customer, half restaurant)</span>
@@ -437,6 +444,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
             cities,
             deliveryFeeCents: Math.max(0, Math.round(Number(deliveryFee || 0) * 100)),
             splitDeliveryFee: !!splitDeliveryFee,
+            maxDeliveryDistanceKm: maxDeliveryDistanceKm === '' ? undefined : Number(maxDeliveryDistanceKm),
             hours,
             logoUrl,
             logoLinkUrl,
