@@ -17,6 +17,8 @@ const SiteSchema = new mongoose.Schema({
 	// Optional: per-site Stripe keys (fallback to process.env if absent)
 	stripePublishableKey: { type: String },
 	stripeSecretKey: { type: String },
+  // Optional: per-site Stripe webhook signing secret
+  stripeWebhookSecret: { type: String },
 	uberCustomerId: { type: String },
 	// Optional: per-site Uber Direct API credentials and env override
 	uberClientId: { type: String },
