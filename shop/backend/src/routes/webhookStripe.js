@@ -54,22 +54,53 @@ async function sendOrderNotify(order, siteName) {
   }
 }
 
-function getStripeClient() {
-  const secret = process.env.STRIPE_SECRET_KEY;
+function getStripeClient(site) {
+  const siteSecret = site?.stripeSecretKey;
+  const secret = siteSecret || process.env.STRIPE_SECRET_KEY;
   if (!secret) throw new Error('Missing STRIPE_SECRET_KEY');
   return new Stripe(secret);
 }
 
+// Health endpoint for a specific site (optional)
+router.get('/:siteIdOrSlug', async (req, res) => {
+  try {
+    const { siteIdOrSlug } = req.params;
+    let site = null;
+    const mock = req.app?.locals?.mockData;
+    if (mock) {
+      site = (mock.sites || []).find((s) => s._id === siteIdOrSlug || s.slug === siteIdOrSlug);
+    } else {
+      try { site = await Site.findById(siteIdOrSlug); } catch {}
+      if (!site) site = await Site.findOne({ slug: siteIdOrSlug });
+    }
+    if (!site) return res.status(404).json({ ok: false, error: 'Site not found' });
+    return res.json({ ok: true, siteId: String(site._id), slug: site.slug, hasSecret: !!site.stripeWebhookSecret });
+  } catch (err) {
+    return res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
 // IMPORTANT: This route must be mounted with express.raw({ type: 'application/json' })
-router.post('/', async (req, res) => {
-  const stripe = getStripeClient();
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+router.post('/:siteIdOrSlug', async (req, res) => {
+  const { siteIdOrSlug } = req.params;
+  let site = null;
+  const mock = req.app?.locals?.mockData;
+  if (mock) {
+    site = (mock.sites || []).find((s) => s._id === siteIdOrSlug || s.slug === siteIdOrSlug) || null;
+  } else {
+    try { site = await Site.findById(siteIdOrSlug); } catch {}
+    if (!site) site = await Site.findOne({ slug: siteIdOrSlug });
+  }
+
+  const stripe = getStripeClient(site);
+  const configuredSecret = site?.stripeWebhookSecret || process.env.STRIPE_WEBHOOK_SECRET;
   let event = null;
 
-  if (webhookSecret) {
+  if (configuredSecret) {
     const signature = req.headers['stripe-signature'];
+    const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body || '');
     try {
-      event = stripe.webhooks.constructEvent(req.body, signature, webhookSecret);
+      event = stripe.webhooks.constructEvent(rawBody, signature, configuredSecret);
     } catch (err) {
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }

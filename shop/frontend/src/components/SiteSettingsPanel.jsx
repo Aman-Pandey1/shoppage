@@ -16,6 +16,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
   const [stripeAccountId, setStripeAccountId] = React.useState(site?.stripeAccountId || '');
   const [stripePublishableKey, setStripePublishableKey] = React.useState(site?.stripePublishableKey || '');
   const [stripeSecretKey, setStripeSecretKey] = React.useState(site?.stripeSecretKey || '');
+  const [stripeWebhookSecret, setStripeWebhookSecret] = React.useState(site?.stripeWebhookSecret || '');
   const [tagline, setTagline] = React.useState(site?.tagline || '');
   const [deliveryProvider, setDeliveryProvider] = React.useState(site?.deliveryProvider || 'uber');
   const [uberClientId, setUberClientId] = React.useState(site?.uberClientId || '');
@@ -74,6 +75,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
     setStripeAccountId(site?.stripeAccountId || '');
     setStripePublishableKey(site?.stripePublishableKey || '');
     setStripeSecretKey(site?.stripeSecretKey || '');
+    setStripeWebhookSecret(site?.stripeWebhookSecret || '');
     setDeliveryProvider(site?.deliveryProvider || 'uber');
     setDoordashStoreId(site?.doordashStoreId || '');
     setDoordashDeveloperId(site?.doordashDeveloperId || '');
@@ -189,6 +191,18 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <span>Secret key</span>
           <input value={stripeSecretKey} onChange={(e) => setStripeSecretKey(e.target.value)} placeholder="sk_live_... or sk_test_..." />
+        </label>
+        <div className="sep" style={{ height: 1, background: 'var(--gray-200)', margin: '8px 0' }} />
+        <div style={{ fontWeight: 700 }}>Stripe Webhook</div>
+        <div className="muted" style={{ fontSize: 12 }}>
+          Point Stripe webhooks to:
+        </div>
+        <div className="code" style={{ fontFamily: 'monospace', fontSize: 12, background: 'var(--gray-50)', padding: 8, borderRadius: 6 }}>
+          {`${API_BASE_URL}/webhook/stripe/${site?._id || 'SITE_ID'}`}
+        </div>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span>Stripe Webhook Signing Secret</span>
+          <input value={stripeWebhookSecret} onChange={(e) => setStripeWebhookSecret(e.target.value)} placeholder="whsec_..." />
         </label>
       </div>
 
@@ -416,6 +430,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
             uberClientSecret,
             uberEnv,
             uberWebhookSecret,
+            stripeWebhookSecret,
             stripePublishableKey,
             stripeSecretKey,
             locations,
