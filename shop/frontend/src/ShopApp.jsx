@@ -13,6 +13,7 @@ import { SpiceModal } from './components/SpiceModal';
 import { ExtrasModal } from './components/ExtrasModal';
 import { VariantModal } from './components/VariantModal';
 import { AddToCartToast } from './components/AddToCartToast';
+import { AlertModal } from './components/AlertModal';
 import { DeliveryAddressModal } from './components/DeliveryAddressModal';
 import { fetchJson, getAuthToken, postJson } from './lib/api';
 import { UserAuthModal } from './components/UserAuthModal';
@@ -37,6 +38,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [deliveryAddressSummary, setDeliveryAddressSummary] = useState('');
   const [orderError, setOrderError] = useState('');
   const [pickupPaymentMethod, setPickupPaymentMethod] = useState('online'); // 'online' | 'cod'
+  const [closedAlertOpen, setClosedAlertOpen] = useState(false);
 
   // Additional UI state brought from the alternate implementation
   // Order details state
@@ -431,10 +433,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
             setLoginOpen(true);
             return;
           }
-          if (isClosedNow) {
-            alert('Restaurant is closed. Online ordering resumes tomorrow.');
-            return;
-          }
+          if (isClosedNow) { setClosedAlertOpen(true); return; }
           // Close cart before showing next step so modal is visible on mobile
           setMobileCartOpen(false);
           if (!state.fulfillmentType) {
@@ -690,6 +689,12 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       <ExtrasModal open={extrasOpen} groups={pendingProduct?.extraOptionGroups} product={pendingProduct} onCancel={() => setExtrasOpen(false)} onConfirm={confirmExtras} />
       <VariantModal open={variantOpen} variants={pendingProduct?.variants || []} product={pendingProduct} onCancel={() => setVariantOpen(false)} onConfirm={confirmVariant} />
       <AddToCartToast />
+      <AlertModal
+        open={closedAlertOpen}
+        onClose={() => setClosedAlertOpen(false)}
+        title="Restaurant is closed"
+        message={"Online ordering is closed for today. Please come back tomorrow."}
+      />
       <UserAuthModal open={loginOpen} onClose={() => setLoginOpen(false)} onSuccess={() => {
         setLoginOpen(false);
         // Stay on the same page. If no order type yet, prompt selection.
