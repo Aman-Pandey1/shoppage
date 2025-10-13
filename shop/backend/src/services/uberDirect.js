@@ -43,26 +43,31 @@ async function getAccessToken(creds) {
   const now = Date.now();
   if (existing && now < (existing.expiryMs - 30000)) return existing.token;
 
-  // Scopes ordering:
-  // - If scopes were explicitly provided in creds (even empty string), honor that first
-  // - Otherwise: try env UBER_TOKEN_SCOPES, then 'eats.deliveries', then blank
+  // Scopes ordering and fallback strategy:
+  // - If a scope was provided by the caller (including an explicit blank), try it first
+  // - Then ALWAYS fall back to 'eats.deliveries' and then blank, to handle
+  //   Uber apps that require one or the other. This makes the health check
+  //   resilient without requiring the admin to guess the correct value.
+  // - If no scope was provided by the caller, prefer env UBER_TOKEN_SCOPES first.
   const scopesPropProvided = creds && Object.prototype.hasOwnProperty.call(creds, 'scopes');
   const rawScopes = typeof creds?.scopes === 'string' ? creds.scopes : undefined;
   const trimmedScopes = typeof rawScopes === 'string' ? rawScopes.trim() : undefined;
   const envDefaultScopes = String(process.env.UBER_TOKEN_SCOPES || '').trim();
   const scopeCandidates = [];
+  const addCandidate = (s) => {
+    if (typeof s !== 'string') return;
+    // Keep order, avoid duplicates
+    if (!scopeCandidates.includes(s)) scopeCandidates.push(s);
+  };
   if (scopesPropProvided) {
-    // Explicitly provided by caller; allow empty string to mean "no scope"
-    if (trimmedScopes && trimmedScopes.length > 0) {
-      scopeCandidates.push(trimmedScopes);
-    } else {
-      scopeCandidates.push('');
-    }
+    // Caller explicitly provided scopes; empty string means "no scope"
+    addCandidate(trimmedScopes && trimmedScopes.length > 0 ? trimmedScopes : '');
   } else {
-    if (envDefaultScopes) scopeCandidates.push(envDefaultScopes);
-    scopeCandidates.push('eats.deliveries');
-    scopeCandidates.push('');
+    if (envDefaultScopes) addCandidate(envDefaultScopes);
   }
+  // Always include safe fallbacks
+  addCandidate('eats.deliveries');
+  addCandidate('');
 
   const tokenUrls = resolveUberTokenUrls(env);
   let lastError = '';
