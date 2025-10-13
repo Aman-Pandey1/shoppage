@@ -145,7 +145,7 @@ export const MyOrdersPage = () => {
                   <li key={idx}>
                     {it.name}
                     {it.spiceLevel ? ` [${it.spiceLevel}]` : ''}
-                    {it.size ? ` — Add-on: ${it.size}` : ''}
+                    {it.size ? ` — Select Item: ${it.size}` : ''}
                     × {it.quantity}
                   </li>
                 ))}
