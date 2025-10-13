@@ -50,16 +50,34 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
     return () => { cancelled = true; };
   }, [state.items, state.coupon, applyCoupon, autoTried]);
 
-  // Derived pricing
-  const itemsSubtotal = React.useMemo(() => state.items.reduce((s, it) => s + it.totalPrice, 0), [state.items]);
-  const discount = React.useMemo(() => {
+  // Derived pricing (compute in cents to match backend/Stripe)
+  const itemsSubtotalCents = React.useMemo(() => {
+    return state.items.reduce((sum, it) => {
+      const unitPrice = (Number(it.basePrice) || 0) + (Number(it?.variant?.priceDelta) || 0) + (Number(it.extraCost) || 0);
+      const unitCents = Math.round(unitPrice * 100);
+      return sum + unitCents * (Number(it.quantity) || 1);
+    }, 0);
+  }, [state.items]);
+  const itemsSubtotal = React.useMemo(() => itemsSubtotalCents / 100, [itemsSubtotalCents]);
+  const discountCents = React.useMemo(() => {
     if (!state.coupon || itemsSubtotal < 50) return 0;
-    return itemsSubtotal * (state.coupon.percent / 100);
-  }, [state.coupon, itemsSubtotal]);
-  const itemsAfterDiscount = Math.max(0, itemsSubtotal - discount);
-  const tax = itemsAfterDiscount * 0.05;
-  const deliveryFee = state.fulfillmentType === 'delivery' ? (Number(state.deliveryFeeCents || 0) / 100) : 0;
-  const grandTotal = itemsAfterDiscount + tax + deliveryFee;
+    const pct = Math.max(0, Math.min(100, Number(state.coupon.percent) || 0));
+    return state.items.reduce((sum, it) => {
+      const unitPrice = (Number(it.basePrice) || 0) + (Number(it?.variant?.priceDelta) || 0) + (Number(it.extraCost) || 0);
+      const unitCents = Math.round(unitPrice * 100);
+      const discountedUnit = Math.round(unitCents * (100 - pct) / 100);
+      const perItemDiscount = Math.max(0, unitCents - discountedUnit);
+      return sum + perItemDiscount * (Number(it.quantity) || 1);
+    }, 0);
+  }, [state.coupon, state.items, itemsSubtotal]);
+  const discount = React.useMemo(() => discountCents / 100, [discountCents]);
+  const itemsAfterDiscountCents = Math.max(0, itemsSubtotalCents - discountCents);
+  const taxCents = Math.round(itemsAfterDiscountCents * 0.05);
+  const deliveryFeeCents = state.fulfillmentType === 'delivery' ? (Number(state.deliveryFeeCents || 0)) : 0;
+  const grandTotalCents = itemsAfterDiscountCents + taxCents + deliveryFeeCents;
+  const tax = React.useMemo(() => taxCents / 100, [taxCents]);
+  const deliveryFee = React.useMemo(() => deliveryFeeCents / 100, [deliveryFeeCents]);
+  const grandTotal = React.useMemo(() => grandTotalCents / 100, [grandTotalCents]);
 
   return (
     <aside
