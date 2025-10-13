@@ -88,12 +88,7 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
               </div>
               <div style={{ display: 'grid', justifyItems: 'end', gap: 6 }}>
                 <div style={{ fontWeight: 800, color: 'var(--primary-600)' }}>
-                  {(() => {
-                    const v0 = Array.isArray(p?.variants) && p.variants.length > 0 ? p.variants[0] : null;
-                    const hasAbs = v0 && v0.price != null && Number.isFinite(Number(v0.price));
-                    const display = hasAbs ? Number(v0.price) : Number(p.price || 0);
-                    return `$${display.toFixed(2)}`;
-                  })()}
+                  {`$${Number(p.price || 0).toFixed(2)}`}
                 </div>
                 <button
                   onClick={() => {

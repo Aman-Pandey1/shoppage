@@ -184,8 +184,7 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
           >
             {selectedVariantKey === '' ? <option value="" disabled>Select Variant</option> : null}
             {variants.map((v) => {
-              const hasAbs = typeof v?.price === 'number';
-              const displayPrice = hasAbs ? Number(v.price) : (Number(product?.price || 0) + Number(v?.priceDelta || 0));
+              const displayPrice = Number(product?.price || 0) + Number(v?.price || 0);
               return (
                 <option key={v.key} value={v.key}>{`${v.label} — $${displayPrice.toFixed(2)}`}</option>
               );

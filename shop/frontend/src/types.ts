@@ -32,10 +32,8 @@ export type Product = {
   variants?: Array<{
     key: string;
     label: string;
-    // If set, this is the absolute price for the variant
+    // Add-on price that is added to base price when selected
     price?: number;
-    // Otherwise, priceDelta adds on top of base price
-    priceDelta?: number;
   }>;
   extraOptionGroups?: ExtraOptionGroup[];
 };
@@ -76,6 +74,7 @@ export type CartItem = {
   basePrice: number;
   quantity: number;
   spiceLevel?: string;
+  variant?: { key: string; label?: string; price?: number };
   selectedOptions: SelectedOption[];
   extraCost: number;
   totalPrice: number;

@@ -46,9 +46,7 @@ export const VariantModal = ({ open, variants = [], onCancel, onConfirm, product
             >
               <div style={{ fontWeight: 800 }}>{v.label}</div>
               <div className="muted" style={{ fontSize: 12 }}>{
-                (v?.price != null && Number.isFinite(Number(v.price)))
-                  ? `$${Number(v.price).toFixed(2)}`
-                  : (Number(v?.priceDelta) ? `+ $${Number(v.priceDelta).toFixed(2)}` : 'No extra cost')
+                `$${Number(v?.price || 0).toFixed(2)}`
               }</div>
             </button>
           );
