@@ -371,7 +371,8 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
             try {
               const res = await fetchJsonAllowError(`/api/admin/sites/${site._id}/health`);
               if (res.ok) {
-                setUberStatus({ ok: true, message: `Uber OK${res.eta ? ` · ETA ${new Date(res.eta).toLocaleTimeString()}` : ''}` });
+                const sim = res.simulated ? ' (simulated)' : '';
+                setUberStatus({ ok: true, message: `Uber OK${sim}${res.eta ? ` · ETA ${new Date(res.eta).toLocaleTimeString()}` : ''}` });
               } else {
                 setUberStatus({ ok: false, message: `Uber error: ${res.error}` });
               }

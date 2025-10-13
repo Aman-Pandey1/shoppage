@@ -2,11 +2,13 @@ import fetch from 'node-fetch';
 
 const UBER_TOKEN_URL = 'https://login.uber.com/oauth/v2/token';
 function resolveUberTokenUrls(env) {
-  const urls = [UBER_TOKEN_URL];
-  // Some legacy/sandbox setups require sandbox-login host
-  if (String(env || '').toLowerCase() === 'sandbox') {
-    urls.unshift('https://sandbox-login.uber.com/oauth/v2/token');
-  }
+  // Try both production and sandbox login hosts, prioritizing the selected env.
+  // This helps in cases where app credentials/customer IDs are mismatched
+  // between sandbox and production during setup/testing.
+  const envStr = String(env || '').toLowerCase();
+  const urls = envStr === 'sandbox'
+    ? ['https://sandbox-login.uber.com/oauth/v2/token', UBER_TOKEN_URL]
+    : [UBER_TOKEN_URL, 'https://sandbox-login.uber.com/oauth/v2/token'];
   return Array.from(new Set(urls));
 }
 function isUsingMock() {
