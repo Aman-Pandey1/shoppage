@@ -48,8 +48,9 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
   const handleSelect = (level) => setSelected(level);
   const selectedVariant = variants.find((v) => v.key === selectedVariantKey) || null;
   const hasVariants = variants.length > 0;
+  const variantRequired = hasVariants;
   const spiceRequired = Array.isArray(product?.spiceLevels) && (product.spiceLevels.length > 0);
-  const canConfirm = (!spiceRequired || !!selected) && qty >= 1;
+  const canConfirm = (!spiceRequired || !!selected) && (!variantRequired || !!selectedVariantKey) && qty >= 1;
 
   return (
     <Modal
@@ -167,16 +168,18 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
         </div>
       )}
 
-      {/* Variant dropdown (optional add-on) */}
+      {/* Variant dropdown (mandatory item selection) */}
       {hasVariants ? (
           <div style={{ display: 'grid', gap: 6, marginTop: 4, marginBottom: 10 }}>
-          <div style={{ fontWeight: 800 }}>Select add-on (optional)</div>
+          <div style={{ fontWeight: 800 }}>Select Item</div>
           <select
             value={selectedVariantKey}
             onChange={(e) => setSelectedVariantKey(e.target.value)}
+            required={variantRequired}
+            aria-required={variantRequired}
             style={{ padding: 10, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--panel)' }}
           >
-            <option value="">None (no add-on)</option>
+            <option value="" disabled>Select</option>
             {variants.map((v) => {
               const addonPrice = Number(v?.price || 0);
               const suffix = addonPrice > 0 ? ` (+$${addonPrice.toFixed(2)})` : '';
