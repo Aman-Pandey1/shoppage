@@ -13,13 +13,16 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
     const t = setInterval(() => setNow(Date.now()), 30000);
     return () => clearInterval(t);
   }, []);
-  const timeString = React.useMemo(() => readyAt ? new Date(readyAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—', [readyAt]);
+  // Ensure a sensible default: now + 30 minutes if not provided
+  const effectiveReadyAt = React.useMemo(() => {
+    return readyAt || new Date(Date.now() + 30 * 60000).toISOString();
+  }, [readyAt, now]);
+  const timeString = React.useMemo(() => new Date(effectiveReadyAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), [effectiveReadyAt]);
   const eta = React.useMemo(() => {
-    if (!readyAt) return '';
-    const diffMs = new Date(readyAt).getTime() - now;
+    const diffMs = new Date(effectiveReadyAt).getTime() - now;
     const mins = Math.max(0, Math.round(diffMs / 60000));
     return `(in ${mins} min)`;
-  }, [readyAt, now]);
+  }, [effectiveReadyAt, now]);
 
   const subtotal = React.useMemo(() => state.items.reduce((s, it) => s + it.totalPrice, 0), [state.items]);
   const couponEligible = !!state.coupon && subtotal >= 50;
