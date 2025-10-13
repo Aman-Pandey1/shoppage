@@ -25,13 +25,7 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
       const n = Number(initialQuantity) || 1;
       setQty(Math.max(1, Math.min(99, n)));
       setBump(false);
-      setSelectedVariantKey(() => {
-        // Autoselect the single variant if only one is available
-        if (Array.isArray(product?.variants) && product.variants.length === 1) {
-          return product.variants[0].key || '';
-        }
-        return '';
-      });
+      setSelectedVariantKey('');
     }
   }, [open, product, initialQuantity]);
 
@@ -55,7 +49,7 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
   const selectedVariant = variants.find((v) => v.key === selectedVariantKey) || null;
   const hasVariants = variants.length > 0;
   const spiceRequired = Array.isArray(product?.spiceLevels) && (product.spiceLevels.length > 0);
-  const canConfirm = (!spiceRequired || !!selected) && (!hasVariants || !!selectedVariant) && qty >= 1;
+  const canConfirm = (!spiceRequired || !!selected) && qty >= 1;
 
   return (
     <Modal
@@ -173,20 +167,21 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
         </div>
       )}
 
-      {/* Variant dropdown */}
+      {/* Variant dropdown (optional add-on) */}
       {hasVariants ? (
           <div style={{ display: 'grid', gap: 6, marginTop: 4, marginBottom: 10 }}>
-          <div style={{ fontWeight: 800 }}>Select Variant</div>
+          <div style={{ fontWeight: 800 }}>Select add-on (optional)</div>
           <select
             value={selectedVariantKey}
             onChange={(e) => setSelectedVariantKey(e.target.value)}
             style={{ padding: 10, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--panel)' }}
           >
-            {selectedVariantKey === '' ? <option value="" disabled>Select Variant</option> : null}
+            <option value="">None (no add-on)</option>
             {variants.map((v) => {
-              const displayPrice = Number(product?.price || 0) + Number(v?.price || 0);
+              const addonPrice = Number(v?.price || 0);
+              const suffix = addonPrice > 0 ? ` (+$${addonPrice.toFixed(2)})` : '';
               return (
-                <option key={v.key} value={v.key}>{`${v.label} — $${displayPrice.toFixed(2)}`}</option>
+                <option key={v.key} value={v.key}>{`${v.label}${suffix}`}</option>
               );
             })}
           </select>
