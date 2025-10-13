@@ -110,7 +110,7 @@ router.post('/:slug/quote', async (req, res) => {
     try {
       quote = provider === 'doordash'
         ? await ddRequestQuote({ storeId: site.doordashStoreId, pickup, dropoff })
-        : await uberRequestQuote({ customerId: site.uberCustomerId, pickup, dropoff, creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv } });
+        : await uberRequestQuote({ customerId: site.uberCustomerId, pickup, dropoff, creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv, scopes: site?.uberTokenScopes } });
     } catch (e) {
       const msg = String(e?.message || '');
       // Allow customers to proceed to the menu even if the Uber app
@@ -207,7 +207,7 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
     // Use selected provider
     const delivery = provider === 'doordash'
       ? await ddCreateDelivery({ storeId: site.doordashStoreId, pickup: safePickup, dropoff: safeDropoff, manifestItems, tip: 0, externalId })
-      : await uberCreateDelivery({ customerId: site.uberCustomerId, pickup: safePickup, dropoff: safeDropoff, manifestItems, tip: 0, externalId, creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv } });
+      : await uberCreateDelivery({ customerId: site.uberCustomerId, pickup: safePickup, dropoff: safeDropoff, manifestItems, tip: 0, externalId, creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv, scopes: site?.uberTokenScopes } });
 		// Record order
 		const itemsTotal = (manifestItems || []).reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 1), 0);
     const isMockEnv = !!req.app?.locals?.mockData;
