@@ -32,12 +32,13 @@ export async function geocodeAddress(address) {
   if (cached) return cached;
   async function fetchOnce(q) {
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`;
+    const userAgent = process.env.NOMINATIM_USER_AGENT || process.env.GEOCODE_USER_AGENT || 'BlueboxxShop/1.0 (+https://blueboxx.co/contact)';
     const res = await fetch(url, {
-    headers: {
-      // Identify the application per Nominatim usage policy
-      'User-Agent': 'ShopApp/1.0 (+https://example.invalid/contact)'
-    }
-  });
+      headers: {
+        // Identify the application per Nominatim usage policy
+        'User-Agent': userAgent,
+      }
+    });
     if (!res.ok) return null;
     const data = await res.json();
     if (!Array.isArray(data) || data.length === 0) return null;
