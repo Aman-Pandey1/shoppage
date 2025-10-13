@@ -28,6 +28,15 @@ export type Product = {
   categoryId: string;
   isVeg?: boolean;
   spiceLevels?: string[];
+  // Optional variants on the product
+  variants?: Array<{
+    key: string;
+    label: string;
+    // If set, this is the absolute price for the variant
+    price?: number;
+    // Otherwise, priceDelta adds on top of base price
+    priceDelta?: number;
+  }>;
   extraOptionGroups?: ExtraOptionGroup[];
 };
 

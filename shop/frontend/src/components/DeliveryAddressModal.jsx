@@ -211,6 +211,11 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
               if (!normalizedPhone) throw new Error('Enter phone in E.164 like +14155550123');
               const address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
               const dropoff = { name, phone: normalizedPhone, address };
+              // Always get a fresh quote to ensure delivery fee consistency with checkout
+              const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { name, phone: normalizedPhone, address }, pickupLocationIndex: selectedPickupIndex });
+              const quotedFee = typeof q?.customerDeliveryFeeCents === 'number' ? q.customerDeliveryFeeCents : 0;
+              try { setDeliveryFeeCents(quotedFee); setDeliveryFeeCentsLocal(quotedFee); } catch {}
+              const chosenIdx = (typeof q?.pickupLocationIndex === 'number') ? q.pickupLocationIndex : (typeof selectedPickupIndex === 'number' ? selectedPickupIndex : 0);
 
               // Create Stripe checkout session for delivery
               const payload = {
@@ -222,7 +227,8 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
                   size: m.size,
                   spiceLevel: m.spiceLevel,
                 })),
-                pickupLocationIndex: typeof selectedPickupIndex === 'number' ? selectedPickupIndex : 0,
+                pickupLocationIndex: chosenIdx,
+                deliveryFeeCents: quotedFee,
                 coupon: state?.coupon || undefined,
               };
               const res = await postJson(`/api/payments/stripe/${siteSlug}/checkout/delivery`, payload);

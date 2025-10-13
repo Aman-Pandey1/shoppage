@@ -175,16 +175,17 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
 
       {/* Variant dropdown */}
       {hasVariants ? (
-        <div style={{ display: 'grid', gap: 6, marginTop: 4, marginBottom: 10 }}>
-          <div style={{ fontWeight: 800 }}>Select Varrient</div>
+          <div style={{ display: 'grid', gap: 6, marginTop: 4, marginBottom: 10 }}>
+          <div style={{ fontWeight: 800 }}>Select Variant</div>
           <select
             value={selectedVariantKey}
             onChange={(e) => setSelectedVariantKey(e.target.value)}
             style={{ padding: 10, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--panel)' }}
           >
-            {selectedVariantKey === '' ? <option value="" disabled>Select Varrient</option> : null}
+            {selectedVariantKey === '' ? <option value="" disabled>Select Variant</option> : null}
             {variants.map((v) => {
-              const displayPrice = Number(product?.price || 0) + Number(v?.priceDelta || 0);
+              const hasAbs = typeof v?.price === 'number';
+              const displayPrice = hasAbs ? Number(v.price) : (Number(product?.price || 0) + Number(v?.priceDelta || 0));
               return (
                 <option key={v.key} value={v.key}>{`${v.label} — $${displayPrice.toFixed(2)}`}</option>
               );

@@ -150,8 +150,10 @@ export const AdminDashboard = () => {
       const list = Array.isArray(variants) ? variants : [];
       return list.map((v) => {
         const label = String(v?.label || v?.key || '').trim();
-        const delta = Number(v?.priceDelta || 0);
+        const delta = (typeof v?.price === 'number') ? Number(v.price) : Number(v?.priceDelta || 0);
         if (!label) return '';
+        // If absolute price is provided, show as '=PRICE'
+        if (typeof v?.price === 'number') return `${label} =${Number(v.price).toFixed(2).replace(/\.00$/, '')}`;
         if (delta === 0) return label;
         const sign = delta >= 0 ? '+' : '-';
         const abs = Math.abs(delta).toFixed(2).replace(/\.00$/, '');
@@ -170,6 +172,17 @@ export const AdminDashboard = () => {
       .filter(Boolean)
       .map((token) => {
         const cleaned = token.replace(/\$/g, '').trim();
+        // Support either absolute price with '=N.NN' or +/- delta
+        const absMatch = cleaned.match(/^(.+?)\s*=\s*(\d+(?:\.\d+)?)$/);
+        if (absMatch) {
+          const rawLabel = absMatch[1].trim();
+          const price = Number(absMatch[2]);
+          let baseKey = rawLabel.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+          if (!baseKey) baseKey = 'variant';
+          let key = baseKey; let idx = 1; while (seen.has(key)) { key = `${baseKey}_${idx++}`; }
+          seen.add(key);
+          return { key, label: rawLabel, price };
+        }
         const match = cleaned.match(/^(.+?)(?:\s*([+-])\s*(\d+(?:\.\d+)?))?$/);
         const rawLabel = (match ? match[1] : cleaned).trim();
         const sign = match && match[2] ? match[2] : '+';
