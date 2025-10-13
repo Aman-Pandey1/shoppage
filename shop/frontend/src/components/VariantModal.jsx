@@ -32,7 +32,7 @@ export const VariantModal = ({ open, variants = [], onCancel, onConfirm, product
           </div>
         </div>
       ) : null}
-      <div style={{ fontWeight: 800, marginBottom: 6 }}>Choose a variant</div>
+      <div style={{ fontWeight: 800, marginBottom: 6 }}>Select Varrient</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10 }}>
         {variants.map((v) => {
           const active = selectedKey === v.key;

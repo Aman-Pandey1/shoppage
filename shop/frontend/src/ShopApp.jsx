@@ -11,7 +11,6 @@ import { FulfillmentModal } from './components/FulfillmentModal';
 import { Modal } from './components/Modal';
 import { SpiceModal } from './components/SpiceModal';
 import { ExtrasModal } from './components/ExtrasModal';
-import { VariantModal } from './components/VariantModal';
 import { AddToCartToast } from './components/AddToCartToast';
 import { AlertModal } from './components/AlertModal';
 import { DeliveryAddressModal } from './components/DeliveryAddressModal';
@@ -28,7 +27,6 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [pendingQuantity, setPendingQuantity] = useState(1);
   const [spiceOpen, setSpiceOpen] = useState(false);
   const [extrasOpen, setExtrasOpen] = useState(false);
-  const [variantOpen, setVariantOpen] = useState(false);
   const [pendingSpice, setPendingSpice] = useState(undefined);
   const [pendingVariant, setPendingVariant] = useState(null);
   const [deliveryModalOpen, setDeliveryModalOpen] = useState(false);
@@ -107,9 +105,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   function startAddToCart(product, quantity = 1) {
     setPendingProduct(product);
     setPendingQuantity(Math.max(1, Math.min(99, Number(quantity) || 1)));
-    if (Array.isArray(product?.variants) && product.variants.length > 0) {
-      setVariantOpen(true);
-    } else if (product.spiceLevels && product.spiceLevels.length > 0) {
+    // Show unified modal for variants/spice in a single popup
+    if ((Array.isArray(product?.variants) && product.variants.length > 0) || (product.spiceLevels && product.spiceLevels.length > 0)) {
       setSpiceOpen(true);
     } else if (product.extraOptionGroups && product.extraOptionGroups.length > 0) {
       setExtrasOpen(true);
@@ -127,33 +124,17 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     }
   }
 
-  function confirmVariant(variant) {
-    setPendingVariant(variant || null);
-    setVariantOpen(false);
-    if (pendingProduct && pendingProduct.spiceLevels && pendingProduct.spiceLevels.length > 0) {
-      setSpiceOpen(true);
-    } else if (pendingProduct && pendingProduct.extraOptionGroups && pendingProduct.extraOptionGroups.length > 0) {
-      setExtrasOpen(true);
-    } else if (pendingProduct) {
-      addItem({ product: pendingProduct, variant, spiceLevel: undefined, quantity: pendingQuantity });
-      if (state.fulfillmentType === 'pickup') {
-        setOrderDetailsOpen(true);
-      }
-      setPendingProduct(null);
-      setPendingVariant(null);
-      setPendingQuantity(1);
-    }
-  }
-
-  function confirmSpice(spice, quantityFromModal) {
-    const confirmedQty = Math.max(1, Math.min(99, Number(quantityFromModal || pendingQuantity) || 1));
+  function confirmSpice(result) {
+    const { spice, variant, quantity } = result || {};
+    const confirmedQty = Math.max(1, Math.min(99, Number(quantity || pendingQuantity) || 1));
     setPendingSpice(spice);
+    setPendingVariant(variant || null);
     setPendingQuantity(confirmedQty);
     setSpiceOpen(false);
     if (pendingProduct && pendingProduct.extraOptionGroups && pendingProduct.extraOptionGroups.length > 0) {
       setExtrasOpen(true);
     } else if (pendingProduct) {
-      addItem({ product: pendingProduct, variant: pendingVariant || undefined, spiceLevel: spice, quantity: confirmedQty });
+      addItem({ product: pendingProduct, variant: variant || undefined, spiceLevel: spice, quantity: confirmedQty });
       if (state.fulfillmentType === 'pickup') {
         setOrderDetailsOpen(true);
       }
@@ -707,7 +688,6 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         onConfirm={confirmSpice}
       />
       <ExtrasModal open={extrasOpen} groups={pendingProduct?.extraOptionGroups} product={pendingProduct} onCancel={() => setExtrasOpen(false)} onConfirm={confirmExtras} />
-      <VariantModal open={variantOpen} variants={pendingProduct?.variants || []} product={pendingProduct} onCancel={() => setVariantOpen(false)} onConfirm={confirmVariant} />
       <AddToCartToast />
       <AlertModal
         open={closedAlertOpen}
@@ -729,7 +709,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         }
         // If pickup, keep user here; they can open order details from cart.
       }} />
-      <footer className="site-footer">© All Rights Reserved By Blue Boxx</footer>
+      <footer className="site-footer">© All Rights Reserved By <a href="https://www.blueboxx.ca/" target="_blank" rel="noopener noreferrer">Blue Boxx</a></footer>
     </div>
   );
 };
