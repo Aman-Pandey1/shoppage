@@ -24,6 +24,8 @@ const SiteSchema = new mongoose.Schema({
 	uberClientId: { type: String },
 	uberClientSecret: { type: String },
 	uberEnv: { type: String, enum: ['production', 'sandbox'], default: undefined },
+	// Optional: per-site Uber OAuth token scopes. Leave blank to send no scope.
+	uberTokenScopes: { type: String },
 	// Optional: per-site Uber webhook signing secret
 	uberWebhookSecret: { type: String },
 	// Which delivery provider to use for this site: 'uber' or 'doordash'

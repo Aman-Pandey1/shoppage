@@ -35,7 +35,7 @@ router.get('/sites/:siteId/health', requireAdmin, async (req, res) => {
           phone: testPhone,
           address: pickup.address,
         },
-        creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv }
+        creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv, scopes: site?.uberTokenScopes }
       });
       return res.json({ ok: true, fee: quote?.fee, eta: quote?.dropoff_estimated_dt });
 		} catch (err) {

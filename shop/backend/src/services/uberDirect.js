@@ -1,6 +1,14 @@
 import fetch from 'node-fetch';
 
 const UBER_TOKEN_URL = 'https://login.uber.com/oauth/v2/token';
+function resolveUberTokenUrls(env) {
+  const urls = [UBER_TOKEN_URL];
+  // Some legacy/sandbox setups require sandbox-login host
+  if (String(env || '').toLowerCase() === 'sandbox') {
+    urls.unshift('https://sandbox-login.uber.com/oauth/v2/token');
+  }
+  return Array.from(new Set(urls));
+}
 function isUsingMock() {
   try {
     if (globalThis && (globalThis.__USE_MOCK_DATA === true)) return true;
@@ -12,7 +20,9 @@ function resolveUberCreds(creds) {
   const clientId = creds?.clientId || process.env.UBER_CLIENT_ID || '';
   const clientSecret = creds?.clientSecret || process.env.UBER_CLIENT_SECRET || '';
   const env = String(creds?.env || process.env.UBER_ENV || 'production').toLowerCase();
-  return { clientId, clientSecret, env };
+  const scopes = (Object.prototype.hasOwnProperty.call(creds || {}, 'scopes') ? (creds?.scopes ?? '') : (process.env.UBER_TOKEN_SCOPES ?? undefined));
+  const audience = creds?.audience || process.env.UBER_TOKEN_AUDIENCE || undefined;
+  return { clientId, clientSecret, env, scopes, audience };
 }
 function isMissingUberCreds(creds) {
   try {
@@ -27,63 +37,77 @@ function isMissingUberCreds(creds) {
 const tokenCache = new Map(); // key: clientId -> { token, expiryMs }
 
 async function getAccessToken(creds) {
-  const { clientId, clientSecret } = resolveUberCreds(creds);
+  const { clientId, clientSecret, env, audience } = resolveUberCreds(creds);
   if (!clientId || !clientSecret) throw new Error('Uber credentials missing');
-  const now = Date.now();
   const existing = tokenCache.get(clientId);
+  const now = Date.now();
   if (existing && now < (existing.expiryMs - 30000)) return existing.token;
 
-  // Some Uber apps do not accept explicit scopes and will reply with
-  // { error: "invalid_scope" }. To be resilient, try configured/default
-  // scopes first, then retry without a scope parameter.
-  const configuredScopes = String(creds?.scopes || process.env.UBER_TOKEN_SCOPES || '')
-    .trim();
-  const candidates = [];
-  if (configuredScopes) candidates.push(configuredScopes);
-  // Keep "eats.deliveries" as the common default scope
-  if (!configuredScopes || configuredScopes !== 'eats.deliveries') {
-    candidates.push('eats.deliveries');
+  // Scopes ordering:
+  // - If scopes were explicitly provided in creds (even empty string), honor that first
+  // - Otherwise: try env UBER_TOKEN_SCOPES, then 'eats.deliveries', then blank
+  const scopesPropProvided = creds && Object.prototype.hasOwnProperty.call(creds, 'scopes');
+  const rawScopes = typeof creds?.scopes === 'string' ? creds.scopes : undefined;
+  const trimmedScopes = typeof rawScopes === 'string' ? rawScopes.trim() : undefined;
+  const envDefaultScopes = String(process.env.UBER_TOKEN_SCOPES || '').trim();
+  const scopeCandidates = [];
+  if (scopesPropProvided) {
+    // Explicitly provided by caller; allow empty string to mean "no scope"
+    if (trimmedScopes && trimmedScopes.length > 0) {
+      scopeCandidates.push(trimmedScopes);
+    } else {
+      scopeCandidates.push('');
+    }
+  } else {
+    if (envDefaultScopes) scopeCandidates.push(envDefaultScopes);
+    scopeCandidates.push('eats.deliveries');
+    scopeCandidates.push('');
   }
-  // Final fallback: omit scope entirely
-  candidates.push('');
 
+  const tokenUrls = resolveUberTokenUrls(env);
   let lastError = '';
-  for (const scopeCandidate of candidates) {
-    const body = new URLSearchParams();
-    body.append('grant_type', 'client_credentials');
-    body.append('client_id', clientId);
-    body.append('client_secret', clientSecret);
-    if (scopeCandidate) body.append('scope', scopeCandidate);
-    const res = await fetch(UBER_TOKEN_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body,
-    });
-    if (res.ok) {
-      const data = await res.json();
-      const token = data.access_token;
-      const expiryMs = now + (Number(data.expires_in) * 1000);
-      tokenCache.set(clientId, { token, expiryMs });
-      return token;
-    }
-    try {
-      const text = await res.text();
-      lastError = `Uber token error ${res.status} ${String(text).slice(0, 200)}`;
-      // Retry on invalid_scope only; otherwise, surface the error immediately
-      if (!/invalid_scope/i.test(text)) {
-        throw new Error(lastError);
+  for (const tokenUrl of tokenUrls) {
+    for (const scopeCandidate of scopeCandidates) {
+      const body = new URLSearchParams();
+      body.append('grant_type', 'client_credentials');
+      body.append('client_id', clientId);
+      body.append('client_secret', clientSecret);
+      if (scopeCandidate) body.append('scope', scopeCandidate);
+      if (audience) body.append('audience', audience);
+      const res = await fetch(tokenUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const token = data.access_token;
+        const expiryMs = Date.now() + (Number(data.expires_in) * 1000);
+        tokenCache.set(clientId, { token, expiryMs });
+        return token;
       }
-      // Otherwise continue to next candidate
-    } catch (e) {
-      // If reading body failed, surface a concise error
-      if (!(e instanceof Error)) throw e;
-      lastError = e.message;
-      // Do not retry in this case; break
+      try {
+        const text = await res.text();
+        const msg = `Uber token error ${res.status} ${String(text).slice(0, 200)}`;
+        lastError = msg;
+        // Retry on invalid_scope only; otherwise, if tokenUrl is not the primary, go to next URL
+        if (/invalid_scope/i.test(text)) {
+          continue; // try next scope or next host
+        }
+        // For other 4xx errors, do not attempt other scopes; break to next host
+        if (res.status >= 400 && res.status < 500) break;
+        // For 5xx errors, try next host if available
+      } catch (e) {
+        if (e instanceof Error) {
+          lastError = e.message;
+        } else {
+          throw e;
+        }
+      }
     }
   }
-  // Improve guidance for common invalid_scope issues
   if (/invalid_scope/i.test(String(lastError || ''))) {
-    const hint = ' Hint: Ensure your Uber app has the "eats.deliveries" permission enabled, and try leaving the scope blank in settings. Also verify the environment (Sandbox vs Production) matches your credentials.';
+    const hint = ' Hint: Ensure your Uber app has the "eats.deliveries" permission enabled. If it is not approved for Eats Deliveries, set Uber Token Scopes to blank in Site Settings. Also verify Sandbox vs Production match for both your app credentials and customer ID.';
     throw new Error((lastError || 'Uber token error') + hint);
   }
   throw new Error(lastError || 'Uber token error');
