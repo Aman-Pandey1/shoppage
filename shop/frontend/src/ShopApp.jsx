@@ -429,7 +429,10 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         {isClosedNow ? (
           <div className="card" style={{ marginBottom: 12, borderLeft: '3px solid var(--danger)', padding: 10 }}>
             <div style={{ fontWeight: 700 }}>Restaurant closed</div>
-            <div className="muted" style={{ fontSize: 12 }}>Online ordering is closed for today. Last order at 9:45 PM.</div>
+            <div className="muted" style={{ fontSize: 12 }}>
+              Restaurant will be open at regular hours.<br />
+              We will be resume online odering once restaurant is open.
+            </div>
           </div>
         ) : null}
 
@@ -682,7 +685,12 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         open={closedAlertOpen}
         onClose={() => setClosedAlertOpen(false)}
         title="Restaurant is closed"
-        message={"Online ordering is closed for today. Please come back tomorrow."}
+        message={
+          <span>
+            Restaurant will be open at regular hours.<br />
+            We will be resume online odering once restaurant is open.
+          </span>
+        }
       />
       <UserAuthModal open={loginOpen} onClose={() => setLoginOpen(false)} onSuccess={() => {
         setLoginOpen(false);
