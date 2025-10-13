@@ -143,7 +143,10 @@ export const MyOrdersPage = () => {
               <ul style={{ margin: '8px 0', paddingLeft: 18 }}>
                 {(Array.isArray(o.items) ? o.items : []).map((it, idx) => (
                   <li key={idx}>
-                    {it.name}{it.spiceLevel ? ` [${it.spiceLevel}]` : ''}{it.size ? ` (${it.size})` : ''} × {it.quantity}
+                    {it.name}
+                    {it.spiceLevel ? ` [${it.spiceLevel}]` : ''}
+                    {it.size ? ` — Add-on: ${it.size}` : ''}
+                    × {it.quantity}
                   </li>
                 ))}
               </ul>
