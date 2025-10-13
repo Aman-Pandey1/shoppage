@@ -221,7 +221,7 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
       if (idx % 2 === 0) { doc.save(); doc.rect(startX, doc.y - 2, width, 18).fill(colors.rowStripe); doc.restore(); }
       const rowY = doc.y;
       doc.font('Helvetica').fillColor(colors.text)
-        .text(`${it.name}${it.spiceLevel ? ' ['+it.spiceLevel+']' : ''}${it.size ? ' — Add-on: '+it.size : ''}`, startX, rowY, { width: col[0], align: 'center' });
+        .text(`${it.name}${it.spiceLevel ? ' ['+it.spiceLevel+']' : ''}${it.size ? ' — Select Item: '+it.size : ''}`, startX, rowY, { width: col[0], align: 'center' });
       doc.text(String(qty), startX + col[0], rowY, { width: col[1], align: 'center' });
       doc.text(`$${unit.toFixed(2)}`, startX + col[0] + col[1], rowY, { width: col[2], align: 'center' });
       doc.text(`$${line.toFixed(2)}`, startX + col[0] + col[1] + col[2], rowY, { width: col[3], align: 'center' });

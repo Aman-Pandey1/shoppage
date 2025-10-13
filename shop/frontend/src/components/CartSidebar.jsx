@@ -161,7 +161,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
                   <div style={{ fontWeight: 700 }}>{item.name}</div>
                   {item.variant ? (
                     <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-                      Add-on: {item.variant.label || item.variant.key}
+                      Select Item: {item.variant.label || item.variant.key}
                       {Number(item?.variant?.price||0) > 0 ? ` (+$${Number(item.variant.price).toFixed(2)})` : ''}
                     </div>
                   ) : null}
