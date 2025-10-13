@@ -210,9 +210,9 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
       : await uberCreateDelivery({ customerId: site.uberCustomerId, pickup: safePickup, dropoff: safeDropoff, manifestItems, tip: 0, externalId, creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv } });
 		// Record order
 		const itemsTotal = (manifestItems || []).reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 1), 0);
-		const isMockEnv = !!req.app?.locals?.mockData;
-		const minOrderCents = isMockEnv ? 0 : Math.max(0, Number(process.env.MIN_ORDER_CENTS) || 5000);
-		if (itemsTotal < minOrderCents) return res.status(400).json({ error: `Minimum order is $${(minOrderCents/100).toFixed(2)}` });
+    const isMockEnv = !!req.app?.locals?.mockData;
+    const minOrderCents = isMockEnv ? 0 : Math.max(0, Number(process.env.MIN_ORDER_CENTS) || 5000);
+    if (itemsTotal < minOrderCents) return res.status(400).json({ error: `Minimum total amount should be $${(minOrderCents/100).toFixed(2)} required for delivery` });
     const split = !!site.splitDeliveryFee;
     const fullDeliveryFeeCents = Number(distanceFeeCents) || 0;
     const customerDeliveryFeeCents = split ? Math.round(fullDeliveryFeeCents / 2) : fullDeliveryFeeCents;

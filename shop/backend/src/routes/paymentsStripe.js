@@ -181,7 +181,7 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
 
     const isMockEnv = !!req.app?.locals?.mockData;
     const minOrderCents = isMockEnv ? 0 : Math.max(0, Number(process.env.MIN_ORDER_CENTS) || 5000);
-    if (itemsTotal < minOrderCents) {
+    if (subtotalBeforeDiscount < minOrderCents) {
       return res.status(400).json({ error: `Minimum order is $${(minOrderCents/100).toFixed(2)}` });
     }
 
@@ -225,13 +225,20 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
     const origin = req.get('origin') || process.env.FRONTEND_URL || 'http://localhost:5173';
     const slug = String(req.params.slug);
 
+    const pctOff = appliedCoupon ? Number(appliedCoupon.percent) : null;
     const lineItems = [
-      // Each product item
+      // Each product item (apply per-item discount if coupon present)
       ...items.map((it) => ({
         price_data: {
           currency,
           product_data: { name: it.name },
-          unit_amount: Number(it.priceCents) || 0,
+          unit_amount: (() => {
+            const unit = Number(it.priceCents) || 0;
+            if (typeof pctOff === 'number') {
+              return Math.max(0, Math.round(unit * (100 - pctOff) / 100));
+            }
+            return unit;
+          })(),
         },
         quantity: Number(it.quantity) || 1,
       })),
@@ -335,7 +342,7 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
 
     const isMockEnv = !!req.app?.locals?.mockData;
     const minOrderCents = isMockEnv ? 0 : Math.max(0, Number(process.env.MIN_ORDER_CENTS) || 5000);
-    if (itemsTotal < minOrderCents) return res.status(400).json({ error: `Minimum order is $${(minOrderCents/100).toFixed(2)}` });
+    if (subtotalBeforeDiscount < minOrderCents) return res.status(400).json({ error: `Minimum total amount should be $${(minOrderCents/100).toFixed(2)} required for delivery` });
 
     // Compute delivery fee based on distance and enforce max km if configured
     let distanceKm = null;
@@ -384,12 +391,19 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
     const origin = req.get('origin') || process.env.FRONTEND_URL || 'http://localhost:5173';
     const slug = String(req.params.slug);
 
+    const pctOffDelivery = appliedCoupon ? Number(appliedCoupon.percent) : null;
     const lineItems = [
       ...manifestItems.map((it) => ({
         price_data: {
           currency,
           product_data: { name: it.name },
-          unit_amount: Number(it.priceCents || it.price) || 0,
+          unit_amount: (() => {
+            const unit = Number(it.priceCents || it.price) || 0;
+            if (typeof pctOffDelivery === 'number') {
+              return Math.max(0, Math.round(unit * (100 - pctOffDelivery) / 100));
+            }
+            return unit;
+          })(),
         },
         quantity: Number(it.quantity) || 1,
       })),

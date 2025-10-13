@@ -57,14 +57,14 @@ router.get('/:slug/hours', async (req, res) => {
   try {
     const { site } = req;
     const defaultHours = {
-      // Default last online order at 21:30
-      mon: { open: '10:00', close: '21:30', closed: false },
-      tue: { open: '10:00', close: '21:30', closed: false },
-      wed: { open: '10:00', close: '21:30', closed: false },
-      thu: { open: '10:00', close: '21:30', closed: false },
-      fri: { open: '10:00', close: '21:30', closed: false },
-      sat: { open: '10:00', close: '21:30', closed: false },
-      sun: { open: '10:00', close: '21:30', closed: false },
+      // Default store hours: 11:00 AM – 10:00 PM (last order 9:45 PM)
+      mon: { open: '11:00', close: '22:00', closed: false },
+      tue: { open: '11:00', close: '22:00', closed: false },
+      wed: { open: '11:00', close: '22:00', closed: false },
+      thu: { open: '11:00', close: '22:00', closed: false },
+      fri: { open: '11:00', close: '22:00', closed: false },
+      sat: { open: '11:00', close: '22:00', closed: false },
+      sun: { open: '11:00', close: '22:00', closed: false },
     };
     const mock = req.app.locals.mockData;
     if (mock) {
