@@ -237,7 +237,7 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
       ...items.map((it) => ({
         price_data: {
           currency,
-          product_data: { name: it.name },
+          product_data: { name: `${it.name}${it.size ? ' — Select Item: ' + it.size : ''}` },
           unit_amount: Math.max(0, Number(it.priceCents) || 0),
         },
         quantity: Number(it.quantity) || 1,
@@ -416,7 +416,7 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
     const deliveryForStripeDelCents = (discountFactorDel ? Math.round(customerDeliveryFeeCents / discountFactorDel) : customerDeliveryFeeCents);
     const lineItemsDel = [
       ...manifestItems.map((it) => ({
-        price_data: { currency, product_data: { name: it.name }, unit_amount: Math.max(0, Number(it.priceCents || it.price) || 0) },
+        price_data: { currency, product_data: { name: `${it.name}${it.size ? ' — Select Item: ' + it.size : ''}` }, unit_amount: Math.max(0, Number(it.priceCents || it.price) || 0) },
         quantity: Number(it.quantity) || 1,
       })),
       ...(taxCents > 0 ? [{ price_data: { currency, product_data: { name: 'Tax' }, unit_amount: taxForStripeDelCents }, quantity: 1 }] : []),

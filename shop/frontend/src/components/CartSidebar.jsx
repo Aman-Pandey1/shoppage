@@ -25,7 +25,11 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
   }, [effectiveReadyAt, now]);
 
   const subtotal = React.useMemo(() => state.items.reduce((s, it) => s + it.totalPrice, 0), [state.items]);
-  const couponEligible = !!state.coupon && subtotal >= 50;
+  // Use cents-based eligibility to avoid float drift across locales
+  const couponEligible = React.useMemo(() => {
+    const cents = Math.round(subtotal * 100);
+    return !!state.coupon && cents >= 5000;
+  }, [state.coupon, subtotal]);
 
   // Auto-apply latest coupon if subtotal >= $50 and no coupon applied
   React.useEffect(() => {
