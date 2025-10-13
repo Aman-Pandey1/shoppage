@@ -634,6 +634,91 @@ export const AdminDashboard = () => {
                       }}
                     />
                   </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span>Variants (Editor)</span>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 1fr auto', gap: 8, alignItems: 'center' }}>
+                    {(editing.variants || []).map((v, idx) => (
+                      <React.Fragment key={`${v?.key || v?.label || 'v'}-${idx}`}>
+                        <input
+                          placeholder="Label"
+                          value={v?.label || v?.key || ''}
+                          onChange={(e) => {
+                            const label = e.target.value;
+                            const next = [...(editing.variants || [])];
+                            const cur = { ...next[idx] };
+                            cur.label = label;
+                            if (!cur.key || /^variant(_\d+)?$/.test(cur.key)) {
+                              let base = String(label || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+                              if (!base) base = 'variant';
+                              const used = new Set(next.map((vv, ii) => (ii === idx ? null : vv?.key)).filter(Boolean));
+                              let candidate = base; let n = 1;
+                              while (used.has(candidate)) { candidate = `${base}_${n++}`; }
+                              cur.key = candidate;
+                            }
+                            next[idx] = cur;
+                            setEditing({ ...editing, variants: next });
+                          }}
+                        />
+                        <select
+                          value={typeof v?.price === 'number' ? 'abs' : 'delta'}
+                          onChange={(e) => {
+                            const mode = e.target.value;
+                            const next = [...(editing.variants || [])];
+                            const cur = { ...next[idx] };
+                            if (mode === 'abs') {
+                              const base = Number(editing?.price || 0);
+                              const delta = Number(cur?.priceDelta || 0);
+                              cur.price = Number.isFinite(base + delta) ? base + delta : (typeof cur.price === 'number' ? cur.price : base);
+                              delete cur.priceDelta;
+                            } else {
+                              const base = Number(editing?.price || 0);
+                              const abs = Number(cur?.price != null ? cur.price : base);
+                              cur.priceDelta = Number.isFinite(abs - base) ? (abs - base) : 0;
+                              delete cur.price;
+                            }
+                            next[idx] = cur;
+                            setEditing({ ...editing, variants: next });
+                          }}
+                        >
+                          <option value="abs">Absolute price</option>
+                          <option value="delta">Delta (+/-)</option>
+                        </select>
+                        <input
+                          type="number"
+                          step="0.01"
+                          placeholder={typeof v?.price === 'number' ? 'Price' : 'Delta'}
+                          value={typeof v?.price === 'number' ? (Number(v.price) || 0) : (Number(v?.priceDelta) || 0)}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            const next = [...(editing.variants || [])];
+                            const cur = { ...next[idx] };
+                            if (typeof cur?.price === 'number') {
+                              cur.price = Number.isFinite(val) ? val : 0;
+                            } else {
+                              cur.priceDelta = Number.isFinite(val) ? val : 0;
+                            }
+                            next[idx] = cur;
+                            setEditing({ ...editing, variants: next });
+                          }}
+                        />
+                        <button onClick={() => {
+                          const next = (editing.variants || []).slice();
+                          next.splice(idx, 1);
+                          setEditing({ ...editing, variants: next });
+                        }}>Remove</button>
+                      </React.Fragment>
+                    ))}
+                  </div>
+                  <button onClick={() => {
+                    const next = [...(editing.variants || [])];
+                    let base = 'variant';
+                    const used = new Set(next.map((vv) => vv?.key).filter(Boolean));
+                    let candidate = base; let n = 1;
+                    while (used.has(candidate)) { candidate = `${base}_${n++}`; }
+                    next.push({ key: candidate, label: '', price: Number(editing?.price || 0) });
+                    setEditing({ ...editing, variants: next });
+                  }}>+ Add variant</button>
+                </div>
                   <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <span>Extra option groups (JSON)</span>
                     <textarea

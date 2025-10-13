@@ -41,7 +41,7 @@ export const OrderDetailsBar = ({
           </button>
         </div>
         <div className="order-bar__group">
-          <div className="order-bar__label">Pick up/Delivery date and Time</div>
+          <div className="order-bar__label">Pick Up/Delivery Date and Time</div>
           <div className="order-bar__inline" style={{ gap: 8 }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span className="muted" style={{ fontSize: 12 }}>Day</span>

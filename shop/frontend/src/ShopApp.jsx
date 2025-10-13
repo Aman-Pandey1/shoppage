@@ -613,7 +613,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                 </select>
               </label>
               <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <span style={{ color: 'var(--primary-600)' }}>Pick up/Delivery date and Time</span>
+                <span style={{ color: 'var(--primary-600)' }}>Pick Up/Delivery Date and Time</span>
                 {(() => {
                   const times = (timeOptions && timeOptions.length) ? timeOptions : (() => {
                     const out = [];
@@ -673,9 +673,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         manifest={manifest}
         mode={deliveryModalMode}
       />
-      {lastDeliveryId ? (
-        <div className="muted" style={{ textAlign: 'center', marginTop: 10, fontSize: 12 }}>Last delivery ID: {lastDeliveryId}</div>
-      ) : null}
+      {/* Last delivery ID removed from UI as requested */}
       <SpiceModal
         open={spiceOpen}
         spiceLevels={pendingProduct?.spiceLevels}
