@@ -3,6 +3,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
 import webhookUberRouter from './routes/webhookUber.js';
 import webhookStripeRouter from './routes/webhookStripe.js';
 import morgan from 'morgan';
@@ -68,11 +69,11 @@ app.use('/webhook/stripe', express.raw({ type: 'application/json' }), webhookStr
 app.use(express.json());
 app.use(morgan("dev"));
 
-// Static uploads serving
+// Static uploads serving (no top-level await; compatible across Node versions)
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads');
-try { await (async () => { 
-  try { await import('fs/promises').then(({ mkdir }) => mkdir(UPLOAD_DIR, { recursive: true })); } catch {}
-})(); } catch {}
+try {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+} catch {}
 app.use('/uploads', express.static(UPLOAD_DIR));
 
 const PORT = process.env.PORT || 4000;
