@@ -97,25 +97,32 @@ router.delete('/:id', requireAdmin, async (req, res) => {
 export default router;
 
 // Upload a category image and set imageUrl
-router.post('/:id/image', requireAdmin, upload.single('file'), async (req, res) => {
+// Upload a category image and set imageUrl
+// Accept common field names and validate file type for robustness
+router.post('/:id/image', requireAdmin, upload.any(), async (req, res) => {
   try {
     const { siteId, id } = req.params;
-    if (!req.file) return res.status(400).json({ error: 'Missing file' });
+    const incomingFile = req.file || (Array.isArray(req.files) ? req.files.find((f) => f.fieldname === 'file' || f.fieldname === 'image' || f.fieldname === 'logo') : null);
+    if (!incomingFile) return res.status(400).json({ error: 'Missing file' });
+    // Only allow image uploads
+    if (!(incomingFile.mimetype && /^image\//.test(incomingFile.mimetype))) {
+      return res.status(400).json({ error: 'Invalid file type. Please upload an image.' });
+    }
     // Decide storage: inline data URL in DB (default) or filesystem path. Inline avoids
     // ephemeral FS issues on platforms like Render where files can disappear on redeploy.
     const STORE_IN_DB = String(process.env.STORE_CATEGORY_IMAGE_IN_DB || process.env.STORE_IMAGES_IN_DB || 'true').toLowerCase() === 'true';
     let storedUrl = '';
     if (STORE_IN_DB) {
-      const mime = (req.file.mimetype && /^image\//.test(req.file.mimetype)) ? req.file.mimetype : 'image/png';
-      const base64 = req.file.buffer.toString('base64');
+      const mime = incomingFile.mimetype || 'image/png';
+      const base64 = incomingFile.buffer.toString('base64');
       storedUrl = `data:${mime};base64,${base64}`;
     } else {
       const dir = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads');
       try { await mkdir(dir, { recursive: true }); } catch {}
-      const ext = path.extname(req.file.originalname || '') || '.png';
+      const ext = path.extname(incomingFile.originalname || '') || '.png';
       const fileName = `cat-${siteId}-${id}-${Date.now()}-${Math.random().toString(36).slice(2,8)}${ext}`;
       const filePath = path.join(dir, fileName);
-      await writeFile(filePath, req.file.buffer);
+      await writeFile(filePath, incomingFile.buffer);
       storedUrl = `/uploads/${fileName}`;
     }
 

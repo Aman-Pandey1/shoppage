@@ -852,7 +852,9 @@ export const AdminDashboard = () => {
                     try {
                       const data = await postFile(`/api/admin/sites/${selectedSiteId}/categories/${cat._id}/image`, categoryForm.file);
                       cat = data.category || cat;
-                    } catch {}
+                    } catch (e) {
+                      alert('Image upload failed. Please try a different image.');
+                    }
                   }
                   // Apply to list and close
                   setCategories((prev) => categoryForm.id ? prev.map((c) => c._id === cat._id ? cat : c) : [cat, ...prev]);
