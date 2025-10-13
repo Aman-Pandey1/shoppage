@@ -230,7 +230,6 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
     const slug = String(req.params.slug);
 
     // Build line items with item-level discount applied (so discount doesn't affect tax/delivery)
-    const pctOff = appliedCoupon ? Number(appliedCoupon.percent) || 0 : 0;
     const lineItems = [
       ...items.map((it) => {
         const unitCents = Number(it.priceCents) || 0;
