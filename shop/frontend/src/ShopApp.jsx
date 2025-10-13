@@ -361,9 +361,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
 
   const manifest = useMemo(() => {
     return state.items.map((it) => {
-      const absMaybe = it?.variant && it.variant.price != null ? Number(it.variant.price) : null;
-      const variantAbs = (absMaybe != null && Number.isFinite(absMaybe)) ? absMaybe : null;
-      const unit = (variantAbs != null ? variantAbs : ((Number(it.basePrice) || 0) + (Number(it?.variant?.priceDelta) || 0))) + (Number(it?.extraCost) || 0);
+      const unit = (Number(it.basePrice) || 0) + (Number(it?.variant?.price) || 0) + (Number(it?.extraCost) || 0);
       return {
         name: it.name,
         quantity: it.quantity,

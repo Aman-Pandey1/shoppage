@@ -150,13 +150,11 @@ export const AdminDashboard = () => {
       const list = Array.isArray(variants) ? variants : [];
       return list.map((v) => {
         const label = String(v?.label || v?.key || '').trim();
-        const delta = (typeof v?.price === 'number') ? Number(v.price) : Number(v?.priceDelta || 0);
+        const price = Number(v?.price || 0);
         if (!label) return '';
-        // If absolute price is provided, show as '=PRICE'
-        if (typeof v?.price === 'number') return `${label} =${Number(v.price).toFixed(2).replace(/\.00$/, '')}`;
-        if (delta === 0) return label;
-        const sign = delta >= 0 ? '+' : '-';
-        const abs = Math.abs(delta).toFixed(2).replace(/\.00$/, '');
+        if (!price) return label;
+        const sign = price >= 0 ? '+' : '-';
+        const abs = Math.abs(price).toFixed(2).replace(/\.00$/, '');
         return `${label} ${sign}${abs}`;
       }).filter(Boolean).join(', ');
     } catch { return ''; }
@@ -173,21 +171,11 @@ export const AdminDashboard = () => {
       .map((token) => {
         const cleaned = token.replace(/\$/g, '').trim();
         // Support either absolute price with '=N.NN' or +/- delta
-        const absMatch = cleaned.match(/^(.+?)\s*=\s*(\d+(?:\.\d+)?)$/);
-        if (absMatch) {
-          const rawLabel = absMatch[1].trim();
-          const price = Number(absMatch[2]);
-          let baseKey = rawLabel.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-          if (!baseKey) baseKey = 'variant';
-          let key = baseKey; let idx = 1; while (seen.has(key)) { key = `${baseKey}_${idx++}`; }
-          seen.add(key);
-          return { key, label: rawLabel, price };
-        }
         const match = cleaned.match(/^(.+?)(?:\s*([+-])\s*(\d+(?:\.\d+)?))?$/);
         const rawLabel = (match ? match[1] : cleaned).trim();
         const sign = match && match[2] ? match[2] : '+';
         const num = match && match[3] ? Number(match[3]) : 0;
-        const priceDelta = (sign === '-' ? -1 : 1) * (Number.isFinite(num) ? num : 0);
+        const price = (sign === '-' ? -1 : 1) * (Number.isFinite(num) ? num : 0);
         // Generate a stable key from label
         let baseKey = rawLabel.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
         if (!baseKey) baseKey = 'variant';
@@ -195,7 +183,7 @@ export const AdminDashboard = () => {
         let idx = 1;
         while (seen.has(key)) { key = `${baseKey}_${idx++}`; }
         seen.add(key);
-        return { key, label: rawLabel, priceDelta };
+        return { key, label: rawLabel, price };
       });
   }
 
@@ -634,9 +622,9 @@ export const AdminDashboard = () => {
                       }}
                     />
                   </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <span>Variants (Editor)</span>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 1fr auto', gap: 8, alignItems: 'center' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px auto', gap: 8, alignItems: 'center' }}>
                     {(editing.variants || []).map((v, idx) => (
                       <React.Fragment key={`${v?.key || v?.label || 'v'}-${idx}`}>
                         <input
@@ -659,44 +647,16 @@ export const AdminDashboard = () => {
                             setEditing({ ...editing, variants: next });
                           }}
                         />
-                        <select
-                          value={typeof v?.price === 'number' ? 'abs' : 'delta'}
-                          onChange={(e) => {
-                            const mode = e.target.value;
-                            const next = [...(editing.variants || [])];
-                            const cur = { ...next[idx] };
-                            if (mode === 'abs') {
-                              const base = Number(editing?.price || 0);
-                              const delta = Number(cur?.priceDelta || 0);
-                              cur.price = Number.isFinite(base + delta) ? base + delta : (typeof cur.price === 'number' ? cur.price : base);
-                              delete cur.priceDelta;
-                            } else {
-                              const base = Number(editing?.price || 0);
-                              const abs = Number(cur?.price != null ? cur.price : base);
-                              cur.priceDelta = Number.isFinite(abs - base) ? (abs - base) : 0;
-                              delete cur.price;
-                            }
-                            next[idx] = cur;
-                            setEditing({ ...editing, variants: next });
-                          }}
-                        >
-                          <option value="abs">Absolute price</option>
-                          <option value="delta">Delta (+/-)</option>
-                        </select>
                         <input
                           type="number"
                           step="0.01"
-                          placeholder={typeof v?.price === 'number' ? 'Price' : 'Delta'}
-                          value={typeof v?.price === 'number' ? (Number(v.price) || 0) : (Number(v?.priceDelta) || 0)}
+                          placeholder={'Add-on price'}
+                          value={Number(v?.price) || 0}
                           onChange={(e) => {
                             const val = Number(e.target.value);
                             const next = [...(editing.variants || [])];
                             const cur = { ...next[idx] };
-                            if (typeof cur?.price === 'number') {
-                              cur.price = Number.isFinite(val) ? val : 0;
-                            } else {
-                              cur.priceDelta = Number.isFinite(val) ? val : 0;
-                            }
+                            cur.price = Number.isFinite(val) ? val : 0;
                             next[idx] = cur;
                             setEditing({ ...editing, variants: next });
                           }}
@@ -715,7 +675,7 @@ export const AdminDashboard = () => {
                     const used = new Set(next.map((vv) => vv?.key).filter(Boolean));
                     let candidate = base; let n = 1;
                     while (used.has(candidate)) { candidate = `${base}_${n++}`; }
-                    next.push({ key: candidate, label: '', price: Number(editing?.price || 0) });
+                    next.push({ key: candidate, label: '', price: 0 });
                     setEditing({ ...editing, variants: next });
                   }}>+ Add variant</button>
                 </div>

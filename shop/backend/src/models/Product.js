@@ -15,14 +15,13 @@ const ProductSchema = new mongoose.Schema({
 	categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
 	isVeg: { type: Boolean, default: true },
 	spiceLevels: [{ type: String }],
-    // Product variants (e.g., sizes).
-    // If `price` is provided it is treated as the absolute unit price for the variant.
-    // Otherwise `priceDelta` is added on top of the base `price`.
+    // Product variants treated as optional add-ons.
+    // `price` here represents an add-on price that is added to the base product price
+    // only when the variant is selected by the user.
     variants: [{
         key: { type: String, required: true },
         label: { type: String, required: true },
-        price: { type: Number },
-        priceDelta: { type: Number, default: 0 },
+        price: { type: Number, default: 0 },
     }],
 	extraOptionGroups: [{
 		groupKey: { type: String, required: true },

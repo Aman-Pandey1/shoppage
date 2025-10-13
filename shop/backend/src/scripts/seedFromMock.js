@@ -132,8 +132,8 @@ async function seed() {
         variants: Array.isArray(p.variants) ? p.variants.map((v) => ({
           key: String(v.key || v.label || 'default'),
           label: String(v.label || v.key || 'Default'),
-          // Support absolute price (preferred) or fallback to delta
-          ...(typeof v.price === 'number' ? { price: Number(v.price) } : { priceDelta: Number(v.priceDelta) || 0 }),
+          // Treat variant price as add-on; default to 0 if missing
+          price: Number(v.price) || 0,
         })) : [],
         extraOptionGroups: Array.isArray(p.extraOptionGroups) ? p.extraOptionGroups.map((g) => ({
           groupKey: String(g.groupKey || g.groupLabel || 'options'),
