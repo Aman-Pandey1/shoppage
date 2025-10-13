@@ -23,7 +23,20 @@ router.use('/:slug', tenantBySlug);
 router.get('/:slug/site', async (req, res) => {
   try {
     const { site } = req;
-    return res.json({ siteId: req.siteId, slug: site.slug, name: site.name, brandColor: site.brandColor, deliveryFeeCents: Number(site.deliveryFeeCents) || 0, splitDeliveryFee: !!site.splitDeliveryFee, logoUrl: site.logoUrl, logoLinkUrl: site.logoLinkUrl, tagline: site.tagline || '' });
+    // Expose min order so frontend can display requirement in delivery modal
+    const minOrderCents = Math.max(0, Number(process.env.MIN_ORDER_CENTS) || 5000);
+    return res.json({
+      siteId: req.siteId,
+      slug: site.slug,
+      name: site.name,
+      brandColor: site.brandColor,
+      deliveryFeeCents: Number(site.deliveryFeeCents) || 0,
+      splitDeliveryFee: !!site.splitDeliveryFee,
+      logoUrl: site.logoUrl,
+      logoLinkUrl: site.logoLinkUrl,
+      tagline: site.tagline || '',
+      minOrderCents,
+    });
   } catch (err) {
     return res.status(400).json({ error: err.message });
   }
