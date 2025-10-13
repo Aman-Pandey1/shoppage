@@ -3,6 +3,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
 import webhookUberRouter from './routes/webhookUber.js';
 import webhookStripeRouter from './routes/webhookStripe.js';
 import morgan from 'morgan';
@@ -27,23 +28,67 @@ import { loadMockData, saveMockData } from './utils/mockStore.js';
 dotenv.config();
 
 const app = express();
-app.use(cors());
+
+// Robust CORS configuration to support preflight and explicit origins
+const defaultAllowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173',
+  'https://shoppage.onrender.com',
+];
+const envAllowed = (process.env.CORS_ALLOW_ORIGINS || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+const allowedOrigins = envAllowed.length ? envAllowed : defaultAllowedOrigins;
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Authorization', 'Content-Type', 'X-Requested-With'],
+  credentials: true,
+  optionsSuccessStatus: 204,
+};
+// Always vary by Origin so caches don't mix responses
+app.use((req, res, next) => {
+  res.header('Vary', 'Origin');
+  next();
+});
+app.use(cors(corsOptions));
+// Handle CORS preflight for all routes using a RegExp to avoid
+// path-to-regexp string parsing issues in Express 5.
+app.options(/.*/, cors(corsOptions));
 // Mount webhook with raw body BEFORE JSON parser
 app.use('/webhook/uber', express.raw({ type: '*/*' }), webhookUberRouter);
 app.use('/webhook/stripe', express.raw({ type: 'application/json' }), webhookStripeRouter);
-app.use(express.json());
+// Increase body limits to avoid 413 errors on larger payloads (e.g., images/base64)
+app.use(express.json({ limit: String(process.env.JSON_LIMIT || '25mb') }));
+app.use(express.urlencoded({ extended: true, limit: String(process.env.JSON_LIMIT || '25mb') }));
 app.use(morgan("dev"));
 
-// Static uploads serving
+// Static uploads serving (no top-level await; compatible across Node versions)
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads');
-try { await (async () => { 
-  try { await import('fs/promises').then(({ mkdir }) => mkdir(UPLOAD_DIR, { recursive: true })); } catch {}
-})(); } catch {}
+try {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+} catch {}
 app.use('/uploads', express.static(UPLOAD_DIR));
 
 const PORT = process.env.PORT || 4000;
 const MONGO_URI = process.env.MONGO_URI;
-const USE_MOCK_DATA = process.env.USE_MOCK_DATA === "true" || !MONGO_URI;
+// Prefer mock data when there is no database configured.
+// Explicit env values like "false"/"0" will disable mock mode.
+const USE_MOCK_DATA = (() => {
+  const raw = String(process.env.USE_MOCK_DATA ?? '').trim().toLowerCase();
+  if (['true', '1', 'yes'].includes(raw)) return true;
+  if (['false', '0', 'no'].includes(raw)) return false;
+  // Default: enable mock data when MONGO_URI is not provided
+  return !MONGO_URI;
+})();
 
 if (USE_MOCK_DATA) {
   try { globalThis.__USE_MOCK_DATA = true; } catch {}
@@ -59,6 +104,7 @@ if (USE_MOCK_DATA) {
         _id: "mock-site",
         name: "Default Site",
         slug: "default",
+        tagline: "Sweets, Catering & Pickup",
         isActive: true,
         locations: [
           {
@@ -202,12 +248,43 @@ if (USE_MOCK_DATA) {
 } else {
   if (!MONGO_URI) {
     console.warn(
-      "No MONGO_URI set. To run without Mongo, set USE_MOCK_DATA=true."
+      "MONGO_URI not set and USE_MOCK_DATA disabled explicitly; enabling mock mode to allow server startup."
     );
+    try { globalThis.__USE_MOCK_DATA = true; } catch {}
+    const persisted = typeof loadMockData === "function" ? loadMockData() : null;
+    if (persisted) {
+      app.locals.mockData = persisted;
+      console.log(
+        "Running with mock data (persisted). Set USE_MOCK_DATA=false to use MongoDB."
+      );
+    } else {
+      app.locals.mockData = {
+        sites: [
+          {
+            _id: "mock-site",
+            name: "Default Site",
+            slug: "default",
+            tagline: "Sweets, Catering & Pickup",
+            isActive: true,
+          },
+        ],
+        categories: [],
+        products: [],
+        users: [],
+        orders: [],
+        coupons: [
+          { _id: 'cp-1', site: 'mock-site', code: 'WELCOME10', percent: 10 },
+        ],
+      };
+      try { if (typeof saveMockData === "function") saveMockData(app.locals.mockData); } catch {}
+      console.log(
+        "Running with mock data. Set USE_MOCK_DATA=false to use MongoDB."
+      );
+    }
   }
 }
 
-app.get("/health", (_req, res) =>
+app.use("/health", (_req, res) =>
   res.json({ ok: true, mock: !!app.locals.mockData })
 );
 app.use("/api/auth", authRouter);
@@ -261,8 +338,41 @@ async function start() {
         );
       }
     } catch (err) {
-      console.error("MongoDB connection error:", err);
-      process.exit(1);
+      console.error("MongoDB connection error:", err?.message || err);
+      console.warn(
+        "Falling back to mock data mode due to MongoDB connection failure."
+      );
+      try { globalThis.__USE_MOCK_DATA = true; } catch {}
+      const persisted = typeof loadMockData === "function" ? loadMockData() : null;
+      if (persisted) {
+        app.locals.mockData = persisted;
+        console.log(
+          "Running with mock data (persisted). Set USE_MOCK_DATA=false to use MongoDB."
+        );
+      } else {
+        app.locals.mockData = {
+          sites: [
+            {
+              _id: "mock-site",
+              name: "Default Site",
+              slug: "default",
+              tagline: "Sweets, Catering & Pickup",
+              isActive: true,
+            },
+          ],
+          categories: [],
+          products: [],
+          users: [],
+          orders: [],
+          coupons: [
+            { _id: 'cp-1', site: 'mock-site', code: 'WELCOME10', percent: 10 },
+          ],
+        };
+        try { if (typeof saveMockData === "function") saveMockData(app.locals.mockData); } catch {}
+        console.log(
+          "Running with mock data. Set USE_MOCK_DATA=false to use MongoDB."
+        );
+      }
     }
   }
   app.listen(PORT, () => {

@@ -40,7 +40,7 @@ export const QuickAddModal = ({ open, product, onCancel, onConfirm }) => {
           </div>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 10 }}>
           <button onClick={onCancel} className="hover-float" style={{ padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--panel-2)' }}>Cancel</button>
           <button onClick={() => onConfirm(qty)} className="primary-btn hover-float" style={{ padding: '10px 16px', borderRadius: 10, minWidth: 140 }}>Add to cart</button>
         </div>

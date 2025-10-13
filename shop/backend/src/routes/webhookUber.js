@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import crypto from 'crypto';
 import Order from '../models/Order.js';
+import Site from '../models/Site.js';
 
 // This router expects raw body. Mount with express.raw({ type: '*/*' })
 const router = Router();
@@ -30,9 +31,43 @@ router.get('/', (_req, res) => {
   res.json({ ok: true });
 });
 
-router.post('/', async (req, res) => {
+// Health endpoint for a specific site
+router.get('/:siteIdOrSlug', async (req, res) => {
   try {
-    const signingKey = process.env.UBER_SIGNING_KEY || process.env.UBER_WEBHOOK_SECRET;
+    const { siteIdOrSlug } = req.params;
+    let site = null;
+    const mock = req.app?.locals?.mockData;
+    if (mock) {
+      site = (mock.sites || []).find((s) => s._id === siteIdOrSlug || s.slug === siteIdOrSlug);
+    } else {
+      site = await Site.findOne({ $or: [ { _id: siteIdOrSlug }, { slug: siteIdOrSlug } ] }).lean();
+    }
+    if (!site) return res.status(404).json({ ok: false, error: 'Site not found' });
+    return res.json({ ok: true, siteId: site._id, slug: site.slug, hasSecret: !!site.uberWebhookSecret });
+  } catch (err) {
+    return res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
+// Per-site webhook endpoint. Configure your Uber webhooks to call:
+//   {API_BASE_URL}/webhook/uber/{siteId}
+// or
+//   {API_BASE_URL}/webhook/uber/{siteSlug}
+router.post('/:siteIdOrSlug', async (req, res) => {
+  try {
+    const { siteIdOrSlug } = req.params;
+    let site = null;
+    const mock = req.app?.locals?.mockData;
+    if (mock) {
+      site = (mock.sites || []).find((s) => s._id === siteIdOrSlug || s.slug === siteIdOrSlug) || null;
+    } else {
+      try {
+        site = await Site.findOne({ $or: [ { _id: siteIdOrSlug }, { slug: siteIdOrSlug } ] }).lean();
+      } catch {
+        site = await Site.findOne({ slug: siteIdOrSlug }).lean();
+      }
+    }
+    const signingKey = (site?.uberWebhookSecret) || process.env.UBER_SIGNING_KEY || process.env.UBER_WEBHOOK_SECRET;
     const sig = req.get('X-Uber-Signature') || req.get('x-uber-signature') || req.get('x-uber-signature-sha256');
     const raw = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body || '');
     const valid = verifySignature(raw, sig, signingKey);

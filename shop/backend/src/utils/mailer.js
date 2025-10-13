@@ -2,27 +2,36 @@ import nodemailer from 'nodemailer';
 
 let cachedTransporter = null;
 
-function getTransporter() {
+async function resolveTransporter() {
   if (cachedTransporter) return cachedTransporter;
   const host = process.env.SMTP_HOST;
   const port = Number(process.env.SMTP_PORT || 465);
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
   if (!host || !user || !pass) {
-    // Return a dummy transporter that logs instead of sending
-    return {
-      sendMail: async (opts) => {
-        console.log('[mailer] SMTP not configured. Would send:', opts);
-      },
-    };
+    // Fallback to Ethereal test account in dev/local
+    try {
+      const testAccount = await nodemailer.createTestAccount();
+      cachedTransporter = nodemailer.createTransport({
+        host: 'smtp.ethereal.email',
+        port: 587,
+        secure: false,
+        auth: {
+          user: testAccount.user,
+          pass: testAccount.pass,
+        },
+      });
+      console.log('[mailer] Using Ethereal test SMTP. Messages will not deliver to real inbox.');
+      return cachedTransporter;
+    } catch (e) {
+      // Last resort: JSON transport (logs only)
+      cachedTransporter = nodemailer.createTransport({ jsonTransport: true });
+      console.log('[mailer] Falling back to JSON transport (no email sent).');
+      return cachedTransporter;
+    }
   }
   const secure = port === 465; // 465 = SSL, 587 = STARTTLS
-  cachedTransporter = nodemailer.createTransport({
-    host,
-    port,
-    secure,
-    auth: { user, pass },
-  });
+  cachedTransporter = nodemailer.createTransport({ host, port, secure, auth: { user, pass } });
   return cachedTransporter;
 }
 
@@ -63,8 +72,12 @@ export async function sendOrderEmail({ to, siteName, orderId, items, totalCents,
         <div style="margin-top:16px; color:#64748b; font-size:12px;">If you have any questions, reply to this email.</div>
       </div>
     `;
-    const transporter = getTransporter();
-    await transporter.sendMail({ from, to, subject, html });
+    const transporter = await resolveTransporter();
+    const info = await transporter.sendMail({ from, to, subject, html });
+    try {
+      const preview = nodemailer.getTestMessageUrl ? nodemailer.getTestMessageUrl(info) : '';
+      if (preview) console.log('[mailer] Preview URL:', preview);
+    } catch {}
   } catch (err) {
     console.error('[mailer] Failed to send email', err);
   }

@@ -100,10 +100,34 @@ router.post('/:slug/quote', async (req, res) => {
 		let distanceKm = null;
 		try { distanceKm = await distanceBetweenAddressesKm(pickup.address, dropoff.address); } catch {}
 		const distanceFeeCents = calculateDistanceFeeCents(distanceKm);
+    // Enforce max delivery distance if configured
+    const maxKm = typeof site?.maxDeliveryDistanceKm === 'number' && site.maxDeliveryDistanceKm > 0 ? site.maxDeliveryDistanceKm : null;
+    if (maxKm != null && typeof distanceKm === 'number' && distanceKm > maxKm) {
+      return res.status(400).json({ error: `Delivery is only available within ${maxKm} km of the restaurant.` });
+    }
     // Use selected provider
-    const quote = provider === 'doordash'
-      ? await ddRequestQuote({ storeId: site.doordashStoreId, pickup, dropoff })
-      : await uberRequestQuote({ customerId: site.uberCustomerId, pickup, dropoff });
+    let quote;
+    try {
+      quote = provider === 'doordash'
+        ? await ddRequestQuote({ storeId: site.doordashStoreId, pickup, dropoff })
+        : await uberRequestQuote({ customerId: site.uberCustomerId, pickup, dropoff, creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv, scopes: site?.uberTokenScopes } });
+    } catch (e) {
+      const msg = String(e?.message || '');
+      // Allow customers to proceed to the menu even if the Uber app
+      // is misconfigured with scopes by returning a simulated quote.
+      // We only do this for the quote endpoint (pre-payment) and keep
+      // createDelivery strict to avoid charging without a courier.
+      if (provider === 'uber' && /invalid_scope|Uber token error/i.test(msg)) {
+        quote = {
+          id: `q-${Date.now()}`,
+          fee: { amount: 799, currency_code: 'CAD' },
+          dropoff_estimated_dt: null,
+          simulated: true,
+        };
+      } else {
+        throw e;
+      }
+    }
     const split = !!site.splitDeliveryFee;
     const customerDeliveryFeeCents = split ? Math.round((Number(distanceFeeCents) || 0) / 2) : (Number(distanceFeeCents) || 0);
     res.json({ ...quote, distanceKm, distanceFeeCents, customerDeliveryFeeCents, pickupLocationIndex: chosenIdx });
@@ -170,15 +194,25 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 		let distanceKm = null;
 		try { distanceKm = await distanceBetweenAddressesKm(pickup.address, dropoff.address); } catch {}
 		const distanceFeeCents = calculateDistanceFeeCents(distanceKm);
+    // Enforce payment before creating real delivery in non-mock environments
+    if (!isMock) {
+      // If an externalId corresponds to an order, ensure it is paid. Otherwise block.
+      if (externalId) {
+        const maybeOrder = await Order.findOne({ externalId });
+        if (maybeOrder && maybeOrder.status !== 'paid') {
+          return res.status(402).json({ error: 'Payment required before creating delivery' });
+        }
+      }
+    }
     // Use selected provider
     const delivery = provider === 'doordash'
       ? await ddCreateDelivery({ storeId: site.doordashStoreId, pickup: safePickup, dropoff: safeDropoff, manifestItems, tip: 0, externalId })
-      : await uberCreateDelivery({ customerId: site.uberCustomerId, pickup: safePickup, dropoff: safeDropoff, manifestItems, tip: 0, externalId });
+      : await uberCreateDelivery({ customerId: site.uberCustomerId, pickup: safePickup, dropoff: safeDropoff, manifestItems, tip: 0, externalId, creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv, scopes: site?.uberTokenScopes } });
 		// Record order
 		const itemsTotal = (manifestItems || []).reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 1), 0);
-		const isMockEnv = !!req.app?.locals?.mockData;
-		const minOrderCents = isMockEnv ? 0 : Math.max(0, Number(process.env.MIN_ORDER_CENTS) || 5000);
-		if (itemsTotal < minOrderCents) return res.status(400).json({ error: `Minimum order is $${(minOrderCents/100).toFixed(2)}` });
+    const isMockEnv = !!req.app?.locals?.mockData;
+    const minOrderCents = isMockEnv ? 0 : Math.max(0, Number(process.env.MIN_ORDER_CENTS) || 5000);
+    if (itemsTotal < minOrderCents) return res.status(400).json({ error: `Minimum total amount should be $${(minOrderCents/100).toFixed(2)} required for delivery` });
     const split = !!site.splitDeliveryFee;
     const fullDeliveryFeeCents = Number(distanceFeeCents) || 0;
     const customerDeliveryFeeCents = split ? Math.round(fullDeliveryFeeCents / 2) : fullDeliveryFeeCents;

@@ -66,11 +66,7 @@ export const Modal = ({ open, onClose, title, children, footer }) => {
       <div style={panelStyle} className="animate-popIn" onClick={(e) => e.stopPropagation()}>
         {title ? <div style={headerStyle}>{title}</div> : null}
         <div style={bodyStyle}>{children}</div>
-        {footer ? <div style={footerStyle}>{footer}</div> : (
-          <div style={footerStyle}>
-            <button style={buttonStyle} onClick={onClose}>Close</button>
-          </div>
-        )}
+        {footer ? <div style={footerStyle}>{footer}</div> : null}
       </div>
     </div>
   );

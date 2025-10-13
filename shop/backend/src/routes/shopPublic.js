@@ -23,7 +23,23 @@ router.use('/:slug', tenantBySlug);
 router.get('/:slug/site', async (req, res) => {
   try {
     const { site } = req;
-    return res.json({ siteId: req.siteId, slug: site.slug, name: site.name, brandColor: site.brandColor, deliveryFeeCents: Number(site.deliveryFeeCents) || 0, splitDeliveryFee: !!site.splitDeliveryFee, logoUrl: site.logoUrl });
+    // Expose min order so frontend can display requirement in delivery modal
+    const minOrderCents = Math.max(0, Number(process.env.MIN_ORDER_CENTS) || 5000);
+    // Also expose coupon minimum subtotal so frontend can determine discount eligibility
+    const couponMinSubtotalCents = Math.max(0, Number(process.env.COUPON_MIN_SUBTOTAL_CENTS) || 5000);
+    return res.json({
+      siteId: req.siteId,
+      slug: site.slug,
+      name: site.name,
+      brandColor: site.brandColor,
+      deliveryFeeCents: Number(site.deliveryFeeCents) || 0,
+      splitDeliveryFee: !!site.splitDeliveryFee,
+      logoUrl: site.logoUrl,
+      logoLinkUrl: site.logoLinkUrl,
+      tagline: site.tagline || '',
+      minOrderCents,
+      couponMinSubtotalCents,
+    });
   } catch (err) {
     return res.status(400).json({ error: err.message });
   }
@@ -57,13 +73,14 @@ router.get('/:slug/hours', async (req, res) => {
   try {
     const { site } = req;
     const defaultHours = {
-      mon: { open: '10:00', close: '22:00', closed: false },
-      tue: { open: '10:00', close: '22:00', closed: false },
-      wed: { open: '10:00', close: '22:00', closed: false },
-      thu: { open: '10:00', close: '22:00', closed: false },
-      fri: { open: '10:00', close: '22:00', closed: false },
-      sat: { open: '10:00', close: '22:00', closed: false },
-      sun: { open: '10:00', close: '22:00', closed: false },
+      // Default store hours: 11:00 AM – 10:00 PM (last order 9:45 PM)
+      mon: { open: '11:00', close: '22:00', closed: false },
+      tue: { open: '11:00', close: '22:00', closed: false },
+      wed: { open: '11:00', close: '22:00', closed: false },
+      thu: { open: '11:00', close: '22:00', closed: false },
+      fri: { open: '11:00', close: '22:00', closed: false },
+      sat: { open: '11:00', close: '22:00', closed: false },
+      sun: { open: '11:00', close: '22:00', closed: false },
     };
     const mock = req.app.locals.mockData;
     if (mock) {
@@ -157,6 +174,30 @@ router.get('/:slug/coupon/:code', async (req, res) => {
     }
     const found = await Coupon.findOne({ site: req.siteId, code });
     if (!found) return res.status(404).json({ error: 'Invalid coupon' });
+    return res.json({ code: found.code, percent: Number(found.percent) || 0 });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+});
+
+// Public: get the latest coupon for a site (for auto-apply)
+router.get('/:slug/default-coupon', async (req, res) => {
+  try {
+    const mock = req.app.locals.mockData;
+    if (mock) {
+      const site = req.siteId;
+      const list = (mock.coupons || []).filter((c) => c.site === site);
+      if (!list.length) return res.status(404).json({ error: 'No coupons' });
+      const sorted = list.slice().sort((a, b) => {
+        const ta = new Date(a.createdAt || 0).getTime();
+        const tb = new Date(b.createdAt || 0).getTime();
+        return tb - ta;
+      });
+      const chosen = sorted[0];
+      return res.json({ code: chosen.code, percent: Number(chosen.percent) || 0 });
+    }
+    const found = await Coupon.findOne({ site: req.siteId }).sort({ createdAt: -1 });
+    if (!found) return res.status(404).json({ error: 'No coupons' });
     return res.json({ code: found.code, percent: Number(found.percent) || 0 });
   } catch (err) {
     return res.status(400).json({ error: err.message });

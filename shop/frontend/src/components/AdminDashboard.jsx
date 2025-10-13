@@ -150,11 +150,11 @@ export const AdminDashboard = () => {
       const list = Array.isArray(variants) ? variants : [];
       return list.map((v) => {
         const label = String(v?.label || v?.key || '').trim();
-        const delta = Number(v?.priceDelta || 0);
+        const price = Number(v?.price || 0);
         if (!label) return '';
-        if (delta === 0) return label;
-        const sign = delta >= 0 ? '+' : '-';
-        const abs = Math.abs(delta).toFixed(2).replace(/\.00$/, '');
+        if (!price) return label;
+        const sign = price >= 0 ? '+' : '-';
+        const abs = Math.abs(price).toFixed(2).replace(/\.00$/, '');
         return `${label} ${sign}${abs}`;
       }).filter(Boolean).join(', ');
     } catch { return ''; }
@@ -170,11 +170,12 @@ export const AdminDashboard = () => {
       .filter(Boolean)
       .map((token) => {
         const cleaned = token.replace(/\$/g, '').trim();
+        // Support either absolute price with '=N.NN' or +/- delta
         const match = cleaned.match(/^(.+?)(?:\s*([+-])\s*(\d+(?:\.\d+)?))?$/);
         const rawLabel = (match ? match[1] : cleaned).trim();
         const sign = match && match[2] ? match[2] : '+';
         const num = match && match[3] ? Number(match[3]) : 0;
-        const priceDelta = (sign === '-' ? -1 : 1) * (Number.isFinite(num) ? num : 0);
+        const price = (sign === '-' ? -1 : 1) * (Number.isFinite(num) ? num : 0);
         // Generate a stable key from label
         let baseKey = rawLabel.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
         if (!baseKey) baseKey = 'variant';
@@ -182,7 +183,7 @@ export const AdminDashboard = () => {
         let idx = 1;
         while (seen.has(key)) { key = `${baseKey}_${idx++}`; }
         seen.add(key);
-        return { key, label: rawLabel, priceDelta };
+        return { key, label: rawLabel, price };
       });
   }
 
@@ -349,7 +350,19 @@ export const AdminDashboard = () => {
               {categories.map((c) => (
                 <div key={c._id} className="card" style={{ padding: 12 }}>
                   <div style={{ width: '100%', aspectRatio: '4 / 3', borderRadius: 'var(--radius-sm)', overflow: 'hidden', background: 'linear-gradient(180deg, rgba(59,130,246,0.08), rgba(236,72,153,0.08))', marginBottom: 10 }}>
-                    {c.imageUrl ? <img src={resolveAssetUrl(c.imageUrl)} alt={c.name} className="img-cover" /> : null}
+                    {c.imageUrl ? (
+                      <img
+                        src={resolveAssetUrl(c.imageUrl)}
+                        alt={c.name}
+                        className="img-cover"
+                        onError={(e) => {
+                          // Avoid retry loops and use a stable placeholder
+                          e.currentTarget.onerror = null;
+                          const seed = encodeURIComponent(String(c.name || 'category').toLowerCase());
+                          e.currentTarget.src = `https://picsum.photos/seed/${seed}/400/300`;
+                        }}
+                      />
+                    ) : null}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ fontWeight: 800 }}>{c.name}</div>
@@ -609,6 +622,63 @@ export const AdminDashboard = () => {
                       }}
                     />
                   </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span>Variants (Editor)</span>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px auto', gap: 8, alignItems: 'center' }}>
+                    {(editing.variants || []).map((v, idx) => (
+                      <React.Fragment key={`${v?.key || v?.label || 'v'}-${idx}`}>
+                        <input
+                          placeholder="Label"
+                          value={v?.label || v?.key || ''}
+                          onChange={(e) => {
+                            const label = e.target.value;
+                            const next = [...(editing.variants || [])];
+                            const cur = { ...next[idx] };
+                            cur.label = label;
+                            if (!cur.key || /^variant(_\d+)?$/.test(cur.key)) {
+                              let base = String(label || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+                              if (!base) base = 'variant';
+                              const used = new Set(next.map((vv, ii) => (ii === idx ? null : vv?.key)).filter(Boolean));
+                              let candidate = base; let n = 1;
+                              while (used.has(candidate)) { candidate = `${base}_${n++}`; }
+                              cur.key = candidate;
+                            }
+                            next[idx] = cur;
+                            setEditing({ ...editing, variants: next });
+                          }}
+                        />
+                        <input
+                          type="number"
+                          step="0.01"
+                          placeholder={'Add-on price'}
+                          value={Number(v?.price) || 0}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            const next = [...(editing.variants || [])];
+                            const cur = { ...next[idx] };
+                            cur.price = Number.isFinite(val) ? val : 0;
+                            next[idx] = cur;
+                            setEditing({ ...editing, variants: next });
+                          }}
+                        />
+                        <button onClick={() => {
+                          const next = (editing.variants || []).slice();
+                          next.splice(idx, 1);
+                          setEditing({ ...editing, variants: next });
+                        }}>Remove</button>
+                      </React.Fragment>
+                    ))}
+                  </div>
+                  <button onClick={() => {
+                    const next = [...(editing.variants || [])];
+                    let base = 'variant';
+                    const used = new Set(next.map((vv) => vv?.key).filter(Boolean));
+                    let candidate = base; let n = 1;
+                    while (used.has(candidate)) { candidate = `${base}_${n++}`; }
+                    next.push({ key: candidate, label: '', price: 0 });
+                    setEditing({ ...editing, variants: next });
+                  }}>+ Add variant</button>
+                </div>
                   <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <span>Extra option groups (JSON)</span>
                     <textarea
@@ -740,18 +810,11 @@ export const AdminDashboard = () => {
                   // If a file is selected, upload it and update imageUrl
                   if (categoryForm.file) {
                     try {
-                      const form = new FormData();
-                      form.append('file', categoryForm.file);
-                      const resp = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/admin/sites/${selectedSiteId}/categories/${cat._id}/image`, {
-                        method: 'POST',
-                        headers: { ...(localStorage.getItem('auth_token') ? { Authorization: `Bearer ${localStorage.getItem('auth_token')}` } : {}) },
-                        body: form,
-                      });
-                      if (resp.ok) {
-                        const data = await resp.json();
-                        cat = data.category || cat;
-                      }
-                    } catch {}
+                      const data = await postFile(`/api/admin/sites/${selectedSiteId}/categories/${cat._id}/image`, categoryForm.file);
+                      cat = data.category || cat;
+                    } catch (e) {
+                      alert('Image upload failed. Please try a different image.');
+                    }
                   }
                   // Apply to list and close
                   setCategories((prev) => categoryForm.id ? prev.map((c) => c._id === cat._id ? cat : c) : [cat, ...prev]);

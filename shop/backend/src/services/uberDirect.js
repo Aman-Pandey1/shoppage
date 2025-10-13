@@ -1,7 +1,14 @@
 import fetch from 'node-fetch';
 
 const UBER_TOKEN_URL = 'https://login.uber.com/oauth/v2/token';
-const UBER_ENV = (process.env.UBER_ENV || 'production').toLowerCase();
+function resolveUberTokenUrls(env) {
+  const urls = [UBER_TOKEN_URL];
+  // Some legacy/sandbox setups require sandbox-login host
+  if (String(env || '').toLowerCase() === 'sandbox') {
+    urls.unshift('https://sandbox-login.uber.com/oauth/v2/token');
+  }
+  return Array.from(new Set(urls));
+}
 function isUsingMock() {
   try {
     if (globalThis && (globalThis.__USE_MOCK_DATA === true)) return true;
@@ -9,37 +16,106 @@ function isUsingMock() {
   const val = String(process.env.USE_MOCK_DATA || '').toLowerCase();
   return val === 'true';
 }
-function isMissingUberCreds() {
-	try {
-		return !process.env.UBER_CLIENT_ID || !process.env.UBER_CLIENT_SECRET;
-	} catch {
-		return true;
-	}
+function resolveUberCreds(creds) {
+  const clientId = creds?.clientId || process.env.UBER_CLIENT_ID || '';
+  const clientSecret = creds?.clientSecret || process.env.UBER_CLIENT_SECRET || '';
+  const env = String(creds?.env || process.env.UBER_ENV || 'production').toLowerCase();
+  const scopes = (Object.prototype.hasOwnProperty.call(creds || {}, 'scopes') ? (creds?.scopes ?? '') : (process.env.UBER_TOKEN_SCOPES ?? undefined));
+  const audience = creds?.audience || process.env.UBER_TOKEN_AUDIENCE || undefined;
+  return { clientId, clientSecret, env, scopes, audience };
 }
-const UBER_BASE = UBER_ENV === 'sandbox'
-  ? 'https://sandbox-api.uber.com/v1/customers'
-  : 'https://api.uber.com/v1/customers';
+function isMissingUberCreds(creds) {
+  try {
+    const { clientId, clientSecret } = resolveUberCreds(creds);
+    return !clientId || !clientSecret;
+  } catch {
+    return true;
+  }
+}
 
-let cachedToken = null;
-let cachedExpiry = 0;
+// Cache tokens per clientId to support multi-tenant creds
+const tokenCache = new Map(); // key: clientId -> { token, expiryMs }
 
-async function getAccessToken() {
-	const now = Date.now();
-	if (cachedToken && now < cachedExpiry - 30000) return cachedToken;
-	const clientId = process.env.UBER_CLIENT_ID;
-	const clientSecret = process.env.UBER_CLIENT_SECRET;
-	if (!clientId || !clientSecret) throw new Error('Uber credentials missing');
-	const body = new URLSearchParams();
-	body.append('grant_type', 'client_credentials');
-	body.append('client_id', clientId);
-	body.append('client_secret', clientSecret);
-	body.append('scope', 'eats.deliveries');
-	const res = await fetch(UBER_TOKEN_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
-	if (!res.ok) throw new Error(`Uber token error ${res.status}`);
-	const data = await res.json();
-	cachedToken = data.access_token;
-	cachedExpiry = now + (data.expires_in * 1000);
-	return cachedToken;
+async function getAccessToken(creds) {
+  const { clientId, clientSecret, env, audience } = resolveUberCreds(creds);
+  if (!clientId || !clientSecret) throw new Error('Uber credentials missing');
+  const existing = tokenCache.get(clientId);
+  const now = Date.now();
+  if (existing && now < (existing.expiryMs - 30000)) return existing.token;
+
+  // Scopes ordering and fallback strategy:
+  // - If a scope was provided by the caller (including an explicit blank), try it first
+  // - Then ALWAYS fall back to 'eats.deliveries' and then blank, to handle
+  //   Uber apps that require one or the other. This makes the health check
+  //   resilient without requiring the admin to guess the correct value.
+  // - If no scope was provided by the caller, prefer env UBER_TOKEN_SCOPES first.
+  const scopesPropProvided = creds && Object.prototype.hasOwnProperty.call(creds, 'scopes');
+  const rawScopes = typeof creds?.scopes === 'string' ? creds.scopes : undefined;
+  const trimmedScopes = typeof rawScopes === 'string' ? rawScopes.trim() : undefined;
+  const envDefaultScopes = String(process.env.UBER_TOKEN_SCOPES || '').trim();
+  const scopeCandidates = [];
+  const addCandidate = (s) => {
+    if (typeof s !== 'string') return;
+    // Keep order, avoid duplicates
+    if (!scopeCandidates.includes(s)) scopeCandidates.push(s);
+  };
+  if (scopesPropProvided) {
+    // Caller explicitly provided scopes; empty string means "no scope"
+    addCandidate(trimmedScopes && trimmedScopes.length > 0 ? trimmedScopes : '');
+  } else {
+    if (envDefaultScopes) addCandidate(envDefaultScopes);
+  }
+  // Always include safe fallbacks
+  addCandidate('eats.deliveries');
+  addCandidate('');
+
+  const tokenUrls = resolveUberTokenUrls(env);
+  let lastError = '';
+  for (const tokenUrl of tokenUrls) {
+    for (const scopeCandidate of scopeCandidates) {
+      const body = new URLSearchParams();
+      body.append('grant_type', 'client_credentials');
+      body.append('client_id', clientId);
+      body.append('client_secret', clientSecret);
+      if (scopeCandidate) body.append('scope', scopeCandidate);
+      if (audience) body.append('audience', audience);
+      const res = await fetch(tokenUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const token = data.access_token;
+        const expiryMs = Date.now() + (Number(data.expires_in) * 1000);
+        tokenCache.set(clientId, { token, expiryMs });
+        return token;
+      }
+      try {
+        const text = await res.text();
+        const msg = `Uber token error ${res.status} ${String(text).slice(0, 200)}`;
+        lastError = msg;
+        // Retry on invalid_scope only; otherwise, if tokenUrl is not the primary, go to next URL
+        if (/invalid_scope/i.test(text)) {
+          continue; // try next scope or next host
+        }
+        // For other 4xx errors, do not attempt other scopes; break to next host
+        if (res.status >= 400 && res.status < 500) break;
+        // For 5xx errors, try next host if available
+      } catch (e) {
+        if (e instanceof Error) {
+          lastError = e.message;
+        } else {
+          throw e;
+        }
+      }
+    }
+  }
+  if (/invalid_scope/i.test(String(lastError || ''))) {
+    const hint = ' Hint: Ensure your Uber app has the "eats.deliveries" permission enabled. If it is not approved for Eats Deliveries, set Uber Token Scopes to blank in Site Settings. Also verify Sandbox vs Production match for both your app credentials and customer ID.';
+    throw new Error((lastError || 'Uber token error') + hint);
+  }
+  throw new Error(lastError || 'Uber token error');
 }
 
 function normalizeE164Phone(raw, fallback) {
@@ -58,18 +134,24 @@ function normalizeE164Phone(raw, fallback) {
 	}
 }
 
-export async function requestQuote({ customerId, pickup, dropoff }) {
-	// In mock/sandbox environments or when credentials are missing, return a simulated quote
-	if (isUsingMock() || isMissingUberCreds() || UBER_ENV === 'sandbox') {
-		return {
-			id: `q-${Date.now()}`,
-			fee: { amount: 799, currency_code: 'CAD' },
-			dropoff_estimated_dt: new Date(Date.now() + 45 * 60 * 1000).toISOString(),
-			simulated: true,
-		};
-	}
-	const token = await getAccessToken();
-	const url = `${UBER_BASE}/${encodeURIComponent(customerId)}/delivery_quotes`; // POST
+export async function requestQuote({ customerId, pickup, dropoff, creds }) {
+    // Simulate only when credentials are missing. Even if mock mode is on,
+    // prefer calling Uber's sandbox/production when creds are provided so
+    // admin tests and dashboards reflect real deliveries.
+    if (isMissingUberCreds(creds)) {
+        return {
+            id: `q-${Date.now()}`,
+            fee: { amount: 799, currency_code: 'CAD' },
+            dropoff_estimated_dt: new Date(Date.now() + 45 * 60 * 1000).toISOString(),
+            simulated: true,
+        };
+    }
+  const { env } = resolveUberCreds(creds);
+  const base = env === 'sandbox'
+    ? 'https://sandbox-api.uber.com/v1/customers'
+    : 'https://api.uber.com/v1/customers';
+  const token = await getAccessToken(creds);
+  const url = `${base}/${encodeURIComponent(customerId)}/delivery_quotes`; // POST
 	const payload = {
     pickup_address: formatAddress(pickup.address),
     dropoff_address: formatAddress(dropoff.address),
@@ -78,7 +160,7 @@ export async function requestQuote({ customerId, pickup, dropoff }) {
   const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
   if (!res.ok) {
     const text = await safeText(res);
-    if ((UBER_ENV === 'sandbox' || isUsingMock()) && (res.status >= 500 || /address_undeliverable|Cannot find eligible product|internal_server_error/i.test(text))) {
+    if ((env === 'sandbox' || isUsingMock()) && (res.status >= 500 || /address_undeliverable|Cannot find eligible product|internal_server_error/i.test(text))) {
       // Return a simulated quote to unblock testing
       return {
         id: `q-${Date.now()}`,
@@ -92,23 +174,29 @@ export async function requestQuote({ customerId, pickup, dropoff }) {
   return res.json();
 }
 
-export async function createDelivery({ customerId, pickup, dropoff, manifestItems, tip, externalId }) {
-	// In mock/sandbox environments or when credentials are missing, return a simulated delivery
-	if (isUsingMock() || isMissingUberCreds() || UBER_ENV === 'sandbox') {
-		const id = `d-${Date.now()}`;
-		return {
-			id,
-			delivery_id: id,
-			status: 'courier_accepted',
-			tracking_url: `https://www.uber.com/`,
-			share_url: `https://www.uber.com/`,
-			tip_by_customer: tip || 0,
-			external_id: externalId,
-			simulated: true,
-		};
-	}
-	const token = await getAccessToken();
-	const url = `${UBER_BASE}/${encodeURIComponent(customerId)}/deliveries`; // POST
+export async function createDelivery({ customerId, pickup, dropoff, manifestItems, tip, externalId, creds }) {
+    // Simulate only when credentials are missing. Even if mock mode is on,
+    // prefer calling Uber's sandbox/production when creds are provided so
+    // admin tests and dashboards reflect real deliveries.
+    if (isMissingUberCreds(creds)) {
+        const id = `d-${Date.now()}`;
+        return {
+            id,
+            delivery_id: id,
+            status: 'courier_accepted',
+            tracking_url: `https://www.uber.com/`,
+            share_url: `https://www.uber.com/`,
+            tip_by_customer: tip || 0,
+            external_id: externalId,
+            simulated: true,
+        };
+    }
+  const { env } = resolveUberCreds(creds);
+  const base = env === 'sandbox'
+    ? 'https://sandbox-api.uber.com/v1/customers'
+    : 'https://api.uber.com/v1/customers';
+  const token = await getAccessToken(creds);
+  const url = `${base}/${encodeURIComponent(customerId)}/deliveries`; // POST
 	const safeManifestItems = sanitizeManifestItems(manifestItems);
 	// Ensure pickup phone is valid E.164. In sandbox or when missing/invalid, use a fixed test number.
 	const normalizedPickupPhone = normalizeE164Phone(pickup?.phone, '+14155550123');
@@ -133,7 +221,7 @@ export async function createDelivery({ customerId, pickup, dropoff, manifestItem
 		if (res.status === 400 && /pickup_phone_number|dropoff_phone_number|invalid_params/i.test(text)) {
 			throw new Error('Phone number is invalid. Use E.164 format like +14155550123.');
 		}
-    if ((UBER_ENV === 'sandbox' || isUsingMock()) && (res.status >= 500 || /address_undeliverable|Cannot find eligible product|internal_server_error/i.test(text))) {
+    if ((env === 'sandbox' || isUsingMock()) && (res.status >= 500 || /address_undeliverable|Cannot find eligible product|internal_server_error/i.test(text))) {
       // Simulate delivery object for testing
       const id = `d-${Date.now()}`;
       return {
@@ -152,9 +240,13 @@ export async function createDelivery({ customerId, pickup, dropoff, manifestItem
   return res.json();
 }
 
-export async function getDelivery({ customerId, deliveryId }) {
-    const token = await getAccessToken();
-    const url = `${UBER_BASE}/${encodeURIComponent(customerId)}/deliveries/${encodeURIComponent(deliveryId)}`; // GET
+export async function getDelivery({ customerId, deliveryId, creds }) {
+    const { env } = resolveUberCreds(creds);
+    const base = env === 'sandbox'
+      ? 'https://sandbox-api.uber.com/v1/customers'
+      : 'https://api.uber.com/v1/customers';
+    const token = await getAccessToken(creds);
+    const url = `${base}/${encodeURIComponent(customerId)}/deliveries/${encodeURIComponent(deliveryId)}`; // GET
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     if (!res.ok) {
         const text = await safeText(res);

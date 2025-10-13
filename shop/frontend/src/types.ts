@@ -28,6 +28,13 @@ export type Product = {
   categoryId: string;
   isVeg?: boolean;
   spiceLevels?: string[];
+  // Optional variants on the product
+  variants?: Array<{
+    key: string;
+    label: string;
+    // Add-on price that is added to base price when selected
+    price?: number;
+  }>;
   extraOptionGroups?: ExtraOptionGroup[];
 };
 
@@ -67,6 +74,7 @@ export type CartItem = {
   basePrice: number;
   quantity: number;
   spiceLevel?: string;
+  variant?: { key: string; label?: string; price?: number };
   selectedOptions: SelectedOption[];
   extraCost: number;
   totalPrice: number;

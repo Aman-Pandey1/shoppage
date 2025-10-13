@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Modal } from './Modal';
+import { resolveAssetUrl } from '../lib/api';
 
 // Import spice images from assets folder
 import mildImage from '../assets/mild.png';
@@ -9,11 +10,24 @@ import extraHotImage from '../assets/extra hot.png';
 
 export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, siteLogoSrc, initialQuantity = 1 }) => {
   const [selected, setSelected] = useState(undefined);
+  const variants = Array.isArray(product?.variants) ? product.variants : [];
+  const [selectedVariantKey, setSelectedVariantKey] = useState('');
   const [qty, setQty] = useState(() => {
     const n = Number(initialQuantity) || 1;
     return Math.max(1, Math.min(99, n));
   });
   const [bump, setBump] = useState(false);
+
+  // Reset selection and quantity every time the modal opens or product changes
+  useEffect(() => {
+    if (open) {
+      setSelected(undefined);
+      const n = Number(initialQuantity) || 1;
+      setQty(Math.max(1, Math.min(99, n)));
+      setBump(false);
+      setSelectedVariantKey('');
+    }
+  }, [open, product, initialQuantity]);
 
   const levels = useMemo(() => {
     // Always show full set to ensure consistency across products
@@ -32,9 +46,49 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
   };
 
   const handleSelect = (level) => setSelected(level);
+  const selectedVariant = variants.find((v) => v.key === selectedVariantKey) || null;
+  const hasVariants = variants.length > 0;
+  const variantRequired = hasVariants;
+  const spiceRequired = Array.isArray(product?.spiceLevels) && (product.spiceLevels.length > 0);
+  const canConfirm = (!spiceRequired || !!selected) && (!variantRequired || !!selectedVariantKey) && qty >= 1;
 
   return (
-    <Modal open={open} onClose={onCancel} title="Select Spice Level">
+    <Modal
+      open={open}
+      onClose={onCancel}
+      title={(product && product.name) ? product.name : 'Select Spice Level'}
+      footer={(
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, width: '100%' }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: '12px 24px',
+              borderRadius: 12,
+              border: '2px solid #e2e8f0',
+              background: '#f7fafc',
+              fontWeight: 600,
+              color: '#4a5568',
+              cursor: 'pointer',
+            }}
+          >Cancel</button>
+          <button
+            onClick={() => onConfirm({ spice: selected, variant: selectedVariant || undefined, quantity: qty })}
+            disabled={!canConfirm}
+            style={{
+              padding: '12px 24px',
+              borderRadius: 12,
+              minWidth: 160,
+              fontWeight: 600,
+              background: canConfirm ? '#ff4444' : '#cbd5e0',
+              color: 'white',
+              border: 'none',
+              cursor: canConfirm ? 'pointer' : 'not-allowed',
+            }}
+          >{`Add ${qty}`}</button>
+        </div>
+      )}
+    >
+      {/* No standalone logo at the top; we'll show it inside the product box */}
       {product && (
         <div
           style={{
@@ -46,9 +100,9 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
             marginBottom: 12,
           }}
         >
-          {product.imageUrl ? (
+          {product?.imageUrl ? (
             <img
-              src={product.imageUrl}
+              src={resolveAssetUrl(product.imageUrl)}
               alt={product.name}
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
@@ -57,13 +111,17 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
               style={{
                 width: '100%',
                 height: '100%',
-                display: 'grid',
-                placeItems: 'center',
                 background: 'rgba(14, 165, 233, 0.06)',
+                display: 'grid',
+                placeItems: 'center'
               }}
             >
               {siteLogoSrc ? (
-                <img src={siteLogoSrc} alt="logo" style={{ width: 96, height: 96, objectFit: 'contain', opacity: 0.85 }} />
+                <img
+                  src={siteLogoSrc}
+                  alt="logo"
+                  style={{ width: 140, height: 140, objectFit: 'contain', opacity: 0.98 }}
+                />
               ) : null}
             </div>
           )}
@@ -74,110 +132,142 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
               background: 'linear-gradient(180deg, rgba(2,6,23,0.00), rgba(2,6,23,0.35))',
             }}
           />
-          <div
-            style={{
-              position: 'absolute',
-              left: 12,
-              bottom: 12,
-              right: 12,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
+          {product ? (
             <div
               style={{
-                fontWeight: 900,
-                fontSize: 18,
-                color: '#fff',
-                textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                position: 'absolute',
+                left: 12,
+                bottom: 12,
+                right: 12,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
               }}
             >
-              {product.name}
+              <div
+                style={{
+                  fontWeight: 900,
+                  fontSize: 18,
+                  color: '#fff',
+                  textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                }}
+              >
+                {product.name}
+              </div>
+              <div
+                style={{
+                  fontWeight: 900,
+                  color: '#fff',
+                  textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                }}
+              >
+                ${product.price.toFixed(2)}
+              </div>
             </div>
-            <div
-              style={{
-                fontWeight: 900,
-                color: '#fff',
-                textShadow: '0 1px 2px rgba(0,0,0,0.3)',
-              }}
-            >
-              ${product.price.toFixed(2)}
-            </div>
-          </div>
+          ) : null}
         </div>
       )}
 
-      {/* Spice Options */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: 16,
-          margin: '10px 0',
-        }}
-      >
-        {levels.map((canonical) => {
-          const imgSrc = getSpiceImage(canonical);
-          const active = selected === canonical;
-          const displayName = canonical
-            .split('-')
-            .map((w) => w[0].toUpperCase() + w.slice(1))
-            .join(' ');
+      {/* Variant dropdown (mandatory item selection) */}
+      {hasVariants ? (
+          <div style={{ display: 'grid', gap: 6, marginTop: 4, marginBottom: 10 }}>
+          <div style={{ fontWeight: 800 }}>Select Item</div>
+          <select
+            value={selectedVariantKey}
+            onChange={(e) => setSelectedVariantKey(e.target.value)}
+            required={variantRequired}
+            aria-required={variantRequired}
+            style={{ padding: 10, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--panel)' }}
+          >
+            <option value="" disabled>Select</option>
+            {variants.map((v) => {
+              const addonPrice = Number(v?.price || 0);
+              const suffix = addonPrice > 0 ? ` (+$${addonPrice.toFixed(2)})` : '';
+              return (
+                <option key={v.key} value={v.key}>{`${v.label}${suffix}`}</option>
+              );
+            })}
+          </select>
+        </div>
+      ) : null}
 
-          return (
-            <button
-              key={canonical}
-              onClick={() => handleSelect(canonical)}
-              aria-label={canonical}
-              style={{
-                border: active ? '3px solid #ff4444' : '2px solid transparent',
-                borderRadius: '12px',
-                background: 'transparent',
-                transition: 'all 0.2s ease',
-                cursor: 'pointer',
-                outline: 'none',
-                height: 180,
-                padding: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {/* IMAGE FROM ASSETS FOLDER */}
-              {imgSrc ? (
-                <img
-                  src={imgSrc}
-                  alt={`${canonical} spice level`}
-                  style={{
-                    width: '140px',
-                    height: '140px',
-                    objectFit: 'contain',
-                    background: 'transparent',
-                    borderRadius: 12,
-                    filter: active ? 'none' : 'grayscale(25%)',
-                    transition: 'all 0.2s ease',
-                  }}
-                />
-              ) : (
-                <div style={{ width: 140, height: 140 }} />
-              )}
-              {/* TEXT */}
-              <div
+      {/* Spice level label just above icons */}
+      {spiceRequired ? (
+        <div style={{ marginTop: 4, marginBottom: 6, fontWeight: 800 }}>Spice Level</div>
+      ) : null}
+
+      {/* Spice Options */}
+      {spiceRequired ? (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: 16,
+            margin: '10px 0',
+          }}
+        >
+          {levels.map((canonical) => {
+            const imgSrc = getSpiceImage(canonical);
+            const active = selected === canonical;
+            const displayName = canonical
+              .split('-')
+              .map((w) => w[0].toUpperCase() + w.slice(1))
+              .join(' ');
+
+            return (
+              <button
+                key={canonical}
+                onClick={() => handleSelect(canonical)}
+                aria-label={canonical}
                 style={{
-                  marginTop: 8,
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  color: active ? '#ff4444' : '#4a5568',
+                  border: active ? '3px solid #ff4444' : '2px solid transparent',
+                  borderRadius: '12px',
+                  background: 'transparent',
+                  transition: 'all 0.2s ease',
+                  cursor: 'pointer',
+                  outline: 'none',
+                  height: 180,
+                  padding: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
               >
-                {displayName}
-              </div>
-            </button>
-          );
-        })}
-      </div>
+                {/* IMAGE FROM ASSETS FOLDER */}
+                {imgSrc ? (
+                  <img
+                    src={imgSrc}
+                    alt={`${canonical} spice level`}
+                    style={{
+                      width: '140px',
+                      height: '140px',
+                      objectFit: 'contain',
+                      background: 'transparent',
+                      borderRadius: 12,
+                      filter: active ? 'none' : 'grayscale(25%)',
+                      transition: 'all 0.2s ease',
+                    }}
+                  />
+                ) : (
+                  <div style={{ width: 140, height: 140 }} />
+                )}
+                {/* TEXT */}
+                <div
+                  style={{
+                    marginTop: 8,
+                    fontSize: '16px',
+                    fontWeight: 600,
+                    color: active ? '#ff4444' : '#4a5568',
+                  }}
+                >
+                  {displayName}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
 
       {/* Quantity controls */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12, marginTop: 8 }}>
@@ -204,50 +294,6 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
         </div>
       </div>
 
-      {/* Buttons */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          gap: 12,
-          marginTop: 24,
-        }}
-      >
-        <button
-          onClick={onCancel}
-          style={{
-            padding: '12px 24px',
-            borderRadius: 12,
-            border: '2px solid #e2e8f0',
-            background: '#f7fafc',
-            fontWeight: '600',
-            color: '#4a5568',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-          }}
-        >
-          Cancel
-        </button>
-        <button
-          onClick={() => onConfirm(selected, qty)}
-          style={{
-            padding: '12px 24px',
-            borderRadius: 12,
-            minWidth: 160,
-            fontWeight: '600',
-            background: selected ? '#ff4444' : '#cbd5e0',
-            color: 'white',
-            border: 'none',
-            cursor: selected ? 'pointer' : 'not-allowed',
-            transition: 'all 0.2s ease',
-          }}
-          disabled={!selected}
-        >
-          {selected
-            ? `Add ${qty} • ${selected.charAt(0).toUpperCase() + selected.slice(1)}`
-            : 'Select Spice Level'}
-        </button>
-      </div>
     </Modal>
   );
 };

@@ -1,5 +1,6 @@
 import React from 'react';
-import { fetchJson, getCurrentUser, logout } from '../lib/api';
+import { ArrowLeft } from 'lucide-react';
+import { fetchJson, getCurrentUser, logout, resolveAssetUrl } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 
 export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount = 0, isCartOpen = false }) => {
@@ -52,19 +53,33 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
   }, []);
 
   const name = site?.name || 'Store';
-  const apiBase = (import.meta.env.VITE_API_URL || 'http://localhost:4000').replace(/\/$/, '');
-  const logoSrc = React.useMemo(() => {
-    const url = site?.logoUrl || '';
-    if (!url) return '';
-    if (/^https?:\/\//i.test(url)) return url;
-    // For relative URLs like "/uploads/...", prefix API base so the image loads correctly in the frontend app
-    return `${apiBase}${url.startsWith('/') ? url : `/${url}`}`;
-  }, [site?.logoUrl, apiBase]);
+  const tagline = (typeof site?.tagline === 'string') ? site.tagline : '';
+  const rawLogoUrl = site?.logoUrl || '';
+  const logoLinkUrl = (typeof site?.logoLinkUrl === 'string' ? site.logoLinkUrl : '').trim();
+  const resolvedBackendLogo = React.useMemo(() => resolveAssetUrl(rawLogoUrl), [rawLogoUrl]);
+  const logoCandidates = React.useMemo(() => {
+    try {
+      const list = [];
+      // 1) Backend absolute URL (API_BASE_URL + relative or passthrough for absolute)
+      if (resolvedBackendLogo) list.push(resolvedBackendLogo);
+      // 2) Same-origin relative URL fallback (helps when backend is reverse-proxied)
+      if (rawLogoUrl && typeof window !== 'undefined') {
+        const path = rawLogoUrl.startsWith('/') ? rawLogoUrl : `/${rawLogoUrl}`;
+        const sameOrigin = `${window.location.origin}${path}`;
+        if (!list.includes(sameOrigin)) list.push(sameOrigin);
+      }
+      return list;
+    } catch { return resolvedBackendLogo ? [resolvedBackendLogo] : []; }
+  }, [resolvedBackendLogo, rawLogoUrl]);
   const initials = React.useMemo(() => {
     if (!user?.email) return 'FR';
     const base = (user?.email?.split('@')[0] || '').replace(/[^A-Za-z]/g, '');
     return base.slice(0, 2).toUpperCase() || 'FR';
   }, [user?.email]);
+
+  // Track broken logo URLs to show graceful fallback and reset when URL changes
+  const [logoIndex, setLogoIndex] = React.useState(0);
+  React.useEffect(() => { setLogoIndex(0); }, [logoCandidates.map(String).join('|')]);
 
   // Check if screen is desktop (1024px and above)
   const isDesktop = windowWidth >= 1024;
@@ -73,22 +88,52 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
     <div className="top-nav" data-menu-open={menuOpen ? 'true' : 'false'} role="banner">
       <div className="top-nav__inner">
         <div className="brand" aria-label="Store brand">
-          <div className="brand__logo" aria-hidden>
-            {logoSrc ? (
-              <img src={logoSrc} alt="logo" />
+          {logoLinkUrl ? (
+            <button
+              className="brand__back"
+              aria-label="Back"
+              title="Back"
+              onClick={() => {
+                if (logoLinkUrl.startsWith('http')) { window.location.href = logoLinkUrl; return; }
+                try { navigate(logoLinkUrl); } catch { window.location.href = logoLinkUrl; }
+              }}
+            >
+              <ArrowLeft size={18} />
+            </button>
+          ) : null}
+          <a
+            className="brand__logo"
+            aria-label="Home"
+            href={logoLinkUrl || undefined}
+            onClick={(e) => {
+              if (!logoLinkUrl) return; // no link configured
+              if (logoLinkUrl.startsWith('http')) return; // let browser handle external link
+              e.preventDefault();
+              try { navigate(logoLinkUrl); } catch { window.location.href = logoLinkUrl; }
+            }}
+            style={{ cursor: logoLinkUrl ? 'pointer' : 'default' }}
+          >
+            {logoCandidates.length > 0 && logoIndex < logoCandidates.length ? (
+              <img
+                src={logoCandidates[logoIndex]}
+                alt="logo"
+                onError={() => setLogoIndex((i) => i + 1)}
+              />
             ) : (
               <span>🍽️</span>
             )}
-          </div>
+          </a>
           <div className="brand__text">
             <div className="brand__name">{name}</div>
-            <div className="brand__tagline hide-mobile">Sweets, Catering & Pickup</div>
+            {tagline ? (
+              <div className="brand__tagline hide-mobile">{tagline}</div>
+            ) : null}
           </div>
         </div>
         {/* On mobile, when the cart is open we only show "Cart" at top */}
         <div className="nav-title">{isCartOpen ? 'Cart' : 'ONLINE ORDERING'}</div>
 
-        <div className="actions" style={{ position: 'relative' }}>
+        <div className="actions" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 6 }}>
           {/* Cart button - hidden on desktop, visible on mobile and tablet */}
           {!isDesktop && (
             <button

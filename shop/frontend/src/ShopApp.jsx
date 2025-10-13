@@ -11,10 +11,10 @@ import { FulfillmentModal } from './components/FulfillmentModal';
 import { Modal } from './components/Modal';
 import { SpiceModal } from './components/SpiceModal';
 import { ExtrasModal } from './components/ExtrasModal';
-import { VariantModal } from './components/VariantModal';
 import { AddToCartToast } from './components/AddToCartToast';
+import { AlertModal } from './components/AlertModal';
 import { DeliveryAddressModal } from './components/DeliveryAddressModal';
-import { fetchJson, getAuthToken } from './lib/api';
+import { fetchJson, getAuthToken, postJson } from './lib/api';
 import { UserAuthModal } from './components/UserAuthModal';
 
 const Main = ({ siteSlug = 'default', initialCategoryId }) => {
@@ -27,24 +27,27 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [pendingQuantity, setPendingQuantity] = useState(1);
   const [spiceOpen, setSpiceOpen] = useState(false);
   const [extrasOpen, setExtrasOpen] = useState(false);
-  const [variantOpen, setVariantOpen] = useState(false);
   const [pendingSpice, setPendingSpice] = useState(undefined);
   const [pendingVariant, setPendingVariant] = useState(null);
   const [deliveryModalOpen, setDeliveryModalOpen] = useState(false);
+  const [deliveryModalMode, setDeliveryModalMode] = useState('checkout'); // 'prefill' | 'checkout'
   const [loginOpen, setLoginOpen] = useState(false);
   const [vegFilter, setVegFilter] = useState('all');
   const [lastDeliveryId, setLastDeliveryId] = useState(null);
   const [deliveryAddressSummary, setDeliveryAddressSummary] = useState('');
   const [orderError, setOrderError] = useState('');
   const [pickupPaymentMethod, setPickupPaymentMethod] = useState('online'); // 'online' | 'cod'
+  const [closedAlertOpen, setClosedAlertOpen] = useState(false);
+  const [pickupSubmitting, setPickupSubmitting] = useState(false);
 
   // Additional UI state brought from the alternate implementation
   // Order details state
   const [pickupDate, setPickupDate] = useState(''); // YYYY-MM-DD
-  const [pickupTime, setPickupTime] = useState(''); // e.g., 10:00 AM
+  const [pickupTime, setPickupTime] = useState(''); // e.g., 11:00 AM
   const [hours, setHours] = useState(null);
   const [dateOptions, setDateOptions] = useState([]);
   const [timeOptions, setTimeOptions] = useState([]);
+  const [isClosedNow, setIsClosedNow] = useState(false);
   const readyAt = React.useMemo(() => {
     try {
       if (!pickupDate || !pickupTime) return null;
@@ -88,20 +91,22 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
 
   function handleChooseFulfillment(type) {
     setFulfillmentType(type);
+    // Close the selection modal only. If delivery is selected, collect address now and then let user browse menu.
     setFulfillmentOpen(false);
+    setOrderDetailsOpen(false);
     if (type === 'delivery') {
+      setDeliveryModalMode('prefill');
       setDeliveryModalOpen(true);
     } else {
-      setOrderDetailsOpen(true);
+      setDeliveryModalOpen(false);
     }
   }
 
   function startAddToCart(product, quantity = 1) {
     setPendingProduct(product);
     setPendingQuantity(Math.max(1, Math.min(99, Number(quantity) || 1)));
-    if (Array.isArray(product?.variants) && product.variants.length > 0) {
-      setVariantOpen(true);
-    } else if (product.spiceLevels && product.spiceLevels.length > 0) {
+    // Show unified modal for variants/spice in a single popup
+    if ((Array.isArray(product?.variants) && product.variants.length > 0) || (product.spiceLevels && product.spiceLevels.length > 0)) {
       setSpiceOpen(true);
     } else if (product.extraOptionGroups && product.extraOptionGroups.length > 0) {
       setExtrasOpen(true);
@@ -109,33 +114,21 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       addItem({ product, quantity: Math.max(1, Math.min(99, Number(quantity) || 1)) });
       setPendingProduct(null);
       setPendingQuantity(1);
+      // Do not open payment/details modals on add-to-cart; user will open from cart
     }
   }
 
-  function confirmVariant(variant) {
-    setPendingVariant(variant || null);
-    setVariantOpen(false);
-    if (pendingProduct && pendingProduct.spiceLevels && pendingProduct.spiceLevels.length > 0) {
-      setSpiceOpen(true);
-    } else if (pendingProduct && pendingProduct.extraOptionGroups && pendingProduct.extraOptionGroups.length > 0) {
-      setExtrasOpen(true);
-    } else if (pendingProduct) {
-      addItem({ product: pendingProduct, variant, spiceLevel: undefined, quantity: pendingQuantity });
-      setPendingProduct(null);
-      setPendingVariant(null);
-      setPendingQuantity(1);
-    }
-  }
-
-  function confirmSpice(spice, quantityFromModal) {
-    const confirmedQty = Math.max(1, Math.min(99, Number(quantityFromModal || pendingQuantity) || 1));
+  function confirmSpice(result) {
+    const { spice, variant, quantity } = result || {};
+    const confirmedQty = Math.max(1, Math.min(99, Number(quantity || pendingQuantity) || 1));
     setPendingSpice(spice);
+    setPendingVariant(variant || null);
     setPendingQuantity(confirmedQty);
     setSpiceOpen(false);
     if (pendingProduct && pendingProduct.extraOptionGroups && pendingProduct.extraOptionGroups.length > 0) {
       setExtrasOpen(true);
     } else if (pendingProduct) {
-      addItem({ product: pendingProduct, variant: pendingVariant || undefined, spiceLevel: spice, quantity: confirmedQty });
+      addItem({ product: pendingProduct, variant: variant || undefined, spiceLevel: spice, quantity: confirmedQty });
       setPendingProduct(null);
       setPendingSpice(undefined);
       setPendingVariant(null);
@@ -226,6 +219,27 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     return () => { cancelled = true; };
   }, [siteSlug]);
 
+  // Determine if restaurant is currently closed (based on today and now)
+  useEffect(() => {
+    function parse24h(s, fallback) {
+      if (!s || !/^\d{2}:\d{2}$/.test(s)) return fallback;
+      const [hh, mm] = s.split(':').map(Number);
+      return { hh, mm };
+    }
+    function keyForToday(d) {
+      return ['sun','mon','tue','wed','thu','fri','sat'][d.getDay()];
+    }
+    const now = new Date();
+    const key = keyForToday(now);
+    const cfg = hours?.[key];
+    if (!cfg || cfg.closed) { setIsClosedNow(true); return; }
+    const { hh: oh = 11, mm: om = 0 } = parse24h(cfg.open, { hh: 11, mm: 0 });
+    const { hh: ch = 22, mm: cm = 0 } = parse24h(cfg.close, { hh: 22, mm: 0 });
+    const open = new Date(now); open.setHours(oh, om, 0, 0);
+    const close = new Date(now); close.setHours(ch, cm, 0, 0);
+    setIsClosedNow(!(now >= open && now <= close));
+  }, [hours]);
+
   // Compute date options (today + next 6 days, respecting closed days)
   useEffect(() => {
     function formatDateLabel(date, isToday) {
@@ -255,7 +269,10 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     if (!pickupDate && opts.length) setPickupDate(opts[0].value);
   }, [hours]);
 
-  // Compute time options for selected date from hours (default 10:00-22:00) with 45-minute intervals
+  // Compute time options for selected date from hours (default 11:00-22:00)
+  // - Slots every 15 minutes
+  // - Earliest selectable time is now + 30 minutes (prep buffer)
+  // - Last order 15 minutes before close (e.g., 9:45 PM when closing at 10:00 PM)
   useEffect(() => {
     function parse24h(s, fallback) {
       if (!s || !/^\d{2}:\d{2}$/.test(s)) return fallback;
@@ -276,24 +293,30 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     const now = new Date();
     const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     const isTodaySelected = pickupDate === todayStr;
+    // Prep buffer of 30 minutes
+    const earliest = new Date(now.getTime() + 30 * 60000);
     const [selYr, selMo, selDy] = pickupDate.split('-').map(Number);
     const key = dayKeyFromDateString(pickupDate);
-    const cfg = hours?.[key] || { open: '10:00', close: '22:00', closed: false };
+    const cfg = hours?.[key] || { open: '11:00', close: '22:00', closed: false };
     if (cfg.closed) { setTimeOptions([]); return; }
-    const { hh: openH = 10, mm: openM = 0 } = parse24h(cfg.open, { hh: 10, mm: 0 });
+    const { hh: openH = 11, mm: openM = 0 } = parse24h(cfg.open, { hh: 11, mm: 0 });
     const { hh: closeH = 22, mm: closeM = 0 } = parse24h(cfg.close, { hh: 22, mm: 0 });
+    // Last selectable slot should be 15 minutes before close
+    let endH = closeH;
+    let endM = closeM - 15;
+    if (endM < 0) { endH -= 1; endM += 60; }
     const options = [];
     let curH = openH, curM = openM;
-    while (curH < closeH || (curH === closeH && curM <= closeM)) {
+    while (curH < endH || (curH === endH && curM <= endM)) {
       const value = format12h(curH, curM);
       let disabled = false;
       if (isTodaySelected) {
         const candidate = new Date(selYr, (selMo || 1) - 1, selDy || 1);
         candidate.setHours(curH, curM, 0, 0);
-        disabled = candidate < now;
+        disabled = candidate < earliest;
       }
       options.push({ value, label: value, disabled });
-      curM += 45;
+      curM += 15;
       if (curM >= 60) { curM -= 60; curH += 1; }
     }
     setTimeOptions(options);
@@ -325,13 +348,16 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
 
   const manifest = useMemo(() => {
-    return state.items.map((it) => ({
-      name: it.name,
-      quantity: it.quantity,
-      priceCents: Math.round(((Number(it.basePrice) || 0) + (Number(it?.variant?.priceDelta) || 0) + (Number(it?.extraCost) || 0)) * 100),
-      size: (it?.variant?.label || it?.variant?.key || undefined),
-      spiceLevel: it.spiceLevel,
-    }));
+    return state.items.map((it) => {
+      const unit = (Number(it.basePrice) || 0) + (Number(it?.variant?.price) || 0) + (Number(it?.extraCost) || 0);
+      return {
+        name: it.name,
+        quantity: it.quantity,
+        priceCents: Math.round(unit * 100),
+        size: (it?.variant?.label || it?.variant?.key || undefined),
+        spiceLevel: it.spiceLevel,
+      };
+    });
   }, [state.items]);
 
   const cartTotal = getCartTotal();
@@ -381,6 +407,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
             setLoginOpen(true);
             return;
           }
+          if (isClosedNow) { setClosedAlertOpen(true); return; }
           // Close cart before showing next step so modal is visible on mobile
           setMobileCartOpen(false);
           if (!state.fulfillmentType) {
@@ -388,6 +415,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
             return;
           }
           if (state.fulfillmentType === 'delivery') {
+            setDeliveryModalMode('checkout');
             setDeliveryModalOpen(true);
             return;
           }
@@ -398,6 +426,12 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       />
       <TopNav siteSlug={siteSlug} isCartOpen={mobileCartOpen} onSignIn={() => setLoginOpen(true)} onOpenCart={() => setMobileCartOpen(true)} cartCount={state.items.length} />
       <main className="content">
+        {isClosedNow ? (
+          <div className="card" style={{ marginBottom: 12, borderLeft: '3px solid var(--danger)', padding: 10 }}>
+            <div style={{ fontWeight: 700 }}>Restaurant closed</div>
+            <div className="muted" style={{ fontSize: 12 }}>Online ordering is closed for today. Last order at 9:45 PM.</div>
+          </div>
+        ) : null}
 
         <div className="card order-type-card">
           <OrderTypeSelection />
@@ -414,7 +448,72 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       <PrivacyPolicyModal open={privacyOpen} onAccept={handleAcceptPrivacy} />
       <FulfillmentModal open={fulfillmentOpen} onChoose={handleChooseFulfillment} />
       {/* Order Details Modal: Takeout/Delivery UI like screenshots */}
-      <Modal open={orderDetailsOpen} onClose={() => setOrderDetailsOpen(false)} title="ORDER DETAILS">
+      <Modal open={orderDetailsOpen} onClose={() => setOrderDetailsOpen(false)} title="ORDER DETAILS" footer={(
+        state.fulfillmentType === 'pickup' ? (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, width: '100%' }}>
+            {/* Removed OK button; Confirm remains */}
+            <button className="primary-btn" disabled={pickupSubmitting || !selectedLocation || manifest.length === 0} aria-busy={pickupSubmitting} onClick={async () => {
+              setPickupSubmitting(true);
+              try {
+                setOrderError('');
+                const token = getAuthToken();
+                if (!token) { setOrderDetailsOpen(false); setLoginOpen(true); return; }
+                const chosenLocation = selectedLocation || filteredLocations[0] || locations[0] || null;
+                if (!chosenLocation) { setOrderError('Please choose a pickup location'); return; }
+                if (!manifest.length) { setOrderError('Please add items to your cart before confirming'); return; }
+                if (!selectedLocation) setSelectedLocation(chosenLocation);
+                const payload = {
+                  items: manifest.map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.priceCents || 0, size: m.size, spiceLevel: m.spiceLevel })),
+                  tipCents: 0,
+                  pickup: {
+                    location: chosenLocation,
+                    scheduledFor: readyAt,
+                  },
+                  notes: state.notes || undefined,
+                  coupon: state.coupon || undefined,
+                };
+                if (pickupPaymentMethod === 'online') {
+                  await postJson(`/api/payments/stripe/${siteSlug}/checkout/pickup`, payload)
+                    .then((data) => {
+                      const url = data?.url;
+                      if (!url) throw new Error('Failed to start payment');
+                      setOrderDetailsOpen(false);
+                      window.location.href = url;
+                    });
+                } else {
+                  await postJson(`/api/shop/${siteSlug}/orders/pickup`, payload)
+                    .then(() => {
+                      setOrderDetailsOpen(false);
+                      try { window.location.href = `/s/${siteSlug}/orders?status=placed`; } catch {}
+                    });
+                }
+              } catch (e) {
+                let msg = e?.message || 'Failed to place pickup order';
+                try {
+                  const parsed = JSON.parse(msg);
+                  if (parsed && parsed.error) msg = parsed.error;
+                } catch {}
+                setOrderError(msg);
+              } finally {
+                setPickupSubmitting(false);
+              }
+            }}>
+              {pickupSubmitting ? (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  <svg width="16" height="16" viewBox="0 0 50 50" aria-hidden="true" focusable="false">
+                    <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeDasharray="31.415 31.415">
+                      <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.8s" repeatCount="indefinite" />
+                    </circle>
+                  </svg>
+                  Processing…
+                </span>
+              ) : (
+                'Confirm'
+              )}
+            </button>
+          </div>
+        ) : null
+      )}>
         {state.fulfillmentType === 'delivery' ? (
           <div style={{ display: 'grid', gap: 12 }}>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -458,7 +557,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
 
                   </label>
                   <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <span>Restaurant address</span>
+                    <span>Restaurant Location</span>
                     <select value={(idx => (idx >= 0 ? String(idx) : ''))(filteredLocations.findIndex((l) => l === selectedLocation))} onChange={(e) => {
                       const idx = Number(e.target.value);
                       const chosen = filteredLocations[idx];
@@ -473,8 +572,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                   </label>
                 </>
               ) : (
-                <label style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <span>Restaurant address</span>
+                  <label style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span>Restaurant Location</span>
                   <select value={(idx => (idx >= 0 ? String(idx) : ''))(locations.findIndex((l) => l === selectedLocation))} onChange={(e) => {
                     const idx = Number(e.target.value);
                     const chosen = locations[idx];
@@ -501,17 +600,20 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                 </select>
               </label>
               <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <span style={{ color: 'var(--primary-600)' }}>Pickup time</span>
+                <span style={{ color: 'var(--primary-600)' }}>Pick Up/Delivery Date and Time</span>
                 {(() => {
                   const times = (timeOptions && timeOptions.length) ? timeOptions : (() => {
                     const out = [];
-                    let h = 10, m = 0; // 10:00 AM to 10:00 PM fallback
-                    while (h < 22 || (h === 22 && m === 0)) {
+                    let h = 11, m = 0; // 11:00 AM to 9:45 PM fallback
+                    let endH = 22, endM = 0; // 22:00 close by default
+                    // last slot 15 minutes before close
+                    endM -= 15; if (endM < 0) { endH -= 1; endM += 60; }
+                    while (h < endH || (h === endH && m <= endM)) {
                       const mod = h >= 12 ? 'PM' : 'AM';
                       const h12 = h % 12 === 0 ? 12 : h % 12;
                       const label = `${h12}:${String(m).padStart(2,'0')} ${mod}`;
                       out.push({ value: label, label });
-                      m += 45; if (m >= 60) { m -= 60; h += 1; }
+                      m += 15; if (m >= 60) { m -= 60; h += 1; }
                     }
                     return out;
                   })();
@@ -528,6 +630,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
               </label>
             </div>
             {/* Payment method for pickup */}
+            {/* Payment method simplified: remove Cash on pickup option */}
             <div className="card" style={{ display: 'grid', gap: 8, padding: 10, borderRadius: 12, marginTop: 10 }}>
               <div style={{ fontWeight: 700 }}>Payment method</div>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -540,75 +643,6 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                 />
                 <span>Pay online</span>
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input
-                  type="radio"
-                  name="pickupPay"
-                  value="cod"
-                  checked={pickupPaymentMethod === 'cod'}
-                  onChange={() => setPickupPaymentMethod('cod')}
-                />
-                <span>Cash on pickup</span>
-              </label>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16, gap: 8 }}>
-              <button onClick={() => setOrderDetailsOpen(false)}>OK</button>
-              <button className="primary-btn" disabled={!selectedLocation || manifest.length === 0} onClick={async () => {
-                try {
-                  setOrderError('');
-                  const token = getAuthToken();
-                  if (!token) { setLoginOpen(true); return; }
-                  const chosenLocation = selectedLocation || filteredLocations[0] || locations[0] || null;
-                  if (!chosenLocation) { setOrderError('Please choose a pickup location'); return; }
-                  if (!manifest.length) { setOrderError('Please add items to your cart before confirming'); return; }
-                  if (!selectedLocation) setSelectedLocation(chosenLocation);
-                  // Build pickup order payload
-                  const payload = {
-                    items: manifest.map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.priceCents || 0, size: m.size, spiceLevel: m.spiceLevel })),
-                    tipCents: 0,
-                    pickup: {
-                      location: chosenLocation,
-                      scheduledFor: readyAt,
-                    },
-                    notes: state.notes || undefined,
-                    coupon: state.coupon || undefined,
-                  };
-                  if (pickupPaymentMethod === 'online') {
-                    // Stripe checkout for pickup
-                    await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/payments/stripe/${siteSlug}/checkout/pickup`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-                      body: JSON.stringify(payload),
-                    })
-                    .then(async (r) => { if (!r.ok) throw new Error(await r.text()); return r.json(); })
-                    .then((data) => {
-                      const url = data?.url;
-                      if (!url) throw new Error('Failed to start payment');
-                      setOrderDetailsOpen(false);
-                      window.location.href = url;
-                    });
-                  } else {
-                    // Cash on pickup: create order directly (no payment gateway)
-                    await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/shop/${siteSlug}/orders/pickup`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-                      body: JSON.stringify(payload),
-                    })
-                    .then(async (r) => { if (!r.ok) throw new Error(await r.text()); return r.json(); })
-                    .then(() => {
-                      setOrderDetailsOpen(false);
-                      try { window.location.href = `/s/${siteSlug}/orders?status=placed`; } catch {}
-                    });
-                  }
-                } catch (e) {
-                  let msg = e?.message || 'Failed to place pickup order';
-                  try {
-                    const parsed = JSON.parse(msg);
-                    if (parsed && parsed.error) msg = parsed.error;
-                  } catch {}
-                  setOrderError(msg);
-                }
-              }}>Confirm</button>
             </div>
           </div>
         )}
@@ -621,14 +655,12 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         onConfirmed={(id, summary) => {
           setLastDeliveryId(id);
           if (summary) setDeliveryAddressSummary(summary);
-          // After delivery order is placed, navigate to My Orders
-          try { window.location.href = `/s/${siteSlug}/orders`; } catch {}
+          // Do not navigate away; user continues payment in Stripe
         }}
         manifest={manifest}
+        mode={deliveryModalMode}
       />
-      {lastDeliveryId ? (
-        <div className="muted" style={{ textAlign: 'center', marginTop: 10, fontSize: 12 }}>Last delivery ID: {lastDeliveryId}</div>
-      ) : null}
+      {/* Last delivery ID removed from UI as requested */}
       <SpiceModal
         open={spiceOpen}
         spiceLevels={pendingProduct?.spiceLevels}
@@ -645,15 +677,28 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         onConfirm={confirmSpice}
       />
       <ExtrasModal open={extrasOpen} groups={pendingProduct?.extraOptionGroups} product={pendingProduct} onCancel={() => setExtrasOpen(false)} onConfirm={confirmExtras} />
-      <VariantModal open={variantOpen} variants={pendingProduct?.variants || []} product={pendingProduct} onCancel={() => setVariantOpen(false)} onConfirm={confirmVariant} />
       <AddToCartToast />
+      <AlertModal
+        open={closedAlertOpen}
+        onClose={() => setClosedAlertOpen(false)}
+        title="Restaurant is closed"
+        message={"Online ordering is closed for today. Please come back tomorrow."}
+      />
       <UserAuthModal open={loginOpen} onClose={() => setLoginOpen(false)} onSuccess={() => {
         setLoginOpen(false);
-        if (!state.fulfillmentType) setFulfillmentOpen(true);
-        setFulfillmentType('delivery');
-        setDeliveryModalOpen(true);
+        // Stay on the same page. If no order type yet, prompt selection.
+        if (!state.fulfillmentType) {
+          setFulfillmentOpen(true);
+          return;
+        }
+        // If delivery was selected before login, continue to delivery details.
+        if (state.fulfillmentType === 'delivery') {
+          setDeliveryModalMode('checkout');
+          setDeliveryModalOpen(true);
+        }
+        // If pickup, keep user here; they can open order details from cart.
       }} />
-      <footer className="site-footer">All rights reserved by Blueboxx</footer>
+      <footer className="site-footer">© All Rights Reserved By <a href="https://www.blueboxx.ca/" target="_blank" rel="noopener noreferrer">Blue Boxx</a></footer>
     </div>
   );
 };

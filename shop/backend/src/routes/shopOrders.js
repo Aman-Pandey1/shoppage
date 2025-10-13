@@ -61,7 +61,7 @@ router.get('/:slug/orders/:orderId/tracking', requireUser, async (req, res) => {
     let live;
     if (site?.uberCustomerId && order?.uberDeliveryId) {
       try {
-        live = await getDelivery({ customerId: site.uberCustomerId, deliveryId: order.uberDeliveryId });
+        live = await getDelivery({ customerId: site.uberCustomerId, deliveryId: order.uberDeliveryId, creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv } });
       } catch (e) {
         // ignore live fetch errors; fall back to stored fields
       }
@@ -84,10 +84,12 @@ router.post('/:slug/orders/pickup', requireUser, async (req, res) => {
     const { items, pickup, notes, coupon } = req.body || {};
     if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ error: 'Items required' });
     let itemsTotal = items.reduce((s, it) => s + (Number(it.priceCents)||0) * (Number(it.quantity)||1), 0);
+    const COUPON_MIN_SUBTOTAL_CENTS = Math.max(0, Number(process.env.COUPON_MIN_SUBTOTAL_CENTS) || 5000);
+    const subtotalBeforeDiscount = itemsTotal;
     // Apply coupon discount if valid
     let appliedCoupon = null;
     const mock = req.app.locals.mockData;
-    if (coupon && coupon.code && typeof coupon.percent === 'number') {
+    if (coupon && coupon.code && typeof coupon.percent === 'number' && subtotalBeforeDiscount >= COUPON_MIN_SUBTOTAL_CENTS) {
       const code = String(coupon.code).trim().toUpperCase();
       const pct = Math.max(0, Math.min(100, Number(coupon.percent)||0));
       if (mock) {
@@ -106,7 +108,10 @@ router.post('/:slug/orders/pickup', requireUser, async (req, res) => {
     }
     const isMockEnv = !!req.app?.locals?.mockData;
     const minOrderCents = isMockEnv ? 0 : Math.max(0, Number(process.env.MIN_ORDER_CENTS) || 5000);
-    if (itemsTotal < minOrderCents) return res.status(400).json({ error: `Minimum order is $${(minOrderCents/100).toFixed(2)}` });
+    // Enforce minimum order on pre-discount subtotal for consistency with delivery and Stripe flows
+    if (subtotalBeforeDiscount < minOrderCents) {
+      return res.status(400).json({ error: `Minimum order is $${(minOrderCents/100).toFixed(2)}` });
+    }
     const taxCents = Math.round(itemsTotal * 0.05);
     const totalCents = itemsTotal + taxCents;
     const orderPayload = {
@@ -216,7 +221,7 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
       if (idx % 2 === 0) { doc.save(); doc.rect(startX, doc.y - 2, width, 18).fill(colors.rowStripe); doc.restore(); }
       const rowY = doc.y;
       doc.font('Helvetica').fillColor(colors.text)
-        .text(`${it.name}${it.spiceLevel ? ' ['+it.spiceLevel+']' : ''}${it.size ? ' ('+it.size+')' : ''}`, startX, rowY, { width: col[0], align: 'center' });
+        .text(`${it.name}${it.spiceLevel ? ' ['+it.spiceLevel+']' : ''}${it.size ? ' — Select Item: '+it.size : ''}`, startX, rowY, { width: col[0], align: 'center' });
       doc.text(String(qty), startX + col[0], rowY, { width: col[1], align: 'center' });
       doc.text(`$${unit.toFixed(2)}`, startX + col[0] + col[1], rowY, { width: col[2], align: 'center' });
       doc.text(`$${line.toFixed(2)}`, startX + col[0] + col[1] + col[2], rowY, { width: col[3], align: 'center' });

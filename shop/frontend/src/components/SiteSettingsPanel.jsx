@@ -1,5 +1,5 @@
 import React from 'react';
-import { fetchJsonAllowError, patchJson, resolveAssetUrl } from '../lib/api';
+import { fetchJsonAllowError, patchJson, resolveAssetUrl, postFile, API_BASE_URL } from '../lib/api';
 import { Modal } from './Modal';
 
 export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
@@ -14,13 +14,27 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
   const [uberCustomerId, setUberCustomerId] = React.useState(site?.uberCustomerId || '');
   const [brandColor, setBrandColor] = React.useState(site?.brandColor || '#0ea5e9');
   const [stripeAccountId, setStripeAccountId] = React.useState(site?.stripeAccountId || '');
+  const [stripePublishableKey, setStripePublishableKey] = React.useState(site?.stripePublishableKey || '');
+  const [stripeSecretKey, setStripeSecretKey] = React.useState(site?.stripeSecretKey || '');
+  const [stripeWebhookSecret, setStripeWebhookSecret] = React.useState(site?.stripeWebhookSecret || '');
+  const [tagline, setTagline] = React.useState(site?.tagline || '');
   const [deliveryProvider, setDeliveryProvider] = React.useState(site?.deliveryProvider || 'uber');
+  const [uberClientId, setUberClientId] = React.useState(site?.uberClientId || '');
+  const [uberClientSecret, setUberClientSecret] = React.useState(site?.uberClientSecret || '');
+  const [uberEnv, setUberEnv] = React.useState(site?.uberEnv || 'production');
+  const [uberTokenScopes, setUberTokenScopes] = React.useState(site?.uberTokenScopes ?? '');
+  const [uberWebhookSecret, setUberWebhookSecret] = React.useState(site?.uberWebhookSecret || '');
   const [doordashStoreId, setDoordashStoreId] = React.useState(site?.doordashStoreId || '');
+  const [doordashDeveloperId, setDoordashDeveloperId] = React.useState(site?.doordashDeveloperId || '');
+  const [doordashKeyId, setDoordashKeyId] = React.useState(site?.doordashKeyId || '');
+  const [doordashSigningSecret, setDoordashSigningSecret] = React.useState(site?.doordashSigningSecret || '');
   const [locations, setLocations] = React.useState(Array.isArray(site?.locations) ? site.locations : []);
   const [cities, setCities] = React.useState(Array.isArray(site?.cities) ? site.cities : []);
   const [deliveryFee, setDeliveryFee] = React.useState(((Number(site?.deliveryFeeCents)||0)/100).toFixed(2));
   const [splitDeliveryFee, setSplitDeliveryFee] = React.useState(!!site?.splitDeliveryFee);
+  const [maxDeliveryDistanceKm, setMaxDeliveryDistanceKm] = React.useState(site?.maxDeliveryDistanceKm ?? '');
   const [logoUrl, setLogoUrl] = React.useState(site?.logoUrl || '');
+  const [logoLinkUrl, setLogoLinkUrl] = React.useState(site?.logoLinkUrl || '');
   const [logoFile, setLogoFile] = React.useState(null);
   const [hours, setHours] = React.useState(site?.hours || {
     mon: { open: '10:00', close: '22:00', closed: false },
@@ -37,6 +51,8 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
   const [uberStatus, setUberStatus] = React.useState(null);
   const [testingDoorDash, setTestingDoorDash] = React.useState(false);
   const [doorDashStatus, setDoorDashStatus] = React.useState(null);
+  const [testingStripe, setTestingStripe] = React.useState(false);
+  const [stripeStatus, setStripeStatus] = React.useState(null);
 
   // Location modal state
   const [isLocFormOpen, setIsLocFormOpen] = React.useState(false);
@@ -58,9 +74,21 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
     setCities(Array.isArray(site?.cities) ? site.cities : []);
     setDeliveryFee(((Number(site?.deliveryFeeCents)||0)/100).toFixed(2));
     setSplitDeliveryFee(!!site?.splitDeliveryFee);
+    setMaxDeliveryDistanceKm(site?.maxDeliveryDistanceKm ?? '');
     setStripeAccountId(site?.stripeAccountId || '');
+    setStripePublishableKey(site?.stripePublishableKey || '');
+    setStripeSecretKey(site?.stripeSecretKey || '');
+    setStripeWebhookSecret(site?.stripeWebhookSecret || '');
     setDeliveryProvider(site?.deliveryProvider || 'uber');
     setDoordashStoreId(site?.doordashStoreId || '');
+    setDoordashDeveloperId(site?.doordashDeveloperId || '');
+    setDoordashKeyId(site?.doordashKeyId || '');
+    setDoordashSigningSecret(site?.doordashSigningSecret || '');
+    setUberClientId(site?.uberClientId || '');
+    setUberClientSecret(site?.uberClientSecret || '');
+    setUberEnv(site?.uberEnv || 'production');
+    setUberTokenScopes(site?.uberTokenScopes ?? '');
+    setUberWebhookSecret(site?.uberWebhookSecret || '');
     setHours(site?.hours || {
       mon: { open: '10:00', close: '22:00', closed: false },
       tue: { open: '10:00', close: '22:00', closed: false },
@@ -71,6 +99,8 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
       sun: { open: '10:00', close: '22:00', closed: false },
     });
     setLogoUrl(site?.logoUrl || '');
+    setLogoLinkUrl(site?.logoLinkUrl || '');
+    setTagline(site?.tagline || '');
     setLogoFile(null);
   }, [site?._id]);
 
@@ -127,8 +157,17 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
 
       <div style={{ gridColumn: '1 / -1', fontWeight: 800, marginTop: 8 }}>Branding</div>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span>Header title (optional)</span>
+        <input value={tagline} onChange={(e) => setTagline(e.target.value)} placeholder="Shown next to logo; leave blank to hide" />
+      </label>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span>Logo URL</span>
         <input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." />
+      </label>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span>Logo link (redirect URL)</span>
+        <input value={logoLinkUrl} onChange={(e) => setLogoLinkUrl(e.target.value)} placeholder="https://restaurant-website.com/" />
+        <span className="muted" style={{ fontSize: 12 }}>Logo and back arrow will redirect to this link.</span>
       </label>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span>Or upload logo</span>
@@ -147,6 +186,29 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
         <input value={stripeAccountId} onChange={(e) => setStripeAccountId(e.target.value)} placeholder="acct_123..." />
         <span className="muted" style={{ fontSize: 12 }}>Each website should have its own connected Stripe account.</span>
       </label>
+      <div className="card" style={{ gridColumn: '1 / -1', padding: 10, display: 'grid', gap: 8 }}>
+        <div style={{ fontWeight: 700 }}>Stripe keys (optional per-site override)</div>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span>Publishable key</span>
+          <input value={stripePublishableKey} onChange={(e) => setStripePublishableKey(e.target.value)} placeholder="pk_live_... or pk_test_..." />
+        </label>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span>Secret key</span>
+          <input value={stripeSecretKey} onChange={(e) => setStripeSecretKey(e.target.value)} placeholder="sk_live_... or sk_test_..." />
+        </label>
+        <div className="sep" style={{ height: 1, background: 'var(--gray-200)', margin: '8px 0' }} />
+        <div style={{ fontWeight: 700 }}>Stripe Webhook</div>
+        <div className="muted" style={{ fontSize: 12 }}>
+          Point Stripe webhooks to:
+        </div>
+        <div className="code" style={{ fontFamily: 'monospace', fontSize: 12, background: 'var(--gray-50)', padding: 8, borderRadius: 6 }}>
+          {`${API_BASE_URL}/webhook/stripe/${site?._id || 'SITE_ID'}`}
+        </div>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span>Stripe Webhook Signing Secret</span>
+          <input value={stripeWebhookSecret} onChange={(e) => setStripeWebhookSecret(e.target.value)} placeholder="whsec_..." />
+        </label>
+      </div>
 
       <div style={{ gridColumn: '1 / -1', fontWeight: 800, marginTop: 8 }}>Delivery settings</div>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -157,16 +219,73 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
         </select>
         <span className="muted" style={{ fontSize: 12 }}>Only one provider is active at a time per website.</span>
       </label>
+      {deliveryProvider === 'uber' ? (
+        <div className="card" style={{ gridColumn: '1 / -1', padding: 10, display: 'grid', gap: 8 }}>
+          <div style={{ fontWeight: 700 }}>Uber Direct credentials (optional per-site override)</div>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>Uber Client ID</span>
+            <input value={uberClientId} onChange={(e) => setUberClientId(e.target.value)} placeholder="client_id" />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>Uber Client Secret</span>
+            <input value={uberClientSecret} onChange={(e) => setUberClientSecret(e.target.value)} placeholder="client_secret" />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>Uber Environment</span>
+            <select value={uberEnv} onChange={(e) => setUberEnv(e.target.value)}>
+              <option value="production">Production</option>
+              <option value="sandbox">Sandbox</option>
+            </select>
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>Uber Token Scopes (optional)</span>
+            <input value={uberTokenScopes} onChange={(e) => setUberTokenScopes(e.target.value)} placeholder="eats.deliveries or leave blank" />
+            <span className="muted" style={{ fontSize: 12 }}>Leave blank to send no scope. Some Uber apps require blank; others require <code>eats.deliveries</code>. Ensure the app has the Eats Deliveries permission.</span>
+          </label>
+          <div className="sep" style={{ height: 1, background: 'var(--gray-200)', margin: '8px 0' }} />
+          <div style={{ fontWeight: 700 }}>Uber Webhook</div>
+          <div className="muted" style={{ fontSize: 12 }}>
+            Point Uber Direct webhooks to:
+          </div>
+          <div className="code" style={{ fontFamily: 'monospace', fontSize: 12, background: 'var(--gray-50)', padding: 8, borderRadius: 6 }}>
+            {`${API_BASE_URL}/webhook/uber/${site?._id || 'SITE_ID'}`}
+          </div>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>Uber Webhook Signing Secret</span>
+            <input value={uberWebhookSecret} onChange={(e) => setUberWebhookSecret(e.target.value)} placeholder="signing-secret from Uber" />
+          </label>
+        </div>
+      ) : null}
       {deliveryProvider === 'doordash' ? (
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <span>DoorDash Store ID</span>
-          <input value={doordashStoreId} onChange={(e) => setDoordashStoreId(e.target.value)} placeholder="store-..." />
-        </label>
+        <div className="card" style={{ gridColumn: '1 / -1', padding: 10, display: 'grid', gap: 8 }}>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>DoorDash Store ID</span>
+            <input value={doordashStoreId} onChange={(e) => setDoordashStoreId(e.target.value)} placeholder="store-..." />
+          </label>
+          <div style={{ fontWeight: 700 }}>DoorDash Drive credentials (optional per-site override)</div>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>Developer ID</span>
+            <input value={doordashDeveloperId} onChange={(e) => setDoordashDeveloperId(e.target.value)} placeholder="developer-id" />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>Key ID</span>
+            <input value={doordashKeyId} onChange={(e) => setDoordashKeyId(e.target.value)} placeholder="key-id" />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>Signing Secret</span>
+            <input value={doordashSigningSecret} onChange={(e) => setDoordashSigningSecret(e.target.value)} placeholder="signing-secret" />
+          </label>
+        </div>
       ) : null}
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span>Flat delivery fee (in $)</span>
         <input type="number" step="0.01" min={0} value={deliveryFee} onChange={(e) => setDeliveryFee(e.target.value)} />
         <span className="muted" style={{ fontSize: 12 }}>Applied only to delivery orders. Not shown for pickup.</span>
+      </label>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span>Max delivery distance (km)</span>
+        <input type="number" min={0} value={maxDeliveryDistanceKm} onChange={(e) => setMaxDeliveryDistanceKm(e.target.value)} placeholder="e.g., 8" />
+        <span className="muted" style={{ fontSize: 12 }}>Orders beyond this distance will be blocked.</span>
       </label>
       <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <input type="checkbox" checked={!!splitDeliveryFee} onChange={(e) => setSplitDeliveryFee(e.target.checked)} />
@@ -285,6 +404,30 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
           {doorDashStatus ? (
             <div style={{ fontSize: 12, color: doorDashStatus.ok ? 'var(--green-600)' : 'var(--red-600)' }}>{doorDashStatus.message}</div>
           ) : null}
+          <button disabled={testingStripe} onClick={async () => {
+            setTestingStripe(true);
+            setStripeStatus(null);
+            try {
+              const res = await fetchJsonAllowError(`/api/admin/sites/${site._id}/health/stripe`);
+              if (res.ok) {
+                const flags = [];
+                if (res.charges_enabled) flags.push('charges');
+                if (res.payouts_enabled) flags.push('payouts');
+                if (res.details_submitted) flags.push('details');
+                const msg = flags.length ? `Stripe OK · ${flags.join(', ')}` : 'Stripe OK';
+                setStripeStatus({ ok: true, message: msg });
+              } else {
+                setStripeStatus({ ok: false, message: `Stripe error: ${res.error}` });
+              }
+            } catch (e) {
+              setStripeStatus({ ok: false, message: e?.message || 'Stripe error' });
+            } finally {
+              setTestingStripe(false);
+            }
+          }}>{testingStripe ? 'Testing…' : 'Test Stripe'}</button>
+          {stripeStatus ? (
+            <div style={{ fontSize: 12, color: stripeStatus.ok ? 'var(--green-600)' : 'var(--red-600)' }}>{stripeStatus.message}</div>
+          ) : null}
         </div>
         {savedAt ? <div className="muted" style={{ alignSelf: 'center', fontSize: 12 }}>Saved {new Date(savedAt).toLocaleTimeString()}</div> : null}
         <button className="primary-btn" disabled={saving} onClick={async () => {
@@ -294,12 +437,26 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
             brandColor,
             deliveryProvider,
             doordashStoreId,
+            doordashDeveloperId,
+            doordashKeyId,
+            doordashSigningSecret,
+            uberClientId,
+            uberClientSecret,
+            uberEnv,
+            uberTokenScopes,
+            uberWebhookSecret,
+            stripeWebhookSecret,
+            stripePublishableKey,
+            stripeSecretKey,
             locations,
             cities,
             deliveryFeeCents: Math.max(0, Math.round(Number(deliveryFee || 0) * 100)),
             splitDeliveryFee: !!splitDeliveryFee,
+            maxDeliveryDistanceKm: maxDeliveryDistanceKm === '' ? undefined : Number(maxDeliveryDistanceKm),
             hours,
             logoUrl,
+            logoLinkUrl,
+            tagline,
             stripeAccountId,
             pickup: {
               name: pickupName,
@@ -316,18 +473,9 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
           let updated = await patchJson(`/api/admin/sites/${selectedSiteId}`, payload);
           if (logoFile) {
             try {
-              const form = new FormData();
-              form.append('file', logoFile);
-              const resp = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/admin/sites/${selectedSiteId}/logo`, {
-                method: 'POST',
-                headers: { ...(localStorage.getItem('auth_token') ? { Authorization: `Bearer ${localStorage.getItem('auth_token')}` } : {}) },
-                body: form,
-              });
-              if (resp.ok) {
-                const data = await resp.json();
-                updated = data.site || updated;
-                setLogoUrl(data.logoUrl || updated.logoUrl || '');
-              }
+              const data = await postFile(`/api/admin/sites/${selectedSiteId}/logo`, logoFile);
+              updated = data.site || updated;
+              setLogoUrl(data.logoUrl || updated.logoUrl || '');
             } catch {}
           }
           onSiteUpdated(updated);

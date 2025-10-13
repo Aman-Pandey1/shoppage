@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Modal } from './Modal';
+import { useCart } from '../store/CartContext';
 import { fetchJson, postJson } from '../lib/api';
 
-export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, manifest, initialPickupIndex }) => {
+export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, manifest, initialPickupIndex, mode = 'checkout' }) => {
+  const { state, setDeliveryFeeCents } = useCart();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [addr1, setAddr1] = useState('');
@@ -14,16 +16,16 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   const [error, setError] = useState();
   const [quote, setQuote] = useState(null);
   const [siteName, setSiteName] = useState('');
-  const [deliveryFeeCents, setDeliveryFeeCents] = useState(0);
+  const [deliveryFeeCentsLocal, setDeliveryFeeCentsLocal] = useState(0);
   const [splitDeliveryFee, setSplitDeliveryFee] = useState(false);
   const [country, setCountry] = useState('CA');
   const [distanceKm, setDistanceKm] = useState(null);
   const [tab, setTab] = useState('enter'); // delivery: only manual address (enter)
-  const [notes, setNotes] = useState('');
   const [locations, setLocations] = useState([]);
   const [cities, setCities] = useState([]);
   const [selectedPickupIndex, setSelectedPickupIndex] = useState(null);
   const [selectedCity, setSelectedCity] = useState('');
+  const [minOrderCents, setMinOrderCents] = useState(5000);
 
   const itemsSubtotalCents = React.useMemo(() => {
     try {
@@ -60,8 +62,11 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         const data = await fetchJson(`/api/shop/${siteSlug}/site`);
         if (!cancelled) {
           setSiteName(data.name || '');
-          setDeliveryFeeCents(Number(data.deliveryFeeCents) || 0);
+          const baseFee = Number(data.deliveryFeeCents) || 0;
+          setDeliveryFeeCents(baseFee);
+          setDeliveryFeeCentsLocal(baseFee);
           setSplitDeliveryFee(!!data.splitDeliveryFee);
+          if (typeof data.minOrderCents === 'number') setMinOrderCents(Math.max(0, Number(data.minOrderCents)));
         }
       } catch {}
     }
@@ -134,7 +139,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   }
 
   function validate() {
-    if (!name.trim()) return 'Name is required';
+    if (!name.trim()) return 'Full Name is required';
     if (!isValidPhone(phone)) return 'Enter phone as +1XXXXXXXXXX';
     if (!addr1.trim()) return 'Address line 1 is required';
     if (!city.trim()) return 'City is required';
@@ -156,7 +161,10 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
       const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { name, phone: normalizedPhone || phone, address }, pickupLocationIndex: selectedPickupIndex });
       setQuote(q);
       if (typeof q?.distanceKm === 'number') setDistanceKm(q.distanceKm);
-      if (typeof q?.customerDeliveryFeeCents === 'number') setDeliveryFeeCents(q.customerDeliveryFeeCents);
+      if (typeof q?.customerDeliveryFeeCents === 'number') {
+        setDeliveryFeeCents(q.customerDeliveryFeeCents);
+        setDeliveryFeeCentsLocal(q.customerDeliveryFeeCents);
+      }
     } catch (e) {
       setError(parseServerError(e) || 'Failed to get quote');
     } finally { setLoading(false); }
@@ -189,13 +197,118 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Delivery details">
+    <Modal open={open} onClose={onClose} title={mode === 'checkout' ? 'Confirm Delivery Details' : 'Delivery details'} footer={(
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, width: '100%' }}>
+        <button onClick={onClose} disabled={loading}>Cancel</button>
+        {mode === 'checkout' ? (
+          <button className="primary-btn" disabled={loading} aria-busy={loading} onClick={async () => {
+            setLoading(true); setError(undefined);
+            try {
+              // Validate and build dropoff
+              if (!name.trim()) throw new Error('Full Name is required');
+              if (!addr1.trim() || !city.trim() || !province.trim() || !isValidPostal(postalCode)) throw new Error('Enter a valid full address');
+              const normalizedPhone = normalizePhoneForCountry(phone, country);
+              if (!normalizedPhone) throw new Error('Enter phone in E.164 like +14155550123');
+              const address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
+              const dropoff = { name, phone: normalizedPhone, address };
+              // Always get a fresh quote to ensure delivery fee consistency with checkout
+              const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { name, phone: normalizedPhone, address }, pickupLocationIndex: selectedPickupIndex });
+              const quotedFee = typeof q?.customerDeliveryFeeCents === 'number' ? q.customerDeliveryFeeCents : 0;
+              try { setDeliveryFeeCents(quotedFee); setDeliveryFeeCentsLocal(quotedFee); } catch {}
+              const chosenIdx = (typeof q?.pickupLocationIndex === 'number') ? q.pickupLocationIndex : (typeof selectedPickupIndex === 'number' ? selectedPickupIndex : 0);
+
+              // Create Stripe checkout session for delivery
+              const payload = {
+                dropoff,
+                manifestItems: (Array.isArray(manifest) ? manifest : []).map(m => ({
+                  name: m.name,
+                  quantity: m.quantity,
+                  priceCents: m.priceCents || 0,
+                  size: m.size,
+                  spiceLevel: m.spiceLevel,
+                })),
+                pickupLocationIndex: chosenIdx,
+                deliveryFeeCents: quotedFee,
+                coupon: state?.coupon || undefined,
+              };
+              const res = await postJson(`/api/payments/stripe/${siteSlug}/checkout/delivery`, payload);
+              const url = res?.url;
+              if (!url) throw new Error('Failed to start payment');
+              const summary = [addr1, city, postalCode].filter(Boolean).join(', ');
+              try { onConfirmed(`addr-${Date.now()}`, summary); } catch {}
+              try { onClose(); } catch {}
+              window.location.href = url;
+            } catch (e) {
+              setError(parseServerError(e) || 'Failed to start payment');
+            } finally { setLoading(false); }
+          }}>
+            {loading ? (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <svg width="16" height="16" viewBox="0 0 50 50" aria-hidden="true" focusable="false">
+                  <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeDasharray="31.415 31.415">
+                    <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.8s" repeatCount="indefinite" />
+                  </circle>
+                </svg>
+                Redirecting…
+              </span>
+            ) : (
+              'Continue to payment'
+            )}
+          </button>
+        ) : (
+          <button className="primary-btn" disabled={loading} aria-busy={loading} onClick={async () => {
+            setLoading(true); setError(undefined);
+            try {
+              // Validate and compute quote to set delivery fee, then go back to menu
+              if (!name.trim()) throw new Error('Full Name is required');
+              if (!addr1.trim() || !city.trim() || !province.trim() || !isValidPostal(postalCode)) throw new Error('Enter a valid full address');
+              const normalizedPhone = normalizePhoneForCountry(phone, country);
+              if (!normalizedPhone) throw new Error('Enter phone in E.164 like +14155550123');
+              const address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
+              const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { name, phone: normalizedPhone, address }, pickupLocationIndex: selectedPickupIndex });
+              if (typeof q?.customerDeliveryFeeCents === 'number') {
+                setDeliveryFeeCents(q.customerDeliveryFeeCents);
+                setDeliveryFeeCentsLocal(q.customerDeliveryFeeCents);
+              }
+              const summary = [addr1, city, postalCode].filter(Boolean).join(', ');
+              try { onConfirmed(`addr-${Date.now()}`, summary); } catch {}
+              onClose();
+            } catch (e) {
+              setError(parseServerError(e) || 'Invalid address');
+            } finally { setLoading(false); }
+          }}>
+            {loading ? (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <svg width="16" height="16" viewBox="0 0 50 50" aria-hidden="true" focusable="false">
+                  <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeDasharray="31.415 31.415">
+                    <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.8s" repeatCount="indefinite" />
+                  </circle>
+                </svg>
+                Processing…
+              </span>
+            ) : (
+              'Proceed to menu'
+            )}
+          </button>
+        )}
+      </div>
+    )}>
+      {(function(){
+        const below = itemsSubtotalCents < (Number(minOrderCents) || 0);
+        if (!below) return null;
+        const dollars = (Math.max(0, Number(minOrderCents) || 0) / 100).toFixed(2);
+        return (
+          <div style={{ color: 'var(--danger)', marginBottom: 8, fontWeight: 600 }}>
+            Minimum total amount should be ${dollars} required for delivery.
+          </div>
+        );
+      })()}
       {error ? <div style={{ color: 'var(--danger)', marginBottom: 8 }}>{error}</div> : null}
       <div className="muted" style={{ marginBottom: 8, fontSize: 12 }}>Enter your delivery address. Delivery will be fulfilled by the website's selected provider.</div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <span>Name</span>
+          <span>Full Name</span>
           <input value={name} onChange={(e) => setName(e.target.value)} />
         </label>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -233,85 +346,8 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
           </select>
         </label>
       </div>
-      <label style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
-        <span>Notes for restaurant (optional)</span>
-        <textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g., Leave at door, call on arrival" />
-      </label>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 14, alignItems: 'flex-start' }}>
-        <div style={{ display: 'grid', gap: 8, marginLeft: 'auto', minWidth: 260 }}>
-          <div className="card" style={{ padding: 10, borderRadius: 10, background: 'var(--primary-alpha-04)' }}>
-            {typeof selectedPickupIndex === 'number' && locations[selectedPickupIndex] ? (
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span className="muted">Restaurant</span>
-                <span style={{ textAlign: 'right' }}>
-                  {(locations[selectedPickupIndex].name || 'Pickup')}
-                </span>
-              </div>
-            ) : null}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-              <span className="muted">Items</span>
-              <span style={{ fontWeight: 600 }}>${(itemsSubtotalCents/100).toFixed(2)}</span>
-            </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span className="muted">Tax (5%)</span>
-                <span style={{ fontWeight: 600 }}>${((itemsSubtotalCents*0.05)/100).toFixed(2)}</span>
-              </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-              <span className="muted">Delivery fee{splitDeliveryFee ? ' (your share)' : ''}</span>
-              <span style={{ fontWeight: 600 }}>{deliveryFeeCents ? `$${(deliveryFeeCents/100).toFixed(2)}` : '—'}</span>
-            </div>
-            <div style={{ height: 1, background: 'var(--border)', margin: '6px 0' }} />
-            {quote?.dropoff_estimated_dt ? (
-              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>ETA: {new Date(quote.dropoff_estimated_dt).toLocaleTimeString()}</div>
-            ) : null}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontWeight: 800 }}>Estimated total</span>
-                <span style={{ fontWeight: 900 }}>${(((itemsSubtotalCents + Math.round(itemsSubtotalCents*0.05) + (deliveryFeeCents||0)))/100).toFixed(2)}</span>
-            </div>
-          </div>
-        {!quote ? (
-          <button className="primary-btn" disabled={loading} onClick={getQuote} style={{ padding: '12px 16px', borderRadius: 12 }}>{loading ? 'Requesting…' : 'Get quote'}</button>
-        ) : (
-          <>
-            <button
-              className="primary-btn"
-              disabled={loading}
-              onClick={async () => {
-                setLoading(true); setError(undefined);
-                try {
-                  const token = localStorage.getItem('auth_token');
-                  const payload = {
-                    dropoff: {
-                      name,
-                      phone: normalizePhoneForCountry(phone, country) || phone,
-                      address: { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country },
-                    },
-                    manifestItems: (Array.isArray(manifest) ? manifest : []).map(m => ({ name: m.name, quantity: m.quantity, size: m.size, priceCents: m.priceCents || 0, spiceLevel: m.spiceLevel })),
-                    pickupLocationIndex: selectedPickupIndex,
-                    notes,
-                  };
-                  const resp = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/payments/stripe/${siteSlug}/checkout/delivery`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-                    body: JSON.stringify(payload),
-                  });
-                  if (!resp.ok) throw new Error(await resp.text());
-                  const data = await resp.json();
-                  const url = data?.url;
-                  if (!url) throw new Error('Failed to start payment');
-                  window.location.href = url;
-                } catch (e) {
-                  setError(parseServerError(e) || 'Failed to start payment');
-                } finally {
-                  setLoading(false);
-                }
-              }}
-              style={{ padding: '12px 16px', borderRadius: 12 }}
-            >{loading ? 'Redirecting…' : 'Pay & place delivery order'}</button>
-          </>
-        )}
-        </div>
-      </div>
+      {/* Notes of Instruction removed as requested */}
+      {/* Removed quote/fee panel and payment buttons as requested */}
     </Modal>
   );
 };

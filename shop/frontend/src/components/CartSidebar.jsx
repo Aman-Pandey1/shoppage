@@ -8,17 +8,103 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
   const [couponError, setCouponError] = React.useState('');
   const [checking, setChecking] = React.useState(false);
   const [now, setNow] = React.useState(Date.now());
+  const [autoTried, setAutoTried] = React.useState(false);
   React.useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 30000);
     return () => clearInterval(t);
   }, []);
-  const timeString = React.useMemo(() => readyAt ? new Date(readyAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—', [readyAt]);
+  // Ensure a sensible default: now + 30 minutes if not provided
+  const effectiveReadyAt = React.useMemo(() => {
+    return readyAt || new Date(Date.now() + 30 * 60000).toISOString();
+  }, [readyAt, now]);
+  const timeString = React.useMemo(() => new Date(effectiveReadyAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), [effectiveReadyAt]);
   const eta = React.useMemo(() => {
-    if (!readyAt) return '';
-    const diffMs = new Date(readyAt).getTime() - now;
+    const diffMs = new Date(effectiveReadyAt).getTime() - now;
     const mins = Math.max(0, Math.round(diffMs / 60000));
     return `(in ${mins} min)`;
-  }, [readyAt, now]);
+  }, [effectiveReadyAt, now]);
+
+  const subtotal = React.useMemo(() => state.items.reduce((s, it) => s + it.totalPrice, 0), [state.items]);
+  const couponEligible = !!state.coupon && subtotal >= 50;
+
+  // Auto-apply latest coupon if subtotal >= $50 and no coupon applied
+  React.useEffect(() => {
+    const subtotal = state.items.reduce((s, it) => s + it.totalPrice, 0);
+    if (autoTried) return;
+    if (state.coupon) return;
+    if (subtotal < 50) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const siteSlug = (window.location.pathname.match(/\/s\/([^/]+)/)?.[1]) || 'default';
+        const res = await fetchJson(`/api/shop/${siteSlug}/default-coupon`);
+        if (!cancelled && res && res.code && typeof res.percent === 'number' && res.percent > 0) {
+          applyCoupon(res.code, res.percent);
+          setCode(res.code);
+        }
+      } catch {}
+      finally {
+        if (!cancelled) setAutoTried(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [state.items, state.coupon, applyCoupon, autoTried]);
+
+  // Derived pricing (compute in cents to match backend/Stripe)
+  const itemsSubtotalCents = React.useMemo(() => {
+    return state.items.reduce((sum, it) => {
+      const unitPrice = (Number(it.basePrice) || 0) + (Number(it?.variant?.price) || 0) + (Number(it.extraCost) || 0);
+      const unitCents = Math.round(unitPrice * 100);
+      return sum + unitCents * (Number(it.quantity) || 1);
+    }, 0);
+  }, [state.items]);
+  const itemsSubtotal = React.useMemo(() => itemsSubtotalCents / 100, [itemsSubtotalCents]);
+
+  // Coupon + delivery context
+  const deliveryFeeCents = state.fulfillmentType === 'delivery' ? (Number(state.deliveryFeeCents || 0)) : 0;
+  const hasEligibleCoupon = !!state.coupon && itemsSubtotal >= 50;
+  const couponPct = hasEligibleCoupon ? Math.max(0, Math.min(100, Number(state.coupon.percent) || 0)) : 0;
+  const discountFactor = couponPct > 0 ? (1 - couponPct / 100) : 1;
+
+  // Items subtotal AFTER discount (per-item rounding) — matches backend/Stripe
+  const itemsAfterDiscountCents = React.useMemo(() => {
+    if (!hasEligibleCoupon || couponPct <= 0) return itemsSubtotalCents;
+    return state.items.reduce((sum, it) => {
+      const unitPrice = (Number(it.basePrice) || 0) + (Number(it?.variant?.price) || 0) + (Number(it.extraCost) || 0);
+      const unitCents = Math.round(unitPrice * 100);
+      const discountedUnit = Math.round(unitCents * (100 - couponPct) / 100);
+      return sum + discountedUnit * (Number(it.quantity) || 1);
+    }, 0);
+  }, [state.items, itemsSubtotalCents, hasEligibleCoupon, couponPct]);
+
+  // Actual tax to be charged is on discounted items
+  const taxAfterDiscountCents = React.useMemo(() => Math.round(itemsAfterDiscountCents * 0.05), [itemsAfterDiscountCents]);
+
+  // For display, gross-up tax and delivery so discount line mirrors Stripe's UI
+  const taxDisplayCents = React.useMemo(() => (
+    couponPct > 0 ? Math.round(taxAfterDiscountCents / discountFactor) : taxAfterDiscountCents
+  ), [couponPct, discountFactor, taxAfterDiscountCents]);
+  const deliveryDisplayCents = React.useMemo(() => (
+    deliveryFeeCents > 0 && couponPct > 0 ? Math.round(deliveryFeeCents / discountFactor) : deliveryFeeCents
+  ), [deliveryFeeCents, couponPct, discountFactor]);
+
+  // Final payable total
+  const grandTotalCents = React.useMemo(() => (
+    Math.max(0, itemsAfterDiscountCents + taxAfterDiscountCents + deliveryFeeCents)
+  ), [itemsAfterDiscountCents, taxAfterDiscountCents, deliveryFeeCents]);
+
+  // Displayed subtotal before discount and discount amount
+  const displayedSubtotalCents = React.useMemo(() => (
+    itemsSubtotalCents + taxDisplayCents + deliveryDisplayCents
+  ), [itemsSubtotalCents, taxDisplayCents, deliveryDisplayCents]);
+  const discountCents = React.useMemo(() => (
+    hasEligibleCoupon ? Math.max(0, displayedSubtotalCents - grandTotalCents) : 0
+  ), [hasEligibleCoupon, displayedSubtotalCents, grandTotalCents]);
+
+  const discount = React.useMemo(() => discountCents / 100, [discountCents]);
+  const tax = React.useMemo(() => taxDisplayCents / 100, [taxDisplayCents]);
+  const deliveryFee = React.useMemo(() => deliveryDisplayCents / 100, [deliveryDisplayCents]);
+  const grandTotal = React.useMemo(() => grandTotalCents / 100, [grandTotalCents]);
 
   return (
     <aside
@@ -48,7 +134,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: 12 }} className="muted">TOTAL</div>
-            <div style={{ fontWeight: 800 }}>${getCartTotal().toFixed(2)}</div>
+            <div style={{ fontWeight: 800 }}>${grandTotal.toFixed(2)}</div>
           </div>
         </div>
       </div>
@@ -73,7 +159,12 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
                 {item.imageUrl ? <img src={item.imageUrl} alt={item.name} style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8 }} /> : null}
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 700 }}>{item.name}</div>
-                  {item.variant ? <div style={{ fontSize: 12, color: 'var(--muted)' }}>Size: {item.variant.label || item.variant.key}</div> : null}
+                  {item.variant ? (
+                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+                      Select Item: {item.variant.label || item.variant.key}
+                      {Number(item?.variant?.price||0) > 0 ? ` (+$${Number(item.variant.price).toFixed(2)})` : ''}
+                    </div>
+                  ) : null}
                   {item.spiceLevel ? <div style={{ fontSize: 12, color: 'var(--muted)' }}>Spice: {item.spiceLevel}</div> : null}
                   {item.selectedOptions.length > 0 ? (
                     <ul style={{ paddingLeft: 18, margin: '6px 0', color: 'var(--text)' }}>
@@ -102,7 +193,9 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g., WELCOME10" style={{ flex: '1 1 160px', minWidth: 0 }} />
             <button disabled={checking || !code.trim()} style={{ flex: '0 0 auto' }} onClick={async () => {
-              setCouponError(''); setChecking(true);
+              setCouponError('');
+              if (subtotal < 50) { setCouponError('Minimum $50 subtotal required to apply discount'); return; }
+              setChecking(true);
               try {
                 const siteSlug = (window.location.pathname.match(/\/s\/([^/]+)/)?.[1]) || 'default';
                 const res = await fetchJson(`/api/shop/${siteSlug}/coupon/${encodeURIComponent(code.trim())}`);
@@ -118,7 +211,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
             {state.coupon ? <button style={{ flex: '0 0 auto' }} onClick={() => { clearCoupon(); setCode(''); }}>Remove</button> : null}
           </div>
           {couponError ? <div style={{ color: 'var(--danger)', fontSize: 12 }}>{couponError}</div> : null}
-          {state.coupon ? <div className="muted" style={{ fontSize: 12 }}>Applied: {state.coupon.code} ({state.coupon.percent}% off)</div> : null}
+          {state.coupon ? <div className="muted" style={{ fontSize: 12 }}>Applied: {state.coupon.code} ({state.coupon.percent}% off){subtotal < 50 ? ' — Add items to reach $50 for discount' : ''}</div> : null}
         </label>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <span className="muted" style={{ fontSize: 12 }}>Notes for restaurant</span>
@@ -127,22 +220,28 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
         <div style={{ display: 'grid', gap: 6, marginTop: 10 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span className="muted">Items</span>
-            <span>${state.items.reduce((s, it) => s + it.totalPrice, 0).toFixed(2)}</span>
+            <span>${itemsSubtotal.toFixed(2)}</span>
           </div>
-          {state.coupon ? (
+          {couponEligible ? (
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span className="muted">Discount ({state.coupon.percent}% )</span>
-              <span>-${(state.items.reduce((s, it) => s + it.totalPrice, 0) * (state.coupon.percent/100)).toFixed(2)}</span>
+              <span>-${discount.toFixed(2)}</span>
             </div>
           ) : null}
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span className="muted">Tax (5%)</span>
-            <span>${(getCartTotal() * 0.05).toFixed(2)}</span>
+            <span>${tax.toFixed(2)}</span>
           </div>
+          {state.fulfillmentType === 'delivery' ? (
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span className="muted">Delivery fee</span>
+              <span>${deliveryFee.toFixed(2)}</span>
+            </div>
+          ) : null}
           <div style={{ height: 1, background: 'var(--border)' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800 }}>
             <span>Total</span>
-            <span>${(getCartTotal() * 1.05).toFixed(2)}</span>
+            <span>${grandTotal.toFixed(2)}</span>
           </div>
         </div>
         <button

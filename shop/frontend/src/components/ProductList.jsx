@@ -38,10 +38,10 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Category header */}
-      <div className="card animate-fadeInUp" style={{ padding: 14, borderRadius: 'var(--radius)', borderTop: '3px solid var(--primary)' }}>
+          <div className="card animate-fadeInUp" style={{ padding: 14, borderRadius: 'var(--radius)', borderTop: '3px solid var(--primary)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <button onClick={onBack} aria-label="Back" title="Back">←</button>
+            <button onClick={onBack} aria-label="Back" title="Back" style={{ fontWeight: 900, fontSize: 20, minWidth: 36 }}>←</button>
             <h3 style={{ margin: 0 }}>{category.name}</h3>
           </div>
           <div className="muted" style={{ fontSize: 13 }}>{products.length} items</div>
@@ -52,7 +52,17 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
       <div className="card animate-fadeInUp" style={{ padding: 0, overflow: 'hidden', borderLeft: '3px solid var(--primary)', position: 'relative' }}>
         <div style={{ width: '100%', height: 240, background: 'linear-gradient(180deg, var(--primary-alpha-08), var(--primary-alpha-04))', position: 'relative' }}>
           {category.imageUrl ? (
-            <img src={resolveAssetUrl(category.imageUrl)} alt={category.name} className="img-cover" />
+            <img
+              src={resolveAssetUrl(category.imageUrl)}
+              alt={category.name}
+              className="img-cover"
+              onError={(e) => {
+                // Avoid retry loops and use a stable placeholder
+                e.currentTarget.onerror = null;
+                const seed = encodeURIComponent(String(category.name || 'category').toLowerCase());
+                e.currentTarget.src = `https://picsum.photos/seed/${seed}/800/600`;
+              }}
+            />
           ) : (
             <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', fontSize: 48 }}>🛍️</div>
           )}
@@ -77,7 +87,9 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
                 {p.description ? <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>{p.description}</div> : null}
               </div>
               <div style={{ display: 'grid', justifyItems: 'end', gap: 6 }}>
-                <div style={{ fontWeight: 800, color: 'var(--primary-600)' }}>${p.price.toFixed(2)}</div>
+                <div style={{ fontWeight: 800, color: 'var(--primary-600)' }}>
+                  {`$${Number(p.price || 0).toFixed(2)}`}
+                </div>
                 <button
                   onClick={() => {
                     // If product requires spice selection, skip the quick-add popup and

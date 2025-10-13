@@ -36,7 +36,7 @@ export const UserAuthModal = ({ open, onClose, onSuccess }) => {
       {error ? <div style={{ color: 'var(--danger)', marginBottom: 8 }}>{error}</div> : null}
       <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
         <button className={mode === 'login' ? 'primary-btn' : ''} onClick={() => setMode('login')}>Login</button>
-        <button className={mode === 'register' ? 'primary-btn' : ''} onClick={() => setMode('register')}>Sign up</button>
+        <button className={mode === 'register' ? 'primary-btn' : ''} onClick={() => setMode('register')}>Sign-Up</button>
       </div>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {mode === 'register' ? (

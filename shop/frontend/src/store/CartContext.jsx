@@ -47,7 +47,7 @@ function generateItemId(productId, spiceLevel, selectedOptions, variant) {
 }
 
 export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => {
-  const [state, setState] = useState({ items: [], notes: '', coupon: null });
+  const [state, setState] = useState({ items: [], notes: '', coupon: null, fulfillmentType: undefined, deliveryFeeCents: 0 });
   const [lastAdded, setLastAdded] = useState(null);
 
   useEffect(() => {
@@ -67,7 +67,17 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
   }, [state, storageKey]);
 
   const setFulfillmentType = useCallback((type) => {
-    setState((prev) => ({ ...prev, fulfillmentType: type }));
+    setState((prev) => ({
+      ...prev,
+      fulfillmentType: type,
+      // Clear delivery fee when switching away from delivery
+      deliveryFeeCents: type === 'delivery' ? prev.deliveryFeeCents : 0,
+    }));
+  }, []);
+
+  const setDeliveryFeeCents = useCallback((cents) => {
+    const value = Math.max(0, Math.round(Number(cents) || 0));
+    setState((prev) => ({ ...prev, deliveryFeeCents: value }));
   }, []);
 
   const setNotes = useCallback((text) => {
@@ -84,8 +94,8 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
 
   const addItem = useCallback(({ product, quantity = 1, spiceLevel, selectedOptions = [], variant = null }) => {
     const extraCost = calculateExtraCost(selectedOptions);
-    const variantDelta = variant?.priceDelta || 0;
-    const unitPrice = product.price + variantDelta + extraCost;
+    const variantAddon = Number(variant?.price || 0);
+    const unitPrice = Number(product.price || 0) + variantAddon + extraCost;
     const totalPrice = unitPrice * quantity;
     const id = generateItemId(product._id, spiceLevel, selectedOptions, variant);
     const newItem = {
@@ -108,17 +118,20 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
         const updated = prev.items.slice();
         const existing = updated[existingIndex];
         const newQuantity = existing.quantity + quantity;
+        const addon = Number(existing?.variant?.price || 0);
+        const existingUnit = Number(existing.basePrice || 0) + addon + Number(existing.extraCost || 0);
         updated[existingIndex] = {
           ...existing,
           quantity: newQuantity,
-          totalPrice: (existing.basePrice + (existing?.variant?.priceDelta || 0) + existing.extraCost) * newQuantity,
+          totalPrice: existingUnit * newQuantity,
         };
         return { ...prev, items: updated };
       }
       return { ...prev, items: [...prev.items, newItem] };
     });
     const optionsSummary = formatOptionsSummary(product, spiceLevel, selectedOptions, variant);
-    setLastAdded({ name: product.name, quantity, price: (product.price + variantDelta + extraCost), imageUrl: product.imageUrl, optionsSummary });
+    const displayUnit = Number(product.price || 0) + Number(variant?.price || 0) + extraCost;
+    setLastAdded({ name: product.name, quantity, price: displayUnit, imageUrl: product.imageUrl, optionsSummary });
   }, []);
 
   const removeItem = useCallback((id) => {
@@ -127,7 +140,12 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
 
   const updateQuantity = useCallback((id, quantity) => {
     setState((prev) => {
-      const updated = prev.items.map((it) => (it.id === id ? { ...it, quantity, totalPrice: (it.basePrice + it.extraCost) * quantity } : it));
+      const updated = prev.items.map((it) => {
+        if (it.id !== id) return it;
+        const addon = Number(it?.variant?.price || 0);
+        const unit = Number(it.basePrice || 0) + addon + Number(it.extraCost || 0);
+        return { ...it, quantity, totalPrice: unit * quantity };
+      });
       return { ...prev, items: updated };
     });
   }, []);
@@ -135,13 +153,27 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
   const clearCart = useCallback(() => setState((prev) => ({ ...prev, items: [] })), []);
 
   const getCartTotal = useCallback(() => {
-    const subtotal = state.items.reduce((sum, it) => sum + it.totalPrice, 0);
-    const discount = state.coupon ? (subtotal * (state.coupon.percent / 100)) : 0;
-    return Math.max(0, subtotal - discount);
+    const itemsSubtotalCents = state.items.reduce((sum, it) => {
+      const unitPrice = (Number(it.basePrice) || 0) + (Number(it?.variant?.price) || 0) + (Number(it.extraCost) || 0);
+      const unitCents = Math.round(unitPrice * 100);
+      return sum + unitCents * (Number(it.quantity) || 1);
+    }, 0);
+    const isEligibleForCoupon = (itemsSubtotalCents / 100) >= 50;
+    let discountedCents = itemsSubtotalCents;
+    if (state.coupon && isEligibleForCoupon) {
+      const pct = Math.max(0, Math.min(100, Number(state.coupon.percent) || 0));
+      discountedCents = state.items.reduce((sum, it) => {
+        const unitPrice = (Number(it.basePrice) || 0) + (Number(it?.variant?.price) || 0) + (Number(it.extraCost) || 0);
+        const unitCents = Math.round(unitPrice * 100);
+        const discountedUnit = Math.round(unitCents * (100 - pct) / 100);
+        return sum + discountedUnit * (Number(it.quantity) || 1);
+      }, 0);
+    }
+    return Math.max(0, discountedCents) / 100;
   }, [state.items, state.coupon]);
 
   const value = useMemo(
-    () => ({ state, setFulfillmentType, addItem, removeItem, updateQuantity, clearCart, getCartTotal, lastAdded, setNotes, applyCoupon, clearCoupon }),
+    () => ({ state, setFulfillmentType, addItem, removeItem, updateQuantity, clearCart, getCartTotal, lastAdded, setNotes, applyCoupon, clearCoupon, setDeliveryFeeCents }),
     [state, setFulfillmentType, addItem, removeItem, updateQuantity, clearCart, getCartTotal, lastAdded, setNotes, applyCoupon, clearCoupon]
   );
 
