@@ -293,7 +293,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         const dollars = (Math.max(0, Number(minOrderCents) || 0) / 100).toFixed(2);
         return (
           <div style={{ color: 'var(--danger)', marginBottom: 8, fontWeight: 600 }}>
-            Minimum order is ${dollars}.
+            Minimum total amount should be ${dollars} required for delivery.
           </div>
         );
       })()}
