@@ -87,7 +87,11 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
                 {p.description ? <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>{p.description}</div> : null}
               </div>
               <div style={{ display: 'grid', justifyItems: 'end', gap: 6 }}>
-                <div style={{ fontWeight: 800, color: 'var(--primary-600)' }}>${p.price.toFixed(2)}</div>
+                <div style={{ fontWeight: 800, color: 'var(--primary-600)' }}>
+                  {Array.isArray(p?.variants) && p.variants.length > 0 && typeof p.variants[0]?.price === 'number'
+                    ? `$${Number(p.variants[0].price).toFixed(2)}`
+                    : `$${p.price.toFixed(2)}`}
+                </div>
                 <button
                   onClick={() => {
                     // If product requires spice selection, skip the quick-add popup and

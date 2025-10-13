@@ -53,7 +53,8 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
   // Derived pricing (compute in cents to match backend/Stripe)
   const itemsSubtotalCents = React.useMemo(() => {
     return state.items.reduce((sum, it) => {
-      const unitPrice = (Number(it.basePrice) || 0) + (Number(it?.variant?.priceDelta) || 0) + (Number(it.extraCost) || 0);
+      const variantAbs = (typeof it?.variant?.price === 'number') ? Number(it.variant.price) : null;
+      const unitPrice = (variantAbs != null ? variantAbs : ((Number(it.basePrice) || 0) + (Number(it?.variant?.priceDelta) || 0))) + (Number(it.extraCost) || 0);
       const unitCents = Math.round(unitPrice * 100);
       return sum + unitCents * (Number(it.quantity) || 1);
     }, 0);
@@ -63,7 +64,8 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
     if (!state.coupon || itemsSubtotal < 50) return 0;
     const pct = Math.max(0, Math.min(100, Number(state.coupon.percent) || 0));
     return state.items.reduce((sum, it) => {
-      const unitPrice = (Number(it.basePrice) || 0) + (Number(it?.variant?.priceDelta) || 0) + (Number(it.extraCost) || 0);
+      const variantAbs = (typeof it?.variant?.price === 'number') ? Number(it.variant.price) : null;
+      const unitPrice = (variantAbs != null ? variantAbs : ((Number(it.basePrice) || 0) + (Number(it?.variant?.priceDelta) || 0))) + (Number(it.extraCost) || 0);
       const unitCents = Math.round(unitPrice * 100);
       const discountedUnit = Math.round(unitCents * (100 - pct) / 100);
       const perItemDiscount = Math.max(0, unitCents - discountedUnit);

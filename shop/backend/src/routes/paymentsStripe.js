@@ -300,7 +300,7 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
   try {
     const stripe = getStripeClient(req.site);
     const currency = getCurrency();
-    const { dropoff, manifestItems = [], pickupLocationIndex, notes, coupon } = req.body || {};
+    const { dropoff, manifestItems = [], pickupLocationIndex, notes, coupon, deliveryFeeCents: clientDeliveryFeeCents } = req.body || {};
     const mock = req.app.locals.mockData;
 
     if (!Array.isArray(manifestItems) || manifestItems.length === 0) {
@@ -352,8 +352,18 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
     }
     const fullDeliveryFeeCents = calculateDistanceFeeCents(distanceKm);
     const split = !!site.splitDeliveryFee;
-    const customerDeliveryFeeCents = split ? Math.round(fullDeliveryFeeCents / 2) : fullDeliveryFeeCents;
-    const restaurantDeliveryFeeCents = split ? (fullDeliveryFeeCents - customerDeliveryFeeCents) : 0;
+    let customerDeliveryFeeCents = split ? Math.round(fullDeliveryFeeCents / 2) : fullDeliveryFeeCents;
+    let restaurantDeliveryFeeCents = split ? (fullDeliveryFeeCents - customerDeliveryFeeCents) : 0;
+
+    // If client sent a quoted delivery fee, trust it when it's within sane bounds (±$5) to avoid UI vs gateway mismatch
+    if (typeof clientDeliveryFeeCents === 'number') {
+      const quoted = Math.max(0, Math.round(Number(clientDeliveryFeeCents)));
+      const delta = Math.abs(quoted - customerDeliveryFeeCents);
+      if (delta <= 500) { // within $5
+        customerDeliveryFeeCents = quoted;
+        restaurantDeliveryFeeCents = split ? (fullDeliveryFeeCents - customerDeliveryFeeCents) : 0;
+      }
+    }
 
     // Recompute discount at per-item level to mirror Stripe rounding
     const discountedItemsSubtotalDel = manifestItems.reduce((sum, it) => {
@@ -415,7 +425,9 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
     const usePerSiteStripeDel = !!site?.stripeSecretKey;
     const piDataDelivery = (!usePerSiteStripeDel && site?.stripeAccountId) ? {
       transfer_data: { destination: site.stripeAccountId },
-      application_fee_amount: fullDeliveryFeeCents,
+      // Collect the platform delivery fee via application fee: the amount we charge to restaurant is
+      // the portion not paid by customer when splitDeliveryFee is enabled; otherwise the full amount.
+      application_fee_amount: split ? (fullDeliveryFeeCents - customerDeliveryFeeCents) : fullDeliveryFeeCents,
       on_behalf_of: site.stripeAccountId,
     } : undefined;
 

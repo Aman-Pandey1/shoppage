@@ -32,7 +32,7 @@ export const VariantModal = ({ open, variants = [], onCancel, onConfirm, product
           </div>
         </div>
       ) : null}
-      <div style={{ fontWeight: 800, marginBottom: 6 }}>Select Varrient</div>
+      <div style={{ fontWeight: 800, marginBottom: 6 }}>Select Variant</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10 }}>
         {variants.map((v) => {
           const active = selectedKey === v.key;
@@ -45,7 +45,11 @@ export const VariantModal = ({ open, variants = [], onCancel, onConfirm, product
               style={{ padding: 12, borderRadius: 12, border: active ? '2px solid var(--primary-600)' : '1px solid var(--border)', background: active ? 'rgba(14,165,233,0.12)' : 'var(--panel)' }}
             >
               <div style={{ fontWeight: 800 }}>{v.label}</div>
-              <div className="muted" style={{ fontSize: 12 }}>{v.priceDelta ? `+ $${Number(v.priceDelta).toFixed(2)}` : 'No extra cost'}</div>
+              <div className="muted" style={{ fontSize: 12 }}>{
+                typeof v.price === 'number'
+                  ? `$${Number(v.price).toFixed(2)}`
+                  : (v.priceDelta ? `+ $${Number(v.priceDelta).toFixed(2)}` : 'No extra cost')
+              }</div>
             </button>
           );
         })}

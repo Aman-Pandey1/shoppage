@@ -360,13 +360,17 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
 
   const manifest = useMemo(() => {
-    return state.items.map((it) => ({
-      name: it.name,
-      quantity: it.quantity,
-      priceCents: Math.round(((Number(it.basePrice) || 0) + (Number(it?.variant?.priceDelta) || 0) + (Number(it?.extraCost) || 0)) * 100),
-      size: (it?.variant?.label || it?.variant?.key || undefined),
-      spiceLevel: it.spiceLevel,
-    }));
+    return state.items.map((it) => {
+      const variantAbs = (typeof it?.variant?.price === 'number') ? Number(it.variant.price) : null;
+      const unit = (variantAbs != null ? variantAbs : ((Number(it.basePrice) || 0) + (Number(it?.variant?.priceDelta) || 0))) + (Number(it?.extraCost) || 0);
+      return {
+        name: it.name,
+        quantity: it.quantity,
+        priceCents: Math.round(unit * 100),
+        size: (it?.variant?.label || it?.variant?.key || undefined),
+        spiceLevel: it.spiceLevel,
+      };
+    });
   }, [state.items]);
 
   const cartTotal = getCartTotal();

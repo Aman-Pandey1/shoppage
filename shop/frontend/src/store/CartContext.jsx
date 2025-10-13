@@ -94,8 +94,11 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
 
   const addItem = useCallback(({ product, quantity = 1, spiceLevel, selectedOptions = [], variant = null }) => {
     const extraCost = calculateExtraCost(selectedOptions);
-    const variantDelta = variant?.priceDelta || 0;
-    const unitPrice = product.price + variantDelta + extraCost;
+    const variantAbsolute = (variant && typeof variant.price === 'number') ? Number(variant.price) : null;
+    const variantDelta = (variantAbsolute == null) ? (variant?.priceDelta || 0) : 0;
+    const basePlusDelta = product.price + variantDelta;
+    const variantBased = (variantAbsolute != null) ? variantAbsolute : basePlusDelta;
+    const unitPrice = variantBased + extraCost;
     const totalPrice = unitPrice * quantity;
     const id = generateItemId(product._id, spiceLevel, selectedOptions, variant);
     const newItem = {
@@ -121,14 +124,15 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
         updated[existingIndex] = {
           ...existing,
           quantity: newQuantity,
-          totalPrice: (existing.basePrice + (existing?.variant?.priceDelta || 0) + existing.extraCost) * newQuantity,
+          totalPrice: ((typeof existing?.variant?.price === 'number' ? Number(existing.variant.price) : (existing.basePrice + (existing?.variant?.priceDelta || 0))) + existing.extraCost) * newQuantity,
         };
         return { ...prev, items: updated };
       }
       return { ...prev, items: [...prev.items, newItem] };
     });
     const optionsSummary = formatOptionsSummary(product, spiceLevel, selectedOptions, variant);
-    setLastAdded({ name: product.name, quantity, price: (product.price + variantDelta + extraCost), imageUrl: product.imageUrl, optionsSummary });
+    const displayUnit = (variantAbsolute != null ? variantAbsolute : (product.price + (variant?.priceDelta || 0))) + extraCost;
+    setLastAdded({ name: product.name, quantity, price: displayUnit, imageUrl: product.imageUrl, optionsSummary });
   }, []);
 
   const removeItem = useCallback((id) => {
@@ -142,7 +146,7 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
           ? {
               ...it,
               quantity,
-              totalPrice: (it.basePrice + (it?.variant?.priceDelta || 0) + it.extraCost) * quantity,
+              totalPrice: ((typeof it?.variant?.price === 'number' ? Number(it.variant.price) : (it.basePrice + (it?.variant?.priceDelta || 0))) + it.extraCost) * quantity,
             }
           : it
       ));
@@ -154,7 +158,8 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
 
   const getCartTotal = useCallback(() => {
     const itemsSubtotalCents = state.items.reduce((sum, it) => {
-      const unitPrice = (Number(it.basePrice) || 0) + (Number(it?.variant?.priceDelta) || 0) + (Number(it.extraCost) || 0);
+      const variantAbs = (typeof it?.variant?.price === 'number') ? Number(it.variant.price) : null;
+      const unitPrice = (variantAbs != null ? variantAbs : ((Number(it.basePrice) || 0) + (Number(it?.variant?.priceDelta) || 0))) + (Number(it.extraCost) || 0);
       const unitCents = Math.round(unitPrice * 100);
       return sum + unitCents * (Number(it.quantity) || 1);
     }, 0);
@@ -163,7 +168,8 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
     if (state.coupon && isEligibleForCoupon) {
       const pct = Math.max(0, Math.min(100, Number(state.coupon.percent) || 0));
       discountedCents = state.items.reduce((sum, it) => {
-        const unitPrice = (Number(it.basePrice) || 0) + (Number(it?.variant?.priceDelta) || 0) + (Number(it.extraCost) || 0);
+        const variantAbs = (typeof it?.variant?.price === 'number') ? Number(it.variant.price) : null;
+        const unitPrice = (variantAbs != null ? variantAbs : ((Number(it.basePrice) || 0) + (Number(it?.variant?.priceDelta) || 0))) + (Number(it.extraCost) || 0);
         const unitCents = Math.round(unitPrice * 100);
         const discountedUnit = Math.round(unitCents * (100 - pct) / 100);
         return sum + discountedUnit * (Number(it.quantity) || 1);
