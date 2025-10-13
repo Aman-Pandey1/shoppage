@@ -1,4 +1,5 @@
 import React from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { fetchJson, getCurrentUser, logout, resolveAssetUrl } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 
@@ -97,7 +98,7 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
                 try { navigate(logoLinkUrl); } catch { window.location.href = logoLinkUrl; }
               }}
             >
-              ←
+              <ArrowLeft size={18} />
             </button>
           ) : null}
           <a
