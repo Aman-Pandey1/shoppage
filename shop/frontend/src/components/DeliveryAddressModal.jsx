@@ -25,6 +25,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   const [cities, setCities] = useState([]);
   const [selectedPickupIndex, setSelectedPickupIndex] = useState(null);
   const [selectedCity, setSelectedCity] = useState('');
+  const [minOrderCents, setMinOrderCents] = useState(5000);
 
   const itemsSubtotalCents = React.useMemo(() => {
     try {
@@ -65,6 +66,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
           setDeliveryFeeCents(baseFee);
           setDeliveryFeeCentsLocal(baseFee);
           setSplitDeliveryFee(!!data.splitDeliveryFee);
+          if (typeof data.minOrderCents === 'number') setMinOrderCents(Math.max(0, Number(data.minOrderCents)));
         }
       } catch {}
     }
@@ -285,6 +287,16 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         )}
       </div>
     )}>
+      {(function(){
+        const below = itemsSubtotalCents < (Number(minOrderCents) || 0);
+        if (!below) return null;
+        const dollars = (Math.max(0, Number(minOrderCents) || 0) / 100).toFixed(2);
+        return (
+          <div style={{ color: 'var(--danger)', marginBottom: 8, fontWeight: 600 }}>
+            Minimum order is ${dollars}.
+          </div>
+        );
+      })()}
       {error ? <div style={{ color: 'var(--danger)', marginBottom: 8 }}>{error}</div> : null}
       <div className="muted" style={{ marginBottom: 8, fontSize: 12 }}>Enter your delivery address. Delivery will be fulfilled by the website's selected provider.</div>
 
