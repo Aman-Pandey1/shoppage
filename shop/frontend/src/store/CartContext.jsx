@@ -94,9 +94,10 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
 
   const addItem = useCallback(({ product, quantity = 1, spiceLevel, selectedOptions = [], variant = null }) => {
     const extraCost = calculateExtraCost(selectedOptions);
-    const variantAbsolute = (variant && typeof variant.price === 'number') ? Number(variant.price) : null;
-    const variantDelta = (variantAbsolute == null) ? (variant?.priceDelta || 0) : 0;
-    const basePlusDelta = product.price + variantDelta;
+    const priceMaybe = variant && variant.price != null ? Number(variant.price) : null;
+    const variantAbsolute = (priceMaybe != null && Number.isFinite(priceMaybe)) ? priceMaybe : null;
+    const variantDelta = (variantAbsolute == null) ? Number(variant?.priceDelta || 0) : 0;
+    const basePlusDelta = Number(product.price || 0) + variantDelta;
     const variantBased = (variantAbsolute != null) ? variantAbsolute : basePlusDelta;
     const unitPrice = variantBased + extraCost;
     const totalPrice = unitPrice * quantity;
@@ -121,17 +122,21 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
         const updated = prev.items.slice();
         const existing = updated[existingIndex];
         const newQuantity = existing.quantity + quantity;
+        const existingAbsMaybe = existing?.variant && existing.variant.price != null ? Number(existing.variant.price) : null;
+        const existingAbs = (existingAbsMaybe != null && Number.isFinite(existingAbsMaybe)) ? existingAbsMaybe : null;
+        const existingDelta = (existingAbs == null) ? Number(existing?.variant?.priceDelta || 0) : 0;
+        const existingUnit = (existingAbs != null ? existingAbs : (Number(existing.basePrice || 0) + existingDelta)) + Number(existing.extraCost || 0);
         updated[existingIndex] = {
           ...existing,
           quantity: newQuantity,
-          totalPrice: ((typeof existing?.variant?.price === 'number' ? Number(existing.variant.price) : (existing.basePrice + (existing?.variant?.priceDelta || 0))) + existing.extraCost) * newQuantity,
+          totalPrice: existingUnit * newQuantity,
         };
         return { ...prev, items: updated };
       }
       return { ...prev, items: [...prev.items, newItem] };
     });
     const optionsSummary = formatOptionsSummary(product, spiceLevel, selectedOptions, variant);
-    const displayUnit = (variantAbsolute != null ? variantAbsolute : (product.price + (variant?.priceDelta || 0))) + extraCost;
+    const displayUnit = (variantAbsolute != null ? variantAbsolute : (Number(product.price || 0) + Number(variant?.priceDelta || 0))) + extraCost;
     setLastAdded({ name: product.name, quantity, price: displayUnit, imageUrl: product.imageUrl, optionsSummary });
   }, []);
 
@@ -141,15 +146,14 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
 
   const updateQuantity = useCallback((id, quantity) => {
     setState((prev) => {
-      const updated = prev.items.map((it) => (
-        it.id === id
-          ? {
-              ...it,
-              quantity,
-              totalPrice: ((typeof it?.variant?.price === 'number' ? Number(it.variant.price) : (it.basePrice + (it?.variant?.priceDelta || 0))) + it.extraCost) * quantity,
-            }
-          : it
-      ));
+      const updated = prev.items.map((it) => {
+        if (it.id !== id) return it;
+        const absMaybe = it?.variant && it.variant.price != null ? Number(it.variant.price) : null;
+        const abs = (absMaybe != null && Number.isFinite(absMaybe)) ? absMaybe : null;
+        const delta = (abs == null) ? Number(it?.variant?.priceDelta || 0) : 0;
+        const unit = (abs != null ? abs : (Number(it.basePrice || 0) + delta)) + Number(it.extraCost || 0);
+        return { ...it, quantity, totalPrice: unit * quantity };
+      });
       return { ...prev, items: updated };
     });
   }, []);
@@ -158,7 +162,8 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
 
   const getCartTotal = useCallback(() => {
     const itemsSubtotalCents = state.items.reduce((sum, it) => {
-      const variantAbs = (typeof it?.variant?.price === 'number') ? Number(it.variant.price) : null;
+      const absMaybe = it?.variant && it.variant.price != null ? Number(it.variant.price) : null;
+      const variantAbs = (absMaybe != null && Number.isFinite(absMaybe)) ? absMaybe : null;
       const unitPrice = (variantAbs != null ? variantAbs : ((Number(it.basePrice) || 0) + (Number(it?.variant?.priceDelta) || 0))) + (Number(it.extraCost) || 0);
       const unitCents = Math.round(unitPrice * 100);
       return sum + unitCents * (Number(it.quantity) || 1);
@@ -168,7 +173,8 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
     if (state.coupon && isEligibleForCoupon) {
       const pct = Math.max(0, Math.min(100, Number(state.coupon.percent) || 0));
       discountedCents = state.items.reduce((sum, it) => {
-        const variantAbs = (typeof it?.variant?.price === 'number') ? Number(it.variant.price) : null;
+      const absMaybe = it?.variant && it.variant.price != null ? Number(it.variant.price) : null;
+      const variantAbs = (absMaybe != null && Number.isFinite(absMaybe)) ? absMaybe : null;
         const unitPrice = (variantAbs != null ? variantAbs : ((Number(it.basePrice) || 0) + (Number(it?.variant?.priceDelta) || 0))) + (Number(it.extraCost) || 0);
         const unitCents = Math.round(unitPrice * 100);
         const discountedUnit = Math.round(unitCents * (100 - pct) / 100);

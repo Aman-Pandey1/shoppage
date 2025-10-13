@@ -7,7 +7,13 @@ import path from 'path';
 import { mkdir, writeFile } from 'fs/promises';
 
 const router = Router({ mergeParams: true });
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    // Allow reasonably large images; configurable via env (default 20MB)
+    fileSize: Math.max(1, Number(process.env.MAX_UPLOAD_MB || process.env.MAX_IMAGE_UPLOAD_MB || 20)) * 1024 * 1024,
+  },
+});
 
 router.get('/', requireAdmin, async (req, res) => {
 	try {

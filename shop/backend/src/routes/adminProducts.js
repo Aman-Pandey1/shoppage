@@ -7,7 +7,12 @@ import multer from 'multer';
 import xlsx from 'xlsx';
 
 const router = Router({ mergeParams: true });
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: Math.max(1, Number(process.env.MAX_UPLOAD_MB || process.env.MAX_EXCEL_UPLOAD_MB || 10)) * 1024 * 1024,
+  },
+});
 
 router.get('/', requireAdmin, async (req, res) => {
 	try {

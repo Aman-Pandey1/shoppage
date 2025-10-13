@@ -66,7 +66,9 @@ app.options(/.*/, cors(corsOptions));
 // Mount webhook with raw body BEFORE JSON parser
 app.use('/webhook/uber', express.raw({ type: '*/*' }), webhookUberRouter);
 app.use('/webhook/stripe', express.raw({ type: 'application/json' }), webhookStripeRouter);
-app.use(express.json());
+// Increase body limits to avoid 413 errors on larger payloads (e.g., images/base64)
+app.use(express.json({ limit: String(process.env.JSON_LIMIT || '25mb') }));
+app.use(express.urlencoded({ extended: true, limit: String(process.env.JSON_LIMIT || '25mb') }));
 app.use(morgan("dev"));
 
 // Static uploads serving (no top-level await; compatible across Node versions)
