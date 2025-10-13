@@ -137,7 +137,15 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
 
   const updateQuantity = useCallback((id, quantity) => {
     setState((prev) => {
-      const updated = prev.items.map((it) => (it.id === id ? { ...it, quantity, totalPrice: (it.basePrice + it.extraCost) * quantity } : it));
+      const updated = prev.items.map((it) => (
+        it.id === id
+          ? {
+              ...it,
+              quantity,
+              totalPrice: (it.basePrice + (it?.variant?.priceDelta || 0) + it.extraCost) * quantity,
+            }
+          : it
+      ));
       return { ...prev, items: updated };
     });
   }, []);
@@ -145,10 +153,23 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
   const clearCart = useCallback(() => setState((prev) => ({ ...prev, items: [] })), []);
 
   const getCartTotal = useCallback(() => {
-    const subtotal = state.items.reduce((sum, it) => sum + it.totalPrice, 0);
-    const isEligibleForCoupon = subtotal >= 50;
-    const discount = (state.coupon && isEligibleForCoupon) ? (subtotal * (state.coupon.percent / 100)) : 0;
-    return Math.max(0, subtotal - discount);
+    const itemsSubtotalCents = state.items.reduce((sum, it) => {
+      const unitPrice = (Number(it.basePrice) || 0) + (Number(it?.variant?.priceDelta) || 0) + (Number(it.extraCost) || 0);
+      const unitCents = Math.round(unitPrice * 100);
+      return sum + unitCents * (Number(it.quantity) || 1);
+    }, 0);
+    const isEligibleForCoupon = (itemsSubtotalCents / 100) >= 50;
+    let discountedCents = itemsSubtotalCents;
+    if (state.coupon && isEligibleForCoupon) {
+      const pct = Math.max(0, Math.min(100, Number(state.coupon.percent) || 0));
+      discountedCents = state.items.reduce((sum, it) => {
+        const unitPrice = (Number(it.basePrice) || 0) + (Number(it?.variant?.priceDelta) || 0) + (Number(it.extraCost) || 0);
+        const unitCents = Math.round(unitPrice * 100);
+        const discountedUnit = Math.round(unitCents * (100 - pct) / 100);
+        return sum + discountedUnit * (Number(it.quantity) || 1);
+      }, 0);
+    }
+    return Math.max(0, discountedCents) / 100;
   }, [state.items, state.coupon]);
 
   const value = useMemo(

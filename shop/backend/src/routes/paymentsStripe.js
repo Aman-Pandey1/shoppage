@@ -180,8 +180,15 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
     }
 
     // Totals after discount (used for our Order record and tax line)
-    const discountCents = appliedCoupon ? Math.round(itemsSubtotal * (Number(appliedCoupon.percent) / 100)) : 0;
-    const itemsTotalAfterDiscount = Math.max(0, itemsSubtotal - discountCents);
+    // Recompute discount at per-item level to mirror Stripe rounding
+    const pctOff = appliedCoupon ? Number(appliedCoupon.percent) || 0 : 0;
+    const discountedItemsSubtotal = items.reduce((sum, it) => {
+      const unit = Number(it.priceCents) || 0;
+      const discountedUnit = pctOff > 0 ? Math.round(unit * (100 - pctOff) / 100) : unit;
+      return sum + discountedUnit * (Number(it.quantity) || 1);
+    }, 0);
+    const itemsTotalAfterDiscount = Math.max(0, discountedItemsSubtotal);
+    const discountCents = Math.max(0, itemsSubtotal - itemsTotalAfterDiscount);
     const taxCents = Math.round(itemsTotalAfterDiscount * 0.05);
     const totalCents = itemsTotalAfterDiscount + taxCents;
 
@@ -222,23 +229,23 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
     const origin = req.get('origin') || process.env.FRONTEND_URL || 'http://localhost:5173';
     const slug = String(req.params.slug);
 
+    // Build line items with item-level discount applied (so discount doesn't affect tax/delivery)
+    const pctOff = appliedCoupon ? Number(appliedCoupon.percent) || 0 : 0;
     const lineItems = [
-      // Product items at full unit price; discount applied via Stripe "discounts" so it shows in Checkout
-      ...items.map((it) => ({
-        price_data: {
-          currency,
-          product_data: { name: it.name },
-          unit_amount: Number(it.priceCents) || 0,
-        },
-        quantity: Number(it.quantity) || 1,
-      })),
-      // Add tax as separate line
+      ...items.map((it) => {
+        const unitCents = Number(it.priceCents) || 0;
+        const discountedUnit = pctOff > 0 ? Math.round(unitCents * (100 - pctOff) / 100) : unitCents;
+        return {
+          price_data: {
+            currency,
+            product_data: { name: it.name },
+            unit_amount: Math.max(0, discountedUnit),
+          },
+          quantity: Number(it.quantity) || 1,
+        };
+      }),
       ...(taxCents > 0 ? [{
-        price_data: {
-          currency,
-          product_data: { name: 'Tax' },
-          unit_amount: taxCents,
-        },
+        price_data: { currency, product_data: { name: 'Tax' }, unit_amount: taxCents },
         quantity: 1,
       }] : []),
     ];
@@ -250,15 +257,6 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
       on_behalf_of: req.site.stripeAccountId,
     } : undefined;
 
-    // If coupon applied, create a one-time Stripe coupon so Checkout shows a Discount line
-    let discountsParam;
-    if (appliedCoupon && typeof appliedCoupon.percent === 'number' && appliedCoupon.percent > 0) {
-      try {
-        const stripeCoupon = await stripe.coupons.create({ percent_off: Math.round(appliedCoupon.percent), duration: 'once' });
-        discountsParam = [{ coupon: stripeCoupon.id }];
-      } catch {}
-    }
-
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       line_items: lineItems,
@@ -266,7 +264,6 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
       cancel_url: `${origin}/s/${encodeURIComponent(slug)}?status=cancelled`,
       customer_email: req.user?.email || undefined,
       payment_intent_data: piDataPickup,
-      discounts: discountsParam,
       metadata: {
         orderId: String(orderId),
         siteId: String(req.siteId),
@@ -350,8 +347,14 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
     const customerDeliveryFeeCents = split ? Math.round(fullDeliveryFeeCents / 2) : fullDeliveryFeeCents;
     const restaurantDeliveryFeeCents = split ? (fullDeliveryFeeCents - customerDeliveryFeeCents) : 0;
 
-    const discountCents = appliedCoupon ? Math.round(itemsSubtotal * (Number(appliedCoupon.percent) / 100)) : 0;
-    const itemsTotalAfterDiscount = Math.max(0, itemsSubtotal - discountCents);
+    // Recompute discount at per-item level to mirror Stripe rounding
+    const discountedItemsSubtotalDel = manifestItems.reduce((sum, it) => {
+      const unit = Number(it.priceCents || it.price) || 0;
+      const discountedUnit = appliedCoupon ? Math.round(unit * (100 - Number(appliedCoupon.percent)) / 100) : unit;
+      return sum + discountedUnit * (Number(it.quantity) || 1);
+    }, 0);
+    const itemsTotalAfterDiscount = Math.max(0, discountedItemsSubtotalDel);
+    const discountCents = Math.max(0, itemsSubtotal - itemsTotalAfterDiscount);
     const taxCents = Math.round(itemsTotalAfterDiscount * 0.05);
     const totalCents = itemsTotalAfterDiscount + taxCents + customerDeliveryFeeCents;
 
@@ -387,21 +390,18 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
     const origin = req.get('origin') || process.env.FRONTEND_URL || 'http://localhost:5173';
     const slug = String(req.params.slug);
 
+    const pctOffDel = appliedCoupon ? Number(appliedCoupon.percent) || 0 : 0;
     const lineItems = [
-      ...manifestItems.map((it) => ({
-        price_data: {
-          currency,
-          product_data: { name: it.name },
-          unit_amount: Number(it.priceCents || it.price) || 0,
-        },
-        quantity: Number(it.quantity) || 1,
-      })),
-      ...(taxCents > 0 ? [{
-        price_data: { currency, product_data: { name: 'Tax' }, unit_amount: taxCents }, quantity: 1,
-      }] : []),
-      ...(customerDeliveryFeeCents > 0 ? [{
-        price_data: { currency, product_data: { name: 'Delivery fee' }, unit_amount: customerDeliveryFeeCents }, quantity: 1,
-      }] : []),
+      ...manifestItems.map((it) => {
+        const unitCents = Number(it.priceCents || it.price) || 0;
+        const discountedUnit = pctOffDel > 0 ? Math.round(unitCents * (100 - pctOffDel) / 100) : unitCents;
+        return {
+          price_data: { currency, product_data: { name: it.name }, unit_amount: Math.max(0, discountedUnit) },
+          quantity: Number(it.quantity) || 1,
+        };
+      }),
+      ...(taxCents > 0 ? [{ price_data: { currency, product_data: { name: 'Tax' }, unit_amount: taxCents }, quantity: 1 }] : []),
+      ...(customerDeliveryFeeCents > 0 ? [{ price_data: { currency, product_data: { name: 'Delivery fee' }, unit_amount: customerDeliveryFeeCents }, quantity: 1 }] : []),
     ];
 
     const usePerSiteStripeDel = !!site?.stripeSecretKey;
@@ -411,15 +411,6 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
       on_behalf_of: site.stripeAccountId,
     } : undefined;
 
-    // If coupon applied, create one-time Stripe coupon so Checkout shows a Discount line
-    let discountsParam;
-    if (appliedCoupon && typeof appliedCoupon.percent === 'number' && appliedCoupon.percent > 0) {
-      try {
-        const stripeCoupon = await stripe.coupons.create({ percent_off: Math.round(appliedCoupon.percent), duration: 'once' });
-        discountsParam = [{ coupon: stripeCoupon.id }];
-      } catch {}
-    }
-
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       line_items: lineItems,
@@ -427,7 +418,6 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
       cancel_url: `${origin}/s/${encodeURIComponent(slug)}?status=cancelled`,
       customer_email: req.user?.email || undefined,
       payment_intent_data: piDataDelivery,
-      discounts: discountsParam,
       metadata: {
         orderId: String(orderId),
         siteId: String(req.siteId),
