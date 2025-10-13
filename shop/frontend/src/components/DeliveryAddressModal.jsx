@@ -195,7 +195,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Delivery details" footer={(
+    <Modal open={open} onClose={onClose} title={mode === 'checkout' ? 'Confirm Delivery Details' : 'Delivery details'} footer={(
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, width: '100%' }}>
         <button onClick={onClose} disabled={loading}>Cancel</button>
         {mode === 'checkout' ? (

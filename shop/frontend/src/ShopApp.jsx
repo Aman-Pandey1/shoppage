@@ -45,7 +45,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   // Additional UI state brought from the alternate implementation
   // Order details state
   const [pickupDate, setPickupDate] = useState(''); // YYYY-MM-DD
-  const [pickupTime, setPickupTime] = useState(''); // e.g., 10:00 AM
+  const [pickupTime, setPickupTime] = useState(''); // e.g., 11:00 AM
   const [hours, setHours] = useState(null);
   const [dateOptions, setDateOptions] = useState([]);
   const [timeOptions, setTimeOptions] = useState([]);
@@ -264,7 +264,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     const key = keyForToday(now);
     const cfg = hours?.[key];
     if (!cfg || cfg.closed) { setIsClosedNow(true); return; }
-    const { hh: oh = 10, mm: om = 0 } = parse24h(cfg.open, { hh: 10, mm: 0 });
+    const { hh: oh = 11, mm: om = 0 } = parse24h(cfg.open, { hh: 11, mm: 0 });
     const { hh: ch = 22, mm: cm = 0 } = parse24h(cfg.close, { hh: 22, mm: 0 });
     const open = new Date(now); open.setHours(oh, om, 0, 0);
     const close = new Date(now); close.setHours(ch, cm, 0, 0);
@@ -300,7 +300,10 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     if (!pickupDate && opts.length) setPickupDate(opts[0].value);
   }, [hours]);
 
-  // Compute time options for selected date from hours (default 10:00-22:00) with 30-minute intervals
+  // Compute time options for selected date from hours (default 11:00-22:00)
+  // - Slots every 15 minutes
+  // - Earliest selectable time is now + 30 minutes (prep buffer)
+  // - Last order 15 minutes before close (e.g., 9:45 PM when closing at 10:00 PM)
   useEffect(() => {
     function parse24h(s, fallback) {
       if (!s || !/^\d{2}:\d{2}$/.test(s)) return fallback;
@@ -321,15 +324,17 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     const now = new Date();
     const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     const isTodaySelected = pickupDate === todayStr;
+    // Prep buffer of 30 minutes
+    const earliest = new Date(now.getTime() + 30 * 60000);
     const [selYr, selMo, selDy] = pickupDate.split('-').map(Number);
     const key = dayKeyFromDateString(pickupDate);
-    const cfg = hours?.[key] || { open: '10:00', close: '22:00', closed: false };
+    const cfg = hours?.[key] || { open: '11:00', close: '22:00', closed: false };
     if (cfg.closed) { setTimeOptions([]); return; }
-    const { hh: openH = 10, mm: openM = 0 } = parse24h(cfg.open, { hh: 10, mm: 0 });
+    const { hh: openH = 11, mm: openM = 0 } = parse24h(cfg.open, { hh: 11, mm: 0 });
     const { hh: closeH = 22, mm: closeM = 0 } = parse24h(cfg.close, { hh: 22, mm: 0 });
-    // Last selectable slot should be 30 minutes before close
+    // Last selectable slot should be 15 minutes before close
     let endH = closeH;
-    let endM = closeM - 30;
+    let endM = closeM - 15;
     if (endM < 0) { endH -= 1; endM += 60; }
     const options = [];
     let curH = openH, curM = openM;
@@ -339,10 +344,10 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       if (isTodaySelected) {
         const candidate = new Date(selYr, (selMo || 1) - 1, selDy || 1);
         candidate.setHours(curH, curM, 0, 0);
-        disabled = candidate < now;
+        disabled = candidate < earliest;
       }
       options.push({ value, label: value, disabled });
-      curM += 30;
+      curM += 15;
       if (curM >= 60) { curM -= 60; curH += 1; }
     }
     setTimeOptions(options);
@@ -452,7 +457,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         {isClosedNow ? (
           <div className="card" style={{ marginBottom: 12, borderLeft: '3px solid var(--danger)', padding: 10 }}>
             <div style={{ fontWeight: 700 }}>Restaurant closed</div>
-            <div className="muted" style={{ fontSize: 12 }}>Online ordering is closed for today. Last order at 9:30 PM.</div>
+            <div className="muted" style={{ fontSize: 12 }}>Online ordering is closed for today. Last order at 9:45 PM.</div>
           </div>
         ) : null}
 
@@ -623,20 +628,20 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                 </select>
               </label>
               <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <span style={{ color: 'var(--primary-600)' }}>Pickup Time</span>
+                <span style={{ color: 'var(--primary-600)' }}>Pickup/Delivery Date & Time</span>
                 {(() => {
                   const times = (timeOptions && timeOptions.length) ? timeOptions : (() => {
                     const out = [];
-                    let h = 10, m = 0; // 10:00 AM to 9:30 PM fallback
+                    let h = 11, m = 0; // 11:00 AM to 9:45 PM fallback
                     let endH = 22, endM = 0; // 22:00 close by default
-                    // last slot 30 minutes before close
-                    endM -= 30; if (endM < 0) { endH -= 1; endM += 60; }
+                    // last slot 15 minutes before close
+                    endM -= 15; if (endM < 0) { endH -= 1; endM += 60; }
                     while (h < endH || (h === endH && m <= endM)) {
                       const mod = h >= 12 ? 'PM' : 'AM';
                       const h12 = h % 12 === 0 ? 12 : h % 12;
                       const label = `${h12}:${String(m).padStart(2,'0')} ${mod}`;
                       out.push({ value: label, label });
-                      m += 30; if (m >= 60) { m -= 60; h += 1; }
+                      m += 15; if (m >= 60) { m -= 60; h += 1; }
                     }
                     return out;
                   })();

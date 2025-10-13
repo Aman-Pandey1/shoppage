@@ -41,7 +41,7 @@ export const OrderDetailsBar = ({
           </button>
         </div>
         <div className="order-bar__group">
-          <div className="order-bar__label">Pickup Time</div>
+          <div className="order-bar__label">Pickup/Delivery Date & Time</div>
           <div className="order-bar__inline" style={{ gap: 8 }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span className="muted" style={{ fontSize: 12 }}>Day</span>
@@ -69,13 +69,15 @@ export const OrderDetailsBar = ({
               >
                 {(timeOptions.length ? timeOptions : (() => {
                   const out = [];
-                  let h = 10, m = 0; // 10:00 AM to 10:00 PM
-                  while (h < 22 || (h === 22 && m === 0)) {
+                  let h = 11, m = 0; // 11:00 AM to 10:00 PM opening
+                  // last order 9:45 PM
+                  let endH = 21, endM = 45;
+                  while (h < endH || (h === endH && m <= endM)) {
                     const mod = h >= 12 ? 'PM' : 'AM';
                     const h12 = h % 12 === 0 ? 12 : h % 12;
                     const label = `${h12}:${String(m).padStart(2,'0')} ${mod}`;
                     out.push({ value: label, label });
-                    m += 45; if (m >= 60) { m -= 60; h += 1; }
+                    m += 15; if (m >= 60) { m -= 60; h += 1; }
                   }
                   return out;
                 })()).map((t) => (
