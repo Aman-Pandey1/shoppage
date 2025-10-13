@@ -87,11 +87,53 @@ export function haversineDistanceKm(a, b) {
 }
 
 export async function distanceBetweenAddressesKm(pickupAddress, dropoffAddress) {
-  const [p, d] = await Promise.all([
+  const [pickupPoint, dropoffPoint] = await Promise.all([
     geocodeAddress(pickupAddress),
     geocodeAddress(dropoffAddress),
   ]);
-  return haversineDistanceKm(p, d);
+
+  const isValidPoint = (pt) => !!pt && typeof pt.lat === 'number' && typeof pt.lon === 'number' && isFinite(pt.lat) && isFinite(pt.lon);
+  if (!isValidPoint(pickupPoint) || !isValidPoint(dropoffPoint)) return null;
+
+  async function roadDistanceKmViaOsrm(a, b) {
+    try {
+      const userAgent = process.env.NOMINATIM_USER_AGENT || process.env.GEOCODE_USER_AGENT || 'BlueboxxShop/1.0 (+https://blueboxx.co/contact)';
+      const url = `https://router.project-osrm.org/route/v1/driving/${a.lon},${a.lat};${b.lon},${b.lat}?overview=false&alternatives=false&steps=false`;
+      const res = await fetch(url, { headers: { 'User-Agent': userAgent } });
+      if (!res.ok) return null;
+      const data = await res.json();
+      const meters = data?.routes?.[0]?.distance;
+      return (typeof meters === 'number' && isFinite(meters)) ? (meters / 1000) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function roadDistanceKmViaGoogle(a, b) {
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+    if (!apiKey) return null;
+    try {
+      const origins = `${a.lat},${a.lon}`;
+      const destinations = `${b.lat},${b.lon}`;
+      const url = `https://maps.googleapis.com/maps/api/distancematrix/json?units=metric&mode=driving&origins=${encodeURIComponent(origins)}&destinations=${encodeURIComponent(destinations)}&key=${encodeURIComponent(apiKey)}`;
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      const data = await res.json();
+      const meters = data?.rows?.[0]?.elements?.[0]?.distance?.value;
+      return (typeof meters === 'number' && isFinite(meters)) ? (meters / 1000) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  // Prefer by-road driving distance; fall back to straight-line if needed
+  const byRoadOsrm = await roadDistanceKmViaOsrm(pickupPoint, dropoffPoint);
+  if (typeof byRoadOsrm === 'number') return byRoadOsrm;
+
+  const byRoadGoogle = await roadDistanceKmViaGoogle(pickupPoint, dropoffPoint);
+  if (typeof byRoadGoogle === 'number') return byRoadGoogle;
+
+  return haversineDistanceKm(pickupPoint, dropoffPoint);
 }
 
 export function calculateDistanceFeeCents(distanceKm) {
