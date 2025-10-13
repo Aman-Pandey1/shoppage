@@ -26,6 +26,7 @@ function buildNotifyPayload(order, siteName) {
       name: m.name,
       quantity: m.quantity,
       priceCents: m.priceCents,
+      size: m.size,
       spiceLevel: m.spiceLevel,
     })),
     totalCents: order?.totalCents,
