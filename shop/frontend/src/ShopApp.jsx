@@ -114,13 +114,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       addItem({ product, quantity: Math.max(1, Math.min(99, Number(quantity) || 1)) });
       setPendingProduct(null);
       setPendingQuantity(1);
-      // If pickup is selected, open order details; if delivery, go straight to delivery details (then payment)
-      if (state.fulfillmentType === 'pickup') {
-        setOrderDetailsOpen(true);
-      } else if (state.fulfillmentType === 'delivery') {
-        if (!getAuthToken()) { setLoginOpen(true); return; }
-        setDeliveryModalOpen(true);
-      }
+      // Do not open payment/details modals on add-to-cart; user will open from cart
     }
   }
 
@@ -135,9 +129,6 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       setExtrasOpen(true);
     } else if (pendingProduct) {
       addItem({ product: pendingProduct, variant: variant || undefined, spiceLevel: spice, quantity: confirmedQty });
-      if (state.fulfillmentType === 'pickup') {
-        setOrderDetailsOpen(true);
-      }
       setPendingProduct(null);
       setPendingSpice(undefined);
       setPendingVariant(null);
@@ -149,9 +140,6 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     setExtrasOpen(false);
     if (pendingProduct) {
       addItem({ product: pendingProduct, variant: pendingVariant || undefined, spiceLevel: pendingSpice, selectedOptions: selected, quantity: pendingQuantity });
-      if (state.fulfillmentType === 'pickup') {
-        setOrderDetailsOpen(true);
-      }
     }
     setPendingProduct(null);
     setPendingSpice(undefined);
