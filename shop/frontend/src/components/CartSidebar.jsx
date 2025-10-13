@@ -61,19 +61,52 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
     }, 0);
   }, [state.items]);
   const itemsSubtotal = React.useMemo(() => itemsSubtotalCents / 100, [itemsSubtotalCents]);
-  // Compute tax on pre-discount items subtotal to mirror Checkout display
-  const taxBeforeDiscountCents = Math.round(itemsSubtotalCents * 0.05);
+
+  // Coupon + delivery context
   const deliveryFeeCents = state.fulfillmentType === 'delivery' ? (Number(state.deliveryFeeCents || 0)) : 0;
-  const totalBeforeDiscountCents = itemsSubtotalCents + taxBeforeDiscountCents + deliveryFeeCents;
-  const discountCents = React.useMemo(() => {
-    if (!state.coupon || itemsSubtotal < 50) return 0;
-    const pct = Math.max(0, Math.min(100, Number(state.coupon.percent) || 0));
-    return Math.round(totalBeforeDiscountCents * pct / 100);
-  }, [state.coupon, itemsSubtotal, totalBeforeDiscountCents]);
+  const hasEligibleCoupon = !!state.coupon && itemsSubtotal >= 50;
+  const couponPct = hasEligibleCoupon ? Math.max(0, Math.min(100, Number(state.coupon.percent) || 0)) : 0;
+  const discountFactor = couponPct > 0 ? (1 - couponPct / 100) : 1;
+
+  // Items subtotal AFTER discount (per-item rounding) — matches backend/Stripe
+  const itemsAfterDiscountCents = React.useMemo(() => {
+    if (!hasEligibleCoupon || couponPct <= 0) return itemsSubtotalCents;
+    return state.items.reduce((sum, it) => {
+      const variantAbs = (typeof it?.variant?.price === 'number') ? Number(it.variant.price) : null;
+      const unitPrice = (variantAbs != null ? variantAbs : ((Number(it.basePrice) || 0) + (Number(it?.variant?.priceDelta) || 0))) + (Number(it.extraCost) || 0);
+      const unitCents = Math.round(unitPrice * 100);
+      const discountedUnit = Math.round(unitCents * (100 - couponPct) / 100);
+      return sum + discountedUnit * (Number(it.quantity) || 1);
+    }, 0);
+  }, [state.items, itemsSubtotalCents, hasEligibleCoupon, couponPct]);
+
+  // Actual tax to be charged is on discounted items
+  const taxAfterDiscountCents = React.useMemo(() => Math.round(itemsAfterDiscountCents * 0.05), [itemsAfterDiscountCents]);
+
+  // For display, gross-up tax and delivery so discount line mirrors Stripe's UI
+  const taxDisplayCents = React.useMemo(() => (
+    couponPct > 0 ? Math.round(taxAfterDiscountCents / discountFactor) : taxAfterDiscountCents
+  ), [couponPct, discountFactor, taxAfterDiscountCents]);
+  const deliveryDisplayCents = React.useMemo(() => (
+    deliveryFeeCents > 0 && couponPct > 0 ? Math.round(deliveryFeeCents / discountFactor) : deliveryFeeCents
+  ), [deliveryFeeCents, couponPct, discountFactor]);
+
+  // Final payable total
+  const grandTotalCents = React.useMemo(() => (
+    Math.max(0, itemsAfterDiscountCents + taxAfterDiscountCents + deliveryFeeCents)
+  ), [itemsAfterDiscountCents, taxAfterDiscountCents, deliveryFeeCents]);
+
+  // Displayed subtotal before discount and discount amount
+  const displayedSubtotalCents = React.useMemo(() => (
+    itemsSubtotalCents + taxDisplayCents + deliveryDisplayCents
+  ), [itemsSubtotalCents, taxDisplayCents, deliveryDisplayCents]);
+  const discountCents = React.useMemo(() => (
+    hasEligibleCoupon ? Math.max(0, displayedSubtotalCents - grandTotalCents) : 0
+  ), [hasEligibleCoupon, displayedSubtotalCents, grandTotalCents]);
+
   const discount = React.useMemo(() => discountCents / 100, [discountCents]);
-  const tax = React.useMemo(() => taxBeforeDiscountCents / 100, [taxBeforeDiscountCents]);
-  const deliveryFee = React.useMemo(() => deliveryFeeCents / 100, [deliveryFeeCents]);
-  const grandTotalCents = Math.max(0, totalBeforeDiscountCents - discountCents);
+  const tax = React.useMemo(() => taxDisplayCents / 100, [taxDisplayCents]);
+  const deliveryFee = React.useMemo(() => deliveryDisplayCents / 100, [deliveryDisplayCents]);
   const grandTotal = React.useMemo(() => grandTotalCents / 100, [grandTotalCents]);
 
   return (
