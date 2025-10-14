@@ -55,7 +55,48 @@ router.patch('/:siteId', requireAdmin, async (req, res) => {
 			try { saveMockData(req.app.locals.mockData); } catch {}
 			return res.json(updated);
 		}
-    const site = await Site.findByIdAndUpdate(siteId, { name, slug, domains, isActive, uberCustomerId, uberClientId, uberClientSecret, uberEnv, uberTokenScopes, uberWebhookSecret, deliveryProvider: deliveryProvider ? (deliveryProvider === 'doordash' ? 'doordash' : 'uber') : undefined, doordashStoreId, doordashDeveloperId, doordashKeyId, doordashSigningSecret, pickup, brandColor, locations, cities, hours, deliveryFeeCents: deliveryFeeCents !== undefined ? Number(deliveryFeeCents) || 0 : undefined, splitDeliveryFee: splitDeliveryFee !== undefined ? !!splitDeliveryFee : undefined, maxDeliveryDistanceKm: maxDeliveryDistanceKm !== undefined ? Number(maxDeliveryDistanceKm) : undefined, logoUrl, logoLinkUrl, tagline, stripeAccountId, stripePublishableKey, stripeSecretKey, stripeWebhookSecret, currency: currency !== undefined ? String(currency).toLowerCase() : undefined, minOrderCents: minOrderCents !== undefined ? Number(minOrderCents) : undefined, couponMinSubtotalCents: couponMinSubtotalCents !== undefined ? Number(couponMinSubtotalCents) : undefined, orderNotifyUrl: orderNotifyUrl !== undefined ? orderNotifyUrl : undefined }, { new: true });
+    // Build updates object only with provided fields so partial PATCH doesn't unset others
+    const updates = {
+      ...(name !== undefined ? { name } : {}),
+      ...(slug !== undefined ? { slug } : {}),
+      ...(domains !== undefined ? { domains } : {}),
+      ...(isActive !== undefined ? { isActive } : {}),
+      ...(uberCustomerId !== undefined ? { uberCustomerId } : {}),
+      ...(uberClientId !== undefined ? { uberClientId } : {}),
+      ...(uberClientSecret !== undefined ? { uberClientSecret } : {}),
+      ...(uberEnv !== undefined ? { uberEnv } : {}),
+      ...(uberTokenScopes !== undefined ? { uberTokenScopes } : {}),
+      ...(uberWebhookSecret !== undefined ? { uberWebhookSecret } : {}),
+      ...(deliveryProvider !== undefined ? { deliveryProvider: deliveryProvider === 'doordash' ? 'doordash' : 'uber' } : {}),
+      ...(doordashStoreId !== undefined ? { doordashStoreId } : {}),
+      ...(doordashDeveloperId !== undefined ? { doordashDeveloperId } : {}),
+      ...(doordashKeyId !== undefined ? { doordashKeyId } : {}),
+      ...(doordashSigningSecret !== undefined ? { doordashSigningSecret } : {}),
+      ...(pickup !== undefined ? { pickup } : {}),
+      ...(brandColor !== undefined ? { brandColor } : {}),
+      ...(locations !== undefined ? { locations } : {}),
+      ...(cities !== undefined ? { cities } : {}),
+      ...(hours !== undefined ? { hours } : {}),
+      ...(deliveryFeeCents !== undefined ? { deliveryFeeCents: Number(deliveryFeeCents) || 0 } : {}),
+      ...(splitDeliveryFee !== undefined ? { splitDeliveryFee: !!splitDeliveryFee } : {}),
+      ...(maxDeliveryDistanceKm !== undefined ? { maxDeliveryDistanceKm: Number(maxDeliveryDistanceKm) } : {}),
+      ...(logoUrl !== undefined ? { logoUrl } : {}),
+      ...(logoLinkUrl !== undefined ? { logoLinkUrl } : {}),
+      ...(tagline !== undefined ? { tagline } : {}),
+      ...(stripeAccountId !== undefined ? { stripeAccountId } : {}),
+      ...(stripePublishableKey !== undefined ? { stripePublishableKey } : {}),
+      ...(stripeSecretKey !== undefined ? { stripeSecretKey } : {}),
+      ...(stripeWebhookSecret !== undefined ? { stripeWebhookSecret } : {}),
+      ...(currency !== undefined ? { currency: String(currency).toLowerCase() } : {}),
+      ...(minOrderCents !== undefined ? { minOrderCents: Number(minOrderCents) } : {}),
+      ...(couponMinSubtotalCents !== undefined ? { couponMinSubtotalCents: Number(couponMinSubtotalCents) } : {}),
+      ...(orderNotifyUrl !== undefined ? { orderNotifyUrl } : {}),
+    };
+    const site = await Site.findByIdAndUpdate(
+      siteId,
+      { $set: updates },
+      { new: true, runValidators: true, overwrite: false }
+    );
 		if (!site) return res.status(404).json({ error: 'Not found' });
 		res.json(site);
 	} catch (err) {

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireAdmin } from '../middleware/auth.js';
 import Coupon from '../models/Coupon.js';
+import { saveMockData } from '../utils/mockStore.js';
 
 const router = Router({ mergeParams: true });
 
@@ -32,6 +33,7 @@ router.post('/', requireAdmin, async (req, res) => {
       if (list.find((c) => c.site === siteId && c.code === normalized)) return res.status(400).json({ error: 'Coupon exists' });
       const created = { _id: `cp-${Date.now()}`, site: siteId, code: normalized, percent: Math.max(0, Math.min(100, percent)) };
       list.unshift(created);
+      try { saveMockData(req.app.locals.mockData); } catch {}
       return res.status(201).json(created);
     }
     const created = await Coupon.create({ site: siteId, code: normalized, percent: Math.max(0, Math.min(100, percent)) });
@@ -49,6 +51,7 @@ router.delete('/:couponId', requireAdmin, async (req, res) => {
       const list = req.app.locals.mockData.coupons || [];
       const before = list.length;
       req.app.locals.mockData.coupons = list.filter((c) => !(String(c._id) === String(couponId) && String(c.site) === String(siteId)));
+      try { saveMockData(req.app.locals.mockData); } catch {}
       return res.json({ deleted: before - req.app.locals.mockData.coupons.length });
     }
     const resDel = await Coupon.deleteOne({ _id: couponId, site: siteId });
