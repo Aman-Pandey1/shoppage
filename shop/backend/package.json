@@ -7,7 +7,8 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "email:test": "node src/scripts/testEmail.js",
-    "seed:mock": "node src/scripts/seedFromMock.js"
+    "seed:mock": "node src/scripts/seedFromMock.js",
+    "db:migrate": "node src/scripts/migrateDb.js"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +21,7 @@
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.20.0",
     "mongoose": "^8.18.0",
     "morgan": "^1.10.1",
     "multer": "^1.4.5-lts.1",
