@@ -153,7 +153,9 @@ router.get('/:slug/products', async (req, res) => {
 			if (isVeg.toLowerCase() === 'true') filter.isVeg = true;
 			if (isVeg.toLowerCase() === 'false') filter.isVeg = false;
 		}
-		const products = await Product.find(filter).sort({ name: 1 });
+    const products = await Product.find(filter)
+      .select('name description imageUrl price categoryId isVeg spiceLevels variants extraOptionGroups')
+      .sort({ name: 1 });
 		res.json(products);
 	} catch (err) {
 		res.status(400).json({ error: err.message });

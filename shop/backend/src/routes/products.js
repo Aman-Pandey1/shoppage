@@ -12,7 +12,9 @@ router.get('/', async (req, res) => {
 		return res.json(list);
 	}
 	const filter = categoryId ? { categoryId } : {};
-	const products = await Product.find(filter).sort({ name: 1 });
+  const products = await Product.find(filter)
+    .select('name description imageUrl price categoryId isVeg spiceLevels variants extraOptionGroups')
+    .sort({ name: 1 });
 	res.json(products);
 });
 
@@ -42,7 +44,13 @@ router.put('/:id', requireAuth, async (req, res) => {
 			mock.products[idx] = updated;
 			return res.json(updated);
 		}
-		const product = await Product.findByIdAndUpdate(id, req.body, { new: true });
+    const update = { ...req.body };
+    if ('site' in update) delete update.site;
+    const product = await Product.findByIdAndUpdate(
+      id,
+      { $set: update },
+      { new: true, runValidators: true, overwrite: false }
+    );
 		if (!product) return res.status(404).json({ error: 'Not found' });
 		res.json(product);
 	} catch (err) {
