@@ -65,10 +65,27 @@ router.post('/', requireAdmin, async (req, res) => {
 			try { saveMockData(req.app.locals.mockData); } catch {}
 			return res.status(201).json(created);
 		}
-		const payload = { ...req.body, site: siteId };
+    const payload = { ...req.body, site: siteId };
 		const cat = await Category.findOne({ _id: payload.categoryId, site: siteId });
 		if (!cat) return res.status(400).json({ error: 'Invalid category for site' });
-		const created = await Product.create(payload);
+    // Ensure only whitelisted fields are persisted and others are ignored silently
+    const allowed = {
+      site: siteId,
+      name: payload.name,
+      description: payload.description || '',
+      imageUrl: payload.imageUrl || '',
+      price: Number(payload.price) || 0,
+      categoryId: payload.categoryId,
+      isVeg: typeof payload.isVeg === 'boolean' ? payload.isVeg : true,
+      spiceLevels: Array.isArray(payload.spiceLevels) ? payload.spiceLevels : [],
+      variants: Array.isArray(payload.variants) ? payload.variants.map((v) => ({
+        key: String(v.key || v.label || 'default'),
+        label: String(v.label || v.key || 'Default'),
+        price: Number(v.price) || 0,
+      })) : [],
+      extraOptionGroups: Array.isArray(payload.extraOptionGroups) ? payload.extraOptionGroups : [],
+    };
+    const created = await Product.create(allowed);
 		res.status(201).json(created);
 	} catch (err) {
 		res.status(400).json({ error: err.message });
@@ -92,12 +109,28 @@ router.put('/:id', requireAdmin, async (req, res) => {
 			try { saveMockData(req.app.locals.mockData); } catch {}
 			return res.json(product);
 		}
-		const update = { ...req.body };
+    const update = { ...req.body };
+    // Never allow overwriting the tenant binding; ensure we don't unset or change it
+    if ('site' in update) delete update.site;
 		if (update.categoryId) {
 			const cat = await Category.findOne({ _id: update.categoryId, site: siteId });
 			if (!cat) return res.status(400).json({ error: 'Invalid category for site' });
 		}
-		const product = await Product.findOneAndUpdate({ _id: id, site: siteId }, update, { new: true });
+    const product = await Product.findOneAndUpdate(
+      { _id: id, site: siteId },
+      { $set: {
+        ...(update.name !== undefined ? { name: update.name } : {}),
+        ...(update.description !== undefined ? { description: update.description } : {}),
+        ...(update.imageUrl !== undefined ? { imageUrl: update.imageUrl } : {}),
+        ...(update.price !== undefined ? { price: update.price } : {}),
+        ...(update.categoryId !== undefined ? { categoryId: update.categoryId } : {}),
+        ...(update.isVeg !== undefined ? { isVeg: update.isVeg } : {}),
+        ...(update.spiceLevels !== undefined ? { spiceLevels: update.spiceLevels } : {}),
+        ...(update.variants !== undefined ? { variants: Array.isArray(update.variants) ? update.variants : [] } : {}),
+        ...(update.extraOptionGroups !== undefined ? { extraOptionGroups: Array.isArray(update.extraOptionGroups) ? update.extraOptionGroups : [] } : {}),
+      } },
+      { new: true, runValidators: true, overwrite: false }
+    );
 		if (!product) return res.status(404).json({ error: 'Not found' });
 		res.json(product);
 	} catch (err) {
