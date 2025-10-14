@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireAdmin } from '../middleware/auth.js';
 import Category from '../models/Category.js';
+import Product from '../models/Product.js';
 import { saveMockData } from '../utils/mockStore.js';
 import multer from 'multer';
 import path from 'path';
@@ -145,6 +146,78 @@ router.post('/:id/image', requireAdmin, upload.any(), async (req, res) => {
     res.json({ ok: true, imageUrl: storedUrl, category: updated });
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+});
+
+// Merge categories: move all products from `from` to `to` within the same site
+// Body supports either IDs or names: { fromId, toId } or { fromName, toName }
+// Optional: { keepFrom: boolean } to retain the source category
+router.post('/merge', requireAdmin, async (req, res) => {
+  try {
+    const { siteId } = req.params;
+    const { fromId, toId, fromName, toName, keepFrom } = req.body || {};
+    const mock = req.app.locals.mockData;
+
+    if (mock) {
+      const categories = (req.app.locals.mockData.categories || []).filter((c) => c.site === siteId);
+      const findBy = (id, name) => {
+        if (id) return categories.find((c) => c._id === id);
+        if (name) {
+          let c = categories.find((x) => String(x.name) === String(name));
+          if (!c) c = categories.find((x) => String(x.name).toLowerCase() === String(name).toLowerCase());
+          if (!c) {
+            const simplified = String(name).replace(/\s*\(.*?\)\s*/g, '').trim().toLowerCase();
+            c = categories.find((x) => String(x.name).toLowerCase().startsWith(simplified));
+          }
+          return c;
+        }
+        return null;
+      };
+      const fromCat = findBy(fromId, fromName);
+      const toCat = findBy(toId, toName);
+      if (!fromCat || !toCat) return res.status(404).json({ error: 'Category not found' });
+      let moved = 0;
+      for (let i = 0; i < req.app.locals.mockData.products.length; i++) {
+        const p = req.app.locals.mockData.products[i];
+        if (p.site === siteId && p.categoryId === fromCat._id) {
+          req.app.locals.mockData.products[i] = { ...p, categoryId: toCat._id };
+          moved += 1;
+        }
+      }
+      if (!keepFrom) {
+        req.app.locals.mockData.categories = req.app.locals.mockData.categories.filter((c) => !(c.site === siteId && c._id === fromCat._id));
+      }
+      try { saveMockData(req.app.locals.mockData); } catch {}
+      return res.json({ ok: true, movedProducts: moved, fromDeleted: !keepFrom });
+    }
+
+    const findCategory = async (id, name) => {
+      if (id) return await Category.findOne({ _id: id, site: siteId });
+      if (name) {
+        let c = await Category.findOne({ site: siteId, name: name });
+        if (!c) c = await Category.findOne({ site: siteId, name: new RegExp(`^${name}$`, 'i') });
+        if (!c) {
+          const simplified = String(name).replace(/\s*\(.*?\)\s*/g, '').trim();
+          c = await Category.findOne({ site: siteId, name: new RegExp(`^${simplified}`, 'i') });
+        }
+        return c;
+      }
+      return null;
+    };
+
+    const fromCat = await findCategory(fromId, fromName);
+    const toCat = await findCategory(toId, toName);
+    if (!fromCat || !toCat) return res.status(404).json({ error: 'Category not found' });
+
+    const moved = await Product.updateMany({ site: siteId, categoryId: fromCat._id }, { $set: { categoryId: toCat._id } });
+    let deleted = false;
+    if (!keepFrom) {
+      const del = await Category.findOneAndDelete({ _id: fromCat._id, site: siteId });
+      deleted = !!del;
+    }
+    return res.json({ ok: true, movedProducts: moved.modifiedCount || 0, fromDeleted: deleted });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
   }
 });
 

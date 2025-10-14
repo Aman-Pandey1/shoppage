@@ -14,7 +14,7 @@ import { calculateDistanceFeeCents, distanceBetweenAddressesKm } from '../servic
 const router = Router();
 
 // Helper: Notify external API after order events (default to Blueboxx backend)
-const ORDER_NOTIFY_URL = process.env.ORDER_NOTIFY_URL || 'https://blueboxx-backend.onrender.com/api/order/notify';
+const ORDER_NOTIFY_URL_FALLBACK = process.env.ORDER_NOTIFY_URL || 'https://blueboxx-backend.onrender.com/api/order/notify';
 function buildNotifyPayload(order, siteName) {
   return {
     _id: String(order?._id || ''),
@@ -44,10 +44,11 @@ function buildNotifyPayload(order, siteName) {
     externalId: order?.externalId,
   };
 }
-async function sendOrderNotify(order, siteName) {
+async function sendOrderNotify(order, siteName, siteNotifyUrl) {
   try {
     const payload = buildNotifyPayload(order, siteName);
-    await fetch(ORDER_NOTIFY_URL, {
+    const url = siteNotifyUrl || ORDER_NOTIFY_URL_FALLBACK;
+    await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -118,7 +119,7 @@ router.get('/confirm/:sessionId', async (req, res) => {
       try {
         const site = await Site.findById(siteId);
         await sendOrderEmail({ to: updatedOrder?.userEmail, siteName: site?.name || '', orderId: updatedOrder?._id, items: updatedOrder?.items, totalCents: updatedOrder?.totalCents, deliveryFeeCents: updatedOrder?.deliveryFeeCents, fulfillmentType: updatedOrder?.fulfillmentType, trackingUrl: updatedOrder?.uberTrackingUrl });
-        await sendOrderNotify(updatedOrder, site?.name || '');
+        await sendOrderNotify(updatedOrder, site?.name || '', site?.orderNotifyUrl);
       } catch {}
     }
 
@@ -138,8 +139,8 @@ function getStripeClient(site) {
   return new Stripe(secret);
 }
 
-function getCurrency() {
-  const cur = (process.env.STRIPE_CURRENCY || 'usd').toLowerCase();
+function getCurrency(site) {
+  const cur = (site?.currency || process.env.STRIPE_CURRENCY || 'usd').toLowerCase();
   return cur;
 }
 
@@ -147,7 +148,7 @@ function getCurrency() {
 router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
   try {
     const stripe = getStripeClient(req.site);
-    const currency = getCurrency();
+    const currency = getCurrency(req.site);
     const { items = [], pickup, notes, coupon } = req.body || {};
 
     if (!Array.isArray(items) || items.length === 0) {
@@ -156,7 +157,9 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
 
     // Compute items subtotal in cents
     const itemsSubtotal = items.reduce((sum, it) => sum + (Number(it.priceCents) || 0) * (Number(it.quantity) || 1), 0);
-    const COUPON_MIN_SUBTOTAL_CENTS = Math.max(0, Number(process.env.COUPON_MIN_SUBTOTAL_CENTS) || 5000);
+    const COUPON_MIN_SUBTOTAL_CENTS = (typeof req.site?.couponMinSubtotalCents === 'number')
+      ? Math.max(0, Number(req.site.couponMinSubtotalCents) || 0)
+      : Math.max(0, Number(process.env.COUPON_MIN_SUBTOTAL_CENTS) || 5000);
     const subtotalBeforeDiscount = itemsSubtotal;
 
     // Validate coupon (do not change unit prices here; we'll use Stripe discounts so it shows explicitly)
@@ -175,7 +178,9 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
     }
 
     const isMockEnv = !!req.app?.locals?.mockData;
-    const minOrderCents = isMockEnv ? 0 : Math.max(0, Number(process.env.MIN_ORDER_CENTS) || 5000);
+    const minOrderCents = isMockEnv ? 0 : ((typeof req.site?.minOrderCents === 'number')
+      ? Math.max(0, Number(req.site.minOrderCents) || 0)
+      : Math.max(0, Number(process.env.MIN_ORDER_CENTS) || 5000));
     if (subtotalBeforeDiscount < minOrderCents) {
       return res.status(400).json({ error: `Minimum order is $${(minOrderCents/100).toFixed(2)}` });
     }
@@ -300,7 +305,7 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
 router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
   try {
     const stripe = getStripeClient(req.site);
-    const currency = getCurrency();
+    const currency = getCurrency(req.site);
     const { dropoff, manifestItems = [], pickupLocationIndex, notes, coupon, deliveryFeeCents: clientDeliveryFeeCents } = req.body || {};
     const mock = req.app.locals.mockData;
 
@@ -325,7 +330,9 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
 
     // Items subtotal and coupon validation (we'll apply discount in Stripe Checkout via discounts)
     const itemsSubtotal = manifestItems.reduce((sum, it) => sum + (Number(it.priceCents) || 0) * (Number(it.quantity) || 1), 0);
-    const COUPON_MIN_SUBTOTAL_CENTS = Math.max(0, Number(process.env.COUPON_MIN_SUBTOTAL_CENTS) || 5000);
+    const COUPON_MIN_SUBTOTAL_CENTS = (typeof req.site?.couponMinSubtotalCents === 'number')
+      ? Math.max(0, Number(req.site.couponMinSubtotalCents) || 0)
+      : Math.max(0, Number(process.env.COUPON_MIN_SUBTOTAL_CENTS) || 5000);
     const subtotalBeforeDiscount = itemsSubtotal;
     let appliedCoupon = null;
     if (coupon && coupon.code && typeof coupon.percent === 'number' && subtotalBeforeDiscount >= COUPON_MIN_SUBTOTAL_CENTS) {
@@ -341,7 +348,9 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
     }
 
     const isMockEnv = !!req.app?.locals?.mockData;
-    const minOrderCents = isMockEnv ? 0 : Math.max(0, Number(process.env.MIN_ORDER_CENTS) || 5000);
+    const minOrderCents = isMockEnv ? 0 : ((typeof req.site?.minOrderCents === 'number')
+      ? Math.max(0, Number(req.site.minOrderCents) || 0)
+      : Math.max(0, Number(process.env.MIN_ORDER_CENTS) || 5000));
     if (subtotalBeforeDiscount < minOrderCents) return res.status(400).json({ error: `Minimum total amount should be $${(minOrderCents/100).toFixed(2)} required for delivery` });
 
     // Compute delivery fee based on distance and enforce max km if configured
