@@ -47,6 +47,10 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
   });
   const [saving, setSaving] = React.useState(false);
   const [savedAt, setSavedAt] = React.useState(null);
+  const [currency, setCurrency] = React.useState(site?.currency || 'usd');
+  const [minOrderCents, setMinOrderCents] = React.useState(site?.minOrderCents ?? '');
+  const [couponMinSubtotalCents, setCouponMinSubtotalCents] = React.useState(site?.couponMinSubtotalCents ?? '');
+  const [orderNotifyUrl, setOrderNotifyUrl] = React.useState(site?.orderNotifyUrl || '');
   const [testingUber, setTestingUber] = React.useState(false);
   const [uberStatus, setUberStatus] = React.useState(null);
   const [testingDoorDash, setTestingDoorDash] = React.useState(false);
@@ -102,6 +106,10 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
     setLogoLinkUrl(site?.logoLinkUrl || '');
     setTagline(site?.tagline || '');
     setLogoFile(null);
+    setCurrency(site?.currency || 'usd');
+    setMinOrderCents(site?.minOrderCents ?? '');
+    setCouponMinSubtotalCents(site?.couponMinSubtotalCents ?? '');
+    setOrderNotifyUrl(site?.orderNotifyUrl || '');
   }, [site?._id]);
 
   if (!site) return <div className="muted">Select a site to configure.</div>;
@@ -182,6 +190,17 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
 
       <div style={{ gridColumn: '1 / -1', fontWeight: 800, marginTop: 8 }}>Payments</div>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span>Currency</span>
+        <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
+          <option value="usd">USD</option>
+          <option value="cad">CAD</option>
+          <option value="eur">EUR</option>
+          <option value="gbp">GBP</option>
+          <option value="inr">INR</option>
+          <option value="aud">AUD</option>
+        </select>
+      </label>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span>Stripe Account ID (acct_...)</span>
         <input value={stripeAccountId} onChange={(e) => setStripeAccountId(e.target.value)} placeholder="acct_123..." />
         <span className="muted" style={{ fontSize: 12 }}>Each website should have its own connected Stripe account.</span>
@@ -211,6 +230,14 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
       </div>
 
       <div style={{ gridColumn: '1 / -1', fontWeight: 800, marginTop: 8 }}>Delivery settings</div>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span>Minimum order (cents)</span>
+        <input type="number" min={0} value={minOrderCents} onChange={(e) => setMinOrderCents(e.target.value)} placeholder="e.g., 5000 for $50.00" />
+      </label>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span>Coupon minimum subtotal (cents)</span>
+        <input type="number" min={0} value={couponMinSubtotalCents} onChange={(e) => setCouponMinSubtotalCents(e.target.value)} placeholder="e.g., 5000" />
+      </label>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span>Provider</span>
         <select value={deliveryProvider} onChange={(e) => setDeliveryProvider(e.target.value)}>
@@ -317,6 +344,11 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
       </div>
 
       <div style={{ gridColumn: '1 / -1', fontWeight: 800, marginTop: 8 }}>Legacy default pickup (optional)</div>
+      <div style={{ gridColumn: '1 / -1', fontWeight: 800, marginTop: 8 }}>Notifications</div>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span>Order notify URL (optional)</span>
+        <input value={orderNotifyUrl} onChange={(e) => setOrderNotifyUrl(e.target.value)} placeholder="https://your-backend.example.com/api/order/notify" />
+      </label>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span>Pickup name</span>
         <input value={pickupName} onChange={(e) => setPickupName(e.target.value)} />
@@ -459,6 +491,10 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
             logoLinkUrl,
             tagline,
             stripeAccountId,
+            currency,
+            minOrderCents: (minOrderCents === '' ? undefined : Number(minOrderCents)),
+            couponMinSubtotalCents: (couponMinSubtotalCents === '' ? undefined : Number(couponMinSubtotalCents)),
+            orderNotifyUrl,
             pickup: {
               name: pickupName,
               phone: pickupPhone,

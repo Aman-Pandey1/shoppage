@@ -24,6 +24,37 @@ npm install
 npm run dev
 ```
 
+#### Restore data from an old MongoDB (site-wise)
+
+Use these scripts to pull categories/products (including descriptions and variants) from an old database and merge categories like “Appetizers (Part-2)” into “Appetizers (Part-1)”. Ensure `USE_MOCK_DATA=false` and `MONGO_URI` is set in `backend/.env`.
+
+```
+# In a separate terminal
+cd backend
+
+# 1) Import products from old DB into a destination site
+#    - Map categories by name, creating any missing categories on the destination site
+#    - Upserts products by (name, category)
+
+node src/scripts/importProductsFromDb.js \
+  --srcUri "mongodb+srv://user:pass@host/olddb" \
+  --destSiteSlug NewAsianVillage \
+  --srcSiteSlug NewAsianVillage
+
+# Optional dry-run to see counts only:
+node src/scripts/importProductsFromDb.js --srcUri "mongodb://127.0.0.1:27017/olddb" --destSiteSlug default --srcSiteSlug default --dryRun true
+
+# 2) Merge categories by name within a site (e.g., Appetizers Part-2 → Part-1)
+node src/scripts/mergeCategories.js --siteSlug NewAsianVillage --from "Appetizers (Part-2)" --to "Appetizers (Part-1)"
+
+# Options: use --siteId, --fromId, --toId; add --dryRun true to preview; add --keepFrom true to retain source category after moving products.
+```
+
+#### Per-site settings stored in database
+
+- Each website (site) has its own saved settings in the DB: logo URL, logo link, brand color, Uber/Stripe/DoorDash credentials, currency, minimum order, coupon minimum subtotal, delivery-fee split, max delivery distance, pickup locations, and more.
+- Update these in Admin → Site Settings. Changes persist site-wise in MongoDB and are used by all APIs (payments, delivery, public shop).
+
 Delivery provider integration (set these in backend/.env when using real API):
 
 ```

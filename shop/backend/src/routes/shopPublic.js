@@ -24,9 +24,13 @@ router.get('/:slug/site', async (req, res) => {
   try {
     const { site } = req;
     // Expose min order so frontend can display requirement in delivery modal
-    const minOrderCents = Math.max(0, Number(process.env.MIN_ORDER_CENTS) || 5000);
+    const minOrderCents = (typeof site.minOrderCents === 'number')
+      ? Math.max(0, Number(site.minOrderCents) || 0)
+      : Math.max(0, Number(process.env.MIN_ORDER_CENTS) || 5000);
     // Also expose coupon minimum subtotal so frontend can determine discount eligibility
-    const couponMinSubtotalCents = Math.max(0, Number(process.env.COUPON_MIN_SUBTOTAL_CENTS) || 5000);
+    const couponMinSubtotalCents = (typeof site.couponMinSubtotalCents === 'number')
+      ? Math.max(0, Number(site.couponMinSubtotalCents) || 0)
+      : Math.max(0, Number(process.env.COUPON_MIN_SUBTOTAL_CENTS) || 5000);
     return res.json({
       siteId: req.siteId,
       slug: site.slug,
@@ -39,6 +43,7 @@ router.get('/:slug/site', async (req, res) => {
       tagline: site.tagline || '',
       minOrderCents,
       couponMinSubtotalCents,
+      currency: (site.currency || String(process.env.STRIPE_CURRENCY || 'usd').toLowerCase()),
     });
   } catch (err) {
     return res.status(400).json({ error: err.message });

@@ -8,7 +8,9 @@
     "start": "node src/server.js",
     "email:test": "node src/scripts/testEmail.js",
     "seed:mock": "node src/scripts/seedFromMock.js",
-    "db:migrate": "node src/scripts/migrateDb.js"
+    "db:migrate": "node src/scripts/migrateDb.js",
+    "db:merge:categories": "node src/scripts/mergeCategories.js",
+    "db:import:products": "node src/scripts/importProductsFromDb.js"
   },
   "keywords": [],
   "author": "",
