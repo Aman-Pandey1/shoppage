@@ -4,18 +4,32 @@ import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 
+// Ensure variants[] always exposes a `price` number for UI
+function normalizeProductShape(p) {
+  if (!p) return p;
+  const obj = (typeof p.toObject === 'function') ? p.toObject() : { ...p };
+  if (Array.isArray(obj.variants)) {
+    obj.variants = obj.variants.map((v) => ({
+      key: String(v?.key || v?.label || 'variant').trim(),
+      label: String(v?.label || v?.key || 'Variant').trim(),
+      price: Number((v?.price ?? v?.priceDelta) || 0) || 0,
+    }));
+  }
+  return obj;
+}
+
 router.get('/', async (req, res) => {
 	const { categoryId } = req.query;
 	const mock = req.app.locals.mockData;
 	if (mock) {
-		const list = mock.products.filter((p) => (categoryId ? p.categoryId === categoryId : true));
-		return res.json(list);
+    const list = mock.products.filter((p) => (categoryId ? p.categoryId === categoryId : true));
+    return res.json(list.map(normalizeProductShape));
 	}
 	const filter = categoryId ? { categoryId } : {};
   const products = await Product.find(filter)
     .select('name description imageUrl price categoryId isVeg spiceLevels variants extraOptionGroups')
     .sort({ name: 1 });
-	res.json(products);
+  res.json(products.map(normalizeProductShape));
 });
 
 router.post('/', requireAuth, async (req, res) => {

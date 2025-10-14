@@ -6,6 +6,22 @@ import Coupon from '../models/Coupon.js';
 
 const router = Router();
 
+// Normalize product shape for frontend compatibility
+// - Ensure variants[] has a numeric `price` (fallback to `priceDelta` from legacy data)
+function normalizeProductShape(p) {
+  if (!p) return p;
+  const obj = (typeof p.toObject === 'function') ? p.toObject() : { ...p };
+  if (Array.isArray(obj.variants)) {
+    obj.variants = obj.variants.map((v) => {
+      const key = String(v?.key || v?.label || 'variant').trim();
+      const label = String(v?.label || v?.key || 'Variant').trim();
+      const price = Number((v?.price ?? v?.priceDelta) || 0) || 0;
+      return { key, label, price };
+    });
+  }
+  return obj;
+}
+
 // Resolve by current request host -> return site basics
 router.get('/host-site', tenantByHost, async (req, res) => {
 	try {
@@ -145,8 +161,8 @@ router.get('/:slug/products', async (req, res) => {
 				if (isVeg.toLowerCase() === 'false') vegFilter = false;
 			}
 			if (vegFilter !== null) list = list.filter((p) => (typeof p.isVeg === 'boolean' ? p.isVeg : true) === vegFilter);
-			list.sort((a, b) => a.name.localeCompare(b.name));
-			return res.json(list);
+      list.sort((a, b) => a.name.localeCompare(b.name));
+      return res.json(list.map(normalizeProductShape));
 		}
 		const filter = { site: req.siteId };
 		if (categoryId) filter.categoryId = categoryId;
@@ -161,7 +177,7 @@ router.get('/:slug/products', async (req, res) => {
     const products = await Product.find(filter)
       .select('name description imageUrl price categoryId isVeg spiceLevels variants extraOptionGroups')
       .sort({ name: 1 });
-		res.json(products);
+    res.json(products.map(normalizeProductShape));
 	} catch (err) {
 		res.status(400).json({ error: err.message });
 	}
