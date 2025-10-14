@@ -12,7 +12,9 @@ router.get('/', async (req, res) => {
 		return res.json(list);
 	}
 	const filter = categoryId ? { categoryId } : {};
-	const products = await Product.find(filter).sort({ name: 1 });
+  const products = await Product.find(filter)
+    .select('name description imageUrl price categoryId isVeg spiceLevels variants extraOptionGroups')
+    .sort({ name: 1 });
 	res.json(products);
 });
 
