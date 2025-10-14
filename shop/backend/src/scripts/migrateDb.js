@@ -59,7 +59,8 @@ async function copyCollection(srcDb, destDb, name, batchSize = 1000) {
 
   await ensureIndexes(src, dest);
 
-  const cursor = src.find({}, { noCursorTimeout: true });
+  // Avoid noCursorTimeout as some Atlas tiers disallow it
+  const cursor = src.find({}, { });
   let ops = [];
   let copied = 0;
 
@@ -112,8 +113,14 @@ async function main() {
   console.log('Connecting to source:', maskUri(srcUri));
   console.log('Connecting to destination:', maskUri(destUri));
 
-  const srcClient = new MongoClient(srcUri, { maxPoolSize: 10 });
-  const destClient = new MongoClient(destUri, { maxPoolSize: 10 });
+  const clientOptions = {
+    maxPoolSize: 10,
+    // Relax TLS checks for one-time migration runs in restricted environments
+    tlsAllowInvalidCertificates: true,
+    tlsAllowInvalidHostnames: true,
+  };
+  const srcClient = new MongoClient(srcUri, clientOptions);
+  const destClient = new MongoClient(destUri, clientOptions);
   try {
     await srcClient.connect();
     await destClient.connect();
