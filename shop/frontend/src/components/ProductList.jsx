@@ -92,9 +92,11 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
                 </div>
                 <button
                   onClick={() => {
-                    // If product requires spice selection, skip the quick-add popup and
-                    // go straight into the add-to-cart flow; quantity will be chosen in the spice modal.
-                    if (Array.isArray(p?.spiceLevels) && p.spiceLevels.length > 0) {
+                    // Use the guided add-to-cart flow when product has variants, spice levels, or extras.
+                    const hasVariants = Array.isArray(p?.variants) && p.variants.length > 0;
+                    const hasSpice = Array.isArray(p?.spiceLevels) && p.spiceLevels.length > 0;
+                    const hasExtras = Array.isArray(p?.extraOptionGroups) && p.extraOptionGroups.length > 0;
+                    if (hasVariants || hasSpice || hasExtras) {
                       onAdd(p, 1);
                       return;
                     }
