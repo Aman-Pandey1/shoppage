@@ -47,7 +47,15 @@ function generateItemId(productId, spiceLevel, selectedOptions, variant) {
 }
 
 export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => {
-  const [state, setState] = useState({ items: [], notes: '', coupon: null, fulfillmentType: undefined, deliveryFeeCents: 0 });
+  const [state, setState] = useState({
+    items: [],
+    notes: '',
+    coupon: null,
+    fulfillmentType: undefined,
+    deliveryFeeCents: 0,
+    // Minimum items subtotal (in cents) required to apply coupons; site-configurable
+    couponMinSubtotalCents: 5000,
+  });
   const [lastAdded, setLastAdded] = useState(null);
 
   useEffect(() => {
@@ -78,6 +86,11 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
   const setDeliveryFeeCents = useCallback((cents) => {
     const value = Math.max(0, Math.round(Number(cents) || 0));
     setState((prev) => ({ ...prev, deliveryFeeCents: value }));
+  }, []);
+
+  const setCouponMinSubtotalCents = useCallback((cents) => {
+    const value = Math.max(0, Math.round(Number(cents) || 0));
+    setState((prev) => ({ ...prev, couponMinSubtotalCents: value }));
   }, []);
 
   const setNotes = useCallback((text) => {
@@ -158,7 +171,8 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
       const unitCents = Math.round(unitPrice * 100);
       return sum + unitCents * (Number(it.quantity) || 1);
     }, 0);
-    const isEligibleForCoupon = (itemsSubtotalCents / 100) >= 50;
+    const minCents = Number(state.couponMinSubtotalCents) || 5000;
+    const isEligibleForCoupon = itemsSubtotalCents >= minCents;
     let discountedCents = itemsSubtotalCents;
     if (state.coupon && isEligibleForCoupon) {
       const pct = Math.max(0, Math.min(100, Number(state.coupon.percent) || 0));
@@ -173,7 +187,21 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
   }, [state.items, state.coupon]);
 
   const value = useMemo(
-    () => ({ state, setFulfillmentType, addItem, removeItem, updateQuantity, clearCart, getCartTotal, lastAdded, setNotes, applyCoupon, clearCoupon, setDeliveryFeeCents }),
+    () => ({
+      state,
+      setFulfillmentType,
+      addItem,
+      removeItem,
+      updateQuantity,
+      clearCart,
+      getCartTotal,
+      lastAdded,
+      setNotes,
+      applyCoupon,
+      clearCoupon,
+      setDeliveryFeeCents,
+      setCouponMinSubtotalCents,
+    }),
     [state, setFulfillmentType, addItem, removeItem, updateQuantity, clearCart, getCartTotal, lastAdded, setNotes, applyCoupon, clearCoupon]
   );
 

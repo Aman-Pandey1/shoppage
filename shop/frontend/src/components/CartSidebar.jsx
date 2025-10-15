@@ -3,7 +3,7 @@ import { useCart } from '../store/CartContext';
 import { fetchJson } from '../lib/api';
 
 export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
-  const { state, removeItem, updateQuantity, clearCart, getCartTotal, setNotes, applyCoupon, clearCoupon } = useCart();
+  const { state, removeItem, updateQuantity, clearCart, getCartTotal, setNotes, applyCoupon, clearCoupon, setCouponMinSubtotalCents } = useCart();
   const [code, setCode] = React.useState('');
   const [couponError, setCouponError] = React.useState('');
   const [checking, setChecking] = React.useState(false);
@@ -28,31 +28,40 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
   // Use cents-based eligibility to avoid float drift across locales
   const couponEligible = React.useMemo(() => {
     const cents = Math.round(subtotal * 100);
-    return !!state.coupon && cents >= 5000;
-  }, [state.coupon, subtotal]);
+    const min = Number(state.couponMinSubtotalCents) || 5000;
+    return !!state.coupon && cents >= min;
+  }, [state.coupon, subtotal, state.couponMinSubtotalCents]);
 
-  // Auto-apply latest coupon if subtotal >= $50 and no coupon applied
+  // Keep site coupon minimum in sync from backend settings and auto-apply latest coupon
   React.useEffect(() => {
     const subtotal = state.items.reduce((s, it) => s + it.totalPrice, 0);
-    if (autoTried) return;
-    if (state.coupon) return;
-    if (subtotal < 50) return;
     let cancelled = false;
     (async () => {
       try {
         const siteSlug = (window.location.pathname.match(/\/s\/([^/]+)/)?.[1]) || 'default';
-        const res = await fetchJson(`/api/shop/${siteSlug}/default-coupon`);
-        if (!cancelled && res && res.code && typeof res.percent === 'number' && res.percent > 0) {
-          applyCoupon(res.code, res.percent);
-          setCode(res.code);
+        // Fetch site settings to get couponMinSubtotalCents
+        try {
+          const site = await fetchJson(`/api/shop/${siteSlug}/site`);
+          if (!cancelled && site && typeof site.couponMinSubtotalCents === 'number') {
+            setCouponMinSubtotalCents(site.couponMinSubtotalCents);
+          }
+        } catch {}
+        const min = Number(state.couponMinSubtotalCents) || 5000;
+        if (!autoTried && !state.coupon && subtotal >= (min / 100)) {
+          const res = await fetchJson(`/api/shop/${siteSlug}/default-coupon`);
+          if (!cancelled && res && res.code && typeof res.percent === 'number' && res.percent > 0) {
+            applyCoupon(res.code, res.percent);
+            setCode(res.code);
+          }
+          if (!cancelled) setAutoTried(true);
         }
       } catch {}
       finally {
-        if (!cancelled) setAutoTried(true);
+        // no-op: autoTried is set only when we attempted an auto-apply
       }
     })();
     return () => { cancelled = true; };
-  }, [state.items, state.coupon, applyCoupon, autoTried]);
+  }, [state.items, state.coupon, applyCoupon, autoTried, state.couponMinSubtotalCents]);
 
   // Derived pricing (compute in cents to match backend/Stripe)
   const itemsSubtotalCents = React.useMemo(() => {
@@ -198,7 +207,8 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
             <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g., WELCOME10" style={{ flex: '1 1 160px', minWidth: 0 }} />
             <button disabled={checking || !code.trim()} style={{ flex: '0 0 auto' }} onClick={async () => {
               setCouponError('');
-              if (subtotal < 50) { setCouponError('Minimum $50 subtotal required to apply discount'); return; }
+              const min = (Number(state.couponMinSubtotalCents) || 5000) / 100;
+              if (subtotal < min) { setCouponError(`Minimum $${(min).toFixed(2)} subtotal required to apply discount`); return; }
               setChecking(true);
               try {
                 const siteSlug = (window.location.pathname.match(/\/s\/([^/]+)/)?.[1]) || 'default';
@@ -215,7 +225,12 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
             {state.coupon ? <button style={{ flex: '0 0 auto' }} onClick={() => { clearCoupon(); setCode(''); }}>Remove</button> : null}
           </div>
           {couponError ? <div style={{ color: 'var(--danger)', fontSize: 12 }}>{couponError}</div> : null}
-          {state.coupon ? <div className="muted" style={{ fontSize: 12 }}>Applied: {state.coupon.code} ({state.coupon.percent}% off){subtotal < 50 ? ' — Add items to reach $50 for discount' : ''}</div> : null}
+          {state.coupon ? (
+            <div className="muted" style={{ fontSize: 12 }}>
+              Applied: {state.coupon.code} ({state.coupon.percent}% off)
+              {subtotal < ((Number(state.couponMinSubtotalCents)||5000)/100) ? ` — Add items to reach $${((Number(state.couponMinSubtotalCents)||5000)/100).toFixed(2)} for discount` : ''}
+            </div>
+          ) : null}
         </label>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <span className="muted" style={{ fontSize: 12 }}>Notes for restaurant</span>
