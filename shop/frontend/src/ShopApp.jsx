@@ -230,9 +230,10 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   }, [siteSlug]);
 
   // Determine if restaurant is currently closed (based on today and now)
+  // Do NOT show "closed" when timings are missing; only when explicitly closed
   useEffect(() => {
-    function parse24h(s, fallback) {
-      if (!s || !/^\d{2}:\d{2}$/.test(s)) return fallback;
+    function parse24hStrict(s) {
+      if (!s || !/^\d{2}:\d{2}$/.test(s)) return null;
       const [hh, mm] = s.split(':').map(Number);
       return { hh, mm };
     }
@@ -242,13 +243,22 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     const now = new Date();
     const key = keyForToday(now);
     const cfg = hours?.[key];
-    if (!cfg || cfg.closed) { setIsClosedNow(true); return; }
-    const { hh: oh = 10, mm: om = 0 } = parse24h(cfg.open, { hh: 10, mm: 0 });
-    const { hh: ch = 22, mm: cm = 0 } = parse24h(cfg.close, { hh: 22, mm: 0 });
-    const open = new Date(now); open.setHours(oh, om, 0, 0);
-    const close = new Date(now); close.setHours(ch, cm, 0, 0);
-    // If a site timeZone is provided, adjust comparison by simulating wall-clock in that IANA zone.
-    // We approximate by computing the current local time in that zone using Intl and comparing clock times only.
+
+    // If there is no config for today, do not mark as closed
+    if (!cfg) { setIsClosedNow(false); return; }
+
+    // Respect explicit "closed" flag
+    if (cfg.closed) { setIsClosedNow(true); return; }
+
+    // Require valid open and close times to compute closed state; otherwise, don't show closed
+    const openParsed = parse24hStrict(cfg.open);
+    const closeParsed = parse24hStrict(cfg.close);
+    if (!openParsed || !closeParsed) { setIsClosedNow(false); return; }
+
+    const { hh: oh, mm: om } = openParsed;
+    const { hh: ch, mm: cm } = closeParsed;
+
+    // Compare by wall clock; if timeZone provided, compute current clock time in that zone
     if (timeZone) {
       try {
         const formatter = new Intl.DateTimeFormat('en-CA', { timeZone, hour: '2-digit', minute: '2-digit', hour12: false });
@@ -261,8 +271,11 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         return;
       } catch {}
     }
+
+    const open = new Date(now); open.setHours(oh, om, 0, 0);
+    const close = new Date(now); close.setHours(ch, cm, 0, 0);
     setIsClosedNow(!(now >= open && now <= close));
-  }, [hours]);
+  }, [hours, timeZone]);
 
   // Compute date options (today + next 6 days, respecting closed days)
   useEffect(() => {
