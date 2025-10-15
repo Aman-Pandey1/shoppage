@@ -59,6 +59,20 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
   const [testingStripe, setTestingStripe] = React.useState(false);
   const [stripeStatus, setStripeStatus] = React.useState(null);
 
+  // Canada-focused time zones for easier admin selection
+  const CANADA_TIME_ZONES = React.useMemo(() => ([
+    'America/St_Johns',   // Newfoundland
+    'America/Halifax',    // Nova Scotia, New Brunswick, PEI
+    'America/Toronto',    // Ontario, Quebec (Montreal alias)
+    'America/Winnipeg',   // Manitoba
+    'America/Regina',     // Saskatchewan
+    'America/Edmonton',   // Alberta
+    'America/Vancouver',  // British Columbia
+    'America/Whitehorse', // Yukon
+    'America/Yellowknife',// Northwest Territories
+    'America/Iqaluit',    // Nunavut
+  ]), []);
+
   // Location modal state
   const [isLocFormOpen, setIsLocFormOpen] = React.useState(false);
   const [editingLocIndex, setEditingLocIndex] = React.useState(null);
@@ -113,6 +127,29 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
     setCouponMinSubtotalCents(site?.couponMinSubtotalCents ?? '');
     setOrderNotifyUrl(site?.orderNotifyUrl || '');
   }, [site?._id]);
+
+  // Auto-suggest a Canadian time zone based on province when country is CA and no timeZone set
+  React.useEffect(() => {
+    if (timeZone) return; // respect explicit selection
+    if ((country || 'CA').toUpperCase() !== 'CA') return;
+    const prov = String(province || '').toUpperCase();
+    const SUGGESTED_TZ = {
+      NL: 'America/St_Johns',
+      NS: 'America/Halifax',
+      PE: 'America/Halifax',
+      NB: 'America/Halifax',
+      QC: 'America/Toronto',
+      ON: 'America/Toronto',
+      MB: 'America/Winnipeg',
+      SK: 'America/Regina',
+      AB: 'America/Edmonton',
+      BC: 'America/Vancouver',
+      YT: 'America/Whitehorse',
+      NT: 'America/Yellowknife',
+      NU: 'America/Iqaluit',
+    };
+    if (SUGGESTED_TZ[prov]) setTimeZone(SUGGESTED_TZ[prov]);
+  }, [country, province, timeZone]);
 
   if (!site) return <div className="muted">Select a site to configure.</div>;
 
@@ -233,9 +270,14 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
 
       <div style={{ gridColumn: '1 / -1', fontWeight: 800, marginTop: 8 }}>Delivery settings</div>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <span>Time zone (IANA, optional)</span>
-        <input value={timeZone} onChange={(e) => setTimeZone(e.target.value)} placeholder="e.g., America/Edmonton" />
-        <span className="muted" style={{ fontSize: 12 }}>Used to compute open/close hours correctly.</span>
+        <span>Time zone (IANA, Canada-ready)</span>
+        <input list="tz-list" value={timeZone} onChange={(e) => setTimeZone(e.target.value)} placeholder="e.g., America/Edmonton" />
+        <datalist id="tz-list">
+          {CANADA_TIME_ZONES.map((tz) => (
+            <option key={tz} value={tz} />
+          ))}
+        </datalist>
+        <span className="muted" style={{ fontSize: 12 }}>Used to compute open/close hours correctly. Suggestions include Canadian time zones.</span>
       </label>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span>Minimum order (cents)</span>
