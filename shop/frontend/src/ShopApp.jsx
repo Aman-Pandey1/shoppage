@@ -43,8 +43,9 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   // Additional UI state brought from the alternate implementation
   // Order details state
   const [pickupDate, setPickupDate] = useState(''); // YYYY-MM-DD
-  const [pickupTime, setPickupTime] = useState(''); // e.g., 11:00 AM
+  const [pickupTime, setPickupTime] = useState(''); // e.g., 10:00 AM
   const [hours, setHours] = useState(null);
+  const [timeZone, setTimeZone] = useState('');
   const [dateOptions, setDateOptions] = useState([]);
   const [timeOptions, setTimeOptions] = useState([]);
   const [isClosedNow, setIsClosedNow] = useState(false);
@@ -209,8 +210,17 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     let cancelled = false;
     async function loadHours() {
       try {
-        const data = await fetchJson(`/api/shop/${siteSlug}/hours`);
-        if (!cancelled) setHours(data);
+        const resp = await fetchJson(`/api/shop/${siteSlug}/hours`);
+        if (!cancelled) {
+          // Backward compat: support old shape { mon:{},... } or new { hours, timeZone }
+          if (resp && resp.hours) {
+            setHours(resp.hours);
+            setTimeZone(resp.timeZone || '');
+          } else {
+            setHours(resp);
+            setTimeZone('');
+          }
+        }
       } catch {
         if (!cancelled) setHours(null);
       }
@@ -220,9 +230,10 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   }, [siteSlug]);
 
   // Determine if restaurant is currently closed (based on today and now)
+  // Do NOT show "closed" when timings are missing; only when explicitly closed
   useEffect(() => {
-    function parse24h(s, fallback) {
-      if (!s || !/^\d{2}:\d{2}$/.test(s)) return fallback;
+    function parse24hStrict(s) {
+      if (!s || !/^\d{2}:\d{2}$/.test(s)) return null;
       const [hh, mm] = s.split(':').map(Number);
       return { hh, mm };
     }
@@ -232,13 +243,39 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     const now = new Date();
     const key = keyForToday(now);
     const cfg = hours?.[key];
-    if (!cfg || cfg.closed) { setIsClosedNow(true); return; }
-    const { hh: oh = 11, mm: om = 0 } = parse24h(cfg.open, { hh: 11, mm: 0 });
-    const { hh: ch = 22, mm: cm = 0 } = parse24h(cfg.close, { hh: 22, mm: 0 });
+
+    // If there is no config for today, do not mark as closed
+    if (!cfg) { setIsClosedNow(false); return; }
+
+    // Respect explicit "closed" flag
+    if (cfg.closed) { setIsClosedNow(true); return; }
+
+    // Require valid open and close times to compute closed state; otherwise, don't show closed
+    const openParsed = parse24hStrict(cfg.open);
+    const closeParsed = parse24hStrict(cfg.close);
+    if (!openParsed || !closeParsed) { setIsClosedNow(false); return; }
+
+    const { hh: oh, mm: om } = openParsed;
+    const { hh: ch, mm: cm } = closeParsed;
+
+    // Compare by wall clock; if timeZone provided, compute current clock time in that zone
+    if (timeZone) {
+      try {
+        const formatter = new Intl.DateTimeFormat('en-CA', { timeZone, hour: '2-digit', minute: '2-digit', hour12: false });
+        const [hhStr, mmStr] = formatter.format(now).split(':');
+        const curH = Number(hhStr), curM = Number(mmStr);
+        const curNum = curH * 60 + curM;
+        const openNum = (oh * 60) + om;
+        const closeNum = (ch * 60) + cm;
+        setIsClosedNow(!(curNum >= openNum && curNum <= closeNum));
+        return;
+      } catch {}
+    }
+
     const open = new Date(now); open.setHours(oh, om, 0, 0);
     const close = new Date(now); close.setHours(ch, cm, 0, 0);
     setIsClosedNow(!(now >= open && now <= close));
-  }, [hours]);
+  }, [hours, timeZone]);
 
   // Compute date options (today + next 6 days, respecting closed days)
   useEffect(() => {
@@ -269,7 +306,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     if (!pickupDate && opts.length) setPickupDate(opts[0].value);
   }, [hours]);
 
-  // Compute time options for selected date from hours (default 11:00-22:00)
+  // Compute time options for selected date from hours (default 10:00-22:00)
   // - Slots every 15 minutes
   // - Earliest selectable time is now + 30 minutes (prep buffer)
   // - Last order 15 minutes before close (e.g., 9:45 PM when closing at 10:00 PM)
@@ -297,9 +334,9 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     const earliest = new Date(now.getTime() + 30 * 60000);
     const [selYr, selMo, selDy] = pickupDate.split('-').map(Number);
     const key = dayKeyFromDateString(pickupDate);
-    const cfg = hours?.[key] || { open: '11:00', close: '22:00', closed: false };
+    const cfg = hours?.[key] || { open: '10:00', close: '22:00', closed: false };
     if (cfg.closed) { setTimeOptions([]); return; }
-    const { hh: openH = 11, mm: openM = 0 } = parse24h(cfg.open, { hh: 11, mm: 0 });
+    const { hh: openH = 10, mm: openM = 0 } = parse24h(cfg.open, { hh: 10, mm: 0 });
     const { hh: closeH = 22, mm: closeM = 0 } = parse24h(cfg.close, { hh: 22, mm: 0 });
     // Last selectable slot should be 15 minutes before close
     let endH = closeH;
@@ -429,7 +466,10 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         {isClosedNow ? (
           <div className="card" style={{ marginBottom: 12, borderLeft: '3px solid var(--danger)', padding: 10 }}>
             <div style={{ fontWeight: 700 }}>Restaurant closed</div>
-            <div className="muted" style={{ fontSize: 12 }}>Online ordering is closed for today. Last order at 9:45 PM.</div>
+            <div className="muted" style={{ fontSize: 12 }}>
+              Restaurant will be open at regular hours.<br />
+              We will be resume online odering once restaurant is open.
+            </div>
           </div>
         ) : null}
 
@@ -603,8 +643,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                 <span style={{ color: 'var(--primary-600)' }}>Pick Up/Delivery Date and Time</span>
                 {(() => {
                   const times = (timeOptions && timeOptions.length) ? timeOptions : (() => {
-                    const out = [];
-                    let h = 11, m = 0; // 11:00 AM to 9:45 PM fallback
+                  const out = [];
+                  let h = 10, m = 0; // 10:00 AM to 9:45 PM fallback
                     let endH = 22, endM = 0; // 22:00 close by default
                     // last slot 15 minutes before close
                     endM -= 15; if (endM < 0) { endH -= 1; endM += 60; }
@@ -682,7 +722,12 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         open={closedAlertOpen}
         onClose={() => setClosedAlertOpen(false)}
         title="Restaurant is closed"
-        message={"Online ordering is closed for today. Please come back tomorrow."}
+        message={
+          <span>
+            Restaurant will be open at regular hours.<br />
+            We will be resume online odering once restaurant is open.
+          </span>
+        }
       />
       <UserAuthModal open={loginOpen} onClose={() => setLoginOpen(false)} onSuccess={() => {
         setLoginOpen(false);

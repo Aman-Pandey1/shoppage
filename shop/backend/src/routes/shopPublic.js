@@ -6,6 +6,57 @@ import Coupon from '../models/Coupon.js';
 
 const router = Router();
 
+// Normalize product shape for frontend compatibility
+// - Ensure variants[] has a numeric `price` (fallback to `priceDelta` from legacy data)
+function normalizeProductShape(p) {
+  if (!p) return p;
+  const obj = (typeof p.toObject === 'function') ? p.toObject() : { ...p };
+  if (Array.isArray(obj.variants)) {
+    obj.variants = obj.variants.map((v) => {
+      const key = String(v?.key || v?.label || 'variant').trim();
+      const label = String(v?.label || v?.key || 'Variant').trim();
+      const price = Number((v?.price ?? v?.priceDelta) || 0) || 0;
+      return { key, label, price };
+    });
+  }
+  return obj;
+}
+
+// Infer a reasonable Canadian IANA time zone when not explicitly set
+function inferCanadaTimeZoneFromSite(siteLike) {
+  try {
+    const getProvince = () => {
+      const fromPickup = siteLike?.pickup?.address?.province;
+      if (fromPickup) return String(fromPickup).toUpperCase();
+      const firstLocProv = Array.isArray(siteLike?.locations) && siteLike.locations.length
+        ? siteLike.locations[0]?.address?.province
+        : undefined;
+      return String(firstLocProv || '').toUpperCase();
+    };
+    const country = String(siteLike?.pickup?.address?.country || siteLike?.locations?.[0]?.address?.country || '').toUpperCase();
+    if (country && country !== 'CA') return undefined;
+    const prov = getProvince();
+    const MAP = {
+      NL: 'America/St_Johns',
+      NS: 'America/Halifax',
+      PE: 'America/Halifax',
+      NB: 'America/Halifax',
+      QC: 'America/Toronto',
+      ON: 'America/Toronto',
+      MB: 'America/Winnipeg',
+      SK: 'America/Regina',
+      AB: 'America/Edmonton',
+      BC: 'America/Vancouver',
+      YT: 'America/Whitehorse',
+      NT: 'America/Yellowknife',
+      NU: 'America/Iqaluit',
+    };
+    return MAP[prov] || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 // Resolve by current request host -> return site basics
 router.get('/host-site', tenantByHost, async (req, res) => {
 	try {
@@ -24,14 +75,19 @@ router.get('/:slug/site', async (req, res) => {
   try {
     const { site } = req;
     // Expose min order so frontend can display requirement in delivery modal
-    const minOrderCents = Math.max(0, Number(process.env.MIN_ORDER_CENTS) || 5000);
+    const minOrderCents = (typeof site.minOrderCents === 'number')
+      ? Math.max(0, Number(site.minOrderCents) || 0)
+      : Math.max(0, Number(process.env.MIN_ORDER_CENTS) || 5000);
     // Also expose coupon minimum subtotal so frontend can determine discount eligibility
-    const couponMinSubtotalCents = Math.max(0, Number(process.env.COUPON_MIN_SUBTOTAL_CENTS) || 5000);
+    const couponMinSubtotalCents = (typeof site.couponMinSubtotalCents === 'number')
+      ? Math.max(0, Number(site.couponMinSubtotalCents) || 0)
+      : Math.max(0, Number(process.env.COUPON_MIN_SUBTOTAL_CENTS) || 5000);
     return res.json({
       siteId: req.siteId,
       slug: site.slug,
       name: site.name,
       brandColor: site.brandColor,
+      timeZone: site.timeZone,
       deliveryFeeCents: Number(site.deliveryFeeCents) || 0,
       splitDeliveryFee: !!site.splitDeliveryFee,
       logoUrl: site.logoUrl,
@@ -39,6 +95,7 @@ router.get('/:slug/site', async (req, res) => {
       tagline: site.tagline || '',
       minOrderCents,
       couponMinSubtotalCents,
+      currency: (site.currency || String(process.env.STRIPE_CURRENCY || 'usd').toLowerCase()),
     });
   } catch (err) {
     return res.status(400).json({ error: err.message });
@@ -73,21 +130,23 @@ router.get('/:slug/hours', async (req, res) => {
   try {
     const { site } = req;
     const defaultHours = {
-      // Default store hours: 11:00 AM – 10:00 PM (last order 9:45 PM)
-      mon: { open: '11:00', close: '22:00', closed: false },
-      tue: { open: '11:00', close: '22:00', closed: false },
-      wed: { open: '11:00', close: '22:00', closed: false },
-      thu: { open: '11:00', close: '22:00', closed: false },
-      fri: { open: '11:00', close: '22:00', closed: false },
-      sat: { open: '11:00', close: '22:00', closed: false },
-      sun: { open: '11:00', close: '22:00', closed: false },
+      // Default store hours: 10:00 AM – 10:00 PM (last order 9:45 PM)
+      mon: { open: '10:00', close: '22:00', closed: false },
+      tue: { open: '10:00', close: '22:00', closed: false },
+      wed: { open: '10:00', close: '22:00', closed: false },
+      thu: { open: '10:00', close: '22:00', closed: false },
+      fri: { open: '10:00', close: '22:00', closed: false },
+      sat: { open: '10:00', close: '22:00', closed: false },
+      sun: { open: '10:00', close: '22:00', closed: false },
     };
     const mock = req.app.locals.mockData;
     if (mock) {
       const s = mock.sites.find((x) => x._id === req.siteId) || {};
-      return res.json(s.hours || defaultHours);
+      const resolvedTz = s.timeZone || inferCanadaTimeZoneFromSite(s) || undefined;
+      return res.json({ hours: s.hours || defaultHours, timeZone: resolvedTz });
     }
-    return res.json(site.hours || defaultHours);
+    const resolvedTz = site.timeZone || inferCanadaTimeZoneFromSite(site) || undefined;
+    return res.json({ hours: site.hours || defaultHours, timeZone: resolvedTz });
   } catch (err) {
     return res.status(400).json({ error: err.message });
   }
@@ -140,8 +199,8 @@ router.get('/:slug/products', async (req, res) => {
 				if (isVeg.toLowerCase() === 'false') vegFilter = false;
 			}
 			if (vegFilter !== null) list = list.filter((p) => (typeof p.isVeg === 'boolean' ? p.isVeg : true) === vegFilter);
-			list.sort((a, b) => a.name.localeCompare(b.name));
-			return res.json(list);
+      list.sort((a, b) => a.name.localeCompare(b.name));
+      return res.json(list.map(normalizeProductShape));
 		}
 		const filter = { site: req.siteId };
 		if (categoryId) filter.categoryId = categoryId;
@@ -153,8 +212,10 @@ router.get('/:slug/products', async (req, res) => {
 			if (isVeg.toLowerCase() === 'true') filter.isVeg = true;
 			if (isVeg.toLowerCase() === 'false') filter.isVeg = false;
 		}
-		const products = await Product.find(filter).sort({ name: 1 });
-		res.json(products);
+    const products = await Product.find(filter)
+      .select('name description imageUrl price categoryId isVeg spiceLevels variants extraOptionGroups')
+      .sort({ name: 1 });
+    res.json(products.map(normalizeProductShape));
 	} catch (err) {
 		res.status(400).json({ error: err.message });
 	}

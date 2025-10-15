@@ -47,12 +47,31 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
   });
   const [saving, setSaving] = React.useState(false);
   const [savedAt, setSavedAt] = React.useState(null);
+  const [currency, setCurrency] = React.useState(site?.currency || 'usd');
+  const [timeZone, setTimeZone] = React.useState(site?.timeZone || '');
+  const [minOrderCents, setMinOrderCents] = React.useState(site?.minOrderCents ?? '');
+  const [couponMinSubtotalCents, setCouponMinSubtotalCents] = React.useState(site?.couponMinSubtotalCents ?? '');
+  const [orderNotifyUrl, setOrderNotifyUrl] = React.useState(site?.orderNotifyUrl || '');
   const [testingUber, setTestingUber] = React.useState(false);
   const [uberStatus, setUberStatus] = React.useState(null);
   const [testingDoorDash, setTestingDoorDash] = React.useState(false);
   const [doorDashStatus, setDoorDashStatus] = React.useState(null);
   const [testingStripe, setTestingStripe] = React.useState(false);
   const [stripeStatus, setStripeStatus] = React.useState(null);
+
+  // Canada-focused time zones for easier admin selection
+  const CANADA_TIME_ZONES = React.useMemo(() => ([
+    'America/St_Johns',   // Newfoundland
+    'America/Halifax',    // Nova Scotia, New Brunswick, PEI
+    'America/Toronto',    // Ontario, Quebec (Montreal alias)
+    'America/Winnipeg',   // Manitoba
+    'America/Regina',     // Saskatchewan
+    'America/Edmonton',   // Alberta
+    'America/Vancouver',  // British Columbia
+    'America/Whitehorse', // Yukon
+    'America/Yellowknife',// Northwest Territories
+    'America/Iqaluit',    // Nunavut
+  ]), []);
 
   // Location modal state
   const [isLocFormOpen, setIsLocFormOpen] = React.useState(false);
@@ -102,7 +121,35 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
     setLogoLinkUrl(site?.logoLinkUrl || '');
     setTagline(site?.tagline || '');
     setLogoFile(null);
+    setCurrency(site?.currency || 'usd');
+    setTimeZone(site?.timeZone || '');
+    setMinOrderCents(site?.minOrderCents ?? '');
+    setCouponMinSubtotalCents(site?.couponMinSubtotalCents ?? '');
+    setOrderNotifyUrl(site?.orderNotifyUrl || '');
   }, [site?._id]);
+
+  // Auto-suggest a Canadian time zone based on province when country is CA and no timeZone set
+  React.useEffect(() => {
+    if (timeZone) return; // respect explicit selection
+    if ((country || 'CA').toUpperCase() !== 'CA') return;
+    const prov = String(province || '').toUpperCase();
+    const SUGGESTED_TZ = {
+      NL: 'America/St_Johns',
+      NS: 'America/Halifax',
+      PE: 'America/Halifax',
+      NB: 'America/Halifax',
+      QC: 'America/Toronto',
+      ON: 'America/Toronto',
+      MB: 'America/Winnipeg',
+      SK: 'America/Regina',
+      AB: 'America/Edmonton',
+      BC: 'America/Vancouver',
+      YT: 'America/Whitehorse',
+      NT: 'America/Yellowknife',
+      NU: 'America/Iqaluit',
+    };
+    if (SUGGESTED_TZ[prov]) setTimeZone(SUGGESTED_TZ[prov]);
+  }, [country, province, timeZone]);
 
   if (!site) return <div className="muted">Select a site to configure.</div>;
 
@@ -182,6 +229,17 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
 
       <div style={{ gridColumn: '1 / -1', fontWeight: 800, marginTop: 8 }}>Payments</div>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span>Currency</span>
+        <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
+          <option value="usd">USD</option>
+          <option value="cad">CAD</option>
+          <option value="eur">EUR</option>
+          <option value="gbp">GBP</option>
+          <option value="inr">INR</option>
+          <option value="aud">AUD</option>
+        </select>
+      </label>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span>Stripe Account ID (acct_...)</span>
         <input value={stripeAccountId} onChange={(e) => setStripeAccountId(e.target.value)} placeholder="acct_123..." />
         <span className="muted" style={{ fontSize: 12 }}>Each website should have its own connected Stripe account.</span>
@@ -211,6 +269,24 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
       </div>
 
       <div style={{ gridColumn: '1 / -1', fontWeight: 800, marginTop: 8 }}>Delivery settings</div>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span>Time zone (IANA, Canada-ready)</span>
+        <input list="tz-list" value={timeZone} onChange={(e) => setTimeZone(e.target.value)} placeholder="e.g., America/Edmonton" />
+        <datalist id="tz-list">
+          {CANADA_TIME_ZONES.map((tz) => (
+            <option key={tz} value={tz} />
+          ))}
+        </datalist>
+        <span className="muted" style={{ fontSize: 12 }}>Used to compute open/close hours correctly. Suggestions include Canadian time zones.</span>
+      </label>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span>Minimum order (cents)</span>
+        <input type="number" min={0} value={minOrderCents} onChange={(e) => setMinOrderCents(e.target.value)} placeholder="e.g., 5000 for $50.00" />
+      </label>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span>Coupon minimum subtotal (cents)</span>
+        <input type="number" min={0} value={couponMinSubtotalCents} onChange={(e) => setCouponMinSubtotalCents(e.target.value)} placeholder="e.g., 5000" />
+      </label>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span>Provider</span>
         <select value={deliveryProvider} onChange={(e) => setDeliveryProvider(e.target.value)}>
@@ -317,6 +393,11 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
       </div>
 
       <div style={{ gridColumn: '1 / -1', fontWeight: 800, marginTop: 8 }}>Legacy default pickup (optional)</div>
+      <div style={{ gridColumn: '1 / -1', fontWeight: 800, marginTop: 8 }}>Notifications</div>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span>Order notify URL (optional)</span>
+        <input value={orderNotifyUrl} onChange={(e) => setOrderNotifyUrl(e.target.value)} placeholder="https://your-backend.example.com/api/order/notify" />
+      </label>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span>Pickup name</span>
         <input value={pickupName} onChange={(e) => setPickupName(e.target.value)} />
@@ -371,7 +452,8 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
             try {
               const res = await fetchJsonAllowError(`/api/admin/sites/${site._id}/health`);
               if (res.ok) {
-                setUberStatus({ ok: true, message: `Uber OK${res.eta ? ` · ETA ${new Date(res.eta).toLocaleTimeString()}` : ''}` });
+                const sim = res.simulated ? ' (simulated)' : '';
+                setUberStatus({ ok: true, message: `Uber OK${sim}${res.eta ? ` · ETA ${new Date(res.eta).toLocaleTimeString()}` : ''}` });
               } else {
                 setUberStatus({ ok: false, message: `Uber error: ${res.error}` });
               }
@@ -458,6 +540,11 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
             logoLinkUrl,
             tagline,
             stripeAccountId,
+            currency,
+            minOrderCents: (minOrderCents === '' ? undefined : Number(minOrderCents)),
+            couponMinSubtotalCents: (couponMinSubtotalCents === '' ? undefined : Number(couponMinSubtotalCents)),
+            orderNotifyUrl,
+            timeZone: timeZone || undefined,
             pickup: {
               name: pickupName,
               phone: pickupPhone,

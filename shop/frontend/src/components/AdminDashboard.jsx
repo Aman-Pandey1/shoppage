@@ -27,6 +27,12 @@ export const AdminDashboard = () => {
   const [couponCode, setCouponCode] = useState('');
   const [couponPercent, setCouponPercent] = useState(10);
 
+  // Category merge UI state
+  const [mergeFromId, setMergeFromId] = useState('');
+  const [mergeToId, setMergeToId] = useState('');
+  const [merging, setMerging] = useState(false);
+  const [mergeMessage, setMergeMessage] = useState('');
+
   // Simple variants CSV editor state
   const [variantsCsv, setVariantsCsv] = useState('');
 
@@ -44,24 +50,42 @@ export const AdminDashboard = () => {
       setLoading(true);
       const sitesList = await fetchJson('/api/admin/sites');
       setSites(sitesList);
-      let siteId = selectedSiteId;
-      if (!siteId) {
-        const saved = localStorage.getItem('admin_selected_site');
-        siteId = saved || sitesList[0]?._id || '';
-        setSelectedSiteId(siteId);
+      // Choose a valid site id. If a previously saved or selected id
+      // is not present (e.g., from mock mode like "mock-site"),
+      // fall back to a matching slug or the first site.
+      const availableIds = new Set(sitesList.map((s) => s._id));
+      let nextSiteId = selectedSiteId;
+      const savedId = (() => { try { return localStorage.getItem('admin_selected_site') || ''; } catch { return ''; } })();
+      const savedSlug = (() => { try { return localStorage.getItem('admin_selected_site_slug') || ''; } catch { return ''; } })();
+
+      if (!nextSiteId || !availableIds.has(nextSiteId)) {
+        if (savedId && availableIds.has(savedId)) {
+          nextSiteId = savedId;
+        } else if (savedSlug) {
+          const bySlug = sitesList.find((s) => s.slug === savedSlug);
+          if (bySlug) nextSiteId = bySlug._id;
+        }
       }
-      if (!siteId) {
+
+      if (!nextSiteId) {
+        nextSiteId = sitesList[0]?._id || '';
+      }
+
+      setSelectedSiteId(nextSiteId);
+      try { localStorage.setItem('admin_selected_site', nextSiteId); } catch {}
+
+      if (!nextSiteId) {
         setCategories([]);
         setProducts([]);
         return;
       }
       const [cats, prods] = await Promise.all([
-        fetchJson(`/api/admin/sites/${siteId}/categories`),
-        fetchJson(`/api/admin/sites/${siteId}/products`),
+        fetchJson(`/api/admin/sites/${nextSiteId}/categories`),
+        fetchJson(`/api/admin/sites/${nextSiteId}/products`),
       ]);
       setCategories(cats);
       setProducts(prods);
-      const current = sitesList.find(s => s._id === siteId);
+      const current = sitesList.find(s => s._id === nextSiteId);
       if (current) {
         try { localStorage.setItem('admin_selected_site_slug', current.slug); } catch {}
       }
@@ -345,6 +369,56 @@ export const AdminDashboard = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ fontWeight: 800 }}>Categories</div>
               <button onClick={() => { setCategoryForm({ name: '', imageUrl: '' }); setIsCategoryFormOpen(true); }}>+ New category</button>
+            </div>
+            {/* Merge categories helper */}
+            <div className="card" style={{ marginTop: 10, padding: 10, display: 'grid', gap: 8 }}>
+              <div style={{ fontWeight: 700 }}>Merge categories (move all products)</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, alignItems: 'end' }}>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span>From</span>
+                  <select value={mergeFromId} onChange={(e) => setMergeFromId(e.target.value)}>
+                    <option value="">Select source category</option>
+                    {categories.map((c) => (
+                      <option key={c._id} value={c._id}>{c.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span>To</span>
+                  <select value={mergeToId} onChange={(e) => setMergeToId(e.target.value)}>
+                    <option value="">Select destination category</option>
+                    {categories.map((c) => (
+                      <option key={c._id} value={c._id}>{c.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  disabled={merging || !mergeFromId || !mergeToId || mergeFromId === mergeToId}
+                  onClick={async () => {
+                    if (!mergeFromId || !mergeToId || mergeFromId === mergeToId) return;
+                    if (!selectedSiteId) return;
+                    setMerging(true);
+                    setMergeMessage('');
+                    try {
+                      await postJson(`/api/admin/sites/${selectedSiteId}/categories/merge`, { fromId: mergeFromId, toId: mergeToId, keepFrom: false });
+                      // Refresh categories and products after merge
+                      const [cats, prods] = await Promise.all([
+                        fetchJson(`/api/admin/sites/${selectedSiteId}/categories`),
+                        fetchJson(`/api/admin/sites/${selectedSiteId}/products`),
+                      ]);
+                      setCategories(cats);
+                      setProducts(prods);
+                      setMergeMessage('Merged successfully');
+                      setMergeFromId('');
+                      setMergeToId('');
+                    } catch (e) {
+                      setMergeMessage(e?.message || 'Merge failed');
+                    } finally { setMerging(false); }
+                  }}
+                  className={merging ? 'primary-btn' : ''}
+                >{merging ? 'Merging…' : 'Merge'}</button>
+              </div>
+              {mergeMessage ? <div className="muted" style={{ fontSize: 12 }}>{mergeMessage}</div> : null}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12, marginTop: 10 }}>
               {categories.map((c) => (

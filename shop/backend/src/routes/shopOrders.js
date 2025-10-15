@@ -95,13 +95,23 @@ router.post('/:slug/orders/pickup', requireUser, async (req, res) => {
       if (mock) {
         const found = (mock.coupons || []).find((c) => c.site === req.siteId && c.code === code);
         if (found && Number(found.percent) === pct) {
-          itemsTotal = Math.max(0, itemsTotal - Math.round(itemsTotal * (pct / 100)));
+          const discountedItemsSubtotal = items.reduce((sum, it) => {
+            const unit = Number(it.priceCents) || 0;
+            const discountedUnit = Math.round(unit * (100 - pct) / 100);
+            return sum + discountedUnit * (Number(it.quantity) || 1);
+          }, 0);
+          itemsTotal = Math.max(0, discountedItemsSubtotal);
           appliedCoupon = { code, percent: pct };
         }
       } else {
         const found = await Coupon.findOne({ site: req.siteId, code });
         if (found && Number(found.percent) === pct) {
-          itemsTotal = Math.max(0, itemsTotal - Math.round(itemsTotal * (pct / 100)));
+          const discountedItemsSubtotal = items.reduce((sum, it) => {
+            const unit = Number(it.priceCents) || 0;
+            const discountedUnit = Math.round(unit * (100 - pct) / 100);
+            return sum + discountedUnit * (Number(it.quantity) || 1);
+          }, 0);
+          itemsTotal = Math.max(0, discountedItemsSubtotal);
           appliedCoupon = { code, percent: pct };
         }
       }

@@ -6,6 +6,16 @@ const SiteSchema = new mongoose.Schema({
 	domains: [{ type: String }],
 	isActive: { type: Boolean, default: true },
 	brandColor: { type: String, default: '#0ea5e9' },
+	// IANA timezone for operating hours (e.g., "America/Edmonton")
+	timeZone: { type: String },
+	// Currency used for Stripe and price displays (ISO code, e.g., 'usd', 'cad')
+	currency: { type: String, default: 'usd' },
+	// Optional: enforce a minimum order amount (in cents). If omitted, falls back to env.
+	minOrderCents: { type: Number },
+	// Optional: minimum subtotal required to apply coupons (in cents). If omitted, falls back to env.
+	couponMinSubtotalCents: { type: Number },
+	// Optional: per-site webhook/notify URL for order events
+	orderNotifyUrl: { type: String },
 	// Optional short text shown next to logo in header
 	tagline: { type: String },
 	// Optional logo URL displayed in the shop header

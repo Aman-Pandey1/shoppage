@@ -85,6 +85,20 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
                 <div style={{ fontWeight: 700 }}>{p.name}</div>
                 </div>
                 {p.description ? <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>{p.description}</div> : null}
+                {Array.isArray(p?.variants) && p.variants.length > 0 ? (
+                  <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                    {(() => {
+                      try {
+                        const list = p.variants.slice(0, 3).map((v) => {
+                          const price = Number(v?.price || 0);
+                          return `${v?.label || v?.key || 'Variant'}${price ? ` (+$${price.toFixed(2)})` : ''}`;
+                        });
+                        const extra = p.variants.length > 3 ? ` +${p.variants.length - 3} more` : '';
+                        return `Select Item: ${list.join(', ')}${extra}`;
+                      } catch { return 'Select Item available'; }
+                    })()}
+                  </div>
+                ) : null}
               </div>
               <div style={{ display: 'grid', justifyItems: 'end', gap: 6 }}>
                 <div style={{ fontWeight: 800, color: 'var(--primary-600)' }}>
@@ -92,9 +106,11 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
                 </div>
                 <button
                   onClick={() => {
-                    // If product requires spice selection, skip the quick-add popup and
-                    // go straight into the add-to-cart flow; quantity will be chosen in the spice modal.
-                    if (Array.isArray(p?.spiceLevels) && p.spiceLevels.length > 0) {
+                    // Use the guided add-to-cart flow when product has variants, spice levels, or extras.
+                    const hasVariants = Array.isArray(p?.variants) && p.variants.length > 0;
+                    const hasSpice = Array.isArray(p?.spiceLevels) && p.spiceLevels.length > 0;
+                    const hasExtras = Array.isArray(p?.extraOptionGroups) && p.extraOptionGroups.length > 0;
+                    if (hasVariants || hasSpice || hasExtras) {
                       onAdd(p, 1);
                       return;
                     }
@@ -102,8 +118,8 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
                     setQuickAddOpen(true);
                   }}
                   className="primary-btn hover-float"
-                  aria-label={`Add ${p.name}`}
-                  title={`Add ${p.name}`}
+                  aria-label={(Array.isArray(p?.variants) && p.variants.length > 0) || (Array.isArray(p?.spiceLevels) && p.spiceLevels.length > 0) || (Array.isArray(p?.extraOptionGroups) && p.extraOptionGroups.length > 0) ? `Customize ${p.name}` : `Add ${p.name}`}
+                  title={(Array.isArray(p?.variants) && p.variants.length > 0) || (Array.isArray(p?.spiceLevels) && p.spiceLevels.length > 0) || (Array.isArray(p?.extraOptionGroups) && p.extraOptionGroups.length > 0) ? `Customize ${p.name}` : `Add ${p.name}`}
                   style={{ borderRadius: 999, width: 38, height: 38, padding: 0, display: 'grid', placeItems: 'center' }}
                 >+
                 </button>

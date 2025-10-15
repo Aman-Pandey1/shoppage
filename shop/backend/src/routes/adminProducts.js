@@ -14,6 +14,20 @@ const upload = multer({
   },
 });
 
+function normalizeProductShape(p) {
+  if (!p) return p;
+  const obj = (typeof p.toObject === 'function') ? p.toObject() : { ...p };
+  if (Array.isArray(obj.variants)) {
+    obj.variants = obj.variants.map((v) => {
+      const key = String(v?.key || v?.label || 'variant').trim();
+      const label = String(v?.label || v?.key || 'Variant').trim();
+      const price = Number((v?.price ?? v?.priceDelta) || 0) || 0;
+      return { key, label, price };
+    });
+  }
+  return obj;
+}
+
 router.get('/', requireAdmin, async (req, res) => {
 	try {
 		const { siteId } = req.params;
@@ -32,8 +46,8 @@ router.get('/', requireAdmin, async (req, res) => {
 				if (isVeg.toLowerCase() === 'false') vegFilter = false;
 			}
 			if (vegFilter !== null) list = list.filter((p) => (typeof p.isVeg === 'boolean' ? p.isVeg : true) === vegFilter);
-			list.sort((a, b) => a.name.localeCompare(b.name));
-			return res.json(list);
+      list.sort((a, b) => a.name.localeCompare(b.name));
+      return res.json(list.map(normalizeProductShape));
 		}
 		const filter = { site: siteId };
 		if (categoryId) filter.categoryId = categoryId;
@@ -45,8 +59,10 @@ router.get('/', requireAdmin, async (req, res) => {
 			if (isVeg.toLowerCase() === 'true') filter.isVeg = true;
 			if (isVeg.toLowerCase() === 'false') filter.isVeg = false;
 		}
-		const products = await Product.find(filter).sort({ name: 1 });
-		res.json(products);
+    const products = await Product.find(filter)
+      .select('name description imageUrl price categoryId isVeg spiceLevels variants extraOptionGroups site createdAt updatedAt')
+      .sort({ name: 1 });
+    res.json(products.map(normalizeProductShape));
 	} catch (err) {
 		res.status(400).json({ error: err.message });
 	}
@@ -60,16 +76,35 @@ router.post('/', requireAdmin, async (req, res) => {
     const payload = { ...req.body, site: siteId };
 			const catOk = mock.categories.some((c) => c._id === payload.categoryId && c.site === siteId);
 			if (!catOk) return res.status(400).json({ error: 'Invalid category for site' });
-			const created = { _id: `p-${Date.now()}`, ...payload };
-			mock.products.unshift(created);
+      const created = { _id: `p-${Date.now()}`, ...payload };
+      // Normalize variants so UI sees `price`
+      const normalized = normalizeProductShape(created);
+      mock.products.unshift(normalized);
 			try { saveMockData(req.app.locals.mockData); } catch {}
-			return res.status(201).json(created);
+      return res.status(201).json(normalized);
 		}
-		const payload = { ...req.body, site: siteId };
+    const payload = { ...req.body, site: siteId };
 		const cat = await Category.findOne({ _id: payload.categoryId, site: siteId });
 		if (!cat) return res.status(400).json({ error: 'Invalid category for site' });
-		const created = await Product.create(payload);
-		res.status(201).json(created);
+    // Ensure only whitelisted fields are persisted and others are ignored silently
+    const allowed = {
+      site: siteId,
+      name: payload.name,
+      description: payload.description || '',
+      imageUrl: payload.imageUrl || '',
+      price: Number(payload.price) || 0,
+      categoryId: payload.categoryId,
+      isVeg: typeof payload.isVeg === 'boolean' ? payload.isVeg : true,
+      spiceLevels: Array.isArray(payload.spiceLevels) ? payload.spiceLevels : [],
+      variants: Array.isArray(payload.variants) ? payload.variants.map((v) => ({
+        key: String(v.key || v.label || 'default'),
+        label: String(v.label || v.key || 'Default'),
+        price: Number((v.price ?? v.priceDelta) || 0) || 0,
+      })) : [],
+      extraOptionGroups: Array.isArray(payload.extraOptionGroups) ? payload.extraOptionGroups : [],
+    };
+    const created = await Product.create(allowed);
+    res.status(201).json(normalizeProductShape(created));
 	} catch (err) {
 		res.status(400).json({ error: err.message });
 	}
@@ -87,19 +122,47 @@ router.put('/:id', requireAdmin, async (req, res) => {
 			}
 			const idx = mock.products.findIndex((p) => p._id === id && p.site === siteId);
 			if (idx === -1) return res.status(404).json({ error: 'Not found' });
-			const product = { ...mock.products[idx], ...update };
-			mock.products[idx] = product;
+      const merged = { ...mock.products[idx], ...update };
+      const product = normalizeProductShape(merged);
+      mock.products[idx] = product;
 			try { saveMockData(req.app.locals.mockData); } catch {}
 			return res.json(product);
 		}
-		const update = { ...req.body };
+    const update = { ...req.body };
+    // Never allow overwriting the tenant binding; ensure we don't unset or change it
+    if ('site' in update) delete update.site;
 		if (update.categoryId) {
 			const cat = await Category.findOne({ _id: update.categoryId, site: siteId });
 			if (!cat) return res.status(400).json({ error: 'Invalid category for site' });
 		}
-		const product = await Product.findOneAndUpdate({ _id: id, site: siteId }, update, { new: true });
+    // Prepare normalized variants if provided
+    const normalizedVariants = (update.variants !== undefined)
+      ? (Array.isArray(update.variants)
+        ? update.variants.map((v) => ({
+            key: String(v?.key || v?.label || 'default'),
+            label: String(v?.label || v?.key || 'Default'),
+            price: Number((v?.price ?? v?.priceDelta) || 0) || 0,
+          }))
+        : [])
+      : undefined;
+
+    const product = await Product.findOneAndUpdate(
+      { _id: id, site: siteId },
+      { $set: {
+        ...(update.name !== undefined ? { name: update.name } : {}),
+        ...(update.description !== undefined ? { description: update.description } : {}),
+        ...(update.imageUrl !== undefined ? { imageUrl: update.imageUrl } : {}),
+        ...(update.price !== undefined ? { price: update.price } : {}),
+        ...(update.categoryId !== undefined ? { categoryId: update.categoryId } : {}),
+        ...(update.isVeg !== undefined ? { isVeg: update.isVeg } : {}),
+        ...(update.spiceLevels !== undefined ? { spiceLevels: update.spiceLevels } : {}),
+        ...(update.variants !== undefined ? { variants: normalizedVariants } : {}),
+        ...(update.extraOptionGroups !== undefined ? { extraOptionGroups: Array.isArray(update.extraOptionGroups) ? update.extraOptionGroups : [] } : {}),
+      } },
+      { new: true, runValidators: true, overwrite: false }
+    );
 		if (!product) return res.status(404).json({ error: 'Not found' });
-		res.json(product);
+    res.json(normalizeProductShape(product));
 	} catch (err) {
 		res.status(400).json({ error: err.message });
 	}

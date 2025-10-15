@@ -69,7 +69,7 @@ export const OrderDetailsBar = ({
               >
                 {(timeOptions.length ? timeOptions : (() => {
                   const out = [];
-                  let h = 11, m = 0; // 11:00 AM to 10:00 PM opening
+                  let h = 10, m = 0; // 10:00 AM to 10:00 PM opening
                   // last order 9:45 PM
                   let endH = 21, endM = 45;
                   while (h < endH || (h === endH && m <= endM)) {
