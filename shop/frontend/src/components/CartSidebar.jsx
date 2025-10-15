@@ -75,7 +75,11 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
 
   // Coupon + delivery context
   const deliveryFeeCents = state.fulfillmentType === 'delivery' ? (Number(state.deliveryFeeCents || 0)) : 0;
-  const hasEligibleCoupon = !!state.coupon && itemsSubtotal >= 50;
+  // Use the same cents-based eligibility as backend/site setting
+  const hasEligibleCoupon = React.useMemo(() => {
+    const minCents = Number(state.couponMinSubtotalCents) || 5000;
+    return !!state.coupon && itemsSubtotalCents >= minCents;
+  }, [state.coupon, itemsSubtotalCents, state.couponMinSubtotalCents]);
   const couponPct = hasEligibleCoupon ? Math.max(0, Math.min(100, Number(state.coupon.percent) || 0)) : 0;
   const discountFactor = couponPct > 0 ? (1 - couponPct / 100) : 1;
 
