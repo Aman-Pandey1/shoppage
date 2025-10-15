@@ -74,6 +74,9 @@ const SiteSchema = new mongoose.Schema({
 		sat: { open: { type: String, default: '10:00' }, close: { type: String, default: '22:00' }, closed: { type: Boolean, default: false } },
 		sun: { open: { type: String, default: '10:00' }, close: { type: String, default: '22:00' }, closed: { type: Boolean, default: false } },
 	},
+	// Optional: store IANA timezone like "America/Toronto" for accurate scheduling.
+	// If omitted, frontend derives from first location's province with CA defaults.
+	timeZone: { type: String },
 	pickup: {
 		name: { type: String },
 		phone: { type: String },

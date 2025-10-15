@@ -39,6 +39,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [pickupPaymentMethod, setPickupPaymentMethod] = useState('online'); // 'online' | 'cod'
   const [closedAlertOpen, setClosedAlertOpen] = useState(false);
   const [pickupSubmitting, setPickupSubmitting] = useState(false);
+  // Store timezone (derived from first pickup location; defaults to Canada Eastern if unknown)
+  const [storeTimeZone, setStoreTimeZone] = useState('America/Toronto');
 
   // Additional UI state brought from the alternate implementation
   // Order details state
@@ -68,6 +70,71 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [orderDetailsOpen, setOrderDetailsOpen] = useState(false);
   const [selectedPickupCity, setSelectedPickupCity] = useState('All');
   const [pickupTab, setPickupTab] = useState('location'); // address | location | city
+
+  // Helper: Resolve IANA timezone from CA province (fallbacks to Toronto)
+  function resolveTimeZoneForLocations(locs) {
+    try {
+      const first = Array.isArray(locs) && locs.length ? locs[0] : null;
+      const country = String(first?.address?.country || '').toUpperCase();
+      if (country !== 'CA') return 'America/Toronto';
+      const provRaw = String(first?.address?.province || '').trim();
+      const norm = provRaw.toUpperCase();
+      const cleaned = norm.replace(/[^A-Z]/g, '');
+      const mapFullToAbbr = {
+        ALBERTA: 'AB', BRITISHCOLUMBIA: 'BC', MANITOBA: 'MB', NEWBRUNSWICK: 'NB', NEWFOUNDLANDANDLABRADOR: 'NL',
+        NOVASCOTIA: 'NS', ONTARIO: 'ON', PRINCEEDWARDISLAND: 'PE', QUEBEC: 'QC', SASKATCHEWAN: 'SK',
+        NORTHWESTTERRITORIES: 'NT', NUNAVUT: 'NU', YUKON: 'YT'
+      };
+      const abbr = (cleaned.length > 3 ? (mapFullToAbbr[cleaned] || '') : cleaned) || cleaned;
+      const tzMap = {
+        AB: 'America/Edmonton',
+        BC: 'America/Vancouver',
+        SK: 'America/Regina',
+        MB: 'America/Winnipeg',
+        ON: 'America/Toronto',
+        QC: 'America/Toronto',
+        NB: 'America/Halifax',
+        NS: 'America/Halifax',
+        PE: 'America/Halifax',
+        NL: 'America/St_Johns',
+        YT: 'America/Whitehorse',
+        NT: 'America/Yellowknife',
+        NU: 'America/Iqaluit'
+      };
+      return tzMap[abbr] || 'America/Toronto';
+    } catch { return 'America/Toronto'; }
+  }
+
+  // Helpers: current time and day in a given timezone
+  function getNowTzParts(tz) {
+    const fmt = new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz,
+      hour12: false,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', weekday: 'short'
+    });
+    const parts = Object.fromEntries(fmt.formatToParts(new Date()).map(p => [p.type, p.value]));
+    const ymd = `${parts.year}-${parts.month}-${parts.day}`;
+    const hh = Number(parts.hour || '0');
+    const mm = Number(parts.minute || '0');
+    const wkShort = String(parts.weekday || '').toLowerCase(); // sun, mon, ... (short)
+    const wkKey = ({ sun: 'sun', mon: 'mon', tue: 'tue', wed: 'wed', thu: 'thu', fri: 'fri', sat: 'sat' })[wkShort] || 'sun';
+    return { ymd, hh, mm, wkKey };
+  }
+  function getPlusMinutesTzParts(tz, deltaMin) {
+    const d = new Date(Date.now() + Math.max(0, Number(deltaMin) || 0) * 60000);
+    const fmt = new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz,
+      hour12: false,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit'
+    });
+    const parts = Object.fromEntries(fmt.formatToParts(d).map(p => [p.type, p.value]));
+    const ymd = `${parts.year}-${parts.month}-${parts.day}`;
+    const hh = Number(parts.hour || '0');
+    const mm = Number(parts.minute || '0');
+    return { ymd, hh, mm };
+  }
 
   useEffect(() => {
     const privacyAccepted = localStorage.getItem('privacyAccepted_v1');
@@ -173,6 +240,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         if (!cancelled) {
           const arr = Array.isArray(list) ? list : [];
           setLocations(arr);
+          // Derive timezone from first location (Canada provinces)
+          try { setStoreTimeZone(resolveTimeZoneForLocations(arr)); } catch {}
           // Respect previously chosen location if stored; do not auto-pick first
           try {
             const saved = localStorage.getItem('selectedPickupIndex');
@@ -210,7 +279,11 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     async function loadHours() {
       try {
         const data = await fetchJson(`/api/shop/${siteSlug}/hours`);
-        if (!cancelled) setHours(data);
+        if (!cancelled) {
+          setHours(data);
+          // Accept optional backend-provided timezone hint
+          try { if (data && typeof data.__tz === 'string' && data.__tz) setStoreTimeZone(data.__tz); } catch {}
+        }
       } catch {
         if (!cancelled) setHours(null);
       }
@@ -226,19 +299,17 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       const [hh, mm] = s.split(':').map(Number);
       return { hh, mm };
     }
-    function keyForToday(d) {
-      return ['sun','mon','tue','wed','thu','fri','sat'][d.getDay()];
-    }
-    const now = new Date();
-    const key = keyForToday(now);
-    const cfg = hours?.[key];
+    const tz = storeTimeZone || 'America/Toronto';
+    const { wkKey, hh, mm } = getNowTzParts(tz);
+    const cfg = hours?.[wkKey];
     if (!cfg || cfg.closed) { setIsClosedNow(true); return; }
     const { hh: oh = 10, mm: om = 0 } = parse24h(cfg.open, { hh: 10, mm: 0 });
     const { hh: ch = 22, mm: cm = 0 } = parse24h(cfg.close, { hh: 22, mm: 0 });
-    const open = new Date(now); open.setHours(oh, om, 0, 0);
-    const close = new Date(now); close.setHours(ch, cm, 0, 0);
-    setIsClosedNow(!(now >= open && now <= close));
-  }, [hours]);
+    const nowMin = (hh * 60) + mm;
+    const openMin = (oh * 60) + om;
+    const closeMin = (ch * 60) + cm;
+    setIsClosedNow(!(nowMin >= openMin && nowMin <= closeMin));
+  }, [hours, storeTimeZone]);
 
   // Compute date options (today + next 6 days, respecting closed days)
   useEffect(() => {
@@ -290,11 +361,11 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       return ['sun','mon','tue','wed','thu','fri','sat'][d.getDay()];
     }
     if (!pickupDate) { setTimeOptions([]); return; }
-    const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-    const isTodaySelected = pickupDate === todayStr;
-    // Prep buffer of 30 minutes
-    const earliest = new Date(now.getTime() + 30 * 60000);
+    const tz = storeTimeZone || 'America/Toronto';
+    const { ymd: todayTz } = getNowTzParts(tz);
+    const isTodaySelected = pickupDate === todayTz;
+    // Prep buffer of 30 minutes in store timezone
+    const earliestParts = getPlusMinutesTzParts(tz, 30);
     const [selYr, selMo, selDy] = pickupDate.split('-').map(Number);
     const key = dayKeyFromDateString(pickupDate);
     const cfg = hours?.[key] || { open: '10:00', close: '22:00', closed: false };
@@ -311,9 +382,9 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       const value = format12h(curH, curM);
       let disabled = false;
       if (isTodaySelected) {
-        const candidate = new Date(selYr, (selMo || 1) - 1, selDy || 1);
-        candidate.setHours(curH, curM, 0, 0);
-        disabled = candidate < earliest;
+        const candMin = (curH * 60) + curM;
+        const earliestMin = (Number(earliestParts.hh) * 60) + Number(earliestParts.mm);
+        disabled = candMin < earliestMin;
       }
       options.push({ value, label: value, disabled });
       curM += 15;

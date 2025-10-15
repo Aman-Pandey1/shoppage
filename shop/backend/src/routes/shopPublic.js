@@ -93,6 +93,20 @@ router.get('/:slug/locations', async (req, res) => {
 router.get('/:slug/hours', async (req, res) => {
   try {
     const { site } = req;
+    // Optional timezone hint for frontend; try to infer from first location (Canada provinces)
+    function resolveTimeZoneFromSite(s) {
+      try {
+        const loc = (Array.isArray(s?.locations) && s.locations.length) ? s.locations[0] : (s?.pickup ? { address: s.pickup.address } : null);
+        const country = String(loc?.address?.country || '').toUpperCase();
+        if (country !== 'CA') return undefined;
+        const provRaw = String(loc?.address?.province || '').trim();
+        const norm = provRaw.toUpperCase().replace(/[^A-Z]/g, '');
+        const mapFullToAbbr = { ALBERTA: 'AB', BRITISHCOLUMBIA: 'BC', MANITOBA: 'MB', NEWBRUNSWICK: 'NB', NEWFOUNDLANDANDLABRADOR: 'NL', NOVASCOTIA: 'NS', ONTARIO: 'ON', PRINCEEDWARDISLAND: 'PE', QUEBEC: 'QC', SASKATCHEWAN: 'SK', NORTHWESTTERRITORIES: 'NT', NUNAVUT: 'NU', YUKON: 'YT' };
+        const abbr = (norm.length > 3 ? (mapFullToAbbr[norm] || '') : norm) || norm;
+        const tzMap = { AB: 'America/Edmonton', BC: 'America/Vancouver', SK: 'America/Regina', MB: 'America/Winnipeg', ON: 'America/Toronto', QC: 'America/Toronto', NB: 'America/Halifax', NS: 'America/Halifax', PE: 'America/Halifax', NL: 'America/St_Johns', YT: 'America/Whitehorse', NT: 'America/Yellowknife', NU: 'America/Iqaluit' };
+        return tzMap[abbr];
+      } catch { return undefined; }
+    }
     const defaultHours = {
       // Default store hours: 10:00 AM – 10:00 PM (last order 9:45 PM)
       mon: { open: '10:00', close: '22:00', closed: false },
@@ -106,9 +120,12 @@ router.get('/:slug/hours', async (req, res) => {
     const mock = req.app.locals.mockData;
     if (mock) {
       const s = mock.sites.find((x) => x._id === req.siteId) || {};
-      return res.json(s.hours || defaultHours);
+      const tz = resolveTimeZoneFromSite(s);
+      const result = s.hours || defaultHours;
+      return res.json({ ...result, __tz: tz });
     }
-    return res.json(site.hours || defaultHours);
+    const tz = resolveTimeZoneFromSite(site);
+    return res.json({ ...(site.hours || defaultHours), __tz: tz });
   } catch (err) {
     return res.status(400).json({ error: err.message });
   }
