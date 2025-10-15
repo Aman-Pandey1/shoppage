@@ -12,7 +12,6 @@ import { Modal } from './components/Modal';
 import { SpiceModal } from './components/SpiceModal';
 import { ExtrasModal } from './components/ExtrasModal';
 import { AddToCartToast } from './components/AddToCartToast';
-import { AlertModal } from './components/AlertModal';
 import { DeliveryAddressModal } from './components/DeliveryAddressModal';
 import { fetchJson, getAuthToken, postJson } from './lib/api';
 import { UserAuthModal } from './components/UserAuthModal';
@@ -37,7 +36,6 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [deliveryAddressSummary, setDeliveryAddressSummary] = useState('');
   const [orderError, setOrderError] = useState('');
   const [pickupPaymentMethod, setPickupPaymentMethod] = useState('online'); // 'online' | 'cod'
-  const [closedAlertOpen, setClosedAlertOpen] = useState(false);
   const [pickupSubmitting, setPickupSubmitting] = useState(false);
 
   // Additional UI state brought from the alternate implementation
@@ -48,7 +46,6 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [timeZone, setTimeZone] = useState('');
   const [dateOptions, setDateOptions] = useState([]);
   const [timeOptions, setTimeOptions] = useState([]);
-  const [isClosedNow, setIsClosedNow] = useState(false);
   const readyAt = React.useMemo(() => {
     try {
       if (!pickupDate || !pickupTime) return null;
@@ -229,55 +226,9 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     return () => { cancelled = true; };
   }, [siteSlug]);
 
-  // Determine if restaurant is currently closed (based on today and now)
-  // Do NOT show "closed" when timings are missing; only when explicitly closed
-  useEffect(() => {
-    function parse24hStrict(s) {
-      if (!s || !/^\d{2}:\d{2}$/.test(s)) return null;
-      const [hh, mm] = s.split(':').map(Number);
-      return { hh, mm };
-    }
-    function keyForToday(d) {
-      return ['sun','mon','tue','wed','thu','fri','sat'][d.getDay()];
-    }
-    const now = new Date();
-    const key = keyForToday(now);
-    const cfg = hours?.[key];
+  // Closed-state logic removed to keep UI always open
 
-    // If there is no config for today, do not mark as closed
-    if (!cfg) { setIsClosedNow(false); return; }
-
-    // Respect explicit "closed" flag
-    if (cfg.closed) { setIsClosedNow(true); return; }
-
-    // Require valid open and close times to compute closed state; otherwise, don't show closed
-    const openParsed = parse24hStrict(cfg.open);
-    const closeParsed = parse24hStrict(cfg.close);
-    if (!openParsed || !closeParsed) { setIsClosedNow(false); return; }
-
-    const { hh: oh, mm: om } = openParsed;
-    const { hh: ch, mm: cm } = closeParsed;
-
-    // Compare by wall clock; if timeZone provided, compute current clock time in that zone
-    if (timeZone) {
-      try {
-        const formatter = new Intl.DateTimeFormat('en-CA', { timeZone, hour: '2-digit', minute: '2-digit', hour12: false });
-        const [hhStr, mmStr] = formatter.format(now).split(':');
-        const curH = Number(hhStr), curM = Number(mmStr);
-        const curNum = curH * 60 + curM;
-        const openNum = (oh * 60) + om;
-        const closeNum = (ch * 60) + cm;
-        setIsClosedNow(!(curNum >= openNum && curNum <= closeNum));
-        return;
-      } catch {}
-    }
-
-    const open = new Date(now); open.setHours(oh, om, 0, 0);
-    const close = new Date(now); close.setHours(ch, cm, 0, 0);
-    setIsClosedNow(!(now >= open && now <= close));
-  }, [hours, timeZone]);
-
-  // Compute date options (today + next 6 days, respecting closed days)
+  // Compute date options (today + next 6 days)
   useEffect(() => {
     function formatDateLabel(date, isToday) {
       const weekday = date.toLocaleDateString([], { weekday: 'long' });
@@ -296,11 +247,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       d.setDate(d.getDate() + i);
       const value = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       const key = dayKeyFromDate(d);
-      const cfg = hours?.[key];
-      const closed = cfg?.closed === true;
-      if (!closed) {
-        opts.push({ value, label: formatDateLabel(d, i === 0) });
-      }
+      // Always include all days regardless of closed flag
+      opts.push({ value, label: formatDateLabel(d, i === 0) });
     }
     setDateOptions(opts);
     if (!pickupDate && opts.length) setPickupDate(opts[0].value);
@@ -335,7 +283,6 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     const [selYr, selMo, selDy] = pickupDate.split('-').map(Number);
     const key = dayKeyFromDateString(pickupDate);
     const cfg = hours?.[key] || { open: '10:00', close: '22:00', closed: false };
-    if (cfg.closed) { setTimeOptions([]); return; }
     const { hh: openH = 10, mm: openM = 0 } = parse24h(cfg.open, { hh: 10, mm: 0 });
     const { hh: closeH = 22, mm: closeM = 0 } = parse24h(cfg.close, { hh: 22, mm: 0 });
     // Last selectable slot should be 15 minutes before close
@@ -444,7 +391,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
             setLoginOpen(true);
             return;
           }
-          if (isClosedNow) { setClosedAlertOpen(true); return; }
+          // Allow checkout regardless of store hours
           // Close cart before showing next step so modal is visible on mobile
           setMobileCartOpen(false);
           if (!state.fulfillmentType) {
@@ -463,15 +410,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       />
       <TopNav siteSlug={siteSlug} isCartOpen={mobileCartOpen} onSignIn={() => setLoginOpen(true)} onOpenCart={() => setMobileCartOpen(true)} cartCount={state.items.length} />
       <main className="content">
-        {isClosedNow ? (
-          <div className="card" style={{ marginBottom: 12, borderLeft: '3px solid var(--danger)', padding: 10 }}>
-            <div style={{ fontWeight: 700 }}>Restaurant closed</div>
-            <div className="muted" style={{ fontSize: 12 }}>
-              Restaurant will be open at regular hours.<br />
-              We will be resume online odering once restaurant is open.
-            </div>
-          </div>
-        ) : null}
+        {/* closed banner removed per requirement */}
 
         <div className="card order-type-card">
           <OrderTypeSelection />
@@ -718,17 +657,6 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       />
       <ExtrasModal open={extrasOpen} groups={pendingProduct?.extraOptionGroups} product={pendingProduct} onCancel={() => setExtrasOpen(false)} onConfirm={confirmExtras} />
       <AddToCartToast />
-      <AlertModal
-        open={closedAlertOpen}
-        onClose={() => setClosedAlertOpen(false)}
-        title="Restaurant is closed"
-        message={
-          <span>
-            Restaurant will be open at regular hours.<br />
-            We will be resume online odering once restaurant is open.
-          </span>
-        }
-      />
       <UserAuthModal open={loginOpen} onClose={() => setLoginOpen(false)} onSuccess={() => {
         setLoginOpen(false);
         // Stay on the same page. If no order type yet, prompt selection.
