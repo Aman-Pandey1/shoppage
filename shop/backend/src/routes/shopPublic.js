@@ -22,6 +22,41 @@ function normalizeProductShape(p) {
   return obj;
 }
 
+// Infer a reasonable Canadian IANA time zone when not explicitly set
+function inferCanadaTimeZoneFromSite(siteLike) {
+  try {
+    const getProvince = () => {
+      const fromPickup = siteLike?.pickup?.address?.province;
+      if (fromPickup) return String(fromPickup).toUpperCase();
+      const firstLocProv = Array.isArray(siteLike?.locations) && siteLike.locations.length
+        ? siteLike.locations[0]?.address?.province
+        : undefined;
+      return String(firstLocProv || '').toUpperCase();
+    };
+    const country = String(siteLike?.pickup?.address?.country || siteLike?.locations?.[0]?.address?.country || '').toUpperCase();
+    if (country && country !== 'CA') return undefined;
+    const prov = getProvince();
+    const MAP = {
+      NL: 'America/St_Johns',
+      NS: 'America/Halifax',
+      PE: 'America/Halifax',
+      NB: 'America/Halifax',
+      QC: 'America/Toronto',
+      ON: 'America/Toronto',
+      MB: 'America/Winnipeg',
+      SK: 'America/Regina',
+      AB: 'America/Edmonton',
+      BC: 'America/Vancouver',
+      YT: 'America/Whitehorse',
+      NT: 'America/Yellowknife',
+      NU: 'America/Iqaluit',
+    };
+    return MAP[prov] || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 // Resolve by current request host -> return site basics
 router.get('/host-site', tenantByHost, async (req, res) => {
 	try {
@@ -107,9 +142,11 @@ router.get('/:slug/hours', async (req, res) => {
     const mock = req.app.locals.mockData;
     if (mock) {
       const s = mock.sites.find((x) => x._id === req.siteId) || {};
-      return res.json({ hours: s.hours || defaultHours, timeZone: s.timeZone });
+      const resolvedTz = s.timeZone || inferCanadaTimeZoneFromSite(s) || undefined;
+      return res.json({ hours: s.hours || defaultHours, timeZone: resolvedTz });
     }
-    return res.json({ hours: site.hours || defaultHours, timeZone: site.timeZone });
+    const resolvedTz = site.timeZone || inferCanadaTimeZoneFromSite(site) || undefined;
+    return res.json({ hours: site.hours || defaultHours, timeZone: resolvedTz });
   } catch (err) {
     return res.status(400).json({ error: err.message });
   }
