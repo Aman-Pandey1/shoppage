@@ -45,6 +45,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [pickupDate, setPickupDate] = useState(''); // YYYY-MM-DD
   const [pickupTime, setPickupTime] = useState(''); // e.g., 11:00 AM
   const [hours, setHours] = useState(null);
+  const [timeZone, setTimeZone] = useState('');
   const [dateOptions, setDateOptions] = useState([]);
   const [timeOptions, setTimeOptions] = useState([]);
   const [isClosedNow, setIsClosedNow] = useState(false);
@@ -209,8 +210,17 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     let cancelled = false;
     async function loadHours() {
       try {
-        const data = await fetchJson(`/api/shop/${siteSlug}/hours`);
-        if (!cancelled) setHours(data);
+        const resp = await fetchJson(`/api/shop/${siteSlug}/hours`);
+        if (!cancelled) {
+          // Backward compat: support old shape { mon:{},... } or new { hours, timeZone }
+          if (resp && resp.hours) {
+            setHours(resp.hours);
+            setTimeZone(resp.timeZone || '');
+          } else {
+            setHours(resp);
+            setTimeZone('');
+          }
+        }
       } catch {
         if (!cancelled) setHours(null);
       }
@@ -237,6 +247,20 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     const { hh: ch = 22, mm: cm = 0 } = parse24h(cfg.close, { hh: 22, mm: 0 });
     const open = new Date(now); open.setHours(oh, om, 0, 0);
     const close = new Date(now); close.setHours(ch, cm, 0, 0);
+    // If a site timeZone is provided, adjust comparison by simulating wall-clock in that IANA zone.
+    // We approximate by computing the current local time in that zone using Intl and comparing clock times only.
+    if (timeZone) {
+      try {
+        const formatter = new Intl.DateTimeFormat('en-CA', { timeZone, hour: '2-digit', minute: '2-digit', hour12: false });
+        const [hhStr, mmStr] = formatter.format(now).split(':');
+        const curH = Number(hhStr), curM = Number(mmStr);
+        const curNum = curH * 60 + curM;
+        const openNum = (oh * 60) + om;
+        const closeNum = (ch * 60) + cm;
+        setIsClosedNow(!(curNum >= openNum && curNum <= closeNum));
+        return;
+      } catch {}
+    }
     setIsClosedNow(!(now >= open && now <= close));
   }, [hours]);
 

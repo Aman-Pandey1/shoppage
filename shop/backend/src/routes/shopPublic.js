@@ -52,6 +52,7 @@ router.get('/:slug/site', async (req, res) => {
       slug: site.slug,
       name: site.name,
       brandColor: site.brandColor,
+      timeZone: site.timeZone,
       deliveryFeeCents: Number(site.deliveryFeeCents) || 0,
       splitDeliveryFee: !!site.splitDeliveryFee,
       logoUrl: site.logoUrl,
@@ -106,9 +107,9 @@ router.get('/:slug/hours', async (req, res) => {
     const mock = req.app.locals.mockData;
     if (mock) {
       const s = mock.sites.find((x) => x._id === req.siteId) || {};
-      return res.json(s.hours || defaultHours);
+      return res.json({ hours: s.hours || defaultHours, timeZone: s.timeZone });
     }
-    return res.json(site.hours || defaultHours);
+    return res.json({ hours: site.hours || defaultHours, timeZone: site.timeZone });
   } catch (err) {
     return res.status(400).json({ error: err.message });
   }
