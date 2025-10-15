@@ -6,6 +6,8 @@ const SiteSchema = new mongoose.Schema({
 	domains: [{ type: String }],
 	isActive: { type: Boolean, default: true },
 	brandColor: { type: String, default: '#0ea5e9' },
+	// IANA timezone for operating hours (e.g., "America/Edmonton")
+	timeZone: { type: String },
 	// Currency used for Stripe and price displays (ISO code, e.g., 'usd', 'cad')
 	currency: { type: String, default: 'usd' },
 	// Optional: enforce a minimum order amount (in cents). If omitted, falls back to env.

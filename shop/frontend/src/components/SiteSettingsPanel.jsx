@@ -48,6 +48,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
   const [saving, setSaving] = React.useState(false);
   const [savedAt, setSavedAt] = React.useState(null);
   const [currency, setCurrency] = React.useState(site?.currency || 'usd');
+  const [timeZone, setTimeZone] = React.useState(site?.timeZone || '');
   const [minOrderCents, setMinOrderCents] = React.useState(site?.minOrderCents ?? '');
   const [couponMinSubtotalCents, setCouponMinSubtotalCents] = React.useState(site?.couponMinSubtotalCents ?? '');
   const [orderNotifyUrl, setOrderNotifyUrl] = React.useState(site?.orderNotifyUrl || '');
@@ -107,6 +108,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
     setTagline(site?.tagline || '');
     setLogoFile(null);
     setCurrency(site?.currency || 'usd');
+    setTimeZone(site?.timeZone || '');
     setMinOrderCents(site?.minOrderCents ?? '');
     setCouponMinSubtotalCents(site?.couponMinSubtotalCents ?? '');
     setOrderNotifyUrl(site?.orderNotifyUrl || '');
@@ -230,6 +232,11 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
       </div>
 
       <div style={{ gridColumn: '1 / -1', fontWeight: 800, marginTop: 8 }}>Delivery settings</div>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span>Time zone (IANA, optional)</span>
+        <input value={timeZone} onChange={(e) => setTimeZone(e.target.value)} placeholder="e.g., America/Edmonton" />
+        <span className="muted" style={{ fontSize: 12 }}>Used to compute open/close hours correctly.</span>
+      </label>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span>Minimum order (cents)</span>
         <input type="number" min={0} value={minOrderCents} onChange={(e) => setMinOrderCents(e.target.value)} placeholder="e.g., 5000 for $50.00" />
@@ -495,6 +502,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
             minOrderCents: (minOrderCents === '' ? undefined : Number(minOrderCents)),
             couponMinSubtotalCents: (couponMinSubtotalCents === '' ? undefined : Number(couponMinSubtotalCents)),
             orderNotifyUrl,
+            timeZone: timeZone || undefined,
             pickup: {
               name: pickupName,
               phone: pickupPhone,
