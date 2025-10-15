@@ -43,7 +43,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   // Additional UI state brought from the alternate implementation
   // Order details state
   const [pickupDate, setPickupDate] = useState(''); // YYYY-MM-DD
-  const [pickupTime, setPickupTime] = useState(''); // e.g., 11:00 AM
+  const [pickupTime, setPickupTime] = useState(''); // e.g., 10:00 AM
   const [hours, setHours] = useState(null);
   const [timeZone, setTimeZone] = useState('');
   const [dateOptions, setDateOptions] = useState([]);
@@ -243,7 +243,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     const key = keyForToday(now);
     const cfg = hours?.[key];
     if (!cfg || cfg.closed) { setIsClosedNow(true); return; }
-    const { hh: oh = 11, mm: om = 0 } = parse24h(cfg.open, { hh: 11, mm: 0 });
+    const { hh: oh = 10, mm: om = 0 } = parse24h(cfg.open, { hh: 10, mm: 0 });
     const { hh: ch = 22, mm: cm = 0 } = parse24h(cfg.close, { hh: 22, mm: 0 });
     const open = new Date(now); open.setHours(oh, om, 0, 0);
     const close = new Date(now); close.setHours(ch, cm, 0, 0);
@@ -293,7 +293,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     if (!pickupDate && opts.length) setPickupDate(opts[0].value);
   }, [hours]);
 
-  // Compute time options for selected date from hours (default 11:00-22:00)
+  // Compute time options for selected date from hours (default 10:00-22:00)
   // - Slots every 15 minutes
   // - Earliest selectable time is now + 30 minutes (prep buffer)
   // - Last order 15 minutes before close (e.g., 9:45 PM when closing at 10:00 PM)
@@ -321,9 +321,9 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     const earliest = new Date(now.getTime() + 30 * 60000);
     const [selYr, selMo, selDy] = pickupDate.split('-').map(Number);
     const key = dayKeyFromDateString(pickupDate);
-    const cfg = hours?.[key] || { open: '11:00', close: '22:00', closed: false };
+    const cfg = hours?.[key] || { open: '10:00', close: '22:00', closed: false };
     if (cfg.closed) { setTimeOptions([]); return; }
-    const { hh: openH = 11, mm: openM = 0 } = parse24h(cfg.open, { hh: 11, mm: 0 });
+    const { hh: openH = 10, mm: openM = 0 } = parse24h(cfg.open, { hh: 10, mm: 0 });
     const { hh: closeH = 22, mm: closeM = 0 } = parse24h(cfg.close, { hh: 22, mm: 0 });
     // Last selectable slot should be 15 minutes before close
     let endH = closeH;
@@ -630,8 +630,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                 <span style={{ color: 'var(--primary-600)' }}>Pick Up/Delivery Date and Time</span>
                 {(() => {
                   const times = (timeOptions && timeOptions.length) ? timeOptions : (() => {
-                    const out = [];
-                    let h = 11, m = 0; // 11:00 AM to 9:45 PM fallback
+                  const out = [];
+                  let h = 10, m = 0; // 10:00 AM to 9:45 PM fallback
                     let endH = 22, endM = 0; // 22:00 close by default
                     // last slot 15 minutes before close
                     endM -= 15; if (endM < 0) { endH -= 1; endM += 60; }
