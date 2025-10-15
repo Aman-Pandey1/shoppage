@@ -23,13 +23,13 @@ export default router;
 
 // User auth endpoints
 export const userAuthRouter = Router();
-// Only use mock mode if explicitly enabled via USE_MOCK_DATA=true
-const isMock = process.env.USE_MOCK_DATA === 'true';
+// Determine mock mode per-request based on server state
 
 userAuthRouter.post('/register', async (req, res) => {
   try {
     const { email, password, name } = req.body || {};
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+    const isMock = !!req.app?.locals?.mockData;
     if (isMock) {
       const db = req.app.locals.mockData || { users: [] };
       const existing = (db.users || []).find((u) => u.email?.toLowerCase() === String(email).toLowerCase());
@@ -58,6 +58,7 @@ userAuthRouter.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body || {};
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+    const isMock = !!req.app?.locals?.mockData;
     if (isMock) {
       const db = req.app.locals.mockData || { users: [] };
       const user = (db.users || []).find((u) => u.email?.toLowerCase() === String(email).toLowerCase());

@@ -50,24 +50,42 @@ export const AdminDashboard = () => {
       setLoading(true);
       const sitesList = await fetchJson('/api/admin/sites');
       setSites(sitesList);
-      let siteId = selectedSiteId;
-      if (!siteId) {
-        const saved = localStorage.getItem('admin_selected_site');
-        siteId = saved || sitesList[0]?._id || '';
-        setSelectedSiteId(siteId);
+      // Choose a valid site id. If a previously saved or selected id
+      // is not present (e.g., from mock mode like "mock-site"),
+      // fall back to a matching slug or the first site.
+      const availableIds = new Set(sitesList.map((s) => s._id));
+      let nextSiteId = selectedSiteId;
+      const savedId = (() => { try { return localStorage.getItem('admin_selected_site') || ''; } catch { return ''; } })();
+      const savedSlug = (() => { try { return localStorage.getItem('admin_selected_site_slug') || ''; } catch { return ''; } })();
+
+      if (!nextSiteId || !availableIds.has(nextSiteId)) {
+        if (savedId && availableIds.has(savedId)) {
+          nextSiteId = savedId;
+        } else if (savedSlug) {
+          const bySlug = sitesList.find((s) => s.slug === savedSlug);
+          if (bySlug) nextSiteId = bySlug._id;
+        }
       }
-      if (!siteId) {
+
+      if (!nextSiteId) {
+        nextSiteId = sitesList[0]?._id || '';
+      }
+
+      setSelectedSiteId(nextSiteId);
+      try { localStorage.setItem('admin_selected_site', nextSiteId); } catch {}
+
+      if (!nextSiteId) {
         setCategories([]);
         setProducts([]);
         return;
       }
       const [cats, prods] = await Promise.all([
-        fetchJson(`/api/admin/sites/${siteId}/categories`),
-        fetchJson(`/api/admin/sites/${siteId}/products`),
+        fetchJson(`/api/admin/sites/${nextSiteId}/categories`),
+        fetchJson(`/api/admin/sites/${nextSiteId}/products`),
       ]);
       setCategories(cats);
       setProducts(prods);
-      const current = sitesList.find(s => s._id === siteId);
+      const current = sitesList.find(s => s._id === nextSiteId);
       if (current) {
         try { localStorage.setItem('admin_selected_site_slug', current.slug); } catch {}
       }
