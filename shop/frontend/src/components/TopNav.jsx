@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 
 export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount = 0, isCartOpen = false }) => {
   const [site, setSite] = React.useState({ name: 'Store' });
+  const [primaryLocation, setPrimaryLocation] = React.useState(null);
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [windowWidth, setWindowWidth] = React.useState(window.innerWidth);
   const user = getCurrentUser();
@@ -41,7 +42,19 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
         }
       } catch {}
     }
+    async function loadPrimaryLocation() {
+      try {
+        const list = await fetchJson(`/api/shop/${siteSlug}/locations`);
+        if (!cancelled) {
+          const arr = Array.isArray(list) ? list : [];
+          setPrimaryLocation(arr[0] || null);
+        }
+      } catch {
+        if (!cancelled) setPrimaryLocation(null);
+      }
+    }
     load();
+    loadPrimaryLocation();
     return () => { cancelled = true; };
   }, [siteSlug]);
 
@@ -54,6 +67,18 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
 
   const name = site?.name || 'Store';
   const tagline = (typeof site?.tagline === 'string') ? site.tagline : '';
+  const addressLine = React.useMemo(() => {
+    try {
+      if (!primaryLocation || !primaryLocation.address) return '';
+      const parts = [
+        ...(Array.isArray(primaryLocation.address.streetAddress) ? primaryLocation.address.streetAddress : []),
+        primaryLocation.address.city,
+        primaryLocation.address.province,
+        primaryLocation.address.postalCode,
+      ].filter(Boolean);
+      return parts.join(', ');
+    } catch { return ''; }
+  }, [primaryLocation]);
   const rawLogoUrl = site?.logoUrl || '';
   const logoLinkUrl = (typeof site?.logoLinkUrl === 'string' ? site.logoLinkUrl : '').trim();
   const resolvedBackendLogo = React.useMemo(() => resolveAssetUrl(rawLogoUrl), [rawLogoUrl]);
@@ -127,6 +152,9 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
             <div className="brand__name">{name}</div>
             {tagline ? (
               <div className="brand__tagline hide-mobile">{tagline}</div>
+            ) : null}
+            {addressLine ? (
+              <div className="muted" style={{ fontSize: 12 }}>{addressLine}</div>
             ) : null}
           </div>
         </div>

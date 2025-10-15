@@ -3,6 +3,7 @@ import { fetchJson } from '../lib/api';
 
 export const StoreHeader = ({ siteSlug }) => {
   const [name, setName] = React.useState('');
+  const [address, setAddress] = React.useState('');
   const [loading, setLoading] = React.useState(true);
   React.useEffect(() => {
     let cancelled = false;
@@ -37,7 +38,25 @@ export const StoreHeader = ({ siteSlug }) => {
         if (!cancelled) setLoading(false);
       }
     }
+    async function loadAddress() {
+      try {
+        const locs = await fetchJson(`/api/shop/${siteSlug}/locations`);
+        const first = Array.isArray(locs) && locs.length ? locs[0] : null;
+        if (!cancelled && first && first.address) {
+          const parts = [
+            ...(Array.isArray(first.address.streetAddress) ? first.address.streetAddress : []),
+            first.address.city,
+            first.address.province,
+            first.address.postalCode,
+          ].filter(Boolean);
+          setAddress(parts.join(', '));
+        } else if (!cancelled) {
+          setAddress('');
+        }
+      } catch { if (!cancelled) setAddress(''); }
+    }
     load();
+    loadAddress();
     return () => { cancelled = true; };
   }, [siteSlug]);
 
@@ -49,7 +68,7 @@ export const StoreHeader = ({ siteSlug }) => {
         </div>
         <div>
           <div style={{ fontWeight: 800, fontSize: 18 }}>{loading ? 'Loading…' : (name || 'Store')}</div>
-          <div className="muted" style={{ fontSize: 12 }}>Open · 10:00 AM – 10:00 PM</div>
+          <div className="muted" style={{ fontSize: 12 }}>{address || 'Open · 10:00 AM – 10:00 PM'}</div>
         </div>
       </div>
     </header>
