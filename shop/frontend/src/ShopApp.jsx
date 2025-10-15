@@ -43,7 +43,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   // Additional UI state brought from the alternate implementation
   // Order details state
   const [pickupDate, setPickupDate] = useState(''); // YYYY-MM-DD
-  const [pickupTime, setPickupTime] = useState(''); // e.g., 11:00 AM
+  const [pickupTime, setPickupTime] = useState(''); // e.g., 10:00 AM
   const [hours, setHours] = useState(null);
   const [dateOptions, setDateOptions] = useState([]);
   const [timeOptions, setTimeOptions] = useState([]);
@@ -606,8 +606,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                 <span style={{ color: 'var(--primary-600)' }}>Pick Up/Delivery Date and Time</span>
                 {(() => {
                   const times = (timeOptions && timeOptions.length) ? timeOptions : (() => {
-                    const out = [];
-                    let h = 11, m = 0; // 11:00 AM to 9:45 PM fallback
+                  const out = [];
+                  let h = 10, m = 0; // 10:00 AM to 9:45 PM fallback
                     let endH = 22, endM = 0; // 22:00 close by default
                     // last slot 15 minutes before close
                     endM -= 15; if (endM < 0) { endH -= 1; endM += 60; }
