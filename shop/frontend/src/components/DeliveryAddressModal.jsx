@@ -298,19 +298,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
 
   return (
     <Modal open={open} onClose={onClose} title={mode === 'checkout' ? 'Confirm Delivery Details' : 'Delivery details'} closeOnOverlayClick={false} maxWidth={520} footer={(
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, width: '100%' }}>
-        <div className="muted" style={{ fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} aria-live="polite">
-          {(() => {
-            const parts = [];
-            const summary = (addrText || [addr1, city, province, postalCode].filter(Boolean).join(', '));
-            if (summary) parts.push(`Address: ${summary}`);
-            if (typeof distanceKm === 'number' && isFinite(distanceKm)) parts.push(`${distanceKm.toFixed(1)} km`);
-            const fee = (Number(deliveryFeeCentsLocal || 0) / 100);
-            parts.push(`Delivery fee: $${fee.toFixed(2)}`);
-            if (hasEligibleCoupon && discountCents > 0) parts.push(`Discount: -$${(discountCents/100).toFixed(2)}`);
-            return parts.join(' · ');
-          })()}
-        </div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 10, width: '100%' }}>
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={onClose} disabled={loading}>Cancel</button>
         {mode === 'checkout' ? (
@@ -443,7 +431,9 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
       })()}
       {error ? <div style={{ color: 'var(--danger)', marginBottom: 8 }}>{error}</div> : null}
       {addressAreaError ? (
-        <div style={{ color: 'var(--danger)', marginBottom: 8, fontWeight: 600 }}>
+        <div style={{ color: 'var(--danger)', marginBottom: 8, fontWeight: 600, whiteSpace: 'pre-line' }}>
+          {typeof maxDeliveryKm === 'number' ? `Delivery is only available within ${maxDeliveryKm} km of the restaurant.` : ''}
+          {typeof maxDeliveryKm === 'number' ? '\n' : ''}
           {addressAreaError} {typeof maxDeliveryKm === 'number' ? `(within ${maxDeliveryKm} km)` : ''}
         </div>
       ) : null}
