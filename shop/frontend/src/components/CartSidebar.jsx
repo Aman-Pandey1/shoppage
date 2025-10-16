@@ -86,14 +86,16 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
   }, [state.coupon, itemsSubtotalCents, state.couponMinSubtotalCents]);
   const couponPct = hasEligibleCoupon ? Math.max(0, Math.min(100, Number(state.coupon.percent) || 0)) : 0;
 
-  // Items subtotal AFTER discount (per-item rounding) — matches backend/Stripe
+  // Items subtotal AFTER discount (per-LINE rounding) — matches backend/Stripe
   const itemsAfterDiscountCents = React.useMemo(() => {
     if (!hasEligibleCoupon || couponPct <= 0) return itemsSubtotalCents;
     return state.items.reduce((sum, it) => {
       const unitPrice = (Number(it.basePrice) || 0) + (Number(it?.variant?.price) || 0) + (Number(it.extraCost) || 0);
       const unitCents = Math.round(unitPrice * 100);
-      const discountedUnit = Math.round(unitCents * (100 - couponPct) / 100);
-      return sum + discountedUnit * (Number(it.quantity) || 1);
+      const qty = Number(it.quantity) || 1;
+      const lineCents = unitCents * qty;
+      const discountedLine = Math.round(lineCents * (100 - couponPct) / 100);
+      return sum + discountedLine;
     }, 0);
   }, [state.items, itemsSubtotalCents, hasEligibleCoupon, couponPct]);
 

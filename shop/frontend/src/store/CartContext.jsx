@@ -176,11 +176,15 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
     let discountedCents = itemsSubtotalCents;
     if (state.coupon && isEligibleForCoupon) {
       const pct = Math.max(0, Math.min(100, Number(state.coupon.percent) || 0));
+      // Apply discount at LINE level (unitCents * qty) and then round.
+      // This mirrors backend/Stripe rounding and prevents cent-level mismatches.
       discountedCents = state.items.reduce((sum, it) => {
         const unitPrice = (Number(it.basePrice) || 0) + (Number(it?.variant?.price) || 0) + (Number(it.extraCost) || 0);
         const unitCents = Math.round(unitPrice * 100);
-        const discountedUnit = Math.round(unitCents * (100 - pct) / 100);
-        return sum + discountedUnit * (Number(it.quantity) || 1);
+        const qty = Number(it.quantity) || 1;
+        const lineCents = unitCents * qty;
+        const discountedLine = Math.round(lineCents * (100 - pct) / 100);
+        return sum + discountedLine;
       }, 0);
     }
     return Math.max(0, discountedCents) / 100;

@@ -52,9 +52,11 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
     if (!hasEligibleCoupon || couponPct <= 0) return itemsSubtotalCents;
     const list = Array.isArray(manifest) ? manifest : [];
     return list.reduce((sum, it) => {
-      const unit = Number(it.priceCents) || 0;
-      const discountedUnit = Math.round(unit * (100 - couponPct) / 100);
-      return sum + discountedUnit * (Number(it.quantity) || 1);
+      const unit = Math.max(0, Number(it.priceCents) || 0);
+      const qty = Number(it.quantity) || 1;
+      const line = unit * qty;
+      const discountedLine = Math.round(line * (100 - couponPct) / 100);
+      return sum + discountedLine;
     }, 0);
   }, [manifest, itemsSubtotalCents, hasEligibleCoupon, couponPct]);
   const taxAfterDiscountCents = React.useMemo(() => Math.round(itemsAfterDiscountCents * 0.05), [itemsAfterDiscountCents]);
