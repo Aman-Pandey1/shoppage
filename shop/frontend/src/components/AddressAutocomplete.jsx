@@ -3,13 +3,16 @@ import { fetchJson } from '../lib/api';
 
 // Lightweight Google Places autocomplete input with dropdown suggestions.
 // Loads the Places JS library on demand using the site's public config key.
-export const AddressAutocomplete = ({ siteSlug, placeholder = 'Address', value, onChange, onSelect, country = 'CA' }) => {
+export const AddressAutocomplete = ({ siteSlug, placeholder = 'Address', value, onChange, onSelect, country = 'CA', biasKm = 30 }) => {
   const [apiReady, setApiReady] = React.useState(false);
   const [input, setInput] = React.useState(value || '');
   const [predictions, setPredictions] = React.useState([]);
   const [open, setOpen] = React.useState(false);
   const svcRef = React.useRef(null);
   const detailsSvcRef = React.useRef(null);
+  const geocoderRef = React.useRef(null);
+  const sessionTokenRef = React.useRef(null);
+  const [biasCenter, setBiasCenter] = React.useState(null); // { lat, lng }
   const containerRef = React.useRef(null);
 
   React.useEffect(() => { setInput(value || ''); }, [value]);
@@ -39,11 +42,61 @@ export const AddressAutocomplete = ({ siteSlug, placeholder = 'Address', value, 
         svcRef.current = new google.maps.places.AutocompleteService();
         // eslint-disable-next-line no-undef
         detailsSvcRef.current = new google.maps.places.PlacesService(document.createElement('div'));
+        // eslint-disable-next-line no-undef
+        geocoderRef.current = new google.maps.Geocoder();
+        // eslint-disable-next-line no-undef
+        sessionTokenRef.current = new google.maps.places.AutocompleteSessionToken();
         setApiReady(true);
       } catch { setApiReady(false); }
     }
     return () => { cancelled = true; };
   }, [siteSlug]);
+
+  // Establish a sensible location bias: prefer user's current location; otherwise bias to pickup/restaurant
+  React.useEffect(() => {
+    let cancelled = false;
+    async function resolveBias() {
+      if (!apiReady) return;
+      // 1) Try browser geolocation (user vicinity)
+      try {
+        await new Promise((resolve) => {
+          if (!navigator.geolocation) return resolve();
+          navigator.geolocation.getCurrentPosition((pos) => {
+            if (!pos || !pos.coords) return resolve();
+            if (!cancelled) setBiasCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+            resolve();
+          }, () => resolve(), { enableHighAccuracy: false, maximumAge: 600000, timeout: 1500 });
+        });
+      } catch {}
+      if (cancelled || biasCenter) return;
+      // 2) Bias to first pickup/restaurant location
+      try {
+        const list = await fetchJson(`/api/shop/${siteSlug}/locations`);
+        const first = Array.isArray(list) && list.length ? list[0] : null;
+        const addr = first?.address;
+        if (!addr || !geocoderRef.current) return;
+        const line = [
+          ...(Array.isArray(addr.streetAddress) ? addr.streetAddress : [addr.streetAddress]).filter(Boolean),
+          addr.city,
+          addr.province,
+          addr.postalCode,
+          addr.country,
+        ].filter(Boolean).join(', ');
+        // eslint-disable-next-line no-undef
+        geocoderRef.current.geocode({ address: line }, (results, status) => {
+          try {
+            // eslint-disable-next-line no-undef
+            if (status === google.maps.GeocoderStatus.OK && Array.isArray(results) && results[0]) {
+              const loc = results[0].geometry?.location;
+              if (loc && !cancelled) setBiasCenter({ lat: loc.lat(), lng: loc.lng() });
+            }
+          } catch {}
+        });
+      } catch {}
+    }
+    resolveBias();
+    return () => { cancelled = true; };
+  }, [apiReady, siteSlug]);
 
   React.useEffect(() => {
     function onDocClick(e) {
@@ -68,13 +121,25 @@ export const AddressAutocomplete = ({ siteSlug, placeholder = 'Address', value, 
             componentRestrictions: { country: countries.map((c) => String(c).toUpperCase()) },
             types: ['address'],
           };
+          // Prefer nearby results using a circular bias around the chosen center
+          if (biasCenter && window.google && window.google.maps) {
+            // eslint-disable-next-line no-undef
+            const center = new google.maps.LatLng(biasCenter.lat, biasCenter.lng);
+            req.location = center;
+            req.origin = center;
+            req.radius = Math.max(1000, Math.round((biasKm || 30) * 1000));
+            // Newer API supports locationBias; harmless if ignored
+            // eslint-disable-next-line no-undef
+            req.locationBias = { center, radius: req.radius };
+            if (sessionTokenRef.current) req.sessionToken = sessionTokenRef.current;
+          }
           svcRef.current.getPlacePredictions(req, (list) => {
             setPredictions(Array.isArray(list) ? list.slice(0, 6) : []);
           });
         } catch { setPredictions([]); }
       }, 120);
     };
-  }, [apiReady, country]);
+  }, [apiReady, country, biasCenter, biasKm]);
 
   function handleInputChange(e) {
     const val = e.target.value;
@@ -120,6 +185,13 @@ export const AddressAutocomplete = ({ siteSlug, placeholder = 'Address', value, 
     setInput(text);
     setOpen(false);
     setPredictions([]);
+    // Reset the Places session token for the next search session
+    try {
+      if (window.google && window.google.maps && window.google.maps.places) {
+        // eslint-disable-next-line no-undef
+        sessionTokenRef.current = new google.maps.places.AutocompleteSessionToken();
+      }
+    } catch {}
     if (onSelect) {
       const parsed = address || parseSummaryToAddress(text);
       onSelect(parsed, text);
