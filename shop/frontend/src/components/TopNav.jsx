@@ -185,7 +185,7 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
               }}
             >
               <span role="img" aria-label="Call">📞</span>
-              <span>{supportPhone}</span>
+              <span className="hide-mobile">{supportPhone}</span>
             </a>
           ) : null}
           {/* Cart button - hidden on desktop, visible on mobile and tablet */}
