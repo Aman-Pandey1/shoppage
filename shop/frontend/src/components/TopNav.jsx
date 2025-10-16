@@ -169,7 +169,20 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
               href={telHref}
               aria-label="Call support"
               title={`Call ${supportPhone}`}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--panel-2)', fontSize: 12, textDecoration: 'none', color: 'inherit' }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '6px 10px',
+                borderRadius: 999,
+                // Ensure strong contrast on red header
+                border: '1px solid rgba(255,255,255,0.65)',
+                background: 'rgba(255,255,255,0.10)',
+                fontSize: 12,
+                textDecoration: 'none',
+                color: '#fff',
+                fontWeight: 700,
+              }}
             >
               <span role="img" aria-label="Call">📞</span>
               <span>{supportPhone}</span>
