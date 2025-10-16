@@ -96,10 +96,9 @@ router.post('/:slug/quote', async (req, res) => {
 		}
 		const pickup = locs[chosenIdx];
 		if (!pickup) return res.status(400).json({ error: 'No pickup location configured' });
-		// Compute distance-based delivery fee
-		let distanceKm = null;
-		try { distanceKm = await distanceBetweenAddressesKm(pickup.address, dropoff.address); } catch {}
-		const distanceFeeCents = calculateDistanceFeeCents(distanceKm);
+    // Compute distance-based delivery fee
+    let distanceKm = null;
+    try { distanceKm = await distanceBetweenAddressesKm(pickup.address, dropoff.address); } catch {}
     // Enforce max delivery distance if configured (allow small tolerance for geocoding variance)
     const maxKm = typeof site?.maxDeliveryDistanceKm === 'number' && site.maxDeliveryDistanceKm > 0 ? site.maxDeliveryDistanceKm : null;
     const toleranceKm = 0.5;
@@ -129,17 +128,11 @@ router.post('/:slug/quote', async (req, res) => {
         throw e;
       }
     }
-    // Calculate delivery fee using admin-configured base when available
+    // Calculate delivery fee using admin-configured base when available; +$1/km over 8km
     const baseFee = (typeof site?.deliveryFeeCents === 'number' && isFinite(site.deliveryFeeCents))
       ? Math.max(0, Number(site.deliveryFeeCents))
       : 800;
-    let fullDeliveryFeeCents = baseFee;
-    if (typeof distanceKm === 'number' && isFinite(distanceKm) && distanceKm > 0) {
-      const roundedKm = Math.ceil(distanceKm);
-      if (roundedKm > 8) {
-        fullDeliveryFeeCents = baseFee + ((roundedKm - 8) * 100);
-      }
-    }
+    const fullDeliveryFeeCents = calculateDistanceFeeCents(distanceKm, baseFee);
     const split = !!site.splitDeliveryFee;
     const customerDeliveryFeeCents = split ? Math.round(fullDeliveryFeeCents / 2) : fullDeliveryFeeCents;
     res.json({ ...quote, distanceKm, distanceFeeCents: fullDeliveryFeeCents, customerDeliveryFeeCents, pickupLocationIndex: chosenIdx });
@@ -202,20 +195,14 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 			return res.status(400).json({ error: 'Phone number is invalid. Use E.164 format like +14155550123.' });
 		}
 		const safeDropoff = { ...dropoff, phone: normalizedDropoffPhone };
-		// Compute distance-based fee
-		let distanceKm = null;
-		try { distanceKm = await distanceBetweenAddressesKm(pickup.address, dropoff.address); } catch {}
+    // Compute distance-based fee
+    let distanceKm = null;
+    try { distanceKm = await distanceBetweenAddressesKm(pickup.address, dropoff.address); } catch {}
     // Calculate delivery fee using admin-configured base when available
     const baseFee = (typeof site?.deliveryFeeCents === 'number' && isFinite(site.deliveryFeeCents))
       ? Math.max(0, Number(site.deliveryFeeCents))
       : 800;
-    let distanceFeeCents = baseFee;
-    if (typeof distanceKm === 'number' && isFinite(distanceKm) && distanceKm > 0) {
-      const roundedKm = Math.ceil(distanceKm);
-      if (roundedKm > 8) {
-        distanceFeeCents = baseFee + ((roundedKm - 8) * 100);
-      }
-    }
+    const distanceFeeCents = calculateDistanceFeeCents(distanceKm, baseFee);
     // Enforce payment before creating real delivery in non-mock environments
     if (!isMock) {
       // If an externalId corresponds to an order, ensure it is paid. Otherwise block.

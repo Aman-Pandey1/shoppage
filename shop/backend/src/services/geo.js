@@ -136,14 +136,16 @@ export async function distanceBetweenAddressesKm(pickupAddress, dropoffAddress) 
   return haversineDistanceKm(pickupPoint, dropoffPoint);
 }
 
-export function calculateDistanceFeeCents(distanceKm) {
+export function calculateDistanceFeeCents(distanceKm, baseFeeCents = 800) {
+  const base = Math.max(0, Math.round(Number(baseFeeCents) || 0));
   if (typeof distanceKm !== 'number' || !isFinite(distanceKm) || distanceKm <= 0) {
     // Fallback to base fee when distance cannot be calculated
-    return 800;
+    return base;
   }
   const roundedKm = Math.ceil(distanceKm);
-  if (roundedKm <= 8) return 800;
+  if (roundedKm <= 8) return base;
   const extra = roundedKm - 8;
-  return 800 + (extra * 100);
+  // +$1 per km over 8km
+  return base + (extra * 100);
 }
 
