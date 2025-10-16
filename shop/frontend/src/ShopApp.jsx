@@ -466,9 +466,6 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       </button>
 
       <PrivacyPolicyModal open={privacyOpen} onAccept={handleAcceptPrivacy} />
-<<<<<<< HEAD
-      <FulfillmentModal open={fulfillmentOpen} onChoose={handleChooseFulfillment} siteSlug={siteSlug} />
-=======
       <FulfillmentModal
         open={fulfillmentOpen}
         onClose={() => setFulfillmentOpen(false)}
@@ -484,9 +481,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         onConfirmPickup={({ when }) => {
           setFulfillmentType('pickup');
           setFulfillmentOpen(false);
-          // If user chose later, keep the chosen date/time; if now, ensure a valid earliest time is selected
           if (!isOpenNowLocal()) { setClosedAlertOpen(true); }
-          // No need to open another modal; user can proceed to menu/cart
         }}
         onConfirmDelivery={({ when, address, summary }) => {
           setFulfillmentType('delivery');
@@ -496,7 +491,6 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
           if (summary) setDeliveryInlineAddrText(summary);
         }}
       />
->>>>>>> origin/main
       <AlertModal
         open={closedAlertOpen}
         onClose={() => setClosedAlertOpen(false)}

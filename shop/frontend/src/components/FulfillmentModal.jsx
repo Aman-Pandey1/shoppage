@@ -3,12 +3,44 @@ import { Modal } from './Modal';
 import { getPickupImage, getDeliveryImage } from '../lib/assetFinder';
 import { fetchJson } from '../lib/api';
 
-<<<<<<< HEAD
-export const FulfillmentModal = ({ open, onChoose, siteSlug }) => {
+// Enhanced fulfillment modal that matches the screenshot/requirements and also
+// shows a closed-for-delivery notice under the Delivery option when applicable.
+export const FulfillmentModal = ({
+  open,
+  onClose,
+  siteSlug,
+  AddressAutocomplete,
+  // Pickup scheduling state passed from parent so it's the single source of truth
+  pickupDate,
+  pickupTime,
+  dateOptions = [],
+  timeOptions = [],
+  onPickupDateChange,
+  onPickupTimeChange,
+  // Finalize callbacks
+  onConfirmPickup, // ({ when, date, time })
+  onConfirmDelivery, // ({ when, address, summary })
+  selectedType: selectedTypeProp,
+}) => {
   const pickupImg = getPickupImage();
   const deliveryImg = getDeliveryImage();
+  const [selectedType, setSelectedType] = React.useState(selectedTypeProp || null);
+  const [timing, setTiming] = React.useState(null); // 'now' | 'later'
+  const [addrText, setAddrText] = React.useState('');
+  const [addrObj, setAddrObj] = React.useState(null);
+
+  // Hours and closed message for delivery
   const [hours, setHours] = React.useState(null);
   const [closedMsg, setClosedMsg] = React.useState('');
+
+  React.useEffect(() => {
+    if (open) {
+      setSelectedType(selectedTypeProp || null);
+      setTiming(null);
+      setAddrText('');
+      setAddrObj(null);
+    }
+  }, [open, selectedTypeProp]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -66,60 +98,18 @@ export const FulfillmentModal = ({ open, onChoose, siteSlug }) => {
         if (!cfg.closed) {
           const [oh, om] = String(cfg.open || '10:00').split(':').map(Number);
           if (i === 0) return timeLabel(oh||10, om||0);
-          // If next day, still show time without date to match requirement
           return timeLabel(oh||10, om||0);
         }
       }
     } catch {}
     return '8:00 AM';
   }
-  return (
-    <Modal open={open} onClose={() => {}} title={null}>
-=======
-// Enhanced fulfillment modal that matches the screenshot/requirements:
-// 1) User first chooses Takeout or Delivery
-// 2) Then chooses "Order Now" or "Order For Later" (disabled until a type is chosen)
-// 3) If Takeout: show Date/Time selectors right in this popup
-// 4) If Delivery: show a single-line Google-powered address field
-export const FulfillmentModal = ({
-  open,
-  onClose,
-  siteSlug,
-  AddressAutocomplete,
-  // Pickup scheduling state passed from parent so it's the single source of truth
-  pickupDate,
-  pickupTime,
-  dateOptions = [],
-  timeOptions = [],
-  onPickupDateChange,
-  onPickupTimeChange,
-  // Finalize callbacks
-  onConfirmPickup, // ({ when, date, time })
-  onConfirmDelivery, // ({ when, address, summary })
-  selectedType: selectedTypeProp,
-}) => {
-  const pickupImg = getPickupImage();
-  const deliveryImg = getDeliveryImage();
-  const [selectedType, setSelectedType] = React.useState(selectedTypeProp || null);
-  const [timing, setTiming] = React.useState(null); // 'now' | 'later'
-  const [addrText, setAddrText] = React.useState('');
-  const [addrObj, setAddrObj] = React.useState(null);
-
-  React.useEffect(() => {
-    if (open) {
-      setSelectedType(selectedTypeProp || null);
-      setTiming(null);
-      setAddrText('');
-      setAddrObj(null);
-    }
-  }, [open, selectedTypeProp]);
 
   const canConfirmPickup = selectedType === 'pickup' && timing && pickupDate && pickupTime;
   const canConfirmDelivery = selectedType === 'delivery' && timing && (addrText && addrText.length > 0);
 
   function renderTypeButtons() {
     return (
->>>>>>> origin/main
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
         <button
           onClick={() => setSelectedType('pickup')}
@@ -281,3 +271,4 @@ export const FulfillmentModal = ({
   );
 };
 
+ 
