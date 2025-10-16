@@ -381,7 +381,7 @@ input:focus, select:focus, textarea:focus {
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
-.brand__back { margin-left: 0; }
+.brand__back { margin-left: -6px; }
 .brand__back:hover { background: rgba(255,255,255,0.15); }
 .brand__logo img {
   width: 100%;
