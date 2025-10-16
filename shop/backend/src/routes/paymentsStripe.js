@@ -136,7 +136,9 @@ function getStripeClient(site) {
   const siteSecret = site?.stripeSecretKey;
   const secret = siteSecret || process.env.STRIPE_SECRET_KEY;
   if (!secret) throw new Error('Missing STRIPE_SECRET_KEY');
-  return new Stripe(secret);
+  // Explicitly pin to a modern API version that supports line-item discounts on Checkout
+  // If the account default is older, this header enables the newer features for our requests.
+  return new Stripe(secret, { apiVersion: process.env.STRIPE_API_VERSION || '2024-06-20' });
 }
 
 function getCurrency(site) {
@@ -255,7 +257,7 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
     const lineItems = [
       ...items.map((it) => {
         const unit = Math.max(0, Number(it.priceCents) || 0);
-        const line = {
+        const ln = {
           price_data: {
             currency,
             product_data: { name: `${it.name}${it.size ? ' — Select Item: ' + it.size : ''}` },
@@ -264,9 +266,10 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
           quantity: Number(it.quantity) || 1,
         };
         if (stripeCouponId) {
-          line.discounts = [{ coupon: stripeCouponId }];
+          // Apply discount only to item lines; not to tax
+          ln.discounts = [{ coupon: stripeCouponId }];
         }
-        return line;
+        return ln;
       }),
       ...(taxCents > 0 ? [{ price_data: { currency, product_data: { name: 'Tax' }, unit_amount: taxCents }, quantity: 1 }] : []),
     ];
@@ -462,12 +465,14 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
     const lineItemsDel = [
       ...manifestItems.map((it) => {
         const unit = Math.max(0, Number(it.priceCents || it.price) || 0);
-        const line = {
+        const ln = {
           price_data: { currency, product_data: { name: `${it.name}${it.size ? ' — Select Item: ' + it.size : ''}` }, unit_amount: unit },
           quantity: Number(it.quantity) || 1,
         };
-        if (stripeCouponIdDel) { line.discounts = [{ coupon: stripeCouponIdDel }]; }
-        return line;
+        if (stripeCouponIdDel) {
+          ln.discounts = [{ coupon: stripeCouponIdDel }];
+        }
+        return ln;
       }),
       ...(taxCents > 0 ? [{ price_data: { currency, product_data: { name: 'Tax' }, unit_amount: taxCents }, quantity: 1 }] : []),
       ...(customerDeliveryFeeCents > 0 ? [{ price_data: { currency, product_data: { name: 'Delivery fee' }, unit_amount: customerDeliveryFeeCents }, quantity: 1 }] : []),
