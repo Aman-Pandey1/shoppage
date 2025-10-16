@@ -112,7 +112,8 @@ export const FulfillmentModal = ({
   }
 
   const canConfirmPickup = selectedType === 'pickup' && timing && pickupDate && pickupTime;
-  const canConfirmDelivery = selectedType === 'delivery' && timing && (addrText && addrText.length > 0) && !deliveryAreaError;
+  // Require a Google-selected full address object (not just typed text)
+  const canConfirmDelivery = selectedType === 'delivery' && timing && !!addrObj && !deliveryAreaError;
 
   // Live check for delivery area only for Delivery option
   React.useEffect(() => {
@@ -278,6 +279,10 @@ export const FulfillmentModal = ({
         {deliveryAreaError ? (
           <div style={{ color: 'var(--danger)', fontSize: 12 }}>{deliveryAreaError}</div>
         ) : null}
+        {/* Prompt user to select full address from Google suggestions */}
+        {(selectedType === 'delivery' && timing && !addrObj) ? (
+          <div style={{ color: 'var(--danger)', fontSize: 12 }}>Please select your full address from Google suggestions</div>
+        ) : null}
         <div className="muted" style={{ fontSize: 10, textAlign: 'right' }}>powered by Google</div>
       </div>
     );
@@ -287,7 +292,6 @@ export const FulfillmentModal = ({
     const canConfirm = canConfirmPickup || canConfirmDelivery;
     return (
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, width: '100%' }}>
-        <button onClick={onClose}>Cancel</button>
         <button
           className="primary-btn"
           disabled={!canConfirm}
