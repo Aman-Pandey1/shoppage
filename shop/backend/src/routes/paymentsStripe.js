@@ -347,10 +347,21 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
     let distanceKm = null;
     try { distanceKm = await distanceBetweenAddressesKm(pickup.address, dropoff?.address); } catch {}
     const maxKm = typeof site?.maxDeliveryDistanceKm === 'number' && site.maxDeliveryDistanceKm > 0 ? site.maxDeliveryDistanceKm : null;
-    if (maxKm != null && typeof distanceKm === 'number' && distanceKm > maxKm) {
+    const toleranceKm = 0.5;
+    if (maxKm != null && typeof distanceKm === 'number' && (distanceKm - toleranceKm) > maxKm) {
       return res.status(400).json({ error: `Delivery is only available within ${maxKm} km of the restaurant.` });
     }
-    const fullDeliveryFeeCents = calculateDistanceFeeCents(distanceKm);
+    // Compute delivery fee using admin-configured base when available; add $1/km over 8km
+    const baseFee = (typeof site?.deliveryFeeCents === 'number' && isFinite(site.deliveryFeeCents))
+      ? Math.max(0, Number(site.deliveryFeeCents))
+      : 800;
+    let fullDeliveryFeeCents = baseFee;
+    if (typeof distanceKm === 'number' && isFinite(distanceKm) && distanceKm > 0) {
+      const roundedKm = Math.ceil(distanceKm);
+      if (roundedKm > 8) {
+        fullDeliveryFeeCents = baseFee + ((roundedKm - 8) * 100);
+      }
+    }
     const split = !!site.splitDeliveryFee;
     let customerDeliveryFeeCents = split ? Math.round(fullDeliveryFeeCents / 2) : fullDeliveryFeeCents;
     let restaurantDeliveryFeeCents = split ? (fullDeliveryFeeCents - customerDeliveryFeeCents) : 0;
