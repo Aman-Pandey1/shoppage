@@ -23,6 +23,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   const [distanceKm, setDistanceKm] = useState(null);
   const [maxDeliveryKm, setMaxDeliveryKm] = useState(null);
   const [addressAreaError, setAddressAreaError] = useState('');
+  const [checkingArea, setCheckingArea] = useState(false);
   const [notes, setNotes] = useState('');
   const [tab, setTab] = useState('enter'); // delivery: only manual address (enter)
   const [locations, setLocations] = useState([]);
@@ -163,6 +164,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
     }
     async function doCheck() {
       try {
+        setCheckingArea(true);
         const address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
         const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { address }, pickupLocationIndex: selectedPickupIndex });
         if (cancelled) return;
@@ -182,6 +184,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         } else {
           setAddressAreaError('');
         }
+        setCheckingArea(false);
       } catch (e) {
         if (cancelled) return;
         const msg = (parseServerError(e) || '').toLowerCase();
@@ -192,12 +195,14 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         } else {
           setAddressAreaError('');
         }
+        setCheckingArea(false);
       }
     }
-    if (!readyToCheck()) { setAddressAreaError(''); return () => { cancelled = true; if (t) clearTimeout(t); }; }
+    if (!readyToCheck()) { setAddressAreaError(''); setCheckingArea(false); return () => { cancelled = true; if (t) clearTimeout(t); }; }
     if (t) clearTimeout(t);
+    setCheckingArea(true);
     t = setTimeout(doCheck, 500);
-    return () => { cancelled = true; if (t) clearTimeout(t); };
+    return () => { cancelled = true; if (t) clearTimeout(t); setCheckingArea(false); };
   }, [addr1, addr2, city, province, postalCode, country, selectedPickupIndex, siteSlug, maxDeliveryKm]);
 
   function isValidPostal(code) {
@@ -308,7 +313,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={onClose} disabled={loading}>Cancel</button>
         {mode === 'checkout' ? (
-          <button className="primary-btn" disabled={loading || !!addressAreaError} aria-busy={loading} onClick={async () => {
+          <button className="primary-btn" disabled={loading || checkingArea || !!addressAreaError} aria-busy={loading || checkingArea} onClick={async () => {
             setLoading(true); setError(undefined);
             try {
               // Validate and build dropoff
@@ -376,21 +381,21 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
               setError(parseServerError(e) || 'Failed to start payment');
             } finally { setLoading(false); }
           }}>
-            {loading ? (
+            {loading || checkingArea ? (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                 <svg width="16" height="16" viewBox="0 0 50 50" aria-hidden="true" focusable="false">
                   <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeDasharray="31.415 31.415">
                     <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.8s" repeatCount="indefinite" />
                   </circle>
                 </svg>
-                Redirecting…
+                {loading ? 'Redirecting…' : 'Validating address…'}
               </span>
             ) : (
               'Continue to payment'
             )}
           </button>
         ) : (
-          <button className="primary-btn" disabled={loading || !!addressAreaError} aria-busy={loading} onClick={async () => {
+          <button className="primary-btn" disabled={loading || checkingArea || !!addressAreaError} aria-busy={loading || checkingArea} onClick={async () => {
             setLoading(true); setError(undefined);
             try {
               // Validate and compute quote to set delivery fee, then go back to menu
@@ -415,14 +420,14 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
               setError(parseServerError(e) || 'Invalid address');
             } finally { setLoading(false); }
           }}>
-            {loading ? (
+            {loading || checkingArea ? (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                 <svg width="16" height="16" viewBox="0 0 50 50" aria-hidden="true" focusable="false">
                   <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeDasharray="31.415 31.415">
                     <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.8s" repeatCount="indefinite" />
                   </circle>
                 </svg>
-                Processing…
+                {loading ? 'Processing…' : 'Validating address…'}
               </span>
             ) : (
               'Proceed to menu'
@@ -447,7 +452,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         <div style={{ color: 'var(--danger)', marginBottom: 8, fontWeight: 600, whiteSpace: 'pre-line' }}>
           {typeof maxDeliveryKm === 'number' ? `Delivery is only available within ${maxDeliveryKm} km of the restaurant.` : ''}
           {typeof maxDeliveryKm === 'number' ? '\n' : ''}
-          {addressAreaError} {typeof maxDeliveryKm === 'number' ? `(within ${maxDeliveryKm} km)` : ''}
+          {addressAreaError}
         </div>
       ) : null}
       <div className="muted" style={{ marginBottom: 8, fontSize: 12 }}>Enter your delivery address. Delivery will be fulfilled by the website's selected provider.</div>
