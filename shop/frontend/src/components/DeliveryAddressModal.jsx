@@ -3,7 +3,7 @@ import { Modal } from './Modal';
 import { useCart } from '../store/CartContext';
 import { fetchJson, postJson } from '../lib/api';
 
-export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, manifest, initialPickupIndex, mode = 'checkout' }) => {
+export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, manifest, initialPickupIndex, mode = 'checkout', initialAddress, initialSummary }) => {
   const { state, setDeliveryFeeCents } = useCart();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -32,6 +32,25 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
       return (Array.isArray(manifest) ? manifest : []).reduce((sum, it) => sum + (Number(it.priceCents) || 0) * (Number(it.quantity) || 1), 0);
     } catch { return 0; }
   }, [manifest]);
+
+  // Prefill address fields from an AddressAutocomplete selection (Canada only by default)
+  React.useEffect(() => {
+    try {
+      if (!open) return;
+      // Only prefill once when opening and if we don't already have a value
+      if (initialAddress && !addr1 && !city && !province && !postalCode) {
+        const line1 = Array.isArray(initialAddress.streetAddress)
+          ? initialAddress.streetAddress.join(' ')
+          : (initialAddress.line1 || '');
+        setAddr1(line1 || '');
+        setCity(initialAddress.city || '');
+        setProvince(initialAddress.province || '');
+        setPostalCode(initialAddress.postalCode || '');
+        setCountry((initialAddress.country || 'CA').toUpperCase());
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   function parseServerError(err) {
     try {
@@ -197,7 +216,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={mode === 'checkout' ? 'Confirm Delivery Details' : 'Delivery details'} footer={(
+    <Modal open={open} onClose={onClose} title={mode === 'checkout' ? 'Confirm Delivery Details' : 'Delivery details'} closeOnOverlayClick={false} footer={(
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, width: '100%' }}>
         <button onClick={onClose} disabled={loading}>Cancel</button>
         {mode === 'checkout' ? (
@@ -305,6 +324,11 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
       })()}
       {error ? <div style={{ color: 'var(--danger)', marginBottom: 8 }}>{error}</div> : null}
       <div className="muted" style={{ marginBottom: 8, fontSize: 12 }}>Enter your delivery address. Delivery will be fulfilled by the website's selected provider.</div>
+      {initialSummary ? (
+        <div className="muted" style={{ marginTop: -4, marginBottom: 8, fontSize: 12 }}>
+          <strong style={{ color: 'var(--text)' }}>Selected:</strong> {initialSummary}
+        </div>
+      ) : null}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

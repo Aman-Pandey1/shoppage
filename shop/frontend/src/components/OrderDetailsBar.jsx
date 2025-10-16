@@ -109,6 +109,7 @@ export const OrderDetailsBar = ({
                     onChange={onAddressInputChange}
                     onSelect={(addr, summary) => onAddressSelected && onAddressSelected(addr, summary)}
                     placeholder="Address"
+                    country="CA"
                   />
                 </div>
               </label>
