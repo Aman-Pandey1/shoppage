@@ -256,7 +256,7 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
 
     // Build PI data depending on per-site vs Connect
     const usePerSiteStripe = !!req.site?.stripeSecretKey;
-    const piDataPickup = (!usePerSiteStripe && req.site?.stripeAccountId) ? {
+  const piDataPickup = (!usePerSiteStripe && req.site?.stripeAccountId) ? {
       transfer_data: { destination: req.site.stripeAccountId },
       on_behalf_of: req.site.stripeAccountId,
     } : undefined;
