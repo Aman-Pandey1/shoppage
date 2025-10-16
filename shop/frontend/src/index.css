@@ -293,6 +293,7 @@ input:focus, select:focus, textarea:focus {
   box-shadow: var(--shadow-pop);
   background: linear-gradient(180deg, var(--primary-alpha-25), var(--primary-alpha-12));
   border: 1px solid var(--primary-600);
+  z-index: 130;
 }
 @media (max-width: 1024px) {
   .cart-fab { display: inline-flex; }
@@ -383,6 +384,9 @@ input:focus, select:focus, textarea:focus {
 }
 .brand__back { margin-left: -6px; }
 .brand__back:hover { background: rgba(255,255,255,0.15); }
+@media (min-width: 1024px) {
+  .brand__back { margin-left: -14px; }
+}
 .brand__logo img {
   width: 100%;
   height: 100%;
