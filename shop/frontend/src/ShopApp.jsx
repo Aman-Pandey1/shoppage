@@ -15,6 +15,7 @@ import { AddToCartToast } from './components/AddToCartToast';
 import { DeliveryAddressModal } from './components/DeliveryAddressModal';
 import { fetchJson, getAuthToken, postJson } from './lib/api';
 import { UserAuthModal } from './components/UserAuthModal';
+import { computePricing } from './lib/pricing';
 
 const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const { state, setFulfillmentType, addItem, getCartTotal } = useCart();
@@ -608,6 +609,39 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                 })()}
               </label>
             </div>
+            {/* Pricing summary to mirror Cart and Stripe */}
+            {manifest.length > 0 ? (() => {
+              const pricing = computePricing({
+                items: manifest.map(m => ({ priceCents: m.priceCents, quantity: m.quantity })),
+                deliveryFeeCents: 0,
+                coupon: state.coupon,
+                couponMinSubtotalCents: state.couponMinSubtotalCents,
+                taxRate: 0.05,
+              });
+              return (
+                <div className="card" style={{ display: 'grid', gap: 6, marginTop: 10, borderRadius: 12, padding: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span className="muted">Items</span>
+                    <span>${pricing.dollars.itemsSubtotal.toFixed(2)}</span>
+                  </div>
+                  {pricing.hasEligibleCoupon && pricing.couponPercent > 0 ? (
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span className="muted">Discount ({state.coupon.percent}% )</span>
+                      <span>- ${pricing.dollars.discount.toFixed(2)}</span>
+                    </div>
+                  ) : null}
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span className="muted">Tax (5%)</span>
+                    <span>${pricing.dollars.taxDisplay.toFixed(2)}</span>
+                  </div>
+                  <div style={{ height: 1, background: 'var(--border)' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800 }}>
+                    <span>Total</span>
+                    <span>${pricing.dollars.grandTotal.toFixed(2)}</span>
+                  </div>
+                </div>
+              );
+            })() : null}
             {/* Payment method for pickup */}
             {/* Payment method simplified: remove Cash on pickup option */}
             <div className="card" style={{ display: 'grid', gap: 8, padding: 10, borderRadius: 12, marginTop: 10 }}>
