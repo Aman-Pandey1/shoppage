@@ -18,6 +18,8 @@ const SiteSchema = new mongoose.Schema({
 	orderNotifyUrl: { type: String },
 	// Optional short text shown next to logo in header
 	tagline: { type: String },
+	// Optional WhatsApp support phone number shown in order UI (E.164 recommended)
+	supportWhatsappPhone: { type: String },
 	// Optional logo URL displayed in the shop header
 	logoUrl: { type: String },
 	// Optional: when set, clicking the logo/back arrow redirects to this URL

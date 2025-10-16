@@ -35,6 +35,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
   const [maxDeliveryDistanceKm, setMaxDeliveryDistanceKm] = React.useState(site?.maxDeliveryDistanceKm ?? '');
   const [logoUrl, setLogoUrl] = React.useState(site?.logoUrl || '');
   const [logoLinkUrl, setLogoLinkUrl] = React.useState(site?.logoLinkUrl || '');
+  const [supportWhatsappPhone, setSupportWhatsappPhone] = React.useState(site?.supportWhatsappPhone || '');
   const [logoFile, setLogoFile] = React.useState(null);
   const [hours, setHours] = React.useState(site?.hours || {
     mon: { open: '10:00', close: '22:00', closed: false },
@@ -126,6 +127,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
     setMinOrderCents(site?.minOrderCents ?? '');
     setCouponMinSubtotalCents(site?.couponMinSubtotalCents ?? '');
     setOrderNotifyUrl(site?.orderNotifyUrl || '');
+    setSupportWhatsappPhone(site?.supportWhatsappPhone || '');
   }, [site?._id]);
 
   // Auto-suggest a Canadian time zone based on province when country is CA and no timeZone set
@@ -203,6 +205,11 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
       </div>
 
       <div style={{ gridColumn: '1 / -1', fontWeight: 800, marginTop: 8 }}>Branding</div>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span>Support WhatsApp number (E.164, e.g., +14155550123)</span>
+        <input value={supportWhatsappPhone} onChange={(e) => setSupportWhatsappPhone(e.target.value)} placeholder="+91... or +1..." />
+        <span className="muted" style={{ fontSize: 12 }}>Shown in order details as a WhatsApp chat link.</span>
+      </label>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span>Header title (optional)</span>
         <input value={tagline} onChange={(e) => setTagline(e.target.value)} placeholder="Shown next to logo; leave blank to hide" />
@@ -539,6 +546,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
             logoUrl,
             logoLinkUrl,
             tagline,
+            supportWhatsappPhone,
             stripeAccountId,
             currency,
             minOrderCents: (minOrderCents === '' ? undefined : Number(minOrderCents)),
