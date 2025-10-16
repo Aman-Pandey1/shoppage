@@ -67,6 +67,7 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
 
   const name = site?.name || 'Store';
   const tagline = (typeof site?.tagline === 'string') ? site.tagline : '';
+  const supportWhatsappPhone = (typeof site?.supportWhatsappPhone === 'string' ? site.supportWhatsappPhone : '').trim();
   const addressLine = React.useMemo(() => {
     try {
       if (!primaryLocation || !primaryLocation.address) return '';
@@ -162,6 +163,19 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
         <div className="nav-title">{isCartOpen ? 'Cart' : 'Order Online'}</div>
 
         <div className="actions" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 6 }}>
+          {supportWhatsappPhone ? (
+            <a
+              href={`https://wa.me/${supportWhatsappPhone.replace(/[^\d]/g, '')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Chat on WhatsApp"
+              aria-label="Chat on WhatsApp"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--panel-2)' }}
+            >
+              <span role="img" aria-label="WhatsApp">🟢</span>
+              <span className="hide-mobile" style={{ fontSize: 12 }}>Support</span>
+            </a>
+          ) : null}
           {/* Cart button - hidden on desktop, visible on mobile and tablet */}
           {!isDesktop && (
             <button

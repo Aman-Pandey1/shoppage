@@ -38,6 +38,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [deliveryAddressSummary, setDeliveryAddressSummary] = useState('');
   const [orderError, setOrderError] = useState('');
   const [pickupPaymentMethod, setPickupPaymentMethod] = useState('online'); // 'online' | 'cod'
+  const [site, setSite] = useState(null);
   // Track 'Order Now' vs 'Order For Later' selection to allow checkout when closed
   const [orderWhen, setOrderWhen] = useState(null); // 'now' | 'later' | null
   const [pickupSubmitting, setPickupSubmitting] = useState(false);
@@ -189,6 +190,20 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     preselect();
     return () => { cancelled = true; };
   }, [initialCategoryId, siteSlug]);
+
+  // Load site basics for support info (WhatsApp, etc.)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await fetchJson(`/api/shop/${siteSlug}/site`);
+        if (!cancelled) setSite(data || null);
+      } catch {
+        if (!cancelled) setSite(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [siteSlug]);
 
   // Load pickup locations for popup
   useEffect(() => {
@@ -576,6 +591,20 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
               <button className="primary-btn" disabled>Delivery</button>
               <button onClick={() => setFulfillmentOpen(true)}>Takeout</button>
             </div>
+            {(site?.supportWhatsappPhone ? (
+              <div className="card" style={{ padding: 10, borderRadius: 12, display: 'flex', alignItems: 'center', gap: 10, border: '1px solid var(--border)', background: 'var(--panel-2)' }}>
+                <span className="muted" style={{ fontSize: 12, minWidth: 120 }}>Restaurant support</span>
+                <a
+                  href={`https://wa.me/${String(site.supportWhatsappPhone).replace(/[^\d]/g, '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}
+                >
+                  <span role="img" aria-label="WhatsApp">💬</span>
+                  <span>{site.supportWhatsappPhone}</span>
+                </a>
+              </div>
+            ) : null)}
             <div className="muted" style={{ fontSize: 12 }}>
               Enter your address to see delivery ETA and fee.
             </div>
@@ -588,6 +617,20 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
           <div>
             {orderError ? <div style={{ color: 'var(--danger)', marginBottom: 10 }}>{orderError}</div> : null}
             <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>Takeout selected</div>
+            {(site?.supportWhatsappPhone ? (
+              <div className="card" style={{ padding: 10, borderRadius: 12, display: 'flex', alignItems: 'center', gap: 10, border: '1px solid var(--border)', background: 'var(--panel-2)', marginBottom: 8 }}>
+                <span className="muted" style={{ fontSize: 12, minWidth: 120 }}>Restaurant support</span>
+                <a
+                  href={`https://wa.me/${String(site.supportWhatsappPhone).replace(/[^\d]/g, '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}
+                >
+                  <span role="img" aria-label="WhatsApp">💬</span>
+                  <span>{site.supportWhatsappPhone}</span>
+                </a>
+              </div>
+            ) : null)}
             {/* Tab header like screenshot */}
             <div style={{ display: 'flex', gap: 12, borderBottom: '1px solid var(--border)', marginBottom: 12 }}>
               <button onClick={() => setPickupTab('location')} style={{ border: 'none', background: 'transparent', padding: '8px 2px', fontWeight: pickupTab==='location'?800:600, color: pickupTab==='location'? 'var(--text)' : 'var(--muted)', borderBottom: pickupTab==='location'? '2px solid var(--primary-600)' : '2px solid transparent' }}>By location</button>

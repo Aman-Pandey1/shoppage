@@ -105,6 +105,7 @@ router.get('/:slug/site', async (req, res) => {
       logoUrl: site.logoUrl,
       logoLinkUrl: site.logoLinkUrl,
       tagline: site.tagline || '',
+      supportWhatsappPhone: site.supportWhatsappPhone || '',
       minOrderCents,
       couponMinSubtotalCents,
       currency: (site.currency || String(process.env.STRIPE_CURRENCY || 'usd').toLowerCase()),
