@@ -101,6 +101,7 @@ router.get('/:slug/site', async (req, res) => {
       timeZone: site.timeZone,
       deliveryFeeCents: Number(site.deliveryFeeCents) || 0,
       splitDeliveryFee: !!site.splitDeliveryFee,
+      maxDeliveryDistanceKm: (typeof site.maxDeliveryDistanceKm === 'number' ? site.maxDeliveryDistanceKm : undefined),
       logoUrl: site.logoUrl,
       logoLinkUrl: site.logoLinkUrl,
       tagline: site.tagline || '',
