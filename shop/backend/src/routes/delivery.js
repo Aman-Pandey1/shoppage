@@ -56,6 +56,9 @@ function normalizePhoneForCountry(raw, country) {
 
 router.use('/:slug', tenantBySlug);
 
+// Delivery quote should be resilient: even if the third-party provider
+// (Uber Direct / DoorDash Drive) is not fully configured in production,
+// return a simulated distance-based quote so the user can proceed to checkout.
 router.post('/:slug/quote', async (req, res) => {
 	try {
 		const mock = req.app.locals.mockData;
@@ -65,15 +68,14 @@ router.post('/:slug/quote', async (req, res) => {
 		} else {
 			site = await Site.findById(req.siteId);
 		}
-    const hasPickupCfg = !!(site?.pickup?.address) || (Array.isArray(site?.locations) && site.locations.length && site.locations[0]?.address);
-    // Allow in mock mode even if provider config missing
-    const isMock = !!req.app?.locals?.mockData;
-    const provider = site?.deliveryProvider || 'uber';
-    if (provider === 'uber') {
-      if ((!site?.uberCustomerId || !hasPickupCfg) && !isMock) return res.status(400).json({ error: 'Site not configured for Uber Direct' });
-    } else if (provider === 'doordash') {
-      if ((!site?.doordashStoreId || !hasPickupCfg) && !isMock) return res.status(400).json({ error: 'Site not configured for DoorDash Drive' });
-    }
+	    const hasPickupCfg = !!(site?.pickup?.address) || (Array.isArray(site?.locations) && site.locations.length && site.locations[0]?.address);
+	    const isMock = !!req.app?.locals?.mockData;
+	    const provider = site?.deliveryProvider || 'uber';
+
+	    // Must have at least one pickup location to compute distance-based fee
+	    if (!hasPickupCfg) {
+	      return res.status(400).json({ error: 'No pickup location configured' });
+	    }
 		const { dropoff, pickupLocationIndex } = req.body || {};
 		if (!dropoff?.address?.streetAddress) return res.status(400).json({ error: 'Invalid dropoff address' });
 		// Determine pickup location: use provided index if valid, otherwise choose nearest to dropoff
@@ -105,29 +107,31 @@ router.post('/:slug/quote', async (req, res) => {
     if (maxKm != null && typeof distanceKm === 'number' && (distanceKm - toleranceKm) > maxKm) {
       return res.status(400).json({ error: `Delivery is only available within ${maxKm} km of the restaurant.` });
     }
-    // Use selected provider
-    let quote;
-    try {
-      quote = provider === 'doordash'
-        ? await ddRequestQuote({ storeId: site.doordashStoreId, pickup, dropoff })
-        : await uberRequestQuote({ customerId: site.uberCustomerId, pickup, dropoff, creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv, scopes: site?.uberTokenScopes } });
-    } catch (e) {
-      const msg = String(e?.message || '');
-      // Allow customers to proceed to the menu even if the Uber app
-      // is misconfigured with scopes by returning a simulated quote.
-      // We only do this for the quote endpoint (pre-payment) and keep
-      // createDelivery strict to avoid charging without a courier.
-      if (provider === 'uber' && /invalid_scope|Uber token error/i.test(msg)) {
-        quote = {
-          id: `q-${Date.now()}`,
-          fee: { amount: 799, currency_code: 'CAD' },
-          dropoff_estimated_dt: null,
-          simulated: true,
-        };
-      } else {
-        throw e;
-      }
-    }
+	    // Decide if we can call live provider or should simulate
+	    const hasUberConfig = !!site?.uberCustomerId && !!site?.uberClientId && !!site?.uberClientSecret;
+	    const hasDoordashConfig = !!site?.doordashStoreId;
+	    const canCallProvider = isMock || (provider === 'uber' ? hasUberConfig : hasDoordashConfig);
+
+	    // Use selected provider when configured; otherwise simulate quote
+	    let quote = null;
+	    if (canCallProvider) {
+	      try {
+	        quote = provider === 'doordash'
+	          ? await ddRequestQuote({ storeId: site.doordashStoreId, pickup, dropoff })
+	          : await uberRequestQuote({ customerId: site.uberCustomerId, pickup, dropoff, creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv, scopes: site?.uberTokenScopes } });
+	      } catch (e) {
+	        const msg = String(e?.message || '');
+	        // Allow customers to proceed even if Uber app scopes are misconfigured
+	        if (provider === 'uber' && /invalid_scope|Uber token error/i.test(msg)) {
+	          quote = { id: `q-${Date.now()}`, simulated: true };
+	        } else {
+	          // If provider call fails for other reasons, fall back to simulated quote
+	          quote = { id: `q-${Date.now()}`, simulated: true };
+	        }
+	      }
+	    } else {
+	      quote = { id: `q-${Date.now()}`, simulated: true };
+	    }
     // Calculate delivery fee using admin-configured base when available; +$1/km over 8km
     const baseFee = (typeof site?.deliveryFeeCents === 'number' && isFinite(site.deliveryFeeCents))
       ? Math.max(0, Number(site.deliveryFeeCents))
@@ -135,10 +139,15 @@ router.post('/:slug/quote', async (req, res) => {
     const fullDeliveryFeeCents = calculateDistanceFeeCents(distanceKm, baseFee);
     const split = !!site.splitDeliveryFee;
     const customerDeliveryFeeCents = split ? Math.round(fullDeliveryFeeCents / 2) : fullDeliveryFeeCents;
-    res.json({ ...quote, distanceKm, distanceFeeCents: fullDeliveryFeeCents, customerDeliveryFeeCents, pickupLocationIndex: chosenIdx });
+	    res.json({ ...quote, distanceKm, distanceFeeCents: fullDeliveryFeeCents, customerDeliveryFeeCents, pickupLocationIndex: chosenIdx });
 	} catch (err) {
 		res.status(400).json({ error: err.message });
 	}
+});
+
+// Helpful response for accidental GET requests to the quote endpoint
+router.get('/:slug/quote', (_req, res) => {
+  res.status(405).json({ error: 'Use POST with JSON body: { dropoff: { address }, pickupLocationIndex }' });
 });
 
 router.post('/:slug/create', requireAuth, async (req, res) => {
