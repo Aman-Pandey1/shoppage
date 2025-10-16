@@ -164,11 +164,11 @@ export const FulfillmentModal = ({
           <div style={{ padding: 8, display: 'grid', gap: 6, textAlign: 'center' }}>
             <div style={{ fontWeight: 800 }}>Takeout</div>
             {pickupImg ? (
-              <div style={{ height: 70, display: 'grid', placeItems: 'center' }}>
-                <img src={pickupImg} alt="Takeout" loading="eager" decoding="async" style={{ maxWidth: '78%', maxHeight: '78%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }} />
+              <div style={{ height: 84, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <img src={pickupImg} alt="Takeout" loading="eager" decoding="async" style={{ display: 'block', maxWidth: '78%', maxHeight: '78%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }} />
               </div>
             ) : (
-              <div style={{ fontSize: 32 }}>🏪</div>
+              <div style={{ fontSize: 32, height: 84, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🏪</div>
             )}
           </div>
         </button>
@@ -195,11 +195,11 @@ export const FulfillmentModal = ({
               </div>
             ) : null}
             {deliveryImg ? (
-              <div style={{ height: 70, display: 'grid', placeItems: 'center' }}>
-                <img src={deliveryImg} alt="Delivery" loading="eager" decoding="async" style={{ maxWidth: '78%', maxHeight: '78%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }} />
+              <div style={{ height: 84, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <img src={deliveryImg} alt="Delivery" loading="eager" decoding="async" style={{ display: 'block', maxWidth: '78%', maxHeight: '78%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }} />
               </div>
             ) : (
-              <div style={{ fontSize: 32 }}>🚚</div>
+              <div style={{ fontSize: 32, height: 84, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🚚</div>
             )}
           </div>
         </button>
