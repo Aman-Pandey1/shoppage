@@ -184,7 +184,10 @@ adminBillingRouter.get('/sites/:siteId/billing', requireAdmin, async (req, res) 
 
     const mock = req.app.locals.mockData;
     if (mock) {
-      const orders = (mock.orders || []).filter((o) => o.site === siteId);
+      const orders = (mock.orders || [])
+        .filter((o) => o.site === siteId)
+        // Count only successful orders
+        .filter((o) => o.status === 'paid' || o.status === 'confirmed');
       const isToday = (o) => new Date(o.createdAt || 0) >= startOfDay;
       const isWeek = (o) => new Date(o.createdAt || 0) >= startOfWeek;
       const isMonth = (o) => new Date(o.createdAt || 0) >= startOfMonth;
@@ -227,16 +230,17 @@ adminBillingRouter.get('/sites/:siteId/billing', requireAdmin, async (req, res) 
       });
     }
 
+    const paidMatch = { site: new mongoose.Types.ObjectId(siteId), status: { $in: ['paid', 'confirmed'] } };
     const [todayAgg] = await Order.aggregate([
-      { $match: { site: new mongoose.Types.ObjectId(siteId), createdAt: { $gte: startOfDay } } },
+      { $match: { ...paidMatch, createdAt: { $gte: startOfDay } } },
       { $group: { _id: null, total: { $sum: '$totalCents' }, deliveryFees: { $sum: '$deliveryFeeCents' }, tax: { $sum: '$taxCents' }, tips: { $sum: '$tipCents' } } },
     ]);
     const [weekAgg] = await Order.aggregate([
-      { $match: { site: new mongoose.Types.ObjectId(siteId), createdAt: { $gte: startOfWeek } } },
+      { $match: { ...paidMatch, createdAt: { $gte: startOfWeek } } },
       { $group: { _id: null, total: { $sum: '$totalCents' }, deliveryFees: { $sum: '$deliveryFeeCents' }, tax: { $sum: '$taxCents' }, tips: { $sum: '$tipCents' } } },
     ]);
     const [monthAgg] = await Order.aggregate([
-      { $match: { site: new mongoose.Types.ObjectId(siteId), createdAt: { $gte: startOfMonth } } },
+      { $match: { ...paidMatch, createdAt: { $gte: startOfMonth } } },
       { $group: { _id: null, total: { $sum: '$totalCents' }, deliveryFees: { $sum: '$deliveryFeeCents' }, tax: { $sum: '$taxCents' }, tips: { $sum: '$tipCents' } } },
     ]);
 

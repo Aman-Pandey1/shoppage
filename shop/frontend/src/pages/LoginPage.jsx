@@ -6,8 +6,8 @@ import { Lock } from 'lucide-react';
 export const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [email, setEmail] = useState('admin@example.com');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState();
 
@@ -34,22 +34,20 @@ export const LoginPage = () => {
           <h2 style={{ margin: 0 }}>Admin Login</h2>
         </div>
         {error ? <div style={{ color: 'var(--danger)', marginBottom: 8 }}>{error}</div> : null}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }} autoComplete="off">
           <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <span>Email</span>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="off" inputMode="email" />
           </label>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <span>Password</span>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" />
           </label>
           <button className="primary-btn" disabled={loading} style={{ marginTop: 6 }}>
             {loading ? 'Logging in…' : 'Login'}
           </button>
         </form>
-        <div className="muted" style={{ marginTop: 10, fontSize: 12 }}>
-          Default admin: admin@example.com / admin123
-        </div>
+        {/* Intentionally no default credentials shown */}
         <div style={{ marginTop: 12, fontSize: 14 }}>
           <Link to="/">← Back to shop</Link>
         </div>

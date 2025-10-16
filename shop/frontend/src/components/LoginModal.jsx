@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { login, loginUser } from '../lib/api';
 
 export const LoginModal = ({ open, onClose, onSuccess, mode = 'user' }) => {
-  const [email, setEmail] = useState('admin@example.com');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState();
 
@@ -45,14 +45,14 @@ export const LoginModal = ({ open, onClose, onSuccess, mode = 'user' }) => {
       }} className="animate-popIn">
         <h3 style={{ marginTop: 0 }}>{mode === 'admin' ? 'Admin Login' : 'Login'}</h3>
         {error ? <div style={{ color: 'var(--danger)', marginBottom: 8 }}>{error}</div> : null}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }} autoComplete="off">
           <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <span>Email</span>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="off" inputMode="email" />
           </label>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <span>Password</span>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" />
           </label>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 6 }}>
             <button type="button" onClick={onClose}>Cancel</button>
@@ -61,11 +61,7 @@ export const LoginModal = ({ open, onClose, onSuccess, mode = 'user' }) => {
             </button>
           </div>
         </form>
-        {mode === 'admin' ? (
-          <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>
-            Default admin: admin@example.com / admin123
-          </div>
-        ) : null}
+        {/* No default credentials shown */}
       </div>
     </div>
   );
