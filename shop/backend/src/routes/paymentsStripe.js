@@ -137,7 +137,7 @@ function getStripeClient(site) {
   const secret = siteSecret || process.env.STRIPE_SECRET_KEY;
   if (!secret) throw new Error('Missing STRIPE_SECRET_KEY');
   // Explicitly pin to a modern API version.
-  // Note: Checkout does not support per-line-item discounts; we pre-discount unit prices instead.
+  // Note: We'll use Checkout session-level discounts with product scoping to show a visible Discount row.
   return new Stripe(secret, { apiVersion: process.env.STRIPE_API_VERSION || '2024-06-20' });
 }
 
@@ -238,25 +238,51 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
     const origin = req.get('origin') || process.env.FRONTEND_URL || 'http://localhost:5173';
     const slug = String(req.params.slug);
 
-    // Prepare line items using PRE-discounted unit prices
+    // Build line items with UN-discounted unit prices, and attach a Checkout discount scoped to items only.
+    // Move tax calculation display to Stripe via a 5% exclusive tax rate on item lines.
+    async function ensureTaxRateId() {
+      // Try to find an existing matching 5% exclusive tax rate to avoid creating many duplicates
+      try {
+        const list = await stripe.taxRates.list({ active: true, limit: 100 });
+        const found = list.data.find((tr) => tr.display_name === 'Tax' && tr.inclusive === false && Math.round(Number(tr.percentage) * 100) === 500);
+        if (found) return found.id;
+      } catch {}
+      const created = await stripe.taxRates.create({ display_name: 'Tax', percentage: 5, inclusive: false });
+      return created.id;
+    }
+
+    const taxRateId = await ensureTaxRateId();
+
+    // Create concrete Product objects so we can scope the discount to items only
+    const itemProducts = await Promise.all(items.map(async (it) => {
+      const name = `${it.name}${it.size ? ' — Select Item: ' + it.size : ''}`;
+      const p = await stripe.products.create({ name });
+      return p.id;
+    }));
+
     const lineItems = [
-      ...items.map((it) => {
-        const unit = Math.max(0, Number(it.priceCents) || 0);
-        const discountedUnit = pctOff > 0
-          ? Math.max(0, Math.round(unit * (100 - pctOff) / 100))
-          : unit;
-        const ln = {
-          price_data: {
-            currency,
-            product_data: { name: `${it.name}${it.size ? ' — Select Item: ' + it.size : ''}` },
-            unit_amount: discountedUnit,
-          },
-          quantity: Number(it.quantity) || 1,
-        };
-        return ln;
-      }),
-      ...(taxCents > 0 ? [{ price_data: { currency, product_data: { name: 'Tax' }, unit_amount: taxCents }, quantity: 1 }] : []),
+      ...items.map((it, idx) => ({
+        price_data: {
+          currency,
+          product: itemProducts[idx],
+          unit_amount: Math.max(0, Number(it.priceCents) || 0),
+        },
+        quantity: Number(it.quantity) || 1,
+        tax_rates: [taxRateId],
+      })),
     ];
+
+    // Create a one-time coupon to show Discount row (scoped to item products only)
+    let discountsField = undefined;
+    if (pctOff > 0 && discountCents > 0) {
+      const couponStripe = await stripe.coupons.create({
+        percent_off: pctOff,
+        duration: 'once',
+        applies_to: { products: itemProducts },
+        name: appliedCoupon?.code ? `Coupon ${appliedCoupon.code}` : 'Discount',
+      });
+      discountsField = [{ coupon: couponStripe.id }];
+    }
 
     // Build PI data depending on per-site vs Connect
     const usePerSiteStripe = !!req.site?.stripeSecretKey;
@@ -268,6 +294,7 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       line_items: lineItems,
+      discounts: discountsField,
       success_url: `${origin}/s/${encodeURIComponent(slug)}/orders?status=success&cs={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/s/${encodeURIComponent(slug)}?status=cancelled`,
       customer_email: req.user?.email || undefined,
@@ -430,27 +457,50 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
       on_behalf_of: site.stripeAccountId,
     } : undefined;
 
-    // Always pre-discount item unit prices
-    // Add tax and delivery as separate lines with no discounts applied
+    // Use UN-discounted unit prices on items and attach a visible Discount via a session coupon.
+    // Apply a 5% exclusive tax rate on item lines so Stripe renders the Tax row properly (and the discount applies before tax).
+    async function ensureTaxRateIdDel() {
+      try {
+        const list = await stripe.taxRates.list({ active: true, limit: 100 });
+        const found = list.data.find((tr) => tr.display_name === 'Tax' && tr.inclusive === false && Math.round(Number(tr.percentage) * 100) === 500);
+        if (found) return found.id;
+      } catch {}
+      const created = await stripe.taxRates.create({ display_name: 'Tax', percentage: 5, inclusive: false });
+      return created.id;
+    }
+    const taxRateIdDel = await ensureTaxRateIdDel();
+
+    const itemProductsDel = await Promise.all(manifestItems.map(async (it) => {
+      const name = `${it.name}${it.size ? ' — Select Item: ' + it.size : ''}`;
+      const p = await stripe.products.create({ name });
+      return p.id;
+    }));
+
     const lineItemsDel = [
-      ...manifestItems.map((it) => {
-        const unit = Math.max(0, Number(it.priceCents || it.price) || 0);
-        const discountedUnit = pctOffDel > 0
-          ? Math.max(0, Math.round(unit * (100 - pctOffDel) / 100))
-          : unit;
-        const ln = {
-          price_data: { currency, product_data: { name: `${it.name}${it.size ? ' — Select Item: ' + it.size : ''}` }, unit_amount: discountedUnit },
-          quantity: Number(it.quantity) || 1,
-        };
-        return ln;
-      }),
-      ...(taxCents > 0 ? [{ price_data: { currency, product_data: { name: 'Tax' }, unit_amount: taxCents }, quantity: 1 }] : []),
+      ...manifestItems.map((it, idx) => ({
+        price_data: { currency, product: itemProductsDel[idx], unit_amount: Math.max(0, Number(it.priceCents || it.price) || 0) },
+        quantity: Number(it.quantity) || 1,
+        tax_rates: [taxRateIdDel],
+      })),
       ...(customerDeliveryFeeCents > 0 ? [{ price_data: { currency, product_data: { name: 'Delivery fee' }, unit_amount: customerDeliveryFeeCents }, quantity: 1 }] : []),
     ];
+
+    // Create a one-time percent-off coupon for the session, scoped to item products only
+    let discountsFieldDel = undefined;
+    if (pctOffDel > 0 && discountCents > 0) {
+      const couponStripeDel = await stripe.coupons.create({
+        percent_off: pctOffDel,
+        duration: 'once',
+        applies_to: { products: itemProductsDel },
+        name: appliedCoupon?.code ? `Coupon ${appliedCoupon.code}` : 'Discount',
+      });
+      discountsFieldDel = [{ coupon: couponStripeDel.id }];
+    }
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       line_items: lineItemsDel,
+      discounts: discountsFieldDel,
       success_url: `${origin}/s/${encodeURIComponent(slug)}/orders?status=success&cs={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/s/${encodeURIComponent(slug)}?status=cancelled`,
       customer_email: req.user?.email || undefined,
