@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal } from './Modal';
 import { getPickupImage, getDeliveryImage } from '../lib/assetFinder';
-import { fetchJson } from '../lib/api';
+import { fetchJson, postJson } from '../lib/api';
 
 // Enhanced fulfillment modal that matches the screenshot/requirements and also
 // shows a closed-for-delivery notice under the Delivery option when applicable.
@@ -28,10 +28,12 @@ export const FulfillmentModal = ({
   const [timing, setTiming] = React.useState(null); // 'now' | 'later'
   const [addrText, setAddrText] = React.useState('');
   const [addrObj, setAddrObj] = React.useState(null);
+  const [deliveryAreaError, setDeliveryAreaError] = React.useState('');
 
   // Hours and closed message for delivery
   const [hours, setHours] = React.useState(null);
   const [closedMsg, setClosedMsg] = React.useState('');
+  const [closedNow, setClosedNow] = React.useState(false);
 
   React.useEffect(() => {
     if (open) {
@@ -39,6 +41,7 @@ export const FulfillmentModal = ({
       setTiming(null);
       setAddrText('');
       setAddrObj(null);
+      setDeliveryAreaError('');
     }
   }, [open, selectedTypeProp]);
 
@@ -57,15 +60,16 @@ export const FulfillmentModal = ({
 
   React.useEffect(() => {
     try {
-      if (!hours) { setClosedMsg(''); return; }
+      if (!hours) { setClosedMsg(''); setClosedNow(false); return; }
       const now = new Date();
       const dayIdx = now.getDay();
       const keys = ['sun','mon','tue','wed','thu','fri','sat'];
       const cfg = hours[keys[dayIdx]];
-      if (!cfg) { setClosedMsg(''); return; }
+      if (!cfg) { setClosedMsg(''); setClosedNow(false); return; }
       if (cfg.closed) {
         const openText = nextOpenText(hours, dayIdx);
-        setClosedMsg(`We are currently closed for delivery.\nWe will open today at ${openText}. You can Pre-Order for later.`);
+        setClosedMsg(`We are currently closed.\nWe will open today at ${openText}. You can Pre-Order for later.`);
+        setClosedNow(true);
         return;
       }
       const [oh, om] = String(cfg.open || '10:00').split(':').map(Number);
@@ -75,11 +79,13 @@ export const FulfillmentModal = ({
       const lastOrder = (ch||0)*60 + Math.max(0, (cm||0)-15);
       if (!(nowMin >= openMin && nowMin <= lastOrder)) {
         const openText = timeLabel(oh||10, om||0);
-        setClosedMsg(`We are currently closed for delivery.\nWe will open today at ${openText}. You can Pre-Order for later.`);
+        setClosedMsg(`We are currently closed.\nWe will open today at ${openText}. You can Pre-Order for later.`);
+        setClosedNow(true);
       } else {
         setClosedMsg('');
+        setClosedNow(false);
       }
-    } catch { setClosedMsg(''); }
+    } catch { setClosedMsg(''); setClosedNow(false); }
   }, [hours]);
 
   function timeLabel(hh, mm) {
@@ -106,16 +112,47 @@ export const FulfillmentModal = ({
   }
 
   const canConfirmPickup = selectedType === 'pickup' && timing && pickupDate && pickupTime;
-  const canConfirmDelivery = selectedType === 'delivery' && timing && (addrText && addrText.length > 0);
+  const canConfirmDelivery = selectedType === 'delivery' && timing && (addrText && addrText.length > 0) && !deliveryAreaError;
+
+  // Live check for delivery area only for Delivery option
+  React.useEffect(() => {
+    let cancelled = false;
+    let t = null;
+    async function doCheck() {
+      try {
+        if (selectedType !== 'delivery') { setDeliveryAreaError(''); return; }
+        // Require an address object (from autocomplete) to quote
+        if (!addrObj) { setDeliveryAreaError(''); return; }
+        const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { address: addrObj } });
+        if (cancelled) return;
+        setDeliveryAreaError('');
+      } catch (e) {
+        if (cancelled) return;
+        const raw = String(e?.message || '').toLowerCase();
+        if (/within\s*\d+\s*km/.test(raw) || /only available within/.test(raw)) {
+          setDeliveryAreaError('Delivery not available for this address (too far). Please choose Takeout.');
+        } else {
+          setDeliveryAreaError('');
+        }
+      }
+    }
+    if (!addrObj) { setDeliveryAreaError(''); return () => { cancelled = true; if (t) clearTimeout(t); }; }
+    if (t) clearTimeout(t);
+    t = setTimeout(doCheck, 300);
+    return () => { cancelled = true; if (t) clearTimeout(t); };
+  }, [addrObj, selectedType, siteSlug]);
+
+  // When restaurant is closed, we disable only the 'Order Now' option.
+  // Users can still select Delivery or Takeout and pre-order for later.
 
   function renderTypeButtons() {
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
         <button
           onClick={() => setSelectedType('pickup')}
           style={{
-            padding: 8,
-            borderRadius: 14,
+            padding: 6,
+            borderRadius: 12,
             overflow: 'hidden',
             border: selectedType === 'pickup' ? '2px solid var(--primary-600)' : '1px solid var(--border)',
             background: selectedType === 'pickup'
@@ -124,11 +161,11 @@ export const FulfillmentModal = ({
           }}
           className="animate-fadeInUp"
         >
-          <div style={{ padding: 10, display: 'grid', gap: 6, textAlign: 'center' }}>
+          <div style={{ padding: 8, display: 'grid', gap: 6, textAlign: 'center' }}>
             <div style={{ fontWeight: 800 }}>Takeout</div>
             {pickupImg ? (
-              <div style={{ height: 90, display: 'grid', placeItems: 'center' }}>
-                <img src={pickupImg} alt="Takeout" loading="eager" decoding="async" style={{ maxWidth: '80%', maxHeight: '80%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }} />
+              <div style={{ height: 70, display: 'grid', placeItems: 'center' }}>
+                <img src={pickupImg} alt="Takeout" loading="eager" decoding="async" style={{ maxWidth: '78%', maxHeight: '78%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }} />
               </div>
             ) : (
               <div style={{ fontSize: 32 }}>🏪</div>
@@ -136,19 +173,21 @@ export const FulfillmentModal = ({
           </div>
         </button>
         <button
-          onClick={() => setSelectedType('delivery')}
+          onClick={() => { setSelectedType('delivery'); }}
           style={{
-            padding: 8,
-            borderRadius: 14,
+            padding: 6,
+            borderRadius: 12,
             overflow: 'hidden',
             border: selectedType === 'delivery' ? '2px solid var(--primary-600)' : '1px solid var(--border)',
             background: selectedType === 'delivery'
               ? 'linear-gradient(180deg, var(--primary-alpha-25), var(--primary-alpha-12))'
               : 'linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0.35))',
+            opacity: 1,
+            cursor: 'pointer',
           }}
           className="animate-fadeInUp"
         >
-          <div style={{ padding: 10, display: 'grid', gap: 6, textAlign: 'center' }}>
+          <div style={{ padding: 8, display: 'grid', gap: 6, textAlign: 'center' }}>
             <div style={{ fontWeight: 800 }}>Delivery</div>
             {closedMsg ? (
               <div style={{ color: 'var(--danger)', whiteSpace: 'pre-line', fontSize: 12 }}>
@@ -156,8 +195,8 @@ export const FulfillmentModal = ({
               </div>
             ) : null}
             {deliveryImg ? (
-              <div style={{ height: 90, display: 'grid', placeItems: 'center' }}>
-                <img src={deliveryImg} alt="Delivery" loading="eager" decoding="async" style={{ maxWidth: '80%', maxHeight: '80%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }} />
+              <div style={{ height: 70, display: 'grid', placeItems: 'center' }}>
+                <img src={deliveryImg} alt="Delivery" loading="eager" decoding="async" style={{ maxWidth: '78%', maxHeight: '78%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }} />
               </div>
             ) : (
               <div style={{ fontSize: 32 }}>🚚</div>
@@ -170,20 +209,22 @@ export const FulfillmentModal = ({
 
   function renderTimingButtons() {
     const disabled = !selectedType;
+    const disableNow = disabled || closedNow; // when restaurant is closed, block 'Order Now'
+    const disableLater = disabled; // allow 'Order For Later' even when closed
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
         <button
-          disabled={disabled}
+          disabled={disableNow}
           className="primary-btn"
-          style={{ opacity: disabled ? 0.6 : 1 }}
+          style={{ opacity: disableNow ? 0.6 : 1 }}
           onClick={() => setTiming('now')}
         >
           Order Now
         </button>
         <button
-          disabled={disabled}
+          disabled={disableLater}
           className="primary-btn"
-          style={{ opacity: disabled ? 0.6 : 1 }}
+          style={{ opacity: disableLater ? 0.6 : 1 }}
           onClick={() => setTiming('later')}
         >
           Order For Later
@@ -218,7 +259,7 @@ export const FulfillmentModal = ({
     }
     // delivery
     return (
-      <div style={{ display: 'grid', gap: 8, marginTop: 12 }}>
+      <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <span>Delivery Address</span>
           {AddressAutocomplete ? (
@@ -234,6 +275,9 @@ export const FulfillmentModal = ({
             <input value={addrText} onChange={(e) => setAddrText(e.target.value)} placeholder="Address" />
           )}
         </label>
+        {deliveryAreaError ? (
+          <div style={{ color: 'var(--danger)', fontSize: 12 }}>{deliveryAreaError}</div>
+        ) : null}
         <div className="muted" style={{ fontSize: 10, textAlign: 'right' }}>powered by Google</div>
       </div>
     );
@@ -264,7 +308,7 @@ export const FulfillmentModal = ({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={'Select Order Mode'} footer={renderFooter()} maxWidth={560} closeOnOverlayClick={false}>
+    <Modal open={open} onClose={onClose} title={'Select Order Mode'} footer={renderFooter()} maxWidth={480} closeOnOverlayClick={false}>
       {renderTypeButtons()}
       {renderTimingButtons()}
       {renderFollowUp()}
