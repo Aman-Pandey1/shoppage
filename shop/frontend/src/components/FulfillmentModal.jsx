@@ -130,7 +130,7 @@ export const FulfillmentModal = ({
         if (cancelled) return;
         const raw = String(e?.message || '').toLowerCase();
         if (/within\s*\d+\s*km/.test(raw) || /only available within/.test(raw)) {
-          setDeliveryAreaError('Delivery not available for this address (too far). Please choose Takeout.');
+          setDeliveryAreaError('Outside Delivery area, please choose Takeout');
         } else {
           setDeliveryAreaError('');
         }
