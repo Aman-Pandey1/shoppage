@@ -81,14 +81,12 @@ app.use('/uploads', express.static(UPLOAD_DIR));
 const PORT = process.env.PORT || 4000;
 const MONGO_URI = process.env.MONGO_URI;
 // Prefer mock data when there is no database configured.
-// Explicit env values like "false"/"0" will disable mock mode.
-const USE_MOCK_DATA = (() => {
-  const raw = String(process.env.USE_MOCK_DATA ?? '').trim().toLowerCase();
-  if (['true', '1', 'yes'].includes(raw)) return true;
-  if (['false', '0', 'no'].includes(raw)) return false;
-  // Default: enable mock data when MONGO_URI is not provided
-  return !MONGO_URI;
-})();
+// If USE_MOCK_DATA is explicitly set to false, NEVER fall back to mock.
+const RAW_USE_MOCK = String(process.env.USE_MOCK_DATA ?? '').trim().toLowerCase();
+const MOCK_EXPLICIT_TRUE = ['true', '1', 'yes'].includes(RAW_USE_MOCK);
+const MOCK_EXPLICIT_FALSE = ['false', '0', 'no'].includes(RAW_USE_MOCK);
+const EXPLICIT_MOCK_CONFIG = (MOCK_EXPLICIT_TRUE || MOCK_EXPLICIT_FALSE);
+const USE_MOCK_DATA = (MOCK_EXPLICIT_TRUE ? true : (MOCK_EXPLICIT_FALSE ? false : !MONGO_URI));
 
 if (USE_MOCK_DATA) {
   try { globalThis.__USE_MOCK_DATA = true; } catch {}
@@ -247,8 +245,14 @@ if (USE_MOCK_DATA) {
   }
 } else {
   if (!MONGO_URI) {
+    if (MOCK_EXPLICIT_FALSE) {
+      console.error(
+        "USE_MOCK_DATA=false but MONGO_URI is not set. Refusing to enable mock data. Exiting."
+      );
+      process.exit(1);
+    }
     console.warn(
-      "MONGO_URI not set and USE_MOCK_DATA disabled explicitly; enabling mock mode to allow server startup."
+      "MONGO_URI not set; enabling mock mode to allow server startup."
     );
     try { globalThis.__USE_MOCK_DATA = true; } catch {}
     const persisted = typeof loadMockData === "function" ? loadMockData() : null;
@@ -339,6 +343,12 @@ async function start() {
       }
     } catch (err) {
       console.error("MongoDB connection error:", err?.message || err);
+      if (MOCK_EXPLICIT_FALSE) {
+        console.error(
+          "USE_MOCK_DATA=false; refusing to fall back to mock data. Exiting."
+        );
+        process.exit(1);
+      }
       console.warn(
         "Falling back to mock data mode due to MongoDB connection failure."
       );
