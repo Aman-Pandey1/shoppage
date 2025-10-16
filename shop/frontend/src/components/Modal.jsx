@@ -15,6 +15,7 @@ const overlayStyle = {
 };
 
 const panelStyle = {
+  // Width is overridden via prop; this is a safe default
   width: 'min(92vw, 640px)',
   maxHeight: '86vh',
   background: 'linear-gradient(180deg, rgba(255,255,255,0.90), rgba(255,255,255,0.70))',
@@ -59,11 +60,18 @@ const buttonStyle = {
   cursor: 'pointer',
 };
 
-export const Modal = ({ open, onClose, title, children, footer }) => {
+export const Modal = ({ open, onClose, title, children, footer, maxWidth = 640, closeOnOverlayClick = true }) => {
   if (!open) return null;
+  const mergedPanelStyle = { ...panelStyle, width: `min(92vw, ${Number(maxWidth) || 640}px)` };
   return (
-    <div style={overlayStyle} onClick={onClose}>
-      <div style={panelStyle} className="animate-popIn" onClick={(e) => e.stopPropagation()}>
+    <div
+      style={overlayStyle}
+      onClick={(e) => {
+        if (!closeOnOverlayClick) return;
+        if (typeof onClose === 'function') onClose(e);
+      }}
+    >
+      <div style={mergedPanelStyle} className="animate-popIn" onClick={(e) => e.stopPropagation()}>
         {title ? <div style={headerStyle}>{title}</div> : null}
         <div style={bodyStyle}>{children}</div>
         {footer ? <div style={footerStyle}>{footer}</div> : null}

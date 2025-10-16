@@ -3,7 +3,7 @@ import { fetchJson } from '../lib/api';
 
 // Lightweight Google Places autocomplete input with dropdown suggestions.
 // Loads the Places JS library on demand using the site's public config key.
-export const AddressAutocomplete = ({ siteSlug, placeholder = 'Address', value, onChange, onSelect }) => {
+export const AddressAutocomplete = ({ siteSlug, placeholder = 'Address', value, onChange, onSelect, country = 'CA' }) => {
   const [apiReady, setApiReady] = React.useState(false);
   const [input, setInput] = React.useState(value || '');
   const [predictions, setPredictions] = React.useState([]);
@@ -62,14 +62,15 @@ export const AddressAutocomplete = ({ siteSlug, placeholder = 'Address', value, 
       if (t) clearTimeout(t);
       t = setTimeout(() => {
         try {
-          const req = { input: q, componentRestrictions: { country: ['ca', 'us'] } };
+          const countries = Array.isArray(country) ? country : [country];
+          const req = { input: q, componentRestrictions: { country: countries.map((c) => String(c).toLowerCase()) } };
           svcRef.current.getPlacePredictions(req, (list) => {
             setPredictions(Array.isArray(list) ? list.slice(0, 6) : []);
           });
         } catch { setPredictions([]); }
       }, 120);
     };
-  }, [apiReady]);
+  }, [apiReady, country]);
 
   function handleInputChange(e) {
     const val = e.target.value;
@@ -139,6 +140,7 @@ export const AddressAutocomplete = ({ siteSlug, placeholder = 'Address', value, 
         onFocus={() => { if (input) { setOpen(true); debouncedFetch(input); } }}
         aria-autocomplete="list"
         aria-expanded={open ? 'true' : 'false'}
+        style={{ width: '100%' }}
       />
       {open && predictions.length > 0 ? (
         <div role="listbox" style={{ position: 'absolute', zIndex: 20, left: 0, right: 0, top: '100%', background: '#fff', border: '1px solid var(--border)', borderRadius: 8, marginTop: 4, maxHeight: 240, overflow: 'auto' }}>

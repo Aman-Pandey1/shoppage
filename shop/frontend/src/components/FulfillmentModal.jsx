@@ -110,12 +110,12 @@ export const FulfillmentModal = ({
 
   function renderTypeButtons() {
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
         <button
           onClick={() => setSelectedType('pickup')}
           style={{
-            padding: 10,
-            borderRadius: 16,
+            padding: 8,
+            borderRadius: 14,
             overflow: 'hidden',
             border: selectedType === 'pickup' ? '2px solid var(--primary-600)' : '1px solid var(--border)',
             background: selectedType === 'pickup'
@@ -124,11 +124,11 @@ export const FulfillmentModal = ({
           }}
           className="animate-fadeInUp"
         >
-          <div style={{ padding: 12, display: 'grid', gap: 6, textAlign: 'center' }}>
+          <div style={{ padding: 10, display: 'grid', gap: 6, textAlign: 'center' }}>
             <div style={{ fontWeight: 800 }}>Takeout</div>
             {pickupImg ? (
-              <div style={{ height: 120, display: 'grid', placeItems: 'center' }}>
-                <img src={pickupImg} alt="Takeout" loading="eager" decoding="async" style={{ maxWidth: '85%', maxHeight: '85%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }} />
+              <div style={{ height: 90, display: 'grid', placeItems: 'center' }}>
+                <img src={pickupImg} alt="Takeout" loading="eager" decoding="async" style={{ maxWidth: '80%', maxHeight: '80%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }} />
               </div>
             ) : (
               <div style={{ fontSize: 32 }}>🏪</div>
@@ -138,8 +138,8 @@ export const FulfillmentModal = ({
         <button
           onClick={() => setSelectedType('delivery')}
           style={{
-            padding: 10,
-            borderRadius: 16,
+            padding: 8,
+            borderRadius: 14,
             overflow: 'hidden',
             border: selectedType === 'delivery' ? '2px solid var(--primary-600)' : '1px solid var(--border)',
             background: selectedType === 'delivery'
@@ -148,7 +148,7 @@ export const FulfillmentModal = ({
           }}
           className="animate-fadeInUp"
         >
-          <div style={{ padding: 12, display: 'grid', gap: 6, textAlign: 'center' }}>
+          <div style={{ padding: 10, display: 'grid', gap: 6, textAlign: 'center' }}>
             <div style={{ fontWeight: 800 }}>Delivery</div>
             {closedMsg ? (
               <div style={{ color: 'var(--danger)', whiteSpace: 'pre-line', fontSize: 12 }}>
@@ -156,8 +156,8 @@ export const FulfillmentModal = ({
               </div>
             ) : null}
             {deliveryImg ? (
-              <div style={{ height: 120, display: 'grid', placeItems: 'center' }}>
-                <img src={deliveryImg} alt="Delivery" loading="eager" decoding="async" style={{ maxWidth: '85%', maxHeight: '85%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }} />
+              <div style={{ height: 90, display: 'grid', placeItems: 'center' }}>
+                <img src={deliveryImg} alt="Delivery" loading="eager" decoding="async" style={{ maxWidth: '80%', maxHeight: '80%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }} />
               </div>
             ) : (
               <div style={{ fontSize: 32 }}>🚚</div>
@@ -228,6 +228,7 @@ export const FulfillmentModal = ({
               onChange={(t) => setAddrText(t)}
               onSelect={(addr, summary) => { setAddrObj(addr); setAddrText(summary || ''); }}
               placeholder="Address"
+              country="CA"
             />
           ) : (
             <input value={addrText} onChange={(e) => setAddrText(e.target.value)} placeholder="Address" />
@@ -263,7 +264,7 @@ export const FulfillmentModal = ({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={'Select Order Mode'} footer={renderFooter()}>
+    <Modal open={open} onClose={onClose} title={'Select Order Mode'} footer={renderFooter()} maxWidth={560} closeOnOverlayClick={false}>
       {renderTypeButtons()}
       {renderTimingButtons()}
       {renderFollowUp()}
