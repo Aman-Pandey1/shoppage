@@ -355,13 +355,7 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
     const baseFee = (typeof site?.deliveryFeeCents === 'number' && isFinite(site.deliveryFeeCents))
       ? Math.max(0, Number(site.deliveryFeeCents))
       : 800;
-    let fullDeliveryFeeCents = baseFee;
-    if (typeof distanceKm === 'number' && isFinite(distanceKm) && distanceKm > 0) {
-      const roundedKm = Math.ceil(distanceKm);
-      if (roundedKm > 8) {
-        fullDeliveryFeeCents = baseFee + ((roundedKm - 8) * 100);
-      }
-    }
+    const fullDeliveryFeeCents = calculateDistanceFeeCents(distanceKm, baseFee);
     const split = !!site.splitDeliveryFee;
     let customerDeliveryFeeCents = split ? Math.round(fullDeliveryFeeCents / 2) : fullDeliveryFeeCents;
     let restaurantDeliveryFeeCents = split ? (fullDeliveryFeeCents - customerDeliveryFeeCents) : 0;
