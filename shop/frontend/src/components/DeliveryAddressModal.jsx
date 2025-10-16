@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Modal } from './Modal';
 import { useCart } from '../store/CartContext';
 import { fetchJson, postJson } from '../lib/api';
+import { AddressAutocomplete } from './AddressAutocomplete';
 
 export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, manifest, initialPickupIndex, mode = 'checkout', initialAddress, initialSummary }) => {
   const { state, setDeliveryFeeCents } = useCart();
@@ -28,6 +29,10 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   const [selectedPickupIndex, setSelectedPickupIndex] = useState(null);
   const [selectedCity, setSelectedCity] = useState('');
   const [minOrderCents, setMinOrderCents] = useState(5000);
+  // Single-line address text for UI display
+  const [addrText, setAddrText] = useState(initialSummary || '');
+  // Single-line address text for autocomplete
+  const [addrText, setAddrText] = useState(initialSummary || '');
 
   const itemsSubtotalCents = React.useMemo(() => {
     try {
@@ -72,6 +77,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         setPostalCode(initialAddress.postalCode || '');
         setCountry((initialAddress.country || 'CA').toUpperCase());
       }
+      if (initialSummary && !addrText) setAddrText(initialSummary);
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -152,7 +158,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
           String(addr1 || '').trim() &&
           String(city || '').trim() &&
           String(province || '').trim() &&
-          isValidPostal(String(postalCode || '')) &&
+          // Postal code optional for quote
           String(country || '').trim() &&
           typeof selectedPickupIndex === 'number' && selectedPickupIndex >= 0
         );
@@ -237,10 +243,10 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   function validate() {
     if (!name.trim()) return 'Full Name is required';
     if (!isValidPhone(phone)) return 'Enter phone as +1XXXXXXXXXX';
-    if (!addr1.trim()) return 'Address line 1 is required';
+    if (!addr1.trim()) return 'Please enter a full address';
     if (!city.trim()) return 'City is required';
     if (!province.trim()) return 'Province is required';
-    if (!isValidPostal(postalCode)) return 'Postal code must be like A1A 1A1';
+    // Postal code optional
     return null;
   }
 
@@ -298,7 +304,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         <div className="muted" style={{ fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {(() => {
             const parts = [];
-            const summary = [addr1, city, province, postalCode].filter(Boolean).join(', ');
+            const summary = (addrText || [addr1, city, province, postalCode].filter(Boolean).join(', '));
             if (summary) parts.push(`Address: ${summary}`);
             if (typeof distanceKm === 'number' && isFinite(distanceKm)) parts.push(`${distanceKm.toFixed(1)} km`);
             const fee = (Number(deliveryFeeCentsLocal || 0) / 100);
@@ -315,10 +321,30 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
             try {
               // Validate and build dropoff
               if (!name.trim()) throw new Error('Full Name is required');
-              if (!addr1.trim() || !city.trim() || !province.trim() || !isValidPostal(postalCode)) throw new Error('Enter a valid full address');
+              // Allow user to type a single-line address; if details missing, try to infer from text
+              let a1 = addr1, cty = city, prov = province, pc = postalCode, ctry = country;
+              if ((!a1 || !cty || !prov) && (typeof window !== 'undefined')) {
+                const text = (document.querySelector('input[placeholder="Start typing your address"]')?.value || '').trim();
+                if (text) {
+                  const parts = text.split(',').map((s) => s.trim()).filter(Boolean);
+                  const last = parts[parts.length - 1] || '';
+                  const countryMatch = /(CA|US|CANADA|UNITED STATES)/i.exec(last);
+                  ctry = countryMatch ? (countryMatch[1].toUpperCase().startsWith('US') ? 'US' : 'CA') : ctry;
+                  const tailTokens = (parts[parts.length - 2] || '').split(/\s+/);
+                  const provTok = (tailTokens.find((t) => /^[A-Za-z]{2}$/.test(t)) || '').toUpperCase();
+                  const postalTok = tailTokens.find((t) => /[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d|\d{5}(-\d{4})?/.test(t)) || '';
+                  const cityGuess = parts.length >= 2 ? parts[parts.length - 2].replace(provTok, '').replace(postalTok, '').trim() : '';
+                  const street = parts.slice(0, Math.max(1, parts.length - 2)).join(', ');
+                  a1 = a1 || street;
+                  cty = cty || cityGuess;
+                  prov = prov || provTok;
+                  pc = pc || postalTok;
+                }
+              }
+              if (!a1 || !cty || !prov) throw new Error('Enter a valid full address');
               const normalizedPhone = normalizePhoneForCountry(phone, country);
               if (!normalizedPhone) throw new Error('Enter phone in E.164 like +14155550123');
-              const address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
+              const address = { streetAddress: [a1, ...(addr2 ? [addr2] : [])], city: cty, province: prov, postalCode: pc, country: ctry };
               const dropoff = { name, phone: normalizedPhone, address };
               // Always get a fresh quote to ensure delivery fee consistency with checkout
               const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { name, phone: normalizedPhone, address }, pickupLocationIndex: selectedPickupIndex });
@@ -343,7 +369,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
               const res = await postJson(`/api/payments/stripe/${siteSlug}/checkout/delivery`, payload);
               const url = res?.url;
               if (!url) throw new Error('Failed to start payment');
-              const summary = [addr1, city, postalCode].filter(Boolean).join(', ');
+              const summary = (document.querySelector('input[placeholder="Start typing your address"]')?.value || [a1, cty, pc].filter(Boolean).join(', '));
               try { onConfirmed(`addr-${Date.now()}`, summary); } catch {}
               try { onClose(); } catch {}
               window.location.href = url;
@@ -426,34 +452,25 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
           <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1..." />
         </label>
         <label style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <span>Address line 1</span>
-          <input value={addr1} onChange={(e) => setAddr1(e.target.value)} />
-        </label>
-        <label style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <span>Address line 2 (optional)</span>
-          <input value={addr2} onChange={(e) => setAddr2(e.target.value)} />
-        </label>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <span>City</span>
-          <input value={city} onChange={(e) => setCity(e.target.value)} />
-        </label>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <span>Province</span>
-          <input value={province} onChange={(e) => setProvince(e.target.value)} placeholder="ON, BC, AB..." />
-        </label>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <span>Postal Code</span>
-          <input value={postalCode} onChange={(e) => setPostalCode(e.target.value)} placeholder="A1A 1A1" />
-        </label>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <span>Country</span>
-          <select value={country} onChange={(e) => setCountry(e.target.value)}>
-            <option value="CA">Canada (CA)</option>
-            <option value="US">United States (US)</option>
-            <option value="IN">India (IN)</option>
-            <option value="GB">United Kingdom (GB)</option>
-            <option value="AU">Australia (AU)</option>
-          </select>
+          <span>Full Address</span>
+          <AddressAutocomplete
+            siteSlug={siteSlug}
+            value={addrText}
+            onChange={(t) => setAddrText(t)}
+            onSelect={(addr, summary) => {
+              try {
+                const line1 = Array.isArray(addr.streetAddress) ? addr.streetAddress.join(' ') : (addr.line1 || '');
+                setAddr1(line1 || '');
+                setCity(addr.city || '');
+                setProvince(addr.province || '');
+                setPostalCode(addr.postalCode || '');
+                setCountry((addr.country || 'CA').toUpperCase());
+                setAddrText(summary || '');
+              } catch {}
+            }}
+            placeholder="Start typing your address"
+            country={country}
+          />
         </label>
         {/* Outside-delivery error is shown on the address entry form, not here */}
       </div>
