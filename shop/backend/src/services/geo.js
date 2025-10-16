@@ -156,15 +156,22 @@ export async function distanceBetweenAddressesKm(pickupAddress, dropoffAddress) 
   return haversineDistanceKm(pickupPoint, dropoffPoint);
 }
 
-export function calculateDistanceFeeCents(distanceKm, perKmCents = 800) {
-  // Treat the configured deliveryFeeCents as a per-kilometer rate.
-  // Charge for the full number of kilometers rounded up.
-  const ratePerKm = Math.max(0, Math.round(Number(perKmCents) || 0));
+export function calculateDistanceFeeCents(distanceKm, _ignored = 800) {
+  // New pricing rule:
+  // - Flat $8 for distances up to and including 8 km
+  // - Then $1 per additional km beyond 8 km
+  // - Distance is rounded up to the next whole kilometer
+  // Notes:
+  // - We intentionally ignore the previous per-km configuration parameter.
+  // - If distance cannot be determined, default to the flat $8.
+  const BASE_FLAT_CENTS = 800; // $8 up to 8 km
+  const EXTRA_PER_KM_CENTS = 100; // $1 per km beyond 8 km
+
   if (typeof distanceKm !== 'number' || !isFinite(distanceKm) || distanceKm <= 0) {
-    // If distance cannot be determined, charge at least the per-km rate (1 km).
-    return ratePerKm;
+    return BASE_FLAT_CENTS;
   }
   const roundedKm = Math.max(1, Math.ceil(distanceKm));
-  return roundedKm * ratePerKm;
+  if (roundedKm <= 8) return BASE_FLAT_CENTS;
+  return BASE_FLAT_CENTS + (roundedKm - 8) * EXTRA_PER_KM_CENTS;
 }
 
