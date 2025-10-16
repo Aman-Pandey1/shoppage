@@ -26,7 +26,7 @@ export const AddressAutocomplete = ({ siteSlug, placeholder = 'Address', value, 
         const { googleMapsApiKey } = await fetchJson(`/api/shop/${siteSlug}/public-config`);
         const key = googleMapsApiKey || '';
         if (!key) { if (!cancelled) setApiReady(false); return; }
-        await injectScriptOnce(`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=places&v=weekly`);
+        await injectScriptOnce(`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=places&v=weekly&region=CA&language=en`);
         if (!cancelled) initServices();
       } catch {
         if (!cancelled) setApiReady(false);
@@ -63,7 +63,11 @@ export const AddressAutocomplete = ({ siteSlug, placeholder = 'Address', value, 
       t = setTimeout(() => {
         try {
           const countries = Array.isArray(country) ? country : [country];
-          const req = { input: q, componentRestrictions: { country: countries.map((c) => String(c).toLowerCase()) } };
+          const req = {
+            input: q,
+            componentRestrictions: { country: countries.map((c) => String(c).toUpperCase()) },
+            types: ['address'],
+          };
           svcRef.current.getPlacePredictions(req, (list) => {
             setPredictions(Array.isArray(list) ? list.slice(0, 6) : []);
           });
@@ -168,7 +172,17 @@ const pendingLoads = new Map();
 function injectScriptOnce(src) {
   if (pendingLoads.has(src)) return pendingLoads.get(src);
   const existing = Array.from(document.querySelectorAll('script')).find((s) => (s.src || '').includes('maps.googleapis.com/maps/api/js'));
-  if (existing) return Promise.resolve();
+  if (existing) {
+    const hasPlaces = (existing.src || '').includes('libraries=places');
+    if (hasPlaces) {
+      if (window.google && window.google.maps && window.google.maps.places) return Promise.resolve();
+      return new Promise((resolve, reject) => {
+        existing.addEventListener('load', () => resolve());
+        existing.addEventListener('error', (e) => reject(e));
+      });
+    }
+    // If an existing script lacks Places, proceed to inject a new one that includes it
+  }
   const p = new Promise((resolve, reject) => {
     const s = document.createElement('script');
     s.src = src;
