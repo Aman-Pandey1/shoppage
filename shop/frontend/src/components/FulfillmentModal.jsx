@@ -32,6 +32,7 @@ export const FulfillmentModal = ({
   // Hours and closed message for delivery
   const [hours, setHours] = React.useState(null);
   const [closedMsg, setClosedMsg] = React.useState('');
+  const [deliveryClosed, setDeliveryClosed] = React.useState(false);
 
   React.useEffect(() => {
     if (open) {
@@ -57,15 +58,16 @@ export const FulfillmentModal = ({
 
   React.useEffect(() => {
     try {
-      if (!hours) { setClosedMsg(''); return; }
+      if (!hours) { setClosedMsg(''); setDeliveryClosed(false); return; }
       const now = new Date();
       const dayIdx = now.getDay();
       const keys = ['sun','mon','tue','wed','thu','fri','sat'];
       const cfg = hours[keys[dayIdx]];
-      if (!cfg) { setClosedMsg(''); return; }
+      if (!cfg) { setClosedMsg(''); setDeliveryClosed(false); return; }
       if (cfg.closed) {
         const openText = nextOpenText(hours, dayIdx);
         setClosedMsg(`We are currently closed for delivery.\nWe will open today at ${openText}. You can Pre-Order for later.`);
+        setDeliveryClosed(true);
         return;
       }
       const [oh, om] = String(cfg.open || '10:00').split(':').map(Number);
@@ -76,10 +78,12 @@ export const FulfillmentModal = ({
       if (!(nowMin >= openMin && nowMin <= lastOrder)) {
         const openText = timeLabel(oh||10, om||0);
         setClosedMsg(`We are currently closed for delivery.\nWe will open today at ${openText}. You can Pre-Order for later.`);
+        setDeliveryClosed(true);
       } else {
         setClosedMsg('');
+        setDeliveryClosed(false);
       }
-    } catch { setClosedMsg(''); }
+    } catch { setClosedMsg(''); setDeliveryClosed(false); }
   }, [hours]);
 
   function timeLabel(hh, mm) {
@@ -108,14 +112,19 @@ export const FulfillmentModal = ({
   const canConfirmPickup = selectedType === 'pickup' && timing && pickupDate && pickupTime;
   const canConfirmDelivery = selectedType === 'delivery' && timing && (addrText && addrText.length > 0);
 
+  // If delivery is closed but currently selected, reset selection so user can't proceed
+  React.useEffect(() => {
+    if (deliveryClosed && selectedType === 'delivery') setSelectedType(null);
+  }, [deliveryClosed, selectedType]);
+
   function renderTypeButtons() {
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
         <button
           onClick={() => setSelectedType('pickup')}
           style={{
-            padding: 8,
-            borderRadius: 14,
+            padding: 6,
+            borderRadius: 12,
             overflow: 'hidden',
             border: selectedType === 'pickup' ? '2px solid var(--primary-600)' : '1px solid var(--border)',
             background: selectedType === 'pickup'
@@ -124,11 +133,11 @@ export const FulfillmentModal = ({
           }}
           className="animate-fadeInUp"
         >
-          <div style={{ padding: 10, display: 'grid', gap: 6, textAlign: 'center' }}>
+          <div style={{ padding: 8, display: 'grid', gap: 6, textAlign: 'center' }}>
             <div style={{ fontWeight: 800 }}>Takeout</div>
             {pickupImg ? (
-              <div style={{ height: 90, display: 'grid', placeItems: 'center' }}>
-                <img src={pickupImg} alt="Takeout" loading="eager" decoding="async" style={{ maxWidth: '80%', maxHeight: '80%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }} />
+              <div style={{ height: 70, display: 'grid', placeItems: 'center' }}>
+                <img src={pickupImg} alt="Takeout" loading="eager" decoding="async" style={{ maxWidth: '78%', maxHeight: '78%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }} />
               </div>
             ) : (
               <div style={{ fontSize: 32 }}>🏪</div>
@@ -136,19 +145,22 @@ export const FulfillmentModal = ({
           </div>
         </button>
         <button
-          onClick={() => setSelectedType('delivery')}
+          onClick={() => { if (!deliveryClosed) setSelectedType('delivery'); }}
+          disabled={deliveryClosed}
           style={{
-            padding: 8,
-            borderRadius: 14,
+            padding: 6,
+            borderRadius: 12,
             overflow: 'hidden',
             border: selectedType === 'delivery' ? '2px solid var(--primary-600)' : '1px solid var(--border)',
             background: selectedType === 'delivery'
               ? 'linear-gradient(180deg, var(--primary-alpha-25), var(--primary-alpha-12))'
               : 'linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0.35))',
+            opacity: deliveryClosed ? 0.6 : 1,
+            cursor: deliveryClosed ? 'not-allowed' : 'pointer',
           }}
           className="animate-fadeInUp"
         >
-          <div style={{ padding: 10, display: 'grid', gap: 6, textAlign: 'center' }}>
+          <div style={{ padding: 8, display: 'grid', gap: 6, textAlign: 'center' }}>
             <div style={{ fontWeight: 800 }}>Delivery</div>
             {closedMsg ? (
               <div style={{ color: 'var(--danger)', whiteSpace: 'pre-line', fontSize: 12 }}>
@@ -156,8 +168,8 @@ export const FulfillmentModal = ({
               </div>
             ) : null}
             {deliveryImg ? (
-              <div style={{ height: 90, display: 'grid', placeItems: 'center' }}>
-                <img src={deliveryImg} alt="Delivery" loading="eager" decoding="async" style={{ maxWidth: '80%', maxHeight: '80%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }} />
+              <div style={{ height: 70, display: 'grid', placeItems: 'center' }}>
+                <img src={deliveryImg} alt="Delivery" loading="eager" decoding="async" style={{ maxWidth: '78%', maxHeight: '78%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }} />
               </div>
             ) : (
               <div style={{ fontSize: 32 }}>🚚</div>
@@ -171,7 +183,7 @@ export const FulfillmentModal = ({
   function renderTimingButtons() {
     const disabled = !selectedType;
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
         <button
           disabled={disabled}
           className="primary-btn"
@@ -218,7 +230,7 @@ export const FulfillmentModal = ({
     }
     // delivery
     return (
-      <div style={{ display: 'grid', gap: 8, marginTop: 12 }}>
+      <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <span>Delivery Address</span>
           {AddressAutocomplete ? (
@@ -264,7 +276,7 @@ export const FulfillmentModal = ({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={'Select Order Mode'} footer={renderFooter()} maxWidth={560} closeOnOverlayClick={false}>
+    <Modal open={open} onClose={onClose} title={'Select Order Mode'} footer={renderFooter()} maxWidth={480} closeOnOverlayClick={false}>
       {renderTypeButtons()}
       {renderTimingButtons()}
       {renderFollowUp()}
