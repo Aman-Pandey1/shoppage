@@ -29,9 +29,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   const [selectedPickupIndex, setSelectedPickupIndex] = useState(null);
   const [selectedCity, setSelectedCity] = useState('');
   const [minOrderCents, setMinOrderCents] = useState(5000);
-  // Single-line address text for UI display
-  const [addrText, setAddrText] = useState(initialSummary || '');
-  // Single-line address text for autocomplete
+  // Single-line address text used for autocomplete and summary
   const [addrText, setAddrText] = useState(initialSummary || '');
 
   const itemsSubtotalCents = React.useMemo(() => {
@@ -323,8 +321,8 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
               if (!name.trim()) throw new Error('Full Name is required');
               // Allow user to type a single-line address; if details missing, try to infer from text
               let a1 = addr1, cty = city, prov = province, pc = postalCode, ctry = country;
-              if ((!a1 || !cty || !prov) && (typeof window !== 'undefined')) {
-                const text = (document.querySelector('input[placeholder="Start typing your address"]')?.value || '').trim();
+              if ((!a1 || !cty || !prov)) {
+                const text = String(addrText || '').trim();
                 if (text) {
                   const parts = text.split(',').map((s) => s.trim()).filter(Boolean);
                   const last = parts[parts.length - 1] || '';
@@ -369,7 +367,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
               const res = await postJson(`/api/payments/stripe/${siteSlug}/checkout/delivery`, payload);
               const url = res?.url;
               if (!url) throw new Error('Failed to start payment');
-              const summary = (document.querySelector('input[placeholder="Start typing your address"]')?.value || [a1, cty, pc].filter(Boolean).join(', '));
+              const summary = String(addrText || '').trim() || [a1, cty, pc].filter(Boolean).join(', ');
               try { onConfirmed(`addr-${Date.now()}`, summary); } catch {}
               try { onClose(); } catch {}
               window.location.href = url;
