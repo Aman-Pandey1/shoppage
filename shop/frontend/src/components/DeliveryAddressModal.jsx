@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Modal } from './Modal';
 import { useCart } from '../store/CartContext';
 import { fetchJson, postJson } from '../lib/api';
+import { computePricing } from '../lib/pricing';
 
 export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, manifest, initialPickupIndex, mode = 'checkout' }) => {
   const { state, setDeliveryFeeCents } = useCart();
@@ -305,6 +306,46 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
       })()}
       {error ? <div style={{ color: 'var(--danger)', marginBottom: 8 }}>{error}</div> : null}
       <div className="muted" style={{ marginBottom: 8, fontSize: 12 }}>Enter your delivery address. Delivery will be fulfilled by the website's selected provider.</div>
+
+      {(Array.isArray(manifest) && manifest.length > 0) ? (() => {
+        const items = manifest.map(m => ({ priceCents: Math.max(0, Math.round(Number(m.priceCents)||0)), quantity: Math.max(1, Math.round(Number(m.quantity)||1)) }));
+        const pricing = computePricing({
+          items,
+          deliveryFeeCents: state.fulfillmentType === 'delivery' ? (Number(state.deliveryFeeCents||0)) : 0,
+          coupon: state.coupon,
+          couponMinSubtotalCents: state.couponMinSubtotalCents,
+          taxRate: 0.05,
+        });
+        return (
+          <div className="card" style={{ display: 'grid', gap: 6, marginBottom: 12, borderRadius: 12, padding: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span className="muted">Items</span>
+              <span>${pricing.dollars.itemsSubtotal.toFixed(2)}</span>
+            </div>
+            {pricing.hasEligibleCoupon && pricing.couponPercent > 0 ? (
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span className="muted">Discount ({state.coupon.percent}% )</span>
+                <span>- ${pricing.dollars.discount.toFixed(2)}</span>
+              </div>
+            ) : null}
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span className="muted">Tax (5%)</span>
+              <span>${pricing.dollars.taxDisplay.toFixed(2)}</span>
+            </div>
+            {state.fulfillmentType === 'delivery' ? (
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span className="muted">Delivery fee</span>
+                <span>${pricing.dollars.delivery.toFixed(2)}</span>
+              </div>
+            ) : null}
+            <div style={{ height: 1, background: 'var(--border)' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800 }}>
+              <span>Total</span>
+              <span>${pricing.dollars.grandTotal.toFixed(2)}</span>
+            </div>
+          </div>
+        );
+      })() : null}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
