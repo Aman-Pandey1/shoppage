@@ -38,6 +38,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [deliveryAddressSummary, setDeliveryAddressSummary] = useState('');
   const [orderError, setOrderError] = useState('');
   const [pickupPaymentMethod, setPickupPaymentMethod] = useState('online'); // 'online' | 'cod'
+  // Track 'Order Now' vs 'Order For Later' selection to allow checkout when closed
+  const [orderWhen, setOrderWhen] = useState(null); // 'now' | 'later' | null
   const [pickupSubmitting, setPickupSubmitting] = useState(false);
 
   // Additional UI state brought from the alternate implementation
@@ -427,8 +429,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
             setLoginOpen(true);
             return;
           }
-          // Block checkout when restaurant is closed per hours config
-          if (!isOpenNowLocal()) {
+          // Block checkout when restaurant is closed ONLY if user chose 'Order Now'.
+          if (!isOpenNowLocal() && orderWhen !== 'later') {
             setMobileCartOpen(false);
             setClosedAlertOpen(true);
             return;
@@ -480,11 +482,14 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         selectedType={state.fulfillmentType}
         onConfirmPickup={({ when }) => {
           setFulfillmentType('pickup');
+          setOrderWhen(when || null);
           setFulfillmentOpen(false);
-          if (!isOpenNowLocal()) { setClosedAlertOpen(true); }
+          // If closed and 'Order Now' selected, show closed alert; allow if 'later'
+          if (!isOpenNowLocal() && (when !== 'later')) { setClosedAlertOpen(true); }
         }}
         onConfirmDelivery={({ when, address, summary }) => {
           setFulfillmentType('delivery');
+          setOrderWhen(when || null);
           setFulfillmentOpen(false);
           if (summary) setDeliveryAddressSummary(summary);
           if (address) setDeliveryInlineAddr(address);

@@ -271,7 +271,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, width: '100%' }}>
         <button onClick={onClose} disabled={loading}>Cancel</button>
         {mode === 'checkout' ? (
-          <button className="primary-btn" disabled={loading} aria-busy={loading} onClick={async () => {
+          <button className="primary-btn" disabled={loading || !!addressAreaError} aria-busy={loading} onClick={async () => {
             setLoading(true); setError(undefined);
             try {
               // Validate and build dropoff
@@ -326,7 +326,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
             )}
           </button>
         ) : (
-          <button className="primary-btn" disabled={loading} aria-busy={loading} onClick={async () => {
+          <button className="primary-btn" disabled={loading || !!addressAreaError} aria-busy={loading} onClick={async () => {
             setLoading(true); setError(undefined);
             try {
               // Validate and compute quote to set delivery fee, then go back to menu
@@ -374,6 +374,11 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         );
       })()}
       {error ? <div style={{ color: 'var(--danger)', marginBottom: 8 }}>{error}</div> : null}
+      {(addr1 || city || postalCode) ? (
+        <div className="muted" style={{ marginTop: -4, marginBottom: 8, fontSize: 12 }}>
+          <strong style={{ color: 'var(--text)' }}>Address:</strong> {[addr1, city, province, postalCode].filter(Boolean).join(', ')}
+        </div>
+      ) : null}
       <div className="muted" style={{ marginBottom: 8, fontSize: 12 }}>Enter your delivery address. Delivery will be fulfilled by the website's selected provider.</div>
       {initialSummary ? (
         <div className="muted" style={{ marginTop: -4, marginBottom: 8, fontSize: 12 }}>
