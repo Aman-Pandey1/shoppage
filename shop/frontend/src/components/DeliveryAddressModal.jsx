@@ -299,7 +299,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   return (
     <Modal open={open} onClose={onClose} title={mode === 'checkout' ? 'Confirm Delivery Details' : 'Delivery details'} closeOnOverlayClick={false} maxWidth={520} footer={(
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, width: '100%' }}>
-        <div className="muted" style={{ fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div className="muted" style={{ fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} aria-live="polite">
           {(() => {
             const parts = [];
             const summary = (addrText || [addr1, city, province, postalCode].filter(Boolean).join(', '));
@@ -349,6 +349,10 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
               const quotedFee = typeof q?.customerDeliveryFeeCents === 'number' ? q.customerDeliveryFeeCents : 0;
               try { setDeliveryFeeCents(quotedFee); setDeliveryFeeCentsLocal(quotedFee); } catch {}
               const chosenIdx = (typeof q?.pickupLocationIndex === 'number') ? q.pickupLocationIndex : (typeof selectedPickupIndex === 'number' ? selectedPickupIndex : 0);
+              // If backend marked it outside area (distance > max), block payment and surface message
+              if (typeof q?.distanceKm === 'number' && typeof maxDeliveryKm === 'number' && q.distanceKm > maxDeliveryKm) {
+                throw new Error(`Delivery is only available within ${maxDeliveryKm} km of the restaurant.`);
+              }
 
               // Create Stripe checkout session for delivery
               const payload = {
@@ -438,6 +442,11 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         );
       })()}
       {error ? <div style={{ color: 'var(--danger)', marginBottom: 8 }}>{error}</div> : null}
+      {addressAreaError ? (
+        <div style={{ color: 'var(--danger)', marginBottom: 8, fontWeight: 600 }}>
+          {addressAreaError} {typeof maxDeliveryKm === 'number' ? `(within ${maxDeliveryKm} km)` : ''}
+        </div>
+      ) : null}
       <div className="muted" style={{ marginBottom: 8, fontSize: 12 }}>Enter your delivery address. Delivery will be fulfilled by the website's selected provider.</div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
