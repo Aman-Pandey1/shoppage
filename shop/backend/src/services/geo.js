@@ -156,16 +156,15 @@ export async function distanceBetweenAddressesKm(pickupAddress, dropoffAddress) 
   return haversineDistanceKm(pickupPoint, dropoffPoint);
 }
 
-export function calculateDistanceFeeCents(distanceKm, baseFeeCents = 800) {
-  const base = Math.max(0, Math.round(Number(baseFeeCents) || 0));
+export function calculateDistanceFeeCents(distanceKm, perKmCents = 800) {
+  // Treat the configured deliveryFeeCents as a per-kilometer rate.
+  // Charge for the full number of kilometers rounded up.
+  const ratePerKm = Math.max(0, Math.round(Number(perKmCents) || 0));
   if (typeof distanceKm !== 'number' || !isFinite(distanceKm) || distanceKm <= 0) {
-    // Fallback to base fee when distance cannot be calculated
-    return base;
+    // If distance cannot be determined, charge at least the per-km rate (1 km).
+    return ratePerKm;
   }
-  const roundedKm = Math.ceil(distanceKm);
-  if (roundedKm <= 8) return base;
-  const extra = roundedKm - 8;
-  // +$1 per km over 8km
-  return base + (extra * 100);
+  const roundedKm = Math.max(1, Math.ceil(distanceKm));
+  return roundedKm * ratePerKm;
 }
 

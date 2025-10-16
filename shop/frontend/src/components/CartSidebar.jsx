@@ -9,6 +9,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
   const [checking, setChecking] = React.useState(false);
   const [now, setNow] = React.useState(Date.now());
   const [autoTried, setAutoTried] = React.useState(false);
+  const [isSplitDelivery, setIsSplitDelivery] = React.useState(false);
   React.useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 30000);
     return () => clearInterval(t);
@@ -44,6 +45,9 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
           const site = await fetchJson(`/api/shop/${siteSlug}/site`);
           if (!cancelled && site && typeof site.couponMinSubtotalCents === 'number') {
             setCouponMinSubtotalCents(site.couponMinSubtotalCents);
+          }
+          if (!cancelled && site) {
+            setIsSplitDelivery(!!site.splitDeliveryFee);
           }
         } catch {}
         const min = Number(state.couponMinSubtotalCents) || 5000;
@@ -253,7 +257,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
           </div>
           {state.fulfillmentType === 'delivery' ? (
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span className="muted">Delivery fee</span>
+              <span className="muted">{isSplitDelivery ? 'Delivery fee (your share)' : 'Delivery fee'}</span>
               <span>${deliveryFee.toFixed(2)}</span>
             </div>
           ) : null}

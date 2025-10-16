@@ -349,7 +349,7 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
     if (maxKm != null && typeof distanceKm === 'number' && (distanceKm - toleranceKm) > maxKm) {
       return res.status(400).json({ error: `Delivery is only available within ${maxKm} km of the restaurant.` });
     }
-    // Compute delivery fee using admin-configured base when available; add $1/km over 8km
+    // Compute delivery fee using admin-configured per-km rate (cents/km)
     const baseFee = (typeof site?.deliveryFeeCents === 'number' && isFinite(site.deliveryFeeCents))
       ? Math.max(0, Number(site.deliveryFeeCents))
       : 800;
