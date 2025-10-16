@@ -361,9 +361,11 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
         </div>
       ) : null}
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <span>Delivery rate per km (in $)</span>
+        <span>Legacy delivery rate per km (ignored)</span>
         <input type="number" step="0.01" min={0} value={deliveryFee} onChange={(e) => setDeliveryFee(e.target.value)} />
-        <span className="muted" style={{ fontSize: 12 }}>Customers are charged per kilometer (rounded up).</span>
+        <span className="muted" style={{ fontSize: 12 }}>
+          Current rule: $8 up to 8 km, then $1 per additional km (rounded up). This field is ignored.
+        </span>
       </label>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span>Max delivery distance (km)</span>
