@@ -213,8 +213,17 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
     }
     row('Items Subtotal', itemsSubtotal);
     if (coupon && typeof coupon.percent === 'number') {
-      const discount = itemsSubtotal * (Number(coupon.percent) / 100);
-      row(`Coupon ${coupon.code ? '('+coupon.code+')' : ''} (-${coupon.percent}% )`, -discount);
+      // Compute discount using per-line cents with rounding to match checkout
+      const pct = Math.max(0, Math.min(100, Number(coupon.percent) || 0));
+      const discountCents = (Array.isArray(order.items) ? order.items : []).reduce((sum, it) => {
+        const unitCents = Math.round((Number(it.priceCents) || 0));
+        const qty = Number(it.quantity) || 1;
+        const lineCents = unitCents * qty;
+        const discountedLineCents = Math.round(lineCents * (100 - pct) / 100);
+        return sum + (lineCents - discountedLineCents);
+      }, 0);
+      const discount = discountCents / 100;
+      row(`Coupon ${coupon.code ? '('+coupon.code+')' : ''} (-${pct}% )`, -discount);
     }
     const taxRatePct = itemsSubtotal > 0 ? Math.round((tax / itemsSubtotal) * 1000) / 10 : null;
     row(`Tax${taxRatePct !== null ? ` (${taxRatePct}% )` : ''}`, tax);

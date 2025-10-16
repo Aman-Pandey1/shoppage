@@ -198,7 +198,15 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
     }, 0);
     const itemsTotalAfterDiscount = Math.max(0, discountedItemsSubtotal);
     const discountCents = Math.max(0, itemsSubtotal - itemsTotalAfterDiscount);
-    const taxCents = Math.round(itemsTotalAfterDiscount * 0.05);
+    // Tax should mirror Stripe's per-line rounding with exclusive 5% rate
+    const taxCents = items.reduce((sum, it) => {
+      const unit = Math.max(0, Number(it.priceCents) || 0);
+      const qty = Number(it.quantity) || 1;
+      const lineTotal = unit * qty;
+      const discountedLine = pctOff > 0 ? Math.round(lineTotal * (100 - pctOff) / 100) : lineTotal;
+      const lineTax = Math.round(discountedLine * 0.05);
+      return sum + lineTax;
+    }, 0);
     const totalCents = itemsTotalAfterDiscount + taxCents;
 
     const orderPayload = {
@@ -412,7 +420,16 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
     }, 0);
     const itemsTotalAfterDiscount = Math.max(0, discountedItemsSubtotalDel);
     const discountCents = Math.max(0, itemsSubtotal - itemsTotalAfterDiscount);
-    const taxCents = Math.round(itemsTotalAfterDiscount * 0.05);
+    // Tax mirroring Stripe's per-line rounding
+    const taxCents = manifestItems.reduce((sum, it) => {
+      const unit = Math.max(0, Number(it.priceCents || it.price) || 0);
+      const qty = Number(it.quantity) || 1;
+      const lineTotal = unit * qty;
+      const pct = appliedCoupon ? Number(appliedCoupon.percent) || 0 : 0;
+      const discountedLine = pct > 0 ? Math.round(lineTotal * (100 - pct) / 100) : lineTotal;
+      const lineTax = Math.round(discountedLine * 0.05);
+      return sum + lineTax;
+    }, 0);
     const totalCents = itemsTotalAfterDiscount + taxCents + customerDeliveryFeeCents;
 
     // Create order (awaiting_payment). Uber delivery will be created on webhook after payment

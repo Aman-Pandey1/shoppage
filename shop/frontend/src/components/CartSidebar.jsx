@@ -99,8 +99,19 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
     }, 0);
   }, [state.items, itemsSubtotalCents, hasEligibleCoupon, couponPct]);
 
-  // Actual tax to be charged is on discounted items
-  const taxAfterDiscountCents = React.useMemo(() => Math.round(itemsAfterDiscountCents * 0.05), [itemsAfterDiscountCents]);
+  // Tax to charge: sum per-line after discount to avoid 1¢ drift
+  const taxAfterDiscountCents = React.useMemo(() => {
+    return state.items.reduce((sum, it) => {
+      const unitPrice = (Number(it.basePrice) || 0) + (Number(it?.variant?.price) || 0) + (Number(it.extraCost) || 0);
+      const unitCents = Math.round(unitPrice * 100);
+      const qty = Number(it.quantity) || 1;
+      const lineCents = unitCents * qty;
+      const pct = hasEligibleCoupon ? couponPct : 0;
+      const discountedLine = pct > 0 ? Math.round(lineCents * (100 - pct) / 100) : lineCents;
+      const lineTax = Math.round(discountedLine * 0.05);
+      return sum + lineTax;
+    }, 0);
+  }, [state.items, hasEligibleCoupon, couponPct]);
 
   // Display tax and delivery exactly as charged (no gross-up)
   const taxDisplayCents = taxAfterDiscountCents;

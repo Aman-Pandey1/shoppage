@@ -227,7 +227,7 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
       ? await ddCreateDelivery({ storeId: site.doordashStoreId, pickup: safePickup, dropoff: safeDropoff, manifestItems, tip: 0, externalId })
       : await uberCreateDelivery({ customerId: site.uberCustomerId, pickup: safePickup, dropoff: safeDropoff, manifestItems, tip: 0, externalId, creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv, scopes: site?.uberTokenScopes } });
 		// Record order
-		const itemsTotal = (manifestItems || []).reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 1), 0);
+    const itemsTotal = (manifestItems || []).reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 1), 0);
     const isMockEnv = !!req.app?.locals?.mockData;
     const minOrderCents = isMockEnv ? 0 : Math.max(0, Number(process.env.MIN_ORDER_CENTS) || 5000);
     if (itemsTotal < minOrderCents) return res.status(400).json({ error: `Minimum total amount should be $${(minOrderCents/100).toFixed(2)} required for delivery` });
@@ -235,7 +235,13 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
     const fullDeliveryFeeCents = Number(distanceFeeCents) || 0;
     const customerDeliveryFeeCents = split ? Math.round(fullDeliveryFeeCents / 2) : fullDeliveryFeeCents;
     const restaurantDeliveryFeeCents = split ? (fullDeliveryFeeCents - customerDeliveryFeeCents) : 0;
-		const taxCents = Math.round(itemsTotal * 0.05);
+    // Tax per-line (no discount in this flow) to be consistent
+    const taxCents = (manifestItems || []).reduce((sum, it) => {
+      const unit = Math.max(0, Number(it.price) || 0);
+      const qty = Number(it.quantity) || 1;
+      const line = unit * qty;
+      return sum + Math.round(line * 0.05);
+    }, 0);
     const totalCents = itemsTotal + taxCents + customerDeliveryFeeCents;
 		const trackingUrl = delivery?.tracking_url || delivery?.trackingUrl || delivery?.share_url || delivery?.tracking_url_v2 || '';
 		const deliveryStatus = delivery?.status || delivery?.state || delivery?.current_status || '';
