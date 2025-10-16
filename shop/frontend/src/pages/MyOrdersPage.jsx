@@ -119,7 +119,7 @@ export const MyOrdersPage = () => {
         <div style={{ fontWeight: 900, fontSize: 18 }}>My Orders</div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className={tab === 'all' ? 'primary-btn' : ''} onClick={() => setTab('all')}>All</button>
-          <button className={tab === 'pickup' ? 'primary-btn' : ''} onClick={() => setTab('pickup')}>Pickup</button>
+          <button className={tab === 'pickup' ? 'primary-btn' : ''} onClick={() => setTab('pickup')}>Takeout</button>
           <button className={tab === 'delivery' ? 'primary-btn' : ''} onClick={() => setTab('delivery')}>Delivery</button>
         </div>
       </div>
@@ -139,7 +139,7 @@ export const MyOrdersPage = () => {
                 </div>
                 <div className="muted" style={{ fontSize: 12, color: 'var(--primary-600)' }}>{new Date(o.createdAt).toLocaleString()}</div>
               </div>
-              <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>{o.fulfillmentType === 'delivery' ? 'Delivery' : 'Pickup'}</div>
+              <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>{o.fulfillmentType === 'delivery' ? 'Delivery' : 'Takeout'}</div>
               <ul style={{ margin: '8px 0', paddingLeft: 18 }}>
                 {(Array.isArray(o.items) ? o.items : []).map((it, idx) => (
                   <li key={idx}>

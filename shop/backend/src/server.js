@@ -102,7 +102,7 @@ if (USE_MOCK_DATA) {
         _id: "mock-site",
         name: "Default Site",
         slug: "default",
-        tagline: "Sweets, Catering & Pickup",
+        tagline: "Sweets, Catering & Takeout",
         isActive: true,
         locations: [
           {
@@ -268,7 +268,7 @@ if (USE_MOCK_DATA) {
             _id: "mock-site",
             name: "Default Site",
             slug: "default",
-            tagline: "Sweets, Catering & Pickup",
+            tagline: "Sweets, Catering & Takeout",
             isActive: true,
           },
         ],
@@ -366,7 +366,7 @@ async function start() {
               _id: "mock-site",
               name: "Default Site",
               slug: "default",
-              tagline: "Sweets, Catering & Pickup",
+              tagline: "Sweets, Catering & Takeout",
               isActive: true,
             },
           ],
