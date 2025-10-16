@@ -121,17 +121,9 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [closedAlertOpen, setClosedAlertOpen] = useState(false);
 
   function handleChooseFulfillment(type) {
+    // Legacy handler retained for safety; not used by new modal.
     setFulfillmentType(type);
-    // Close the selection modal only. If delivery is selected, collect address now and then let user browse menu.
     setFulfillmentOpen(false);
-    setOrderDetailsOpen(false);
-    // Do not open delivery modal here; inline address will be shown in the bar
-    if (!isOpenNowLocal()) { setClosedAlertOpen(true); }
-    setDeliveryModalOpen(false);
-    if (type === 'pickup') {
-      // When Takeout selected, open Order Details so user picks date/time immediately
-      setOrderDetailsOpen(true);
-    }
   }
 
   function startAddToCart(product, quantity = 1) {
@@ -474,7 +466,33 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       </button>
 
       <PrivacyPolicyModal open={privacyOpen} onAccept={handleAcceptPrivacy} />
-      <FulfillmentModal open={fulfillmentOpen} onChoose={handleChooseFulfillment} />
+      <FulfillmentModal
+        open={fulfillmentOpen}
+        onClose={() => setFulfillmentOpen(false)}
+        siteSlug={siteSlug}
+        AddressAutocomplete={AddressAutocomplete}
+        pickupDate={pickupDate}
+        pickupTime={pickupTime}
+        dateOptions={dateOptions}
+        timeOptions={timeOptions}
+        onPickupDateChange={setPickupDate}
+        onPickupTimeChange={setPickupTime}
+        selectedType={state.fulfillmentType}
+        onConfirmPickup={({ when }) => {
+          setFulfillmentType('pickup');
+          setFulfillmentOpen(false);
+          // If user chose later, keep the chosen date/time; if now, ensure a valid earliest time is selected
+          if (!isOpenNowLocal()) { setClosedAlertOpen(true); }
+          // No need to open another modal; user can proceed to menu/cart
+        }}
+        onConfirmDelivery={({ when, address, summary }) => {
+          setFulfillmentType('delivery');
+          setFulfillmentOpen(false);
+          if (summary) setDeliveryAddressSummary(summary);
+          if (address) setDeliveryInlineAddr(address);
+          if (summary) setDeliveryInlineAddrText(summary);
+        }}
+      />
       <AlertModal
         open={closedAlertOpen}
         onClose={() => setClosedAlertOpen(false)}
