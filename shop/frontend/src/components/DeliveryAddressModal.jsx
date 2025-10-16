@@ -109,9 +109,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         const data = await fetchJson(`/api/shop/${siteSlug}/site`);
         if (!cancelled) {
           setSiteName(data.name || '');
-          const baseFee = Number(data.deliveryFeeCents) || 0;
-          setDeliveryFeeCents(baseFee);
-          setDeliveryFeeCentsLocal(baseFee);
+          // Do not preset delivery fee here; wait for a live quote
           setSplitDeliveryFee(!!data.splitDeliveryFee);
           if (typeof data.minOrderCents === 'number') setMinOrderCents(Math.max(0, Number(data.minOrderCents)));
           if (typeof data.maxDeliveryDistanceKm === 'number' && data.maxDeliveryDistanceKm > 0) {
@@ -173,6 +171,11 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
           try { setDeliveryFeeCents(q.customerDeliveryFeeCents); } catch {}
           setDeliveryFeeCentsLocal(q.customerDeliveryFeeCents);
         }
+        if (typeof q?.pickupLocationIndex === 'number') {
+          setSelectedPickupIndex(q.pickupLocationIndex);
+        }
+        // Cache latest quote to avoid re-quoting on submit
+        try { setQuote(q); } catch {}
         if (typeof maxDeliveryKm === 'number' && km != null && km > maxDeliveryKm) {
           setAddressAreaError(`Outside delivery area (within ${maxDeliveryKm} km)`);
         } else {
@@ -334,15 +337,18 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
               if (!normalizedPhone) throw new Error('Enter phone in E.164 like +14155550123');
               const address = { streetAddress: [a1, ...(addr2 ? [addr2] : [])], city: cty, province: prov, postalCode: pc, country: ctry };
               const dropoff = { name, phone: normalizedPhone, address };
-              // Always get a fresh quote to ensure delivery fee consistency with checkout
-              const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { name, phone: normalizedPhone, address }, pickupLocationIndex: selectedPickupIndex });
-              const quotedFee = typeof q?.customerDeliveryFeeCents === 'number' ? q.customerDeliveryFeeCents : 0;
-              try { setDeliveryFeeCents(quotedFee); setDeliveryFeeCentsLocal(quotedFee); } catch {}
-              const chosenIdx = (typeof q?.pickupLocationIndex === 'number') ? q.pickupLocationIndex : (typeof selectedPickupIndex === 'number' ? selectedPickupIndex : 0);
-              // If backend marked it outside area (distance > max), block payment and surface message
-              if (typeof q?.distanceKm === 'number' && typeof maxDeliveryKm === 'number' && q.distanceKm > maxDeliveryKm) {
-                throw new Error(`Delivery is only available within ${maxDeliveryKm} km of the restaurant.`);
-              }
+          // Freeze the latest quote to avoid fee changing on submit; fallback to fresh quote only if missing
+          let quotedFee = Math.max(0, Number(deliveryFeeCentsLocal || 0));
+          let chosenIdx = (typeof selectedPickupIndex === 'number' ? selectedPickupIndex : 0);
+          if (!quotedFee) {
+            const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { name, phone: normalizedPhone, address }, pickupLocationIndex: selectedPickupIndex });
+            quotedFee = typeof q?.customerDeliveryFeeCents === 'number' ? q.customerDeliveryFeeCents : 0;
+            try { setDeliveryFeeCents(quotedFee); setDeliveryFeeCentsLocal(quotedFee); } catch {}
+            if (typeof q?.pickupLocationIndex === 'number') { chosenIdx = q.pickupLocationIndex; setSelectedPickupIndex(q.pickupLocationIndex); }
+            if (typeof q?.distanceKm === 'number' && typeof maxDeliveryKm === 'number' && q.distanceKm > maxDeliveryKm) {
+              throw new Error(`Delivery is only available within ${maxDeliveryKm} km of the restaurant.`);
+            }
+          }
 
               // Create Stripe checkout session for delivery
               const payload = {

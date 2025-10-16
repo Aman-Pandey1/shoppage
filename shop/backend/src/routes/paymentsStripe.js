@@ -356,13 +356,17 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
     const fullDeliveryFeeCents = calculateDistanceFeeCents(distanceKm, baseFee);
     const split = !!site.splitDeliveryFee;
     let customerDeliveryFeeCents = split ? Math.round(fullDeliveryFeeCents / 2) : fullDeliveryFeeCents;
+    // By default, baseline is what we computed from distance; if client quoted, we'll override
+    let baselineDeliveryFeeCents = fullDeliveryFeeCents;
     let restaurantDeliveryFeeCents = split ? (fullDeliveryFeeCents - customerDeliveryFeeCents) : 0;
 
     // Trust the client-quoted delivery fee exactly to keep cart and payment in sync
     if (typeof clientDeliveryFeeCents === 'number') {
       const quoted = Math.max(0, Math.round(Number(clientDeliveryFeeCents)));
       customerDeliveryFeeCents = quoted;
-      restaurantDeliveryFeeCents = split ? Math.max(0, fullDeliveryFeeCents - quoted) : 0;
+      // Use client's quote to derive the baseline so the split stays consistent end-to-end
+      baselineDeliveryFeeCents = split ? (quoted * 2) : quoted;
+      restaurantDeliveryFeeCents = split ? Math.max(0, baselineDeliveryFeeCents - quoted) : 0;
     }
 
     // Recompute discount at per-item level to mirror Stripe rounding
@@ -414,7 +418,7 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
     const piDataDelivery = (!usePerSiteStripeDel && site?.stripeAccountId) ? {
       transfer_data: { destination: site.stripeAccountId },
       // Collect the platform delivery fee via application fee
-      application_fee_amount: split ? Math.max(0, fullDeliveryFeeCents - customerDeliveryFeeCents) : fullDeliveryFeeCents,
+      application_fee_amount: split ? Math.max(0, baselineDeliveryFeeCents - customerDeliveryFeeCents) : baselineDeliveryFeeCents,
       on_behalf_of: site.stripeAccountId,
     } : undefined;
 
