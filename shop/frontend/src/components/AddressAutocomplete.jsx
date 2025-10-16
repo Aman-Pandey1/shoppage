@@ -10,6 +10,7 @@ export const AddressAutocomplete = ({ siteSlug, placeholder = 'Address', value, 
   const [open, setOpen] = React.useState(false);
   const svcRef = React.useRef(null);
   const detailsSvcRef = React.useRef(null);
+  const biasRef = React.useRef(null); // { lat, lng } to bias suggestions near user/restaurant
   const containerRef = React.useRef(null);
 
   React.useEffect(() => { setInput(value || ''); }, [value]);
@@ -45,6 +46,55 @@ export const AddressAutocomplete = ({ siteSlug, placeholder = 'Address', value, 
     return () => { cancelled = true; };
   }, [siteSlug]);
 
+  // Try to establish a nearby bias for results (user geolocation first, then restaurant location)
+  React.useEffect(() => {
+    let cancelled = false;
+    async function resolveBias() {
+      try {
+        // Prefer user's current approximate location
+        if (typeof navigator !== 'undefined' && navigator.geolocation) {
+          await new Promise((resolve) => {
+            let settled = false;
+            try {
+              navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                  if (cancelled) return resolve();
+                  biasRef.current = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                  settled = true;
+                  resolve();
+                },
+                () => resolve(),
+                { enableHighAccuracy: false, timeout: 800, maximumAge: 600000 }
+              );
+            } catch { resolve(); }
+            // Safety timeout in case the API hangs silently
+            setTimeout(() => { if (!settled) resolve(); }, 900);
+          });
+          if (biasRef.current) return;
+        }
+        // Fallback: use first pickup location
+        const locs = await fetchJson(`/api/shop/${siteSlug}/locations`);
+        const first = Array.isArray(locs) ? locs[0] : null;
+        const addr = first?.address;
+        if (!addr) return;
+        const line1 = Array.isArray(addr.streetAddress) ? addr.streetAddress.join(' ') : (addr.line1 || addr.streetAddress || '');
+        const query = [line1, addr.city, addr.province, addr.postalCode, addr.country].filter(Boolean).join(', ');
+        if (!query) return;
+        if (!(window.google && window.google.maps)) return;
+        const geocoder = new window.google.maps.Geocoder();
+        geocoder.geocode({ address: query }, (results) => {
+          if (cancelled) return;
+          try {
+            const loc = results?.[0]?.geometry?.location;
+            if (loc) biasRef.current = { lat: loc.lat(), lng: loc.lng() };
+          } catch {}
+        });
+      } catch {}
+    }
+    if (apiReady && siteSlug) resolveBias();
+    return () => { cancelled = true; };
+  }, [apiReady, siteSlug]);
+
   React.useEffect(() => {
     function onDocClick(e) {
       if (!containerRef.current) return;
@@ -68,6 +118,11 @@ export const AddressAutocomplete = ({ siteSlug, placeholder = 'Address', value, 
             componentRestrictions: { country: countries.map((c) => String(c).toUpperCase()) },
             types: ['address'],
           };
+          const bias = biasRef.current;
+          if (bias && typeof bias.lat === 'number' && typeof bias.lng === 'number') {
+            req.location = bias; // Prefer results near this location
+            req.radius = 25000; // ~25km
+          }
           svcRef.current.getPlacePredictions(req, (list) => {
             setPredictions(Array.isArray(list) ? list.slice(0, 6) : []);
           });
