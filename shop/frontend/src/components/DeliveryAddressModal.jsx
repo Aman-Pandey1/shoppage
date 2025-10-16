@@ -20,6 +20,8 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   const [splitDeliveryFee, setSplitDeliveryFee] = useState(false);
   const [country, setCountry] = useState('CA');
   const [distanceKm, setDistanceKm] = useState(null);
+  const [maxDeliveryKm, setMaxDeliveryKm] = useState(null);
+  const [addressAreaError, setAddressAreaError] = useState('');
   const [tab, setTab] = useState('enter'); // delivery: only manual address (enter)
   const [locations, setLocations] = useState([]);
   const [cities, setCities] = useState([]);
@@ -67,6 +69,11 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
           setDeliveryFeeCentsLocal(baseFee);
           setSplitDeliveryFee(!!data.splitDeliveryFee);
           if (typeof data.minOrderCents === 'number') setMinOrderCents(Math.max(0, Number(data.minOrderCents)));
+          if (typeof data.maxDeliveryDistanceKm === 'number' && data.maxDeliveryDistanceKm > 0) {
+            setMaxDeliveryKm(Number(data.maxDeliveryDistanceKm));
+          } else {
+            setMaxDeliveryKm(null);
+          }
         }
       } catch {}
     }
@@ -93,6 +100,50 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
     loadLists();
     return () => { cancelled = true; };
   }, [siteSlug, initialPickupIndex]);
+
+  // Live distance/area check as the user enters a full address
+  React.useEffect(() => {
+    let cancelled = false;
+    let t = null;
+    function readyToCheck() {
+      try {
+        return (
+          String(addr1 || '').trim() &&
+          String(city || '').trim() &&
+          String(province || '').trim() &&
+          isValidPostal(String(postalCode || '')) &&
+          String(country || '').trim() &&
+          typeof selectedPickupIndex === 'number' && selectedPickupIndex >= 0
+        );
+      } catch { return false; }
+    }
+    async function doCheck() {
+      try {
+        const address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
+        const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { address }, pickupLocationIndex: selectedPickupIndex });
+        if (cancelled) return;
+        const km = (typeof q?.distanceKm === 'number') ? q.distanceKm : null;
+        if (km != null) setDistanceKm(km);
+        if (typeof maxDeliveryKm === 'number' && km != null && km > maxDeliveryKm) {
+          setAddressAreaError('Outside Delivery area, please choose Takeout');
+        } else {
+          setAddressAreaError('');
+        }
+      } catch (e) {
+        if (cancelled) return;
+        const msg = (parseServerError(e) || '').toLowerCase();
+        if (/only available within/.test(msg) || /within \d+\s*km/.test(msg)) {
+          setAddressAreaError('Outside Delivery area, please choose Takeout');
+        } else {
+          setAddressAreaError('');
+        }
+      }
+    }
+    if (!readyToCheck()) { setAddressAreaError(''); return () => { cancelled = true; if (t) clearTimeout(t); }; }
+    if (t) clearTimeout(t);
+    t = setTimeout(doCheck, 500);
+    return () => { cancelled = true; if (t) clearTimeout(t); };
+  }, [addr1, addr2, city, province, postalCode, country, selectedPickupIndex, siteSlug, maxDeliveryKm]);
 
   function isValidPostal(code) {
     const v = code.trim();
@@ -345,6 +396,11 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
             <option value="AU">Australia (AU)</option>
           </select>
         </label>
+        {addressAreaError ? (
+          <div style={{ gridColumn: '1 / -1', color: 'var(--danger)', fontSize: 12, marginTop: -4 }}>
+            {addressAreaError}
+          </div>
+        ) : null}
       </div>
       {/* Notes of Instruction removed as requested */}
       {/* Removed quote/fee panel and payment buttons as requested */}
