@@ -100,8 +100,10 @@ router.post('/:slug/orders/pickup', requireUser, async (req, res) => {
         if (found && Number(found.percent) === pct) {
           const discountedItemsSubtotal = items.reduce((sum, it) => {
             const unit = Number(it.priceCents) || 0;
-            const discountedUnit = Math.round(unit * (100 - pct) / 100);
-            return sum + discountedUnit * (Number(it.quantity) || 1);
+            const qty = Number(it.quantity) || 1;
+            const lineTotal = unit * qty;
+            const discountedLine = Math.round(lineTotal * (100 - pct) / 100);
+            return sum + discountedLine;
           }, 0);
           itemsTotal = Math.max(0, discountedItemsSubtotal);
           appliedCoupon = { code, percent: pct };
@@ -111,8 +113,10 @@ router.post('/:slug/orders/pickup', requireUser, async (req, res) => {
         if (found && Number(found.percent) === pct) {
           const discountedItemsSubtotal = items.reduce((sum, it) => {
             const unit = Number(it.priceCents) || 0;
-            const discountedUnit = Math.round(unit * (100 - pct) / 100);
-            return sum + discountedUnit * (Number(it.quantity) || 1);
+            const qty = Number(it.quantity) || 1;
+            const lineTotal = unit * qty;
+            const discountedLine = Math.round(lineTotal * (100 - pct) / 100);
+            return sum + discountedLine;
           }, 0);
           itemsTotal = Math.max(0, discountedItemsSubtotal);
           appliedCoupon = { code, percent: pct };
@@ -125,7 +129,17 @@ router.post('/:slug/orders/pickup', requireUser, async (req, res) => {
     if (subtotalBeforeDiscount < minOrderCents) {
       return res.status(400).json({ error: `Minimum order is $${(minOrderCents/100).toFixed(2)}` });
     }
-    const taxCents = Math.round(itemsTotal * 0.05);
+    // Compute tax per line after discount to prevent 1¢ drift
+    const taxCents = items.reduce((sum, it) => {
+      const unit = Math.max(0, Number(it.priceCents) || 0);
+      const qty = Number(it.quantity) || 1;
+      let line = unit * qty;
+      if (appliedCoupon) {
+        const pct = Math.max(0, Math.min(100, Number(appliedCoupon.percent) || 0));
+        line = Math.round(line * (100 - pct) / 100);
+      }
+      return sum + Math.round(line * 0.05);
+    }, 0);
     const totalCents = itemsTotal + taxCents;
     const orderPayload = {
       site: req.siteId,

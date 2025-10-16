@@ -59,7 +59,17 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
       return sum + discountedLine;
     }, 0);
   }, [manifest, itemsSubtotalCents, hasEligibleCoupon, couponPct]);
-  const taxAfterDiscountCents = React.useMemo(() => Math.round(itemsAfterDiscountCents * 0.05), [itemsAfterDiscountCents]);
+  const taxAfterDiscountCents = React.useMemo(() => {
+    const list = Array.isArray(manifest) ? manifest : [];
+    return list.reduce((sum, it) => {
+      const unit = Math.max(0, Number(it.priceCents) || 0);
+      const qty = Number(it.quantity) || 1;
+      const line = unit * qty;
+      const discountedLine = couponPct > 0 ? Math.round(line * (100 - couponPct) / 100) : line;
+      const lineTax = Math.round(discountedLine * 0.05);
+      return sum + lineTax;
+    }, 0);
+  }, [manifest, couponPct]);
   const discountCents = React.useMemo(() => (
     hasEligibleCoupon ? Math.max(0, itemsSubtotalCents - itemsAfterDiscountCents) : 0
   ), [hasEligibleCoupon, itemsSubtotalCents, itemsAfterDiscountCents]);
