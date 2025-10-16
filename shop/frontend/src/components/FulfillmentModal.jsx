@@ -2,6 +2,7 @@ import React from 'react';
 import { Modal } from './Modal';
 import { getPickupImage, getDeliveryImage } from '../lib/assetFinder';
 import { fetchJson, postJson } from '../lib/api';
+import { useCart } from '../store/CartContext';
 
 // Enhanced fulfillment modal that matches the screenshot/requirements and also
 // shows a closed-for-delivery notice under the Delivery option when applicable.
@@ -22,6 +23,7 @@ export const FulfillmentModal = ({
   onConfirmDelivery, // ({ when, address, summary })
   selectedType: selectedTypeProp,
 }) => {
+  const { setDeliveryFeeCents: setFeeInCart } = useCart();
   const pickupImg = getPickupImage();
   const deliveryImg = getDeliveryImage();
   const [selectedType, setSelectedType] = React.useState(selectedTypeProp || null);
@@ -29,6 +31,7 @@ export const FulfillmentModal = ({
   const [addrText, setAddrText] = React.useState('');
   const [addrObj, setAddrObj] = React.useState(null);
   const [deliveryAreaError, setDeliveryAreaError] = React.useState('');
+  const [deliveryFeeCents, setDeliveryFeeCentsLocal] = React.useState(null);
 
   // Hours and closed message for delivery
   const [hours, setHours] = React.useState(null);
@@ -123,10 +126,17 @@ export const FulfillmentModal = ({
       try {
         if (selectedType !== 'delivery') { setDeliveryAreaError(''); return; }
         // Require an address object (from autocomplete) to quote
-        if (!addrObj) { setDeliveryAreaError(''); return; }
+        if (!addrObj) { setDeliveryAreaError(''); setDeliveryFeeCentsLocal(null); return; }
         const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { address: addrObj } });
         if (cancelled) return;
         setDeliveryAreaError('');
+        if (typeof q?.customerDeliveryFeeCents === 'number') {
+          const cents = Math.max(0, Math.round(Number(q.customerDeliveryFeeCents)));
+          setDeliveryFeeCentsLocal(cents);
+          try { setFeeInCart(cents); } catch {}
+        } else {
+          setDeliveryFeeCentsLocal(null);
+        }
       } catch (e) {
         if (cancelled) return;
         const raw = String(e?.message || '').toLowerCase();
@@ -135,13 +145,21 @@ export const FulfillmentModal = ({
         } else {
           setDeliveryAreaError('');
         }
+        setDeliveryFeeCentsLocal(null);
       }
     }
-    if (!addrObj) { setDeliveryAreaError(''); return () => { cancelled = true; if (t) clearTimeout(t); }; }
+    if (!addrObj) { setDeliveryAreaError(''); setDeliveryFeeCentsLocal(null); return () => { cancelled = true; if (t) clearTimeout(t); }; }
     if (t) clearTimeout(t);
     t = setTimeout(doCheck, 300);
     return () => { cancelled = true; if (t) clearTimeout(t); };
   }, [addrObj, selectedType, siteSlug]);
+
+  // Clear local fee when switching away from delivery mode
+  React.useEffect(() => {
+    if (selectedType !== 'delivery') {
+      setDeliveryFeeCentsLocal(null);
+    }
+  }, [selectedType]);
 
   // When restaurant is closed, keep both buttons visible but disable 'Order Now'.
   // This applies to both Takeout and Delivery modes.
@@ -279,6 +297,9 @@ export const FulfillmentModal = ({
         </label>
         {deliveryAreaError ? (
           <div style={{ color: 'var(--danger)', fontSize: 12 }}>{deliveryAreaError}</div>
+        ) : null}
+        {(!deliveryAreaError && selectedType === 'delivery' && addrObj && typeof deliveryFeeCents === 'number') ? (
+          <div className="muted" style={{ fontSize: 12 }}>Delivery fee: ${ (deliveryFeeCents / 100).toFixed(2) }</div>
         ) : null}
         {/* Prompt user to select full address from Google suggestions */}
         {(selectedType === 'delivery' && timing && !addrObj) ? (
