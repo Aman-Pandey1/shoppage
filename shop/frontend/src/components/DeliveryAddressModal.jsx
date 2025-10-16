@@ -23,6 +23,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   const [distanceKm, setDistanceKm] = useState(null);
   const [maxDeliveryKm, setMaxDeliveryKm] = useState(null);
   const [addressAreaError, setAddressAreaError] = useState('');
+  const [notes, setNotes] = useState('');
   const [tab, setTab] = useState('enter'); // delivery: only manual address (enter)
   const [locations, setLocations] = useState([]);
   const [cities, setCities] = useState([]);
@@ -402,6 +403,10 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
               if (typeof q?.customerDeliveryFeeCents === 'number') {
                 setDeliveryFeeCents(q.customerDeliveryFeeCents);
                 setDeliveryFeeCentsLocal(q.customerDeliveryFeeCents);
+              }
+              // Block if over max distance
+              if (typeof maxDeliveryKm === 'number' && typeof q?.distanceKm === 'number' && q.distanceKm > maxDeliveryKm) {
+                throw new Error(`Delivery is only available within ${maxDeliveryKm} km of the restaurant.`);
               }
               const summary = [addr1, city, postalCode].filter(Boolean).join(', ');
               try { onConfirmed(`addr-${Date.now()}`, summary); } catch {}
