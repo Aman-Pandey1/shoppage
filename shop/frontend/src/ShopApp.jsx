@@ -474,7 +474,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       </button>
 
       <PrivacyPolicyModal open={privacyOpen} onAccept={handleAcceptPrivacy} />
-      <FulfillmentModal open={fulfillmentOpen} onChoose={handleChooseFulfillment} />
+      <FulfillmentModal open={fulfillmentOpen} onChoose={handleChooseFulfillment} siteSlug={siteSlug} />
       <AlertModal
         open={closedAlertOpen}
         onClose={() => setClosedAlertOpen(false)}
