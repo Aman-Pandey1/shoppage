@@ -444,8 +444,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
             setLoginOpen(true);
             return;
           }
-          // Block checkout when restaurant is closed ONLY if user chose 'Order Now'.
-          if (!isOpenNowLocal() && orderWhen !== 'later') {
+          // Block checkout when restaurant is closed ONLY if 'Order Now' was chosen.
+          if (!isOpenNowLocal() && orderWhen === 'now') {
             setMobileCartOpen(false);
             setClosedAlertOpen(true);
             return;
@@ -499,8 +499,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
           setFulfillmentType('pickup');
           setOrderWhen(when || null);
           setFulfillmentOpen(false);
-          // If closed and 'Order Now' selected, show closed alert; allow if 'later'
-          if (!isOpenNowLocal() && (when !== 'later')) { setClosedAlertOpen(true); }
+          // If closed and 'Order Now' selected, show closed alert
+          if (!isOpenNowLocal() && when === 'now') { setClosedAlertOpen(true); }
         }}
         onConfirmDelivery={({ when, address, summary }) => {
           setFulfillmentType('delivery');

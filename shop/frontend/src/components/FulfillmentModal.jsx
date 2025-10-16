@@ -143,7 +143,7 @@ export const FulfillmentModal = ({
     return () => { cancelled = true; if (t) clearTimeout(t); };
   }, [addrObj, selectedType, siteSlug]);
 
-  // When restaurant is closed, we disable only the 'Order Now' option.
+  // When restaurant is closed, hide the 'Order Now' option entirely.
   // Users can still select Delivery or Takeout and pre-order for later.
 
   function renderTypeButtons() {
@@ -210,8 +210,24 @@ export const FulfillmentModal = ({
 
   function renderTimingButtons() {
     const disabled = !selectedType;
-    const disableNow = disabled || closedNow; // when restaurant is closed, block 'Order Now'
     const disableLater = disabled; // allow 'Order For Later' even when closed
+    // If closed now, only show 'Order For Later'
+    if (closedNow) {
+      return (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10, marginTop: 10 }}>
+          <button
+            disabled={disableLater}
+            className="primary-btn"
+            style={{ opacity: disableLater ? 0.6 : 1 }}
+            onClick={() => setTiming('later')}
+          >
+            Order For Later
+          </button>
+        </div>
+      );
+    }
+    // When open, show both options
+    const disableNow = disabled;
     return (
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
         <button
