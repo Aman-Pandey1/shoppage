@@ -30,7 +30,7 @@ export async function geocodeAddress(address) {
   const key = query.toLowerCase();
   const cached = geocodeCache.get(key);
   if (cached) return cached;
-  async function fetchOnce(q) {
+  async function geocodeViaNominatim(q) {
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`;
     const userAgent = process.env.NOMINATIM_USER_AGENT || process.env.GEOCODE_USER_AGENT || 'BlueboxxShop/1.0 (+https://blueboxx.co/contact)';
     const res = await fetch(url, {
@@ -45,8 +45,26 @@ export async function geocodeAddress(address) {
     const { lat, lon } = data[0] || {};
     return (lat && lon) ? { lat: Number(lat), lon: Number(lon) } : null;
   }
+  async function geocodeViaGoogle(q) {
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+    if (!apiKey) return null;
+    try {
+      const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(q)}&key=${encodeURIComponent(apiKey)}`;
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      const data = await res.json();
+      const loc = data?.results?.[0]?.geometry?.location;
+      if (loc && typeof loc.lat === 'number' && typeof loc.lng === 'number') {
+        return { lat: Number(loc.lat), lon: Number(loc.lng) };
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
   // Try full query first
-  let point = await fetchOnce(query);
+  let point = await geocodeViaGoogle(query);
+  if (!point) point = await geocodeViaNominatim(query);
   // Fallback: city + postal + country
   if (!point) {
     const city = (address.city || '').trim();
@@ -54,7 +72,8 @@ export async function geocodeAddress(address) {
     const country = (address.country || '').trim();
     const fallbackParts = [city, postal, country].filter(Boolean);
     if (fallbackParts.length) {
-      point = await fetchOnce(fallbackParts.join(', '));
+      point = await geocodeViaGoogle(fallbackParts.join(', '));
+      if (!point) point = await geocodeViaNominatim(fallbackParts.join(', '));
     }
   }
   // Fallback 2: city + province + country
@@ -64,7 +83,8 @@ export async function geocodeAddress(address) {
     const country = (address.country || '').trim();
     const fallbackParts = [city, province, country].filter(Boolean);
     if (fallbackParts.length) {
-      point = await fetchOnce(fallbackParts.join(', '));
+      point = await geocodeViaGoogle(fallbackParts.join(', '));
+      if (!point) point = await geocodeViaNominatim(fallbackParts.join(', '));
     }
   }
   if (point) geocodeCache.set(key, point);

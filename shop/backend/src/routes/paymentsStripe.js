@@ -162,18 +162,17 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
       : Math.max(0, Number(process.env.COUPON_MIN_SUBTOTAL_CENTS) || 5000);
     const subtotalBeforeDiscount = itemsSubtotal;
 
-    // Validate coupon (do not change unit prices here; we'll use Stripe discounts so it shows explicitly)
+    // Validate coupon by code only; ignore client percent and use server value
     let appliedCoupon = null;
     const code = coupon?.code ? String(coupon.code).trim().toUpperCase() : null;
-    const pct = typeof coupon?.percent === 'number' ? Math.max(0, Math.min(100, Number(coupon.percent) || 0)) : null;
     const mock = req.app.locals.mockData;
-    if (code && typeof pct === 'number' && subtotalBeforeDiscount >= COUPON_MIN_SUBTOTAL_CENTS) {
+    if (code && subtotalBeforeDiscount >= COUPON_MIN_SUBTOTAL_CENTS) {
       if (mock) {
         const found = (mock.coupons || []).find((c) => c.site === req.siteId && c.code === code);
-        if (found && Number(found.percent) === pct) appliedCoupon = { code, percent: pct };
+        if (found) appliedCoupon = { code, percent: Math.max(0, Math.min(100, Number(found.percent) || 0)) };
       } else {
         const found = await Coupon.findOne({ site: req.siteId, code });
-        if (found && Number(found.percent) === pct) appliedCoupon = { code, percent: pct };
+        if (found) appliedCoupon = { code, percent: Math.max(0, Math.min(100, Number(found.percent) || 0)) };
       }
     }
 
@@ -318,22 +317,21 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
     const chosenIdx = (typeof pickupLocationIndex === 'number' && locs[pickupLocationIndex]) ? pickupLocationIndex : 0;
     const pickup = locs[chosenIdx];
 
-    // Items subtotal and coupon validation (we'll apply discount in Stripe Checkout via discounts)
+    // Items subtotal and coupon validation (apply per-item discount; ignore client percent)
     const itemsSubtotal = manifestItems.reduce((sum, it) => sum + (Number(it.priceCents) || 0) * (Number(it.quantity) || 1), 0);
     const COUPON_MIN_SUBTOTAL_CENTS = (typeof req.site?.couponMinSubtotalCents === 'number')
       ? Math.max(0, Number(req.site.couponMinSubtotalCents) || 0)
       : Math.max(0, Number(process.env.COUPON_MIN_SUBTOTAL_CENTS) || 5000);
     const subtotalBeforeDiscount = itemsSubtotal;
     let appliedCoupon = null;
-    if (coupon && coupon.code && typeof coupon.percent === 'number' && subtotalBeforeDiscount >= COUPON_MIN_SUBTOTAL_CENTS) {
+    if (coupon && coupon.code && subtotalBeforeDiscount >= COUPON_MIN_SUBTOTAL_CENTS) {
       const code = String(coupon.code).trim().toUpperCase();
-      const pct = Math.max(0, Math.min(100, Number(coupon.percent)||0));
       if (mock) {
         const found = (req.app.locals.mockData.coupons || []).find((c) => c.site === req.siteId && c.code === code);
-        if (found && Number(found.percent) === pct) { appliedCoupon = { code, percent: pct }; }
+        if (found) { appliedCoupon = { code, percent: Math.max(0, Math.min(100, Number(found.percent) || 0)) }; }
       } else {
         const found = await Coupon.findOne({ site: req.siteId, code });
-        if (found && Number(found.percent) === pct) { appliedCoupon = { code, percent: pct }; }
+        if (found) { appliedCoupon = { code, percent: Math.max(0, Math.min(100, Number(found.percent) || 0)) }; }
       }
     }
 
