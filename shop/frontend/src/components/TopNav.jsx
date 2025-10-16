@@ -159,7 +159,7 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
           </div>
         </div>
         {/* On mobile, when the cart is open we only show "Cart" at top */}
-        <div className="nav-title">{isCartOpen ? 'Cart' : 'ONLINE ORDERING'}</div>
+        <div className="nav-title">{isCartOpen ? 'Cart' : 'Order Online'}</div>
 
         <div className="actions" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 6 }}>
           {/* Cart button - hidden on desktop, visible on mobile and tablet */}

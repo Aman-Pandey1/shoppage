@@ -241,10 +241,11 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
       ...items.map((it) => {
         const unit = Math.max(0, Number(it.priceCents) || 0);
         const discountedUnit = appliedCoupon && pctOff > 0 ? Math.round(unit * (100 - pctOff) / 100) : unit;
+        const couponSuffix = appliedCoupon && pctOff > 0 ? ` — ${pctOff}% off` : '';
         return {
           price_data: {
             currency,
-            product_data: { name: `${it.name}${it.size ? ' — Select Item: ' + it.size : ''}` },
+            product_data: { name: `${it.name}${it.size ? ' — Select Item: ' + it.size : ''}${couponSuffix}` },
             unit_amount: discountedUnit,
           },
           quantity: Number(it.quantity) || 1,
@@ -420,8 +421,9 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
       ...manifestItems.map((it) => {
         const unit = Math.max(0, Number(it.priceCents || it.price) || 0);
         const discountedUnit = appliedCoupon && pctOffDel > 0 ? Math.round(unit * (100 - pctOffDel) / 100) : unit;
+        const couponSuffix = appliedCoupon && pctOffDel > 0 ? ` — ${pctOffDel}% off` : '';
         return {
-          price_data: { currency, product_data: { name: `${it.name}${it.size ? ' — Select Item: ' + it.size : ''}` }, unit_amount: discountedUnit },
+          price_data: { currency, product_data: { name: `${it.name}${it.size ? ' — Select Item: ' + it.size : ''}${couponSuffix}` }, unit_amount: discountedUnit },
           quantity: Number(it.quantity) || 1,
         };
       }),
