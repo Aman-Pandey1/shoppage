@@ -35,6 +35,28 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
     } catch { return 0; }
   }, [manifest]);
 
+  // Coupon + totals to mirror cart/payment breakdown
+  const hasEligibleCoupon = React.useMemo(() => {
+    const min = Number(state?.couponMinSubtotalCents) || 5000;
+    return !!state?.coupon && itemsSubtotalCents >= min;
+  }, [state?.coupon, state?.couponMinSubtotalCents, itemsSubtotalCents]);
+  const couponPct = React.useMemo(() => (
+    hasEligibleCoupon ? Math.max(0, Math.min(100, Number(state?.coupon?.percent) || 0)) : 0
+  ), [hasEligibleCoupon, state?.coupon]);
+  const itemsAfterDiscountCents = React.useMemo(() => {
+    if (!hasEligibleCoupon || couponPct <= 0) return itemsSubtotalCents;
+    const list = Array.isArray(manifest) ? manifest : [];
+    return list.reduce((sum, it) => {
+      const unit = Number(it.priceCents) || 0;
+      const discountedUnit = Math.round(unit * (100 - couponPct) / 100);
+      return sum + discountedUnit * (Number(it.quantity) || 1);
+    }, 0);
+  }, [manifest, itemsSubtotalCents, hasEligibleCoupon, couponPct]);
+  const taxAfterDiscountCents = React.useMemo(() => Math.round(itemsAfterDiscountCents * 0.05), [itemsAfterDiscountCents]);
+  const discountCents = React.useMemo(() => (
+    hasEligibleCoupon ? Math.max(0, itemsSubtotalCents - itemsAfterDiscountCents) : 0
+  ), [hasEligibleCoupon, itemsSubtotalCents, itemsAfterDiscountCents]);
+
   // Prefill address fields from an AddressAutocomplete selection (Canada only by default)
   React.useEffect(() => {
     try {
@@ -143,6 +165,10 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         if (cancelled) return;
         const km = (typeof q?.distanceKm === 'number') ? q.distanceKm : null;
         if (km != null) setDistanceKm(km);
+        if (typeof q?.customerDeliveryFeeCents === 'number') {
+          try { setDeliveryFeeCents(q.customerDeliveryFeeCents); } catch {}
+          setDeliveryFeeCentsLocal(q.customerDeliveryFeeCents);
+        }
         if (typeof maxDeliveryKm === 'number' && km != null && km > maxDeliveryKm) {
           setAddressAreaError('Outside Delivery area, please choose Takeout');
         } else {
@@ -268,8 +294,21 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
 
   return (
     <Modal open={open} onClose={onClose} title={mode === 'checkout' ? 'Confirm Delivery Details' : 'Delivery details'} closeOnOverlayClick={false} footer={(
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, width: '100%' }}>
-        <button onClick={onClose} disabled={loading}>Cancel</button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, width: '100%' }}>
+        <div className="muted" style={{ fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {(() => {
+            const parts = [];
+            const summary = [addr1, city, province, postalCode].filter(Boolean).join(', ');
+            if (summary) parts.push(`Address: ${summary}`);
+            if (typeof distanceKm === 'number' && isFinite(distanceKm)) parts.push(`${distanceKm.toFixed(1)} km`);
+            const fee = (Number(deliveryFeeCentsLocal || 0) / 100);
+            parts.push(`Delivery fee: $${fee.toFixed(2)}`);
+            if (hasEligibleCoupon && discountCents > 0) parts.push(`Discount: -$${(discountCents/100).toFixed(2)}`);
+            return parts.join(' · ');
+          })()}
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={onClose} disabled={loading}>Cancel</button>
         {mode === 'checkout' ? (
           <button className="primary-btn" disabled={loading || !!addressAreaError} aria-busy={loading} onClick={async () => {
             setLoading(true); setError(undefined);
@@ -361,6 +400,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
             )}
           </button>
         )}
+        </div>
       </div>
     )}>
       {(function(){
@@ -374,17 +414,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         );
       })()}
       {error ? <div style={{ color: 'var(--danger)', marginBottom: 8 }}>{error}</div> : null}
-      {(addr1 || city || postalCode) ? (
-        <div className="muted" style={{ marginTop: -4, marginBottom: 8, fontSize: 12 }}>
-          <strong style={{ color: 'var(--text)' }}>Address:</strong> {[addr1, city, province, postalCode].filter(Boolean).join(', ')}
-        </div>
-      ) : null}
       <div className="muted" style={{ marginBottom: 8, fontSize: 12 }}>Enter your delivery address. Delivery will be fulfilled by the website's selected provider.</div>
-      {initialSummary ? (
-        <div className="muted" style={{ marginTop: -4, marginBottom: 8, fontSize: 12 }}>
-          <strong style={{ color: 'var(--text)' }}>Selected:</strong> {initialSummary}
-        </div>
-      ) : null}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
