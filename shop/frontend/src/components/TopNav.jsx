@@ -68,6 +68,9 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
   const name = site?.name || 'Store';
   const tagline = (typeof site?.tagline === 'string') ? site.tagline : '';
   const supportWhatsappPhone = (typeof site?.supportWhatsappPhone === 'string' ? site.supportWhatsappPhone : '').trim();
+  // Prefer explicitly configured support number; fallback to pickup phone if needed
+  const supportPhone = (supportWhatsappPhone || (typeof site?.pickup?.phone === 'string' ? site.pickup.phone.trim() : ''));
+  const telHref = React.useMemo(() => supportPhone ? `tel:${String(supportPhone).replace(/[^+\d]/g, '')}` : '', [supportPhone]);
   const addressLine = React.useMemo(() => {
     try {
       if (!primaryLocation || !primaryLocation.address) return '';
@@ -161,13 +164,16 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
         <div className="nav-title">{isCartOpen ? 'Cart' : 'Order Online'}</div>
 
         <div className="actions" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 6 }}>
-          {supportWhatsappPhone ? (
-            <span
-              aria-label="Support phone"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--panel-2)', fontSize: 12 }}
+          {supportPhone ? (
+            <a
+              href={telHref}
+              aria-label="Call support"
+              title={`Call ${supportPhone}`}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--panel-2)', fontSize: 12, textDecoration: 'none', color: 'inherit' }}
             >
-              {supportWhatsappPhone}
-            </span>
+              <span role="img" aria-label="Call">📞</span>
+              <span>{supportPhone}</span>
+            </a>
           ) : null}
           {/* Cart button - hidden on desktop, visible on mobile and tablet */}
           {!isDesktop && (
