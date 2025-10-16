@@ -162,23 +162,12 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
 
         <div className="actions" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 6 }}>
           {supportWhatsappPhone ? (
-            <a
-              href={`https://wa.me/${supportWhatsappPhone.replace(/[^\d]/g, '')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Chat on WhatsApp"
-              aria-label="Chat on WhatsApp"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--panel-2)' }}
+            <span
+              aria-label="Support phone"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--panel-2)', fontSize: 12 }}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <circle cx="12" cy="12" r="10" fill="#25D366" />
-                <path
-                  d="M16 15l-2 2c-2.5-1-4.5-3-5.5-5.5l2-2 1.5.5c.2.1.4 0 .5-.2l.8-2c.1-.2 0-.4-.2-.5L10 6c-.7-.4-1.5-.2-2 .4L6.8 7.8c-.4.5-.6 1.2-.5 1.9.3 1.6 1.1 3.2 2.4 4.5 1.3 1.3 2.9 2.1 4.5 2.4.7.1 1.4-.1 1.9-.5l1.4-1.2c.6-.5.8-1.3.4-2l-1.2-1c-.2-.2-.4-.1-.6 0z"
-                  fill="#fff"
-                />
-              </svg>
-              <span className="hide-mobile" style={{ fontSize: 12 }}>Support</span>
-            </a>
+              {supportWhatsappPhone}
+            </span>
           ) : null}
           {/* Cart button - hidden on desktop, visible on mobile and tablet */}
           {!isDesktop && (

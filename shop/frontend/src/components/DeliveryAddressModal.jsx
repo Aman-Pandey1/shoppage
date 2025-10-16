@@ -174,7 +174,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
           setDeliveryFeeCentsLocal(q.customerDeliveryFeeCents);
         }
         if (typeof maxDeliveryKm === 'number' && km != null && km > maxDeliveryKm) {
-          setAddressAreaError('Outside Delivery area, please choose Takeout');
+          setAddressAreaError(`Outside delivery area (within ${maxDeliveryKm} km)`);
         } else {
           setAddressAreaError('');
         }
@@ -182,7 +182,9 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         if (cancelled) return;
         const msg = (parseServerError(e) || '').toLowerCase();
         if (/only available within/.test(msg) || /within \d+\s*km/.test(msg)) {
-          setAddressAreaError('Outside Delivery area, please choose Takeout');
+          const m = msg.match(/within\s*(\d+)\s*km/);
+          const kmTxt = m && m[1] ? m[1] : (typeof maxDeliveryKm === 'number' ? String(maxDeliveryKm) : '');
+          setAddressAreaError(`Outside delivery area${kmTxt ? ` (within ${kmTxt} km)` : ''}`);
         } else {
           setAddressAreaError('');
         }

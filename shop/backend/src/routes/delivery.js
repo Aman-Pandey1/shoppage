@@ -132,7 +132,7 @@ router.post('/:slug/quote', async (req, res) => {
 	    } else {
 	      quote = { id: `q-${Date.now()}`, simulated: true };
 	    }
-    // Calculate delivery fee using admin-configured base when available; +$1/km over 8km
+    // Calculate delivery fee using admin-configured per-km rate (cents/km), rounded up
     const baseFee = (typeof site?.deliveryFeeCents === 'number' && isFinite(site.deliveryFeeCents))
       ? Math.max(0, Number(site.deliveryFeeCents))
       : 800;
