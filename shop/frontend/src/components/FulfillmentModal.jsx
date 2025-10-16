@@ -32,6 +32,7 @@ export const FulfillmentModal = ({
   const [addrObj, setAddrObj] = React.useState(null);
   const [deliveryAreaError, setDeliveryAreaError] = React.useState('');
   const [deliveryFeeCents, setDeliveryFeeCentsLocal] = React.useState(null);
+  const [checkingArea, setCheckingArea] = React.useState(false);
 
   // Hours and closed message for delivery
   const [hours, setHours] = React.useState(null);
@@ -45,6 +46,7 @@ export const FulfillmentModal = ({
       setAddrText('');
       setAddrObj(null);
       setDeliveryAreaError('');
+      setCheckingArea(false);
     }
   }, [open, selectedTypeProp]);
 
@@ -116,7 +118,7 @@ export const FulfillmentModal = ({
 
   const canConfirmPickup = selectedType === 'pickup' && timing && pickupDate && pickupTime;
   // Require a Google-selected full address object (not just typed text)
-  const canConfirmDelivery = selectedType === 'delivery' && timing && !!addrObj && !deliveryAreaError;
+  const canConfirmDelivery = selectedType === 'delivery' && timing && !!addrObj && !deliveryAreaError && !checkingArea;
 
   // Live check for delivery area only for Delivery option
   React.useEffect(() => {
@@ -124,9 +126,10 @@ export const FulfillmentModal = ({
     let t = null;
     async function doCheck() {
       try {
-        if (selectedType !== 'delivery') { setDeliveryAreaError(''); return; }
+        if (selectedType !== 'delivery') { setDeliveryAreaError(''); setCheckingArea(false); return; }
         // Require an address object (from autocomplete) to quote
-        if (!addrObj) { setDeliveryAreaError(''); setDeliveryFeeCentsLocal(null); return; }
+        if (!addrObj) { setDeliveryAreaError(''); setDeliveryFeeCentsLocal(null); setCheckingArea(false); return; }
+        setCheckingArea(true);
         const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { address: addrObj } });
         if (cancelled) return;
         setDeliveryAreaError('');
@@ -137,6 +140,7 @@ export const FulfillmentModal = ({
         } else {
           setDeliveryFeeCentsLocal(null);
         }
+        setCheckingArea(false);
       } catch (e) {
         if (cancelled) return;
         const raw = String(e?.message || '').toLowerCase();
@@ -146,12 +150,13 @@ export const FulfillmentModal = ({
           setDeliveryAreaError('');
         }
         setDeliveryFeeCentsLocal(null);
+        setCheckingArea(false);
       }
     }
-    if (!addrObj) { setDeliveryAreaError(''); setDeliveryFeeCentsLocal(null); return () => { cancelled = true; if (t) clearTimeout(t); }; }
+    if (!addrObj) { setDeliveryAreaError(''); setDeliveryFeeCentsLocal(null); setCheckingArea(false); return () => { cancelled = true; if (t) clearTimeout(t); }; }
     if (t) clearTimeout(t);
     t = setTimeout(doCheck, 300);
-    return () => { cancelled = true; if (t) clearTimeout(t); };
+    return () => { cancelled = true; if (t) clearTimeout(t); setCheckingArea(false); };
   }, [addrObj, selectedType, siteSlug]);
 
   // Clear local fee when switching away from delivery mode
@@ -327,7 +332,16 @@ export const FulfillmentModal = ({
             }
           }}
         >
-          OK
+          {checkingArea ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <svg width="16" height="16" viewBox="0 0 50 50" aria-hidden="true" focusable="false">
+                <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeDasharray="31.415 31.415">
+                  <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.8s" repeatCount="indefinite" />
+                </circle>
+              </svg>
+              Validating address…
+            </span>
+          ) : 'OK'}
         </button>
       </div>
     );
