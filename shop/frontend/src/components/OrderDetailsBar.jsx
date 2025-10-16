@@ -43,10 +43,26 @@ export const OrderDetailsBar = ({
       <div className="order-bar__row">
         <div className="order-bar__group">
           <div className="order-bar__label">Order Details</div>
-          <button className="order-bar__input" onClick={onChangeOrderType}>
+          <button className="order-bar__input" onClick={onChangeOrderType} style={{ padding: '6px 10px', minHeight: 36 }}>
             <span>{orderType}</span>
             <span className="chev">▾</span>
           </button>
+          {/* Delivery Address moved under Delivery/Takeout for better alignment */}
+          {showAddressInput && AddressAutocomplete ? (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span className="muted" style={{ fontSize: 12 }}>Delivery Address</span>
+              <div style={{ flex: 1 }}>
+                <AddressAutocomplete
+                  siteSlug={siteSlug}
+                  value={addressInput}
+                  onChange={onAddressInputChange}
+                  onSelect={(addr, summary) => onAddressSelected && onAddressSelected(addr, summary)}
+                  placeholder="Address"
+                  country="CA"
+                />
+              </div>
+            </label>
+          ) : null}
         </div>
         <div className="order-bar__group">
           <div className="order-bar__label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -98,22 +114,6 @@ export const OrderDetailsBar = ({
                 ))}
               </select>
             </label>
-            {/* Inline delivery address field when Delivery is selected */}
-            {showAddressInput && AddressAutocomplete ? (
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 260 }}>
-                <span className="muted" style={{ fontSize: 12 }}>Delivery Address</span>
-                <div style={{ flex: 1 }}>
-                  <AddressAutocomplete
-                    siteSlug={siteSlug}
-                    value={addressInput}
-                    onChange={onAddressInputChange}
-                    onSelect={(addr, summary) => onAddressSelected && onAddressSelected(addr, summary)}
-                    placeholder="Address"
-                    country="CA"
-                  />
-                </div>
-              </label>
-            ) : null}
           </div>
         </div>
       </div>
