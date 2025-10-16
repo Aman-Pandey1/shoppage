@@ -257,7 +257,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
           </div>
           {state.fulfillmentType === 'delivery' ? (
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span className="muted">{isSplitDelivery ? 'Delivery fee (your share)' : 'Delivery fee'}</span>
+              <span className="muted">Delivery fee</span>
               <span>${deliveryFee.toFixed(2)}</span>
             </div>
           ) : null}
