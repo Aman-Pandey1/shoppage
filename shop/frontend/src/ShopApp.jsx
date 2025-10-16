@@ -710,6 +710,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         }}
         manifest={manifest}
         mode={deliveryModalMode}
+        initialAddress={deliveryInlineAddr}
+        initialSummary={deliveryAddressSummary}
       />
       {/* Last delivery ID removed from UI as requested */}
       <SpiceModal
