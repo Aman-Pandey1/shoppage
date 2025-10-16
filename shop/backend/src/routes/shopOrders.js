@@ -17,14 +17,17 @@ router.get('/:slug/orders/mine', requireUser, async (req, res) => {
     const page = Math.max(1, Number(req.query.page) || 1);
     const pageSize = Math.min(50, Math.max(1, Number(req.query.pageSize) || 12));
     const mock = req.app.locals.mockData;
-    if (mock) {
-      const all = (mock.orders || []).filter((o) => o.site === req.siteId && o.userEmail === req.user?.email);
+  if (mock) {
+      const all = (mock.orders || [])
+        .filter((o) => o.site === req.siteId && o.userEmail === req.user?.email)
+        // Only show successful orders to users
+        .filter((o) => o.status === 'paid' || o.status === 'confirmed');
       const total = all.length;
       const start = (page - 1) * pageSize;
       const items = all.slice(start, start + pageSize);
       return res.json({ items, page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) });
     }
-    const filter = { site: req.siteId, userId: req.user?.userId };
+    const filter = { site: req.siteId, userId: req.user?.userId, status: { $in: ['paid', 'confirmed'] } };
     const total = await Order.countDocuments(filter);
     const items = await Order.find(filter)
       .sort({ createdAt: -1 })
