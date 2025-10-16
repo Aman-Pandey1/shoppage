@@ -29,9 +29,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   const [selectedPickupIndex, setSelectedPickupIndex] = useState(null);
   const [selectedCity, setSelectedCity] = useState('');
   const [minOrderCents, setMinOrderCents] = useState(5000);
-  // Single-line address text for UI display
-  const [addrText, setAddrText] = useState(initialSummary || '');
-  // Single-line address text for autocomplete
+  // Single-line address text for UI display and autocomplete
   const [addrText, setAddrText] = useState(initialSummary || '');
 
   const itemsSubtotalCents = React.useMemo(() => {
