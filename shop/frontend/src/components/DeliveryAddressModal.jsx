@@ -293,7 +293,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={mode === 'checkout' ? 'Confirm Delivery Details' : 'Delivery details'} closeOnOverlayClick={false} footer={(
+    <Modal open={open} onClose={onClose} title={mode === 'checkout' ? 'Confirm Delivery Details' : 'Delivery details'} closeOnOverlayClick={false} maxWidth={520} footer={(
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, width: '100%' }}>
         <div className="muted" style={{ fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {(() => {
@@ -416,7 +416,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
       {error ? <div style={{ color: 'var(--danger)', marginBottom: 8 }}>{error}</div> : null}
       <div className="muted" style={{ marginBottom: 8, fontSize: 12 }}>Enter your delivery address. Delivery will be fulfilled by the website's selected provider.</div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <span>Full Name</span>
           <input value={name} onChange={(e) => setName(e.target.value)} />
@@ -455,11 +455,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
             <option value="AU">Australia (AU)</option>
           </select>
         </label>
-        {addressAreaError ? (
-          <div style={{ gridColumn: '1 / -1', color: 'var(--danger)', fontSize: 12, marginTop: -4 }}>
-            {addressAreaError}
-          </div>
-        ) : null}
+        {/* Outside-delivery error is shown on the address entry form, not here */}
       </div>
       {/* Notes of Instruction removed as requested */}
       {/* Removed quote/fee panel and payment buttons as requested */}
