@@ -22,13 +22,15 @@ router.get('/', requireAdmin, async (req, res) => {
 		if (mock) {
 			let list = Array.isArray(mock.orders) ? mock.orders : [];
 			list = list.filter((o) => o.site === siteId);
+			// Only show orders that are actually placed/paid
+			list = list.filter((o) => (o.status === 'paid' || o.status === 'confirmed'));
 			if (fromDate) list = list.filter((o) => new Date(o.createdAt) >= fromDate);
 			if (toDate) list = list.filter((o) => new Date(o.createdAt) <= toDate);
 			list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 			return res.json(list);
 		}
 
-		const filter = { site: siteId };
+		const filter = { site: siteId, status: { $in: ['paid', 'confirmed'] } };
 		if (fromDate || toDate) filter.createdAt = {};
 		if (fromDate) filter.createdAt.$gte = fromDate;
 		if (toDate) filter.createdAt.$lte = toDate;

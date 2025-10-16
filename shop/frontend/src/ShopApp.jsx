@@ -5,10 +5,12 @@ import { CategoryGrid } from './components/CategoryGrid';
 // import { StoreHeader } from './components/StoreHeader';
 import { TopNav } from './components/TopNav';
 import { OrderDetailsBar } from './components/OrderDetailsBar';
+import { AddressAutocomplete } from './components/AddressAutocomplete';
 import { ProductList } from './components/ProductList';
 import { PrivacyPolicyModal } from './components/PrivacyPolicyModal';
 import { FulfillmentModal } from './components/FulfillmentModal';
 import { Modal } from './components/Modal';
+import { AlertModal } from './components/AlertModal';
 import { SpiceModal } from './components/SpiceModal';
 import { ExtrasModal } from './components/ExtrasModal';
 import { AddToCartToast } from './components/AddToCartToast';
@@ -60,12 +62,24 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       return base.toISOString();
     } catch { return null; }
   }, [pickupDate, pickupTime]);
+  
+  const minutesUntilReady = React.useMemo(() => {
+    try {
+      if (!readyAt) return null;
+      const now = Date.now();
+      const ms = new Date(readyAt).getTime() - now;
+      return Math.max(0, Math.round(ms / 60000));
+    } catch { return null; }
+  }, [readyAt]);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [locations, setLocations] = useState([]);
   const [cities, setCities] = useState([]);
   const [orderDetailsOpen, setOrderDetailsOpen] = useState(false);
   const [selectedPickupCity, setSelectedPickupCity] = useState('All');
   const [pickupTab, setPickupTab] = useState('location'); // address | location | city
+  // Inline delivery address input state
+  const [deliveryInlineAddrText, setDeliveryInlineAddrText] = useState('');
+  const [deliveryInlineAddr, setDeliveryInlineAddr] = useState(null);
 
   useEffect(() => {
     const privacyAccepted = localStorage.getItem('privacyAccepted_v1');
@@ -87,16 +101,36 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     setFulfillmentOpen(true);
   }
 
+  function isOpenNowLocal() {
+    try {
+      if (!hours) return true; // default open if unknown
+      const now = new Date();
+      const dayKey = ['sun','mon','tue','wed','thu','fri','sat'][now.getDay()];
+      const config = hours?.[dayKey] || { open: '10:00', close: '22:00', closed: false };
+      if (config.closed) return false;
+      const [openH, openM] = String(config.open || '10:00').split(':').map(Number);
+      const [closeH, closeM] = String(config.close || '22:00').split(':').map(Number);
+      const openMinutes = (openH || 0) * 60 + (openM || 0);
+      // last order 15 minutes before close
+      const lastOrderMinutes = (closeH || 0) * 60 + Math.max(0, (closeM || 0) - 15);
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      return nowMinutes >= openMinutes && nowMinutes <= lastOrderMinutes;
+    } catch { return true; }
+  }
+
+  const [closedAlertOpen, setClosedAlertOpen] = useState(false);
+
   function handleChooseFulfillment(type) {
     setFulfillmentType(type);
     // Close the selection modal only. If delivery is selected, collect address now and then let user browse menu.
     setFulfillmentOpen(false);
     setOrderDetailsOpen(false);
-    if (type === 'delivery') {
-      setDeliveryModalMode('prefill');
-      setDeliveryModalOpen(true);
-    } else {
-      setDeliveryModalOpen(false);
+    // Do not open delivery modal here; inline address will be shown in the bar
+    if (!isOpenNowLocal()) { setClosedAlertOpen(true); }
+    setDeliveryModalOpen(false);
+    if (type === 'pickup') {
+      // When Takeout selected, open Order Details so user picks date/time immediately
+      setOrderDetailsOpen(true);
     }
   }
 
@@ -357,12 +391,13 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   }, [locations, selectedPickupCity]);
   const OrderTypeSelection = () => (
     <OrderDetailsBar
-      orderType={state.fulfillmentType === 'delivery' ? 'Delivery' : (state.fulfillmentType === 'pickup' ? 'Pickup' : 'Select order type')}
+      orderType={state.fulfillmentType === 'delivery' ? 'Delivery' : (state.fulfillmentType === 'pickup' ? 'Takeout' : 'Select order type')}
       pickupDate={pickupDate}
       pickupTime={pickupTime}
       dateOptions={dateOptions}
       timeOptions={timeOptions}
       addressSummary={addressSummary}
+      minutesUntilReady={typeof minutesUntilReady === 'number' ? minutesUntilReady : undefined}
       locations={locations}
       selectedLocationIndex={(idx => (idx >= 0 ? idx : (() => { const s = Number(localStorage.getItem('selectedPickupIndex')); return Number.isFinite(s) ? s : undefined; })()))(locations.findIndex((l) => l === selectedLocation))}
       onChangeLocation={(idx) => {
@@ -374,6 +409,15 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       onChangeOrderType={() => setFulfillmentOpen(true)}
       onPickupDateChange={(val) => setPickupDate(val)}
       onPickupTimeChange={(val) => setPickupTime(val)}
+      showAddressInput={state.fulfillmentType === 'delivery'}
+      addressInput={deliveryInlineAddrText}
+      onAddressInputChange={(t) => setDeliveryInlineAddrText(t)}
+      AddressAutocomplete={AddressAutocomplete}
+      siteSlug={siteSlug}
+      onAddressSelected={(addr, summary) => {
+        setDeliveryInlineAddr(addr);
+        setDeliveryAddressSummary(summary || '');
+      }}
     />
   );
 
@@ -391,7 +435,12 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
             setLoginOpen(true);
             return;
           }
-          // Allow checkout regardless of store hours
+          // Block checkout when restaurant is closed per hours config
+          if (!isOpenNowLocal()) {
+            setMobileCartOpen(false);
+            setClosedAlertOpen(true);
+            return;
+          }
           // Close cart before showing next step so modal is visible on mobile
           setMobileCartOpen(false);
           if (!state.fulfillmentType) {
@@ -426,6 +475,13 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
 
       <PrivacyPolicyModal open={privacyOpen} onAccept={handleAcceptPrivacy} />
       <FulfillmentModal open={fulfillmentOpen} onChoose={handleChooseFulfillment} />
+      <AlertModal
+        open={closedAlertOpen}
+        onClose={() => setClosedAlertOpen(false)}
+        title="Restaurant is currently closed"
+        message="Online ordering is unavailable right now. Please check our hours and try again."
+        confirmLabel="OK"
+      />
       {/* Order Details Modal: Takeout/Delivery UI like screenshots */}
       <Modal open={orderDetailsOpen} onClose={() => setOrderDetailsOpen(false)} title="ORDER DETAILS" footer={(
         state.fulfillmentType === 'pickup' ? (
@@ -467,7 +523,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                     });
                 }
               } catch (e) {
-                let msg = e?.message || 'Failed to place pickup order';
+                let msg = e?.message || 'Failed to place takeout order';
                 try {
                   const parsed = JSON.parse(msg);
                   if (parsed && parsed.error) msg = parsed.error;
@@ -497,7 +553,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
           <div style={{ display: 'grid', gap: 12 }}>
             <div style={{ display: 'flex', gap: 8 }}>
               <button className="primary-btn" disabled>Delivery</button>
-              <button onClick={() => setFulfillmentOpen(true)}>Pickup</button>
+              <button onClick={() => setFulfillmentOpen(true)}>Takeout</button>
             </div>
             <div className="muted" style={{ fontSize: 12 }}>
               Enter your address to see delivery ETA and fee.
@@ -510,7 +566,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         ) : (
           <div>
             {orderError ? <div style={{ color: 'var(--danger)', marginBottom: 10 }}>{orderError}</div> : null}
-            <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>Pickup selected</div>
+            <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>Takeout selected</div>
             {/* Tab header like screenshot */}
             <div style={{ display: 'flex', gap: 12, borderBottom: '1px solid var(--border)', marginBottom: 12 }}>
               <button onClick={() => setPickupTab('location')} style={{ border: 'none', background: 'transparent', padding: '8px 2px', fontWeight: pickupTab==='location'?800:600, color: pickupTab==='location'? 'var(--text)' : 'var(--muted)', borderBottom: pickupTab==='location'? '2px solid var(--primary-600)' : '2px solid transparent' }}>By location</button>

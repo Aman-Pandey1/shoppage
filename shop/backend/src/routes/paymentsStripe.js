@@ -235,37 +235,28 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
     const origin = req.get('origin') || process.env.FRONTEND_URL || 'http://localhost:5173';
     const slug = String(req.params.slug);
 
-    // Build line items at full price; attach a Stripe coupon so Checkout displays a visible Discount line.
-    const discountFactor = (pctOff > 0 && pctOff < 100) ? (1 - (pctOff / 100)) : null;
-    const taxForStripeCents = (discountFactor ? Math.round(taxCents / discountFactor) : taxCents);
+    // Prepare line items using pre-discounted unit prices so totals
+    // exactly match our cart (no Stripe coupon needed).
     const lineItems = [
-      ...items.map((it) => ({
-        price_data: {
-          currency,
-          product_data: { name: `${it.name}${it.size ? ' — Select Item: ' + it.size : ''}` },
-          unit_amount: Math.max(0, Number(it.priceCents) || 0),
-        },
-        quantity: Number(it.quantity) || 1,
-      })),
-      ...(taxCents > 0 ? [{ price_data: { currency, product_data: { name: 'Tax' }, unit_amount: taxForStripeCents }, quantity: 1 }] : []),
+      ...items.map((it) => {
+        const unit = Math.max(0, Number(it.priceCents) || 0);
+        const discountedUnit = appliedCoupon && pctOff > 0 ? Math.round(unit * (100 - pctOff) / 100) : unit;
+        const couponSuffix = appliedCoupon && pctOff > 0 ? ` — ${pctOff}% off` : '';
+        return {
+          price_data: {
+            currency,
+            product_data: { name: `${it.name}${it.size ? ' — Select Item: ' + it.size : ''}${couponSuffix}` },
+            unit_amount: discountedUnit,
+          },
+          quantity: Number(it.quantity) || 1,
+        };
+      }),
+      ...(taxCents > 0 ? [{ price_data: { currency, product_data: { name: 'Tax' }, unit_amount: taxCents }, quantity: 1 }] : []),
     ];
-
-    // Create a one-time coupon in Stripe so the discount appears on the Checkout page
-    let stripeCouponId = null;
-    if (appliedCoupon && pctOff > 0) {
-      try {
-        const createdCoupon = await stripe.coupons.create({
-          percent_off: pctOff,
-          duration: 'once',
-          name: appliedCoupon.code,
-        });
-        stripeCouponId = createdCoupon?.id || null;
-      } catch {}
-    }
 
     // Build PI data depending on per-site vs Connect
     const usePerSiteStripe = !!req.site?.stripeSecretKey;
-    const piDataPickup = (!usePerSiteStripe && req.site?.stripeAccountId) ? {
+  const piDataPickup = (!usePerSiteStripe && req.site?.stripeAccountId) ? {
       transfer_data: { destination: req.site.stripeAccountId },
       on_behalf_of: req.site.stripeAccountId,
     } : undefined;
@@ -277,7 +268,6 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
       cancel_url: `${origin}/s/${encodeURIComponent(slug)}?status=cancelled`,
       customer_email: req.user?.email || undefined,
       payment_intent_data: piDataPickup,
-      discounts: stripeCouponId ? [{ coupon: stripeCouponId }] : undefined,
       metadata: {
         orderId: String(orderId),
         siteId: String(req.siteId),
@@ -365,14 +355,11 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
     let customerDeliveryFeeCents = split ? Math.round(fullDeliveryFeeCents / 2) : fullDeliveryFeeCents;
     let restaurantDeliveryFeeCents = split ? (fullDeliveryFeeCents - customerDeliveryFeeCents) : 0;
 
-    // If client sent a quoted delivery fee, trust it when it's within sane bounds (±$5) to avoid UI vs gateway mismatch
+    // Trust the client-quoted delivery fee exactly to keep cart and payment in sync
     if (typeof clientDeliveryFeeCents === 'number') {
       const quoted = Math.max(0, Math.round(Number(clientDeliveryFeeCents)));
-      const delta = Math.abs(quoted - customerDeliveryFeeCents);
-      if (delta <= 500) { // within $5
-        customerDeliveryFeeCents = quoted;
-        restaurantDeliveryFeeCents = split ? (fullDeliveryFeeCents - customerDeliveryFeeCents) : 0;
-      }
+      customerDeliveryFeeCents = quoted;
+      restaurantDeliveryFeeCents = split ? Math.max(0, fullDeliveryFeeCents - quoted) : 0;
     }
 
     // Recompute discount at per-item level to mirror Stripe rounding
@@ -419,36 +406,30 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
     const slug = String(req.params.slug);
 
     const pctOffDel = appliedCoupon ? Number(appliedCoupon.percent) || 0 : 0;
-    // Build at full price and attach a Stripe coupon so Checkout shows a Discount line.
-    const discountFactorDel = (pctOffDel > 0 && pctOffDel < 100) ? (1 - (pctOffDel / 100)) : null;
-    const taxForStripeDelCents = (discountFactorDel ? Math.round(taxCents / discountFactorDel) : taxCents);
-    const deliveryForStripeDelCents = (discountFactorDel ? Math.round(customerDeliveryFeeCents / discountFactorDel) : customerDeliveryFeeCents);
-    const lineItemsDel = [
-      ...manifestItems.map((it) => ({
-        price_data: { currency, product_data: { name: `${it.name}${it.size ? ' — Select Item: ' + it.size : ''}` }, unit_amount: Math.max(0, Number(it.priceCents || it.price) || 0) },
-        quantity: Number(it.quantity) || 1,
-      })),
-      ...(taxCents > 0 ? [{ price_data: { currency, product_data: { name: 'Tax' }, unit_amount: taxForStripeDelCents }, quantity: 1 }] : []),
-      ...(customerDeliveryFeeCents > 0 ? [{ price_data: { currency, product_data: { name: 'Delivery fee' }, unit_amount: deliveryForStripeDelCents }, quantity: 1 }] : []),
-    ];
 
     const usePerSiteStripeDel = !!site?.stripeSecretKey;
     const piDataDelivery = (!usePerSiteStripeDel && site?.stripeAccountId) ? {
       transfer_data: { destination: site.stripeAccountId },
-      // Collect the platform delivery fee via application fee: the amount we charge to restaurant is
-      // the portion not paid by customer when splitDeliveryFee is enabled; otherwise the full amount.
-      application_fee_amount: split ? (fullDeliveryFeeCents - customerDeliveryFeeCents) : fullDeliveryFeeCents,
+      // Collect the platform delivery fee via application fee
+      application_fee_amount: split ? Math.max(0, fullDeliveryFeeCents - customerDeliveryFeeCents) : fullDeliveryFeeCents,
       on_behalf_of: site.stripeAccountId,
     } : undefined;
 
-    // Create a one-time coupon in Stripe for delivery too, so a Discount line appears
-    let stripeCouponIdDel = null;
-    if (appliedCoupon && pctOffDel > 0) {
-      try {
-        const createdCoupon = await stripe.coupons.create({ percent_off: pctOffDel, duration: 'once', name: appliedCoupon.code });
-        stripeCouponIdDel = createdCoupon?.id || null;
-      } catch {}
-    }
+    // Always pre-discount item unit prices; add tax and delivery as-is so the
+    // final amount matches the cart and delivery fee is not discounted.
+    const lineItemsDel = [
+      ...manifestItems.map((it) => {
+        const unit = Math.max(0, Number(it.priceCents || it.price) || 0);
+        const discountedUnit = appliedCoupon && pctOffDel > 0 ? Math.round(unit * (100 - pctOffDel) / 100) : unit;
+        const couponSuffix = appliedCoupon && pctOffDel > 0 ? ` — ${pctOffDel}% off` : '';
+        return {
+          price_data: { currency, product_data: { name: `${it.name}${it.size ? ' — Select Item: ' + it.size : ''}${couponSuffix}` }, unit_amount: discountedUnit },
+          quantity: Number(it.quantity) || 1,
+        };
+      }),
+      ...(taxCents > 0 ? [{ price_data: { currency, product_data: { name: 'Tax' }, unit_amount: taxCents }, quantity: 1 }] : []),
+      ...(customerDeliveryFeeCents > 0 ? [{ price_data: { currency, product_data: { name: 'Delivery fee' }, unit_amount: customerDeliveryFeeCents }, quantity: 1 }] : []),
+    ];
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
@@ -457,7 +438,6 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
       cancel_url: `${origin}/s/${encodeURIComponent(slug)}?status=cancelled`,
       customer_email: req.user?.email || undefined,
       payment_intent_data: piDataDelivery,
-      discounts: stripeCouponIdDel ? [{ coupon: stripeCouponIdDel }] : undefined,
       metadata: {
         orderId: String(orderId),
         siteId: String(req.siteId),

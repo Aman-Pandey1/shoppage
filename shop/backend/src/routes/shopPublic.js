@@ -70,6 +70,17 @@ router.get('/host-site', tenantByHost, async (req, res) => {
 // Resolve site by :slug for all below
 router.use('/:slug', tenantBySlug);
 
+// Public config for frontend: expose safe, public keys
+// This endpoint returns only non-sensitive configuration intended for the browser.
+router.get('/:slug/public-config', async (req, res) => {
+  try {
+    const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.GOOGLE_PLACES_API_KEY || '';
+    return res.json({ googleMapsApiKey });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+});
+
 // Site basics by slug (for UI display or tagging external refs)
 router.get('/:slug/site', async (req, res) => {
   try {

@@ -13,6 +13,14 @@ export const OrderDetailsBar = ({
   locations = [],
   selectedLocationIndex,
   onChangeLocation,
+  // New props for inline delivery address autocomplete
+  showAddressInput = false,
+  addressInput,
+  onAddressInputChange,
+  AddressAutocomplete,
+  siteSlug,
+  onAddressSelected,
+  minutesUntilReady,
 }) => {
   const selectedDateLabel = React.useMemo(() => {
     try {
@@ -41,7 +49,12 @@ export const OrderDetailsBar = ({
           </button>
         </div>
         <div className="order-bar__group">
-          <div className="order-bar__label">Pick Up/Delivery Date and Time</div>
+          <div className="order-bar__label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>Order Date and Time</span>
+            {typeof minutesUntilReady === 'number' && minutesUntilReady >= 0 ? (
+              <span className="muted" style={{ fontSize: 12, color: 'var(--primary-600)' }}>{minutesUntilReady} mins</span>
+            ) : null}
+          </div>
           <div className="order-bar__inline" style={{ gap: 8 }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span className="muted" style={{ fontSize: 12 }}>Day</span>
@@ -85,7 +98,21 @@ export const OrderDetailsBar = ({
                 ))}
               </select>
             </label>
-            {/* Removed duplicate selected date display to avoid showing date twice */}
+            {/* Inline delivery address field when Delivery is selected */}
+            {showAddressInput && AddressAutocomplete ? (
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 260 }}>
+                <span className="muted" style={{ fontSize: 12 }}>Delivery Address</span>
+                <div style={{ flex: 1 }}>
+                  <AddressAutocomplete
+                    siteSlug={siteSlug}
+                    value={addressInput}
+                    onChange={onAddressInputChange}
+                    onSelect={(addr, summary) => onAddressSelected && onAddressSelected(addr, summary)}
+                    placeholder="Address"
+                  />
+                </div>
+              </label>
+            ) : null}
           </div>
         </div>
       </div>
