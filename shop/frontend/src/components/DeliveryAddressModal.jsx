@@ -3,6 +3,7 @@ import { Modal } from './Modal';
 import { useCart } from '../store/CartContext';
 import { fetchJson, postJson } from '../lib/api';
 import { AddressAutocomplete } from './AddressAutocomplete';
+import { formatCents } from '../lib/money';
 
 export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, manifest, initialPickupIndex, mode = 'checkout', initialAddress, initialSummary }) => {
   const { state, setDeliveryFeeCents } = useCart();
@@ -449,7 +450,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
       {(function(){
         const below = itemsSubtotalCents < (Number(minOrderCents) || 0);
         if (!below) return null;
-        const dollars = (Math.max(0, Number(minOrderCents) || 0) / 100).toFixed(2);
+        const dollars = formatCents(Math.max(0, Number(minOrderCents) || 0));
         return (
           <div style={{ color: 'var(--danger)', marginBottom: 8, fontWeight: 600 }}>
             Minimum total amount should be ${dollars} required for delivery.
