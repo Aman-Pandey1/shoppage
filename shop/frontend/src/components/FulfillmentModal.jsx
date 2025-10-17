@@ -3,6 +3,7 @@ import { Modal } from './Modal';
 import { getPickupImage, getDeliveryImage } from '../lib/assetFinder';
 import { fetchJson, postJson } from '../lib/api';
 import { useCart } from '../store/CartContext';
+import { formatCents } from '../lib/money';
 
 // Enhanced fulfillment modal that matches the screenshot/requirements and also
 // shows a closed-for-delivery notice under the Delivery option when applicable.
@@ -309,7 +310,7 @@ export const FulfillmentModal = ({
           <div style={{ color: 'var(--danger)', fontSize: 12 }}>{deliveryAreaError}</div>
         ) : null}
         {(!deliveryAreaError && selectedType === 'delivery' && addrObj && typeof deliveryFeeCents === 'number') ? (
-          <div className="muted" style={{ fontSize: 12 }}>Delivery fee: ${ (deliveryFeeCents / 100).toFixed(2) }</div>
+          <div className="muted" style={{ fontSize: 12 }}>Delivery fee: ${ formatCents(deliveryFeeCents) }</div>
         ) : null}
         {/* Prompt user to select full address from Google suggestions */}
         {(selectedType === 'delivery' && timing && !addrObj) ? (

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useCart } from '../store/CartContext';
+import { formatCents } from '../lib/money';
 import { fetchJson } from '../lib/api';
 
 export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
@@ -153,7 +154,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: 12 }} className="muted">TOTAL</div>
-            <div style={{ fontWeight: 800 }}>${grandTotal.toFixed(2)}</div>
+            <div style={{ fontWeight: 800 }}>${formatCents(grandTotalCents)}</div>
           </div>
         </div>
       </div>
@@ -196,7 +197,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
                     <button onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}>-</button>
                     <span>{item.quantity}</span>
                     <button onClick={() => updateQuantity(item.id, item.quantity + 1)}>+</button>
-                    <div style={{ marginLeft: 'auto', fontWeight: 700 }}>${item.totalPrice.toFixed(2)}</div>
+                    <div style={{ marginLeft: 'auto', fontWeight: 700 }}>${Number(item.totalPrice).toFixed(2)}</div>
                   </div>
                 </div>
                 <button onClick={() => removeItem(item.id)} title="Remove" style={{ border: 'none', background: 'transparent', cursor: 'pointer' }} className="danger">✕</button>
@@ -245,28 +246,28 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
         <div style={{ display: 'grid', gap: 6, marginTop: 10 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span className="muted">Items</span>
-            <span>${itemsSubtotal.toFixed(2)}</span>
+            <span>${formatCents(itemsSubtotalCents)}</span>
           </div>
           {hasEligibleCoupon ? (
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span className="muted">Discount ({state.coupon.percent}% )</span>
-              <span>-${discount.toFixed(2)}</span>
+              <span>-${formatCents(discountCents)}</span>
             </div>
           ) : null}
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span className="muted">Tax (5%)</span>
-            <span>${tax.toFixed(2)}</span>
+            <span>${formatCents(taxDisplayCents)}</span>
           </div>
           {state.fulfillmentType === 'delivery' ? (
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span className="muted">Delivery fee</span>
-              <span>${deliveryFee.toFixed(2)}</span>
+              <span>${formatCents(deliveryDisplayCents)}</span>
             </div>
           ) : null}
           <div style={{ height: 1, background: 'var(--border)' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800 }}>
             <span>Total</span>
-            <span>${grandTotal.toFixed(2)}</span>
+            <span>${formatCents(grandTotalCents)}</span>
           </div>
         </div>
         <button
