@@ -373,14 +373,10 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
       : Math.max(0, Number(process.env.MIN_ORDER_CENTS) || 5000));
     if (subtotalBeforeDiscount < minOrderCents) return res.status(400).json({ error: `Minimum total amount should be $${(minOrderCents/100).toFixed(2)} required for delivery` });
 
-    // Compute delivery fee based on distance and enforce max km if configured
+    // Compute delivery fee based on distance; do not block here on max km
     let distanceKm = null;
     try { distanceKm = await distanceBetweenAddressesKm(pickup.address, dropoff?.address); } catch {}
-    const maxKm = typeof site?.maxDeliveryDistanceKm === 'number' && site.maxDeliveryDistanceKm > 0 ? site.maxDeliveryDistanceKm : null;
-    const toleranceKm = 0.5;
-    if (maxKm != null && typeof distanceKm === 'number' && (distanceKm - toleranceKm) > maxKm) {
-      return res.status(400).json({ error: `Delivery is only available within ${maxKm} km of the restaurant.` });
-    }
+    // Max-distance validation is handled earlier (Fulfillment modal via /delivery/quote)
     // Compute delivery fee using admin-configured per-km rate (cents/km)
     const baseFee = (typeof site?.deliveryFeeCents === 'number' && isFinite(site.deliveryFeeCents))
       ? Math.max(0, Number(site.deliveryFeeCents))
