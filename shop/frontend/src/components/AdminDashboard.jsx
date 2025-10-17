@@ -44,6 +44,7 @@ export const AdminDashboard = () => {
   const [deleteCategoryId, setDeleteCategoryId] = useState(null);
 
   const [deleteProductId, setDeleteProductId] = useState(null);
+  const [confirmDeleteAllOpen, setConfirmDeleteAllOpen] = useState(false);
 
   async function loadAll() {
     try {
@@ -589,6 +590,14 @@ export const AdminDashboard = () => {
 
         {activeTab === 'products' ? (
           <>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <button className="danger" onClick={() => setConfirmDeleteAllOpen(true)} disabled={!selectedSiteId || products.length === 0}>
+                Delete ALL products
+              </button>
+              <div className="muted" style={{ fontSize: 12 }}>
+                This will remove all products for the selected site.
+              </div>
+            </div>
             {editing ? (
               <div className="card animate-popIn" style={{ padding: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -912,6 +921,33 @@ export const AdminDashboard = () => {
               <span>Or upload image</span>
               <input type="file" accept="image/*" onChange={(e) => setCategoryForm({ ...categoryForm, file: e.target.files?.[0] || null })} />
             </label>
+          </div>
+        </Modal>
+
+        <Modal
+          open={confirmDeleteAllOpen}
+          onClose={() => setConfirmDeleteAllOpen(false)}
+          title="Delete ALL products"
+          footer={(
+            <>
+              <button onClick={() => setConfirmDeleteAllOpen(false)}>Cancel</button>
+              <button className="danger" onClick={async () => {
+                if (!selectedSiteId) return;
+                await deleteJson(`/api/admin/sites/${selectedSiteId}/products`);
+                // Refresh lists after deletion
+                const [cats, prods] = await Promise.all([
+                  fetchJson(`/api/admin/sites/${selectedSiteId}/categories`),
+                  fetchJson(`/api/admin/sites/${selectedSiteId}/products`),
+                ]);
+                setCategories(cats);
+                setProducts(prods);
+                setConfirmDeleteAllOpen(false);
+              }}>Delete ALL</button>
+            </>
+          )}
+        >
+          <div>
+            Are you sure you want to delete ALL products for this site? This cannot be undone.
           </div>
         </Modal>
 

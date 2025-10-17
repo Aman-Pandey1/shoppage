@@ -110,6 +110,25 @@ router.post('/', requireAdmin, async (req, res) => {
 	}
 });
 
+// Delete ALL products for a site
+router.delete('/', requireAdmin, async (req, res) => {
+  try {
+    const { siteId } = req.params;
+    const mock = req.app.locals.mockData;
+    if (mock) {
+      const before = mock.products.length;
+      mock.products = (mock.products || []).filter((p) => p.site !== siteId);
+      const deleted = before - mock.products.length;
+      try { saveMockData(req.app.locals.mockData); } catch {}
+      return res.json({ deleted });
+    }
+    const result = await Product.deleteMany({ site: siteId });
+    return res.json({ deleted: result?.deletedCount || 0 });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 router.put('/:id', requireAdmin, async (req, res) => {
 	try {
 		const { siteId, id } = req.params;
