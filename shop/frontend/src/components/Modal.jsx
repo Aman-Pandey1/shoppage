@@ -63,7 +63,7 @@ const buttonStyle = {
 
 export const Modal = ({ open, onClose, title, children, footer, maxWidth = 640, closeOnOverlayClick = true }) => {
   if (!open) return null;
-  const mergedPanelStyle = { ...panelStyle, width: `min(92vw, ${Number(maxWidth) || 640}px)` };
+  const mergedPanelStyle = { ...panelStyle, width: `min(92vw, ${Number(maxWidth) || 640}px)`, maxWidth: '100%' };
   return (
     <div
       style={overlayStyle}

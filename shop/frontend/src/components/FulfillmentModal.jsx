@@ -390,7 +390,7 @@ export const FulfillmentModal = ({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={'Select Order Mode'} footer={renderFooter()} maxWidth={480} closeOnOverlayClick={false}>
+    <Modal open={open} onClose={onClose} title={'Select Order Mode'} footer={renderFooter()} maxWidth={520} closeOnOverlayClick={false}>
       {renderTypeButtons()}
       {renderTimingButtons()}
       {renderFollowUp()}

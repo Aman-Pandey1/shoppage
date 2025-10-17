@@ -479,7 +479,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         {content}
       </main>
 
-      <button className="cart-fab hide-desktop" aria-label="Open cart" onClick={() => setMobileCartOpen(true)}>
+      <button className="cart-fab hide-desktop" aria-label="Open cart" onClick={() => setMobileCartOpen(true)} style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         <span className="cart-fab__icon">🛒</span>
         {state.items.length > 0 ? <span className="cart-fab__badge" aria-label={`Items in cart: ${state.items.length}`}>{state.items.length}</span> : null}
       </button>

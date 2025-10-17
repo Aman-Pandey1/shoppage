@@ -103,6 +103,7 @@ export const CategoryGrid = ({ onSelect, siteSlug = 'default' }) => {
               width: '100%',
               aspectRatio: '1 / 1',
               background: 'linear-gradient(180deg, var(--primary-alpha-08), rgba(167,139,250,0.08))',
+              overflow: 'hidden'
             }}
           >
           {cat.imageUrl ? (
