@@ -362,7 +362,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
       {/* Suppress distance validation in payment step; handled in FulfillmentModal */}
       <div className="muted" style={{ marginBottom: 8, fontSize: 12 }}>Enter your delivery address. Delivery will be fulfilled by the website's selected provider.</div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+      <div className="form-grid" style={{ gap: 10 }}>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <span>Full Name</span>
           <input value={name} onChange={(e) => setName(e.target.value)} />

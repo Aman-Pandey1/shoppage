@@ -40,7 +40,8 @@ const headerStyle = {
 const bodyStyle = {
   padding: 20,
   color: 'var(--text)',
-  overflow: 'auto'
+  overflow: 'auto',
+  overflowX: 'hidden',
 };
 
 const footerStyle = {
@@ -71,9 +72,9 @@ export const Modal = ({ open, onClose, title, children, footer, maxWidth = 640, 
         if (typeof onClose === 'function') onClose(e);
       }}
     >
-      <div style={mergedPanelStyle} className="animate-popIn" onClick={(e) => e.stopPropagation()}>
+      <div style={mergedPanelStyle} className="modal animate-popIn" onClick={(e) => e.stopPropagation()}>
         {title ? <div style={headerStyle}>{title}</div> : null}
-        <div style={bodyStyle}>{children}</div>
+        <div style={bodyStyle} className="modal__body">{children}</div>
         {footer ? <div style={footerStyle}>{footer}</div> : null}
       </div>
     </div>

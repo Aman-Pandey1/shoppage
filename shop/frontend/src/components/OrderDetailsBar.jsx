@@ -78,7 +78,7 @@ export const OrderDetailsBar = ({
                 value={pickupDate}
                 onChange={(e) => onPickupDateChange && onPickupDateChange(e.target.value)}
                 className="order-bar__input"
-                style={{ padding: '6px 10px', borderRadius: 8 }}
+                style={{ padding: '6px 10px', borderRadius: 8, width: '100%' }}
               >
                 {(dateOptions.length ? dateOptions : [
                   { value: 'today', label: 'Today' },
@@ -94,7 +94,7 @@ export const OrderDetailsBar = ({
                 value={pickupTime}
                 onChange={(e) => onPickupTimeChange && onPickupTimeChange(e.target.value)}
                 className="order-bar__input"
-                style={{ padding: '6px 10px', borderRadius: 8 }}
+                style={{ padding: '6px 10px', borderRadius: 8, width: '100%' }}
               >
                 {(timeOptions.length ? timeOptions : (() => {
                   const out = [];
@@ -125,7 +125,7 @@ export const OrderDetailsBar = ({
             aria-label="Select restaurant location"
             value={(typeof selectedLocationIndex === 'number' && selectedLocationIndex >= 0) ? String(selectedLocationIndex) : ''}
             onChange={(e) => onChangeLocation && onChangeLocation(Number(e.target.value))}
-            style={{ padding: '6px 10px', borderRadius: 8 }}
+            style={{ padding: '6px 10px', borderRadius: 8, width: '100%' }}
           >
             {(typeof selectedLocationIndex !== 'number' || selectedLocationIndex < 0) ? (
               <option value="" disabled>Select a location</option>

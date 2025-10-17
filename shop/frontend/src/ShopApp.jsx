@@ -612,7 +612,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
               <button onClick={() => setPickupTab('location')} style={{ border: 'none', background: 'transparent', padding: '8px 2px', fontWeight: pickupTab==='location'?800:600, color: pickupTab==='location'? 'var(--text)' : 'var(--muted)', borderBottom: pickupTab==='location'? '2px solid var(--primary-600)' : '2px solid transparent' }}>By location</button>
               <button onClick={() => setPickupTab('city')} style={{ border: 'none', background: 'transparent', padding: '8px 2px', fontWeight: pickupTab==='city'?800:600, color: pickupTab==='city'? 'var(--text)' : 'var(--muted)', borderBottom: pickupTab==='city'? '2px solid var(--primary-600)' : '2px solid transparent' }}>By city</button>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+            <div className="form-grid" style={{ gap: 12, marginBottom: 12 }}>
               {pickupTab === 'city' ? (
                 <>
                   <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -665,7 +665,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
               )}
             </div>
             {filteredLocations.length === 0 ? <div className="muted" style={{ marginBottom: 12 }}>No pickup locations available.</div> : null}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
+            <div className="form-grid" style={{ gap: 12, marginTop: 12 }}>
               <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <span>Day</span>
                 <select value={pickupDate} onChange={(e) => setPickupDate(e.target.value)}>
