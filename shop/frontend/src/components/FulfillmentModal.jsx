@@ -144,9 +144,13 @@ export const FulfillmentModal = ({
         setCheckingArea(false);
       } catch (e) {
         if (cancelled) return;
-        const raw = String(e?.message || '').toLowerCase();
-        if (/within\s*\d+\s*km/.test(raw) || /only available within/.test(raw)) {
-          setDeliveryAreaError('Outside Delivery area, please choose Takeout');
+        const rawMsg = String(e?.message || e || '');
+        const lower = rawMsg.toLowerCase();
+        // Show a clearer error including the configured km limit if present
+        if (/within\s*\d+\s*km/.test(lower) || /only available within/.test(lower)) {
+          const m = rawMsg.match(/within\s*(\d+)\s*km/i);
+          const kmTxt = m && m[1] ? m[1] : '';
+          setDeliveryAreaError(`Outside delivery area${kmTxt ? ` (within ${kmTxt} km)` : ''}`);
         } else {
           setDeliveryAreaError('');
         }
