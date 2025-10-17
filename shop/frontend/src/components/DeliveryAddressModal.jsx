@@ -320,7 +320,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={onClose} disabled={loading}>Cancel</button>
         {mode === 'checkout' ? (
-          <button className="primary-btn" disabled={loading || checkingArea || !!addressAreaError} aria-busy={loading || checkingArea} onClick={async () => {
+          <button className="primary-btn" disabled={loading || checkingArea} aria-busy={loading || checkingArea} onClick={async () => {
             setLoading(true); setError(undefined);
             try {
               // Validate and build dropoff
@@ -359,9 +359,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
             quotedFee = typeof q?.customerDeliveryFeeCents === 'number' ? q.customerDeliveryFeeCents : 0;
             try { setDeliveryFeeCents(quotedFee); setDeliveryFeeCentsLocal(quotedFee); } catch {}
             if (typeof q?.pickupLocationIndex === 'number') { chosenIdx = q.pickupLocationIndex; setSelectedPickupIndex(q.pickupLocationIndex); }
-            if (typeof q?.distanceKm === 'number' && typeof maxDeliveryKm === 'number' && (q.distanceKm - DIST_TOLERANCE_KM) > maxDeliveryKm) {
-              throw new Error(`Delivery is only available within ${maxDeliveryKm} km of the restaurant.`);
-            }
+            // Do not block checkout here based on distance; validation is handled earlier
           }
 
               // Create Stripe checkout session for delivery
@@ -457,13 +455,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         );
       })()}
       {error ? <div style={{ color: 'var(--danger)', marginBottom: 8 }}>{error}</div> : null}
-      {addressAreaError ? (
-        <div style={{ color: 'var(--danger)', marginBottom: 8, fontWeight: 600, whiteSpace: 'pre-line' }}>
-          {typeof maxDeliveryKm === 'number' ? `Delivery is only available within ${maxDeliveryKm} km of the restaurant.` : ''}
-          {typeof maxDeliveryKm === 'number' ? '\n' : ''}
-          {addressAreaError}
-        </div>
-      ) : null}
+      {/* Suppress distance validation in payment step; handled in FulfillmentModal */}
       <div className="muted" style={{ marginBottom: 8, fontSize: 12 }}>Enter your delivery address. Delivery will be fulfilled by the website's selected provider.</div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
