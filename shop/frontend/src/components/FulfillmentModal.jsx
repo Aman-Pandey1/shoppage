@@ -299,7 +299,7 @@ export const FulfillmentModal = ({
     if (!selectedType || !timing) return null;
     if (selectedType === 'pickup') {
       return (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
+        <div className="form-grid" style={{ gap: 12, marginTop: 12 }}>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <span>Day</span>
             <select value={pickupDate || ''} onChange={(e) => onPickupDateChange && onPickupDateChange(e.target.value)}>

@@ -177,7 +177,7 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
             onChange={(e) => setSelectedVariantKey(e.target.value)}
             required={variantRequired}
             aria-required={variantRequired}
-            style={{ padding: 10, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--panel)' }}
+            style={{ padding: 10, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--panel)', width: '100%' }}
           >
             <option value="" disabled>Select</option>
             {variants.map((v) => {
