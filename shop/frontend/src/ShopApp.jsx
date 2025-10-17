@@ -376,11 +376,13 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
 
   const manifest = useMemo(() => {
     return state.items.map((it) => {
-      const unit = (Number(it.basePrice) || 0) + (Number(it?.variant?.price) || 0) + (Number(it?.extraCost) || 0);
+      const unitCents = Number.isFinite(it.unitCents)
+        ? Math.max(0, Math.round(Number(it.unitCents)))
+        : Math.round(((Number(it.basePrice) || 0) + (Number(it?.variant?.price) || 0) + (Number(it?.extraCost) || 0)) * 100);
       return {
         name: it.name,
         quantity: it.quantity,
-        priceCents: Math.round(unit * 100),
+        priceCents: unitCents,
         size: (it?.variant?.label || it?.variant?.key || undefined),
         spiceLevel: it.spiceLevel,
       };
