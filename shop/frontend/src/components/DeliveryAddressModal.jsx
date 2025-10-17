@@ -417,10 +417,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
                 setDeliveryFeeCents(q.customerDeliveryFeeCents);
                 setDeliveryFeeCentsLocal(q.customerDeliveryFeeCents);
               }
-              // Block if over max distance
-              if (typeof maxDeliveryKm === 'number' && typeof q?.distanceKm === 'number' && (q.distanceKm - DIST_TOLERANCE_KM) > maxDeliveryKm) {
-                throw new Error(`Delivery is only available within ${maxDeliveryKm} km of the restaurant.`);
-              }
+              // Do not block here based on distance — validated earlier in FulfillmentModal
               const summary = [addr1, city, postalCode].filter(Boolean).join(', ');
               try { onConfirmed(`addr-${Date.now()}`, summary); } catch {}
               onClose();
