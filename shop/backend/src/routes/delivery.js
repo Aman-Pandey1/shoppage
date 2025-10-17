@@ -100,15 +100,9 @@ router.post('/:slug/quote', async (req, res) => {
         const pickupRaw = locs[chosenIdx];
         const pickup = pickupRaw;
 		if (!pickup) return res.status(400).json({ error: 'No pickup location configured' });
-    // Compute distance-based delivery fee
+    // Compute distance; do not enforce a hard max-distance block here
     let distanceKm = null;
     try { distanceKm = await distanceBetweenAddressesKm(pickup.address, dropoff.address); } catch {}
-    // Enforce max delivery distance if configured (allow small tolerance for geocoding variance)
-    const maxKm = typeof site?.maxDeliveryDistanceKm === 'number' && site.maxDeliveryDistanceKm > 0 ? site.maxDeliveryDistanceKm : null;
-    const toleranceKm = 0.5;
-    if (maxKm != null && typeof distanceKm === 'number' && (distanceKm - toleranceKm) > maxKm) {
-      return res.status(400).json({ error: `Delivery is only available within ${maxKm} km of the restaurant.` });
-    }
 	    // Decide if we can call live provider or should simulate
 	    const hasUberConfig = !!site?.uberCustomerId && !!site?.uberClientId && !!site?.uberClientSecret;
 	    const hasDoordashConfig = !!site?.doordashStoreId;

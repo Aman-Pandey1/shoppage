@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Modal } from './Modal';
 import { useCart } from '../store/CartContext';
 import { fetchJson, postJson } from '../lib/api';
-import { AddressAutocomplete } from './AddressAutocomplete';
+// Address is selected in the order mode popup; this modal displays it read-only
 import { formatCents } from '../lib/money';
 
 export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, manifest, initialPickupIndex, mode = 'checkout', initialAddress, initialSummary }) => {
@@ -22,11 +22,9 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   const [splitDeliveryFee, setSplitDeliveryFee] = useState(false);
   const [country, setCountry] = useState('CA');
   const [distanceKm, setDistanceKm] = useState(null);
-  const [maxDeliveryKm, setMaxDeliveryKm] = useState(null);
-  const [addressAreaError, setAddressAreaError] = useState('');
-  const [checkingArea, setCheckingArea] = useState(false);
+  // Distance and area validation removed for this modal
   const [notes, setNotes] = useState('');
-  const [tab, setTab] = useState('enter'); // delivery: only manual address (enter)
+  const [tab, setTab] = useState('enter'); // kept for compatibility; unused now
   const [locations, setLocations] = useState([]);
   const [cities, setCities] = useState([]);
   const [selectedPickupIndex, setSelectedPickupIndex] = useState(null);
@@ -35,7 +33,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   // Single-line address text for UI display and autocomplete
   const [addrText, setAddrText] = useState(initialSummary || '');
 
-  // Tolerance to account for small geocoding/routing variance (match backend)
+  // Distance tolerance no longer used here
   const DIST_TOLERANCE_KM = 0.5;
 
   const itemsSubtotalCents = React.useMemo(() => {
@@ -124,11 +122,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
           // Do not preset delivery fee here; wait for a live quote
           setSplitDeliveryFee(!!data.splitDeliveryFee);
           if (typeof data.minOrderCents === 'number') setMinOrderCents(Math.max(0, Number(data.minOrderCents)));
-          if (typeof data.maxDeliveryDistanceKm === 'number' && data.maxDeliveryDistanceKm > 0) {
-            setMaxDeliveryKm(Number(data.maxDeliveryDistanceKm));
-          } else {
-            setMaxDeliveryKm(null);
-          }
+          // Do not enforce or store a max delivery distance here
         }
       } catch {}
     }
@@ -156,72 +150,9 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
     return () => { cancelled = true; };
   }, [siteSlug, initialPickupIndex]);
 
-  // Live distance/area check as the user enters a full address
-  React.useEffect(() => {
-    let cancelled = false;
-    let t = null;
-    function readyToCheck() {
-      try {
-        return (
-          String(addr1 || '').trim() &&
-          String(city || '').trim() &&
-          String(province || '').trim() &&
-          // Postal code optional for quote
-          String(country || '').trim() &&
-          typeof selectedPickupIndex === 'number' && selectedPickupIndex >= 0
-        );
-      } catch { return false; }
-    }
-    async function doCheck() {
-      try {
-        setCheckingArea(true);
-        const address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
-        // Let backend choose nearest pickup location; don't force index from client
-        const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { address } });
-        if (cancelled) return;
-        const km = (typeof q?.distanceKm === 'number') ? q.distanceKm : null;
-        if (km != null) setDistanceKm(km);
-        if (typeof q?.customerDeliveryFeeCents === 'number') {
-          try { setDeliveryFeeCents(q.customerDeliveryFeeCents); } catch {}
-          setDeliveryFeeCentsLocal(q.customerDeliveryFeeCents);
-        }
-        if (typeof q?.pickupLocationIndex === 'number') {
-          setSelectedPickupIndex(q.pickupLocationIndex);
-        }
-        // Cache latest quote to avoid re-quoting on submit
-        try { setQuote(q); } catch {}
-        if (typeof maxDeliveryKm === 'number' && km != null && (km - DIST_TOLERANCE_KM) > maxDeliveryKm) {
-          setAddressAreaError(`Outside delivery area (within ${maxDeliveryKm} km)`);
-        } else {
-          setAddressAreaError('');
-        }
-        setCheckingArea(false);
-      } catch (e) {
-        if (cancelled) return;
-        const msg = (parseServerError(e) || '').toLowerCase();
-        if (/only available within/.test(msg) || /within \d+\s*km/.test(msg)) {
-          const m = msg.match(/within\s*(\d+)\s*km/);
-          const kmTxt = m && m[1] ? m[1] : (typeof maxDeliveryKm === 'number' ? String(maxDeliveryKm) : '');
-          setAddressAreaError(`Outside delivery area${kmTxt ? ` (within ${kmTxt} km)` : ''}`);
-        } else {
-          setAddressAreaError('');
-        }
-        setCheckingArea(false);
-      }
-    }
-    if (!readyToCheck()) { setAddressAreaError(''); setCheckingArea(false); return () => { cancelled = true; if (t) clearTimeout(t); }; }
-    if (t) clearTimeout(t);
-    setCheckingArea(true);
-    t = setTimeout(doCheck, 500);
-    return () => { cancelled = true; if (t) clearTimeout(t); setCheckingArea(false); };
-  }, [addr1, addr2, city, province, postalCode, country, selectedPickupIndex, siteSlug, maxDeliveryKm]);
+  // Address validation and distance checks removed — address comes from previous modal
 
-  function isValidPostal(code) {
-    const v = code.trim();
-    if (country === 'CA') return /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/.test(v);
-    if (country === 'US') return /^\d{5}(-\d{4})?$/.test(v);
-    return v.length >= 4; // fallback
-  }
+  // Postal code validation removed in this modal
 
   function isValidPhone(ph) {
     return /^\+?[1-9]\d{7,14}$/.test(ph.replace(/[^\d+]/g, ''));
@@ -263,10 +194,6 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   function validate() {
     if (!name.trim()) return 'Full Name is required';
     if (!isValidPhone(phone)) return 'Enter phone as +1XXXXXXXXXX';
-    if (!addr1.trim()) return 'Please enter a full address';
-    if (!city.trim()) return 'City is required';
-    if (!province.trim()) return 'Province is required';
-    // Postal code optional
     return null;
   }
 
@@ -274,11 +201,9 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
     setLoading(true); setError(undefined);
     try {
       let address;
-      if (tab === 'enter') {
-        const invalid = validate();
-        if (invalid) { setError(invalid); setLoading(false); return; }
-        address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
-      }
+      const invalid = validate();
+      if (invalid) { setError(invalid); setLoading(false); return; }
+      address = initialAddress || { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
       const normalizedPhone = normalizePhoneForCountry(phone, country);
       // Let backend select nearest pickup automatically
       const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { name, phone: normalizedPhone || phone, address } });
@@ -297,7 +222,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
     if (!quote) return;
     setLoading(true); setError(undefined);
     try {
-      const address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
+      const address = initialAddress || { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
       const normalizedPhone = normalizePhoneForCountry(phone, country);
       if (!normalizedPhone) {
         setError('Enter phone in E.164 format like +14155550123');
@@ -325,35 +250,14 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={onClose} disabled={loading}>Cancel</button>
         {mode === 'checkout' ? (
-          <button className="primary-btn" disabled={loading || checkingArea} aria-busy={loading || checkingArea} onClick={async () => {
+          <button className="primary-btn" disabled={loading} aria-busy={loading} onClick={async () => {
             setLoading(true); setError(undefined);
             try {
-              // Validate and build dropoff
+              // Validate name/phone only; address comes from previous modal
               if (!name.trim()) throw new Error('Full Name is required');
-              // Allow user to type a single-line address; if details missing, try to infer from text
-              let a1 = addr1, cty = city, prov = province, pc = postalCode, ctry = country;
-              if ((!a1 || !cty || !prov) && (typeof window !== 'undefined')) {
-                const text = (document.querySelector('input[placeholder="Start typing your address"]')?.value || '').trim();
-                if (text) {
-                  const parts = text.split(',').map((s) => s.trim()).filter(Boolean);
-                  const last = parts[parts.length - 1] || '';
-                  const countryMatch = /(CA|US|CANADA|UNITED STATES)/i.exec(last);
-                  ctry = countryMatch ? (countryMatch[1].toUpperCase().startsWith('US') ? 'US' : 'CA') : ctry;
-                  const tailTokens = (parts[parts.length - 2] || '').split(/\s+/);
-                  const provTok = (tailTokens.find((t) => /^[A-Za-z]{2}$/.test(t)) || '').toUpperCase();
-                  const postalTok = tailTokens.find((t) => /[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d|\d{5}(-\d{4})?/.test(t)) || '';
-                  const cityGuess = parts.length >= 2 ? parts[parts.length - 2].replace(provTok, '').replace(postalTok, '').trim() : '';
-                  const street = parts.slice(0, Math.max(1, parts.length - 2)).join(', ');
-                  a1 = a1 || street;
-                  cty = cty || cityGuess;
-                  prov = prov || provTok;
-                  pc = pc || postalTok;
-                }
-              }
-              if (!a1 || !cty || !prov) throw new Error('Enter a valid full address');
               const normalizedPhone = normalizePhoneForCountry(phone, country);
               if (!normalizedPhone) throw new Error('Enter phone in E.164 like +14155550123');
-              const address = { streetAddress: [a1, ...(addr2 ? [addr2] : [])], city: cty, province: prov, postalCode: pc, country: ctry };
+              const address = initialAddress || { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
               const dropoff = { name, phone: normalizedPhone, address };
           // Freeze the latest quote to avoid fee changing on submit; fallback to fresh quote only if missing
           let quotedFee = Math.max(0, Number(deliveryFeeCentsLocal || 0));
@@ -364,7 +268,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
             quotedFee = typeof q?.customerDeliveryFeeCents === 'number' ? q.customerDeliveryFeeCents : 0;
             try { setDeliveryFeeCents(quotedFee); setDeliveryFeeCentsLocal(quotedFee); } catch {}
             if (typeof q?.pickupLocationIndex === 'number') { chosenIdx = q.pickupLocationIndex; setSelectedPickupIndex(q.pickupLocationIndex); }
-            // Do not block checkout here based on distance; validation is handled earlier
+            // No distance validation here
           }
 
               // Create Stripe checkout session for delivery
@@ -384,7 +288,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
               const res = await postJson(`/api/payments/stripe/${siteSlug}/checkout/delivery`, payload);
               const url = res?.url;
               if (!url) throw new Error('Failed to start payment');
-              const summary = (document.querySelector('input[placeholder="Start typing your address"]')?.value || [a1, cty, pc].filter(Boolean).join(', '));
+              const summary = initialSummary || addrText || [addr1, city, postalCode].filter(Boolean).join(', ');
               try { onConfirmed(`addr-${Date.now()}`, summary); } catch {}
               try { onClose(); } catch {}
               window.location.href = url;
@@ -392,51 +296,49 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
               setError(parseServerError(e) || 'Failed to start payment');
             } finally { setLoading(false); }
           }}>
-            {loading || checkingArea ? (
+            {loading ? (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                 <svg width="16" height="16" viewBox="0 0 50 50" aria-hidden="true" focusable="false">
                   <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeDasharray="31.415 31.415">
                     <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.8s" repeatCount="indefinite" />
                   </circle>
                 </svg>
-                {loading ? 'Redirecting…' : 'Validating address…'}
+                Redirecting…
               </span>
             ) : (
               'Continue to payment'
             )}
           </button>
         ) : (
-          <button className="primary-btn" disabled={loading || checkingArea || !!addressAreaError} aria-busy={loading || checkingArea} onClick={async () => {
+          <button className="primary-btn" disabled={loading} aria-busy={loading} onClick={async () => {
             setLoading(true); setError(undefined);
             try {
-              // Validate and compute quote to set delivery fee, then go back to menu
+              // Set delivery fee from quote using initial address, then go back to menu
               if (!name.trim()) throw new Error('Full Name is required');
-              if (!addr1.trim() || !city.trim() || !province.trim() || !isValidPostal(postalCode)) throw new Error('Enter a valid full address');
               const normalizedPhone = normalizePhoneForCountry(phone, country);
               if (!normalizedPhone) throw new Error('Enter phone in E.164 like +14155550123');
-              const address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
+              const address = initialAddress || { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
               // Quote without client-specified pickup index
               const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { name, phone: normalizedPhone, address } });
               if (typeof q?.customerDeliveryFeeCents === 'number') {
                 setDeliveryFeeCents(q.customerDeliveryFeeCents);
                 setDeliveryFeeCentsLocal(q.customerDeliveryFeeCents);
               }
-              // Do not block here based on distance — validated earlier in FulfillmentModal
-              const summary = [addr1, city, postalCode].filter(Boolean).join(', ');
+              const summary = initialSummary || addrText || [addr1, city, postalCode].filter(Boolean).join(', ');
               try { onConfirmed(`addr-${Date.now()}`, summary); } catch {}
               onClose();
             } catch (e) {
               setError(parseServerError(e) || 'Invalid address');
             } finally { setLoading(false); }
           }}>
-            {loading || checkingArea ? (
+            {loading ? (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                 <svg width="16" height="16" viewBox="0 0 50 50" aria-hidden="true" focusable="false">
                   <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeDasharray="31.415 31.415">
                     <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.8s" repeatCount="indefinite" />
                   </circle>
                 </svg>
-                {loading ? 'Processing…' : 'Validating address…'}
+                Processing…
               </span>
             ) : (
               'Proceed to menu'
@@ -471,29 +373,11 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         </label>
         <label style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
           <span>Full Address</span>
-          <AddressAutocomplete
-            siteSlug={siteSlug}
-            value={addrText}
-            onChange={(t) => setAddrText(t)}
-            onSelect={(addr, summary) => {
-              try {
-                const line1 = Array.isArray(addr.streetAddress) ? addr.streetAddress.join(' ') : (addr.line1 || '');
-                setAddr1(line1 || '');
-                setCity(addr.city || '');
-                setProvince(addr.province || '');
-                setPostalCode(addr.postalCode || '');
-                setCountry((addr.country || 'CA').toUpperCase());
-                setAddrText(summary || '');
-              } catch {}
-            }}
-            placeholder="Start typing your address"
-            country={country}
-          />
+          <input value={addrText} readOnly placeholder="Address" />
         </label>
         {/* Outside-delivery error is shown on the address entry form, not here */}
       </div>
-      {/* Notes of Instruction removed as requested */}
-      {/* Removed quote/fee panel and payment buttons as requested */}
+      {/* Address validation and selection removed as requested */}
     </Modal>
   );
 };
