@@ -34,6 +34,8 @@ export const FulfillmentModal = ({
   const [deliveryAreaError, setDeliveryAreaError] = React.useState('');
   const [deliveryFeeCents, setDeliveryFeeCentsLocal] = React.useState(null);
   const [checkingArea, setCheckingArea] = React.useState(false);
+  // Admin-configured delivery radius in kilometers
+  const [maxDeliveryKm, setMaxDeliveryKm] = React.useState(null);
 
   // Hours and closed message for delivery
   const [hours, setHours] = React.useState(null);
@@ -61,6 +63,25 @@ export const FulfillmentModal = ({
       } catch { if (!cancelled) setHours(null); }
     }
     loadHours();
+    return () => { cancelled = true; };
+  }, [siteSlug]);
+
+  // Load site info to get max delivery distance (km) for early validation
+  React.useEffect(() => {
+    let cancelled = false;
+    async function loadSiteInfo() {
+      try {
+        if (!siteSlug) { setMaxDeliveryKm(null); return; }
+        const site = await fetchJson(`/api/shop/${siteSlug}/site`);
+        if (!cancelled) {
+          const km = (typeof site?.maxDeliveryDistanceKm === 'number' && isFinite(site.maxDeliveryDistanceKm))
+            ? Number(site.maxDeliveryDistanceKm)
+            : null;
+          setMaxDeliveryKm(km);
+        }
+      } catch { if (!cancelled) setMaxDeliveryKm(null); }
+    }
+    loadSiteInfo();
     return () => { cancelled = true; };
   }, [siteSlug]);
 
@@ -134,6 +155,16 @@ export const FulfillmentModal = ({
         // Do not specify pickup index; backend will pick nearest and return it
         const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { address: addrObj } });
         if (cancelled) return;
+        // Early radius validation using admin-configured maxDeliveryKm
+        if (typeof q?.distanceKm === 'number' && typeof maxDeliveryKm === 'number' && isFinite(maxDeliveryKm)) {
+          const outside = Number(q.distanceKm) > Number(maxDeliveryKm);
+          if (outside) {
+            setDeliveryAreaError(`Outside delivery area (within ${maxDeliveryKm} km). Please select Takeout.`);
+            setDeliveryFeeCentsLocal(null);
+            setCheckingArea(false);
+            return;
+          }
+        }
         setDeliveryAreaError('');
         if (typeof q?.customerDeliveryFeeCents === 'number') {
           const cents = Math.max(0, Math.round(Number(q.customerDeliveryFeeCents)));
@@ -163,7 +194,7 @@ export const FulfillmentModal = ({
     if (t) clearTimeout(t);
     t = setTimeout(doCheck, 300);
     return () => { cancelled = true; if (t) clearTimeout(t); setCheckingArea(false); };
-  }, [addrObj, selectedType, siteSlug]);
+  }, [addrObj, selectedType, siteSlug, maxDeliveryKm]);
 
   // Clear local fee when switching away from delivery mode
   React.useEffect(() => {
@@ -307,7 +338,12 @@ export const FulfillmentModal = ({
           )}
         </label>
         {deliveryAreaError ? (
-          <div style={{ color: 'var(--danger)', fontSize: 12 }}>{deliveryAreaError}</div>
+          <div style={{ color: 'var(--danger)', fontSize: 12 }}>
+            {deliveryAreaError}
+            <div style={{ marginTop: 6 }}>
+              <button onClick={() => setSelectedType('pickup')} style={{ border: '1px solid var(--border)', padding: '4px 8px', borderRadius: 6 }}>Select Takeout</button>
+            </div>
+          </div>
         ) : null}
         {(!deliveryAreaError && selectedType === 'delivery' && addrObj && typeof deliveryFeeCents === 'number') ? (
           <div className="muted" style={{ fontSize: 12 }}>Delivery fee: ${ formatCents(deliveryFeeCents) }</div>
