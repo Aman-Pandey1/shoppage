@@ -98,7 +98,7 @@ export const ExtrasModal = ({ open, groups = [], onCancel, onConfirm, product })
                         padding: '10px 12px',
                         borderRadius: 10,
                         border: active ? '2px solid var(--primary-600)' : '1px solid var(--border)',
-                        background: active ? 'rgba(14,165,233,0.12)' : 'var(--panel)',
+                        background: active ? 'var(--primary-alpha-08)' : 'var(--panel)',
                         cursor: 'pointer',
                         display: 'flex', alignItems: 'center', gap: 8
                       }}

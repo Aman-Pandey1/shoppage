@@ -18,7 +18,7 @@ export const QuickAddModal = ({ open, product, onCancel, onConfirm }) => {
   return (
     <Modal open={open} onClose={onCancel} title={null}>
       <div style={{ display: 'grid', gap: 12 }} className="animate-popIn">
-        <div style={{ position: 'relative', height: 180, borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border)' }}>
+        <div style={{ position: 'relative', height: 180, maxHeight: '42vh', borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border)' }}>
           {product.imageUrl ? (
             <img src={resolveAssetUrl(product.imageUrl)} alt={product.name} className="img-cover" />
           ) : (

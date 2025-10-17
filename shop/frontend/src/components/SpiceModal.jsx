@@ -201,7 +201,7 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
+            gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
             gap: 16,
             margin: '10px 0',
           }}
@@ -226,7 +226,7 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
                   transition: 'all 0.2s ease',
                   cursor: 'pointer',
                   outline: 'none',
-                  height: 180,
+                  height: 160,
                   padding: 0,
                   display: 'flex',
                   flexDirection: 'column',
@@ -240,8 +240,8 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
                     src={imgSrc}
                     alt={`${canonical} spice level`}
                     style={{
-                      width: '140px',
-                      height: '140px',
+                      width: '120px',
+                      height: '120px',
                       objectFit: 'contain',
                       background: 'transparent',
                       borderRadius: 12,
