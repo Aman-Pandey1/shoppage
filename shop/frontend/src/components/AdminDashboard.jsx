@@ -45,6 +45,7 @@ export const AdminDashboard = () => {
 
   const [deleteProductId, setDeleteProductId] = useState(null);
   const [confirmDeleteAllOpen, setConfirmDeleteAllOpen] = useState(false);
+  const [confirmDeleteAllCategoriesOpen, setConfirmDeleteAllCategoriesOpen] = useState(false);
 
   async function loadAll() {
     try {
@@ -420,6 +421,18 @@ export const AdminDashboard = () => {
                 >{merging ? 'Merging…' : 'Merge'}</button>
               </div>
               {mergeMessage ? <div className="muted" style={{ fontSize: 12 }}>{mergeMessage}</div> : null}
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
+              <button
+                className="danger"
+                onClick={() => setConfirmDeleteAllCategoriesOpen(true)}
+                disabled={!selectedSiteId || categories.length === 0}
+              >
+                Delete ALL categories
+              </button>
+              <div className="muted" style={{ fontSize: 12 }}>
+                This will remove all categories for the selected site.
+              </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12, marginTop: 10 }}>
               {categories.map((c) => (
@@ -921,6 +934,33 @@ export const AdminDashboard = () => {
               <span>Or upload image</span>
               <input type="file" accept="image/*" onChange={(e) => setCategoryForm({ ...categoryForm, file: e.target.files?.[0] || null })} />
             </label>
+          </div>
+        </Modal>
+
+        <Modal
+          open={confirmDeleteAllCategoriesOpen}
+          onClose={() => setConfirmDeleteAllCategoriesOpen(false)}
+          title="Delete ALL categories"
+          footer={(
+            <>
+              <button onClick={() => setConfirmDeleteAllCategoriesOpen(false)}>Cancel</button>
+              <button className="danger" onClick={async () => {
+                if (!selectedSiteId) return;
+                await deleteJson(`/api/admin/sites/${selectedSiteId}/categories`);
+                // Refresh lists after deletion
+                const [cats, prods] = await Promise.all([
+                  fetchJson(`/api/admin/sites/${selectedSiteId}/categories`),
+                  fetchJson(`/api/admin/sites/${selectedSiteId}/products`),
+                ]);
+                setCategories(cats);
+                setProducts(prods);
+                setConfirmDeleteAllCategoriesOpen(false);
+              }}>Delete ALL</button>
+            </>
+          )}
+        >
+          <div>
+            Are you sure you want to delete ALL categories for this site? This cannot be undone.
           </div>
         </Modal>
 
