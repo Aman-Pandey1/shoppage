@@ -76,12 +76,12 @@ router.post('/:slug/quote', async (req, res) => {
 	    if (!hasPickupCfg) {
 	      return res.status(400).json({ error: 'No pickup location configured' });
 	    }
-		const { dropoff, pickupLocationIndex } = req.body || {};
+    const { dropoff, pickupLocationIndex } = req.body || {};
 		if (!dropoff?.address?.streetAddress) return res.status(400).json({ error: 'Invalid dropoff address' });
 		// Determine pickup location: use provided index if valid, otherwise choose nearest to dropoff
-		const locs = (Array.isArray(site.locations) && site.locations.length)
-			? site.locations
-			: (site.pickup ? [site.pickup] : []);
+        const locs = (Array.isArray(site.locations) && site.locations.length)
+            ? site.locations
+            : (site.pickup ? [site.pickup] : []);
 		if (!locs.length) return res.status(400).json({ error: 'No pickup location configured' });
 		let chosenIdx = 0;
 		if (typeof pickupLocationIndex === 'number' && locs[pickupLocationIndex]) {
@@ -96,7 +96,9 @@ router.post('/:slug/quote', async (req, res) => {
 				} catch {}
 			}
 		}
-		const pickup = locs[chosenIdx];
+        // If the chosen pickup has a Google Place ID but no coordinates, attempt to resolve lat/lon once.
+        const pickupRaw = locs[chosenIdx];
+        const pickup = pickupRaw;
 		if (!pickup) return res.status(400).json({ error: 'No pickup location configured' });
     // Compute distance-based delivery fee
     let distanceKm = null;

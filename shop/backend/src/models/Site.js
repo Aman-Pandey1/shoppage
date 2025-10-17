@@ -64,6 +64,11 @@ const SiteSchema = new mongoose.Schema({
 			province: { type: String },
 			postalCode: { type: String },
 			country: { type: String, default: 'CA' },
+			// Optional precise geocoding. When present, server will use these
+			// coordinates directly instead of geocoding the string address.
+			lat: { type: Number },
+			lon: { type: Number },
+			placeId: { type: String },
 		},
 	}],
 	// Optional: cities for delivery selection (distinct from addresses)
@@ -87,6 +92,10 @@ const SiteSchema = new mongoose.Schema({
 			province: { type: String },
 			postalCode: { type: String },
 			country: { type: String, default: 'CA' },
+			// Optional precise geocoding for the pickup location
+			lat: { type: Number },
+			lon: { type: Number },
+			placeId: { type: String },
 		},
 	},
 }, { timestamps: true });

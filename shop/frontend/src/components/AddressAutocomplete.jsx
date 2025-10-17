@@ -169,9 +169,24 @@ export const AddressAutocomplete = ({ siteSlug, placeholder = 'Address', value, 
   function selectPrediction(pred) {
     try {
       if (!detailsSvcRef.current) { finalizeSelection({ formatted: pred.description }); return; }
-      detailsSvcRef.current.getDetails({ placeId: pred.place_id, fields: ['formatted_address', 'address_components'] }, (res) => {
+      // Request geometry and place_id so callers can persist precise coordinates
+      detailsSvcRef.current.getDetails({ placeId: pred.place_id, fields: ['formatted_address', 'address_components', 'geometry', 'place_id'] }, (res) => {
         if (!res || res.status === 'ZERO_RESULTS') { finalizeSelection({ formatted: pred.description }); return; }
         const addr = parseAddressComponents(res.address_components || []);
+        try {
+          const loc = res.geometry && res.geometry.location;
+          if (loc) {
+            // eslint-disable-next-line no-undef
+            const lat = typeof loc.lat === 'function' ? loc.lat() : loc.lat;
+            // eslint-disable-next-line no-undef
+            const lng = typeof loc.lng === 'function' ? loc.lng() : loc.lng;
+            if (typeof lat === 'number' && typeof lng === 'number') {
+              addr.lat = lat;
+              addr.lon = lng;
+            }
+          }
+          if (res.place_id) addr.placeId = res.place_id;
+        } catch {}
         const summary = res.formatted_address || pred.description || '';
         finalizeSelection({ address: addr, summary });
       });
