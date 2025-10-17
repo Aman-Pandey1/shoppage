@@ -27,6 +27,14 @@ function normalizeAddressToQuery(addr) {
 export async function geocodeAddress(address) {
   const query = normalizeAddressToQuery(address);
   if (!query) return null;
+  // If precise coordinates already provided on the address, prefer them.
+  try {
+    const lat = (address && typeof address.lat === 'number') ? address.lat : undefined;
+    const lon = (address && typeof address.lon === 'number') ? address.lon : undefined;
+    if (typeof lat === 'number' && isFinite(lat) && typeof lon === 'number' && isFinite(lon)) {
+      return { lat, lon };
+    }
+  } catch {}
   const key = query.toLowerCase();
   const cached = geocodeCache.get(key);
   if (cached) return cached;
@@ -62,8 +70,30 @@ export async function geocodeAddress(address) {
       return null;
     }
   }
+  async function geocodeViaGooglePlaceId(placeId) {
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+    if (!apiKey || !placeId) return null;
+    try {
+      const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=geometry&key=${encodeURIComponent(apiKey)}`;
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      const data = await res.json();
+      const loc = data?.result?.geometry?.location;
+      if (loc && typeof loc.lat === 'number' && typeof loc.lng === 'number') {
+        return { lat: Number(loc.lat), lon: Number(loc.lng) };
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
   // Try full query first
-  let point = await geocodeViaGoogle(query);
+  // Prefer explicit Google Place ID when provided
+  let point = null;
+  if (address && address.placeId) {
+    point = await geocodeViaGooglePlaceId(address.placeId);
+  }
+  if (!point) point = await geocodeViaGoogle(query);
   if (!point) point = await geocodeViaNominatim(query);
   // Fallback: city + postal + country
   if (!point) {
@@ -118,6 +148,7 @@ export async function distanceBetweenAddressesKm(pickupAddress, dropoffAddress) 
   async function roadDistanceKmViaOsrm(a, b) {
     try {
       const userAgent = process.env.NOMINATIM_USER_AGENT || process.env.GEOCODE_USER_AGENT || 'BlueboxxShop/1.0 (+https://blueboxx.co/contact)';
+      // Ensure consistent lon,lat order per OSRM, and add overview=false for speed
       const url = `https://router.project-osrm.org/route/v1/driving/${a.lon},${a.lat};${b.lon},${b.lat}?overview=false&alternatives=false&steps=false`;
       const res = await fetch(url, { headers: { 'User-Agent': userAgent } });
       if (!res.ok) return null;
@@ -153,7 +184,10 @@ export async function distanceBetweenAddressesKm(pickupAddress, dropoffAddress) 
   const byRoadOsrm = await roadDistanceKmViaOsrm(pickupPoint, dropoffPoint);
   if (typeof byRoadOsrm === 'number') return byRoadOsrm;
 
-  return haversineDistanceKm(pickupPoint, dropoffPoint);
+  // As ultimate fallback, use straight-line distance but inflate slightly to
+  // approximate by-road when routes fail. Add 15% buffer.
+  const straight = haversineDistanceKm(pickupPoint, dropoffPoint);
+  return (typeof straight === 'number') ? Math.min(Infinity, straight * 1.15) : null;
 }
 
 export function calculateDistanceFeeCents(distanceKm, _ignored = 800) {

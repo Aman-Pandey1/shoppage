@@ -1,5 +1,5 @@
 import React from 'react';
-import { fetchJsonAllowError, patchJson, resolveAssetUrl, postFile, API_BASE_URL } from '../lib/api';
+import { fetchJsonAllowError, patchJson, resolveAssetUrl, postFile, API_BASE_URL, fetchJson } from '../lib/api';
 import { Modal } from './Modal';
 
 export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
@@ -77,7 +77,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
   // Location modal state
   const [isLocFormOpen, setIsLocFormOpen] = React.useState(false);
   const [editingLocIndex, setEditingLocIndex] = React.useState(null);
-  const [locForm, setLocForm] = React.useState({ name: '', phone: '', addr1: '', addr2: '', city: '', province: '', postalCode: '', country: 'CA' });
+  const [locForm, setLocForm] = React.useState({ name: '', phone: '', addr1: '', addr2: '', city: '', province: '', postalCode: '', country: 'CA', lat: '', lon: '', placeId: '' });
 
   React.useEffect(() => {
     setPickupName(site?.pickup?.name || '');
@@ -179,6 +179,9 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
                   province: loc.address?.province || '',
                   postalCode: loc.address?.postalCode || '',
                   country: loc.address?.country || 'CA',
+                  lat: (typeof loc.address?.lat === 'number' ? String(loc.address.lat) : ''),
+                  lon: (typeof loc.address?.lon === 'number' ? String(loc.address.lon) : ''),
+                  placeId: loc.address?.placeId || '',
                 });
                 setIsLocFormOpen(true);
               }}>Edit</button>
@@ -188,7 +191,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
         ))}
         <button onClick={() => {
           setEditingLocIndex(null);
-          setLocForm({ name: '', phone: '', addr1: '', addr2: '', city: '', province: '', postalCode: '', country: 'CA' });
+          setLocForm({ name: '', phone: '', addr1: '', addr2: '', city: '', province: '', postalCode: '', country: 'CA', lat: '', lon: '', placeId: '' });
           setIsLocFormOpen(true);
         }}>+ Add location</button>
       </div>
@@ -600,6 +603,9 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
                     province: locForm.province || '',
                     postalCode: locForm.postalCode || '',
                     country: locForm.country || 'CA',
+                    lat: (locForm.lat !== '' ? Number(locForm.lat) : undefined),
+                    lon: (locForm.lon !== '' ? Number(locForm.lon) : undefined),
+                    placeId: locForm.placeId || undefined,
                   },
                 };
                 setLocations(prev => {
@@ -654,6 +660,41 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
               <option value="AU">Australia (AU)</option>
             </select>
           </label>
+          <div className="sep" style={{ gridColumn: '1 / -1', height: 1, background: 'var(--gray-200)', margin: '6px 0' }} />
+          <div className="muted" style={{ gridColumn: '1 / -1', fontSize: 12 }}>
+            Use Google to fill exact coordinates for accurate km-by-road.
+          </div>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>Latitude (optional)</span>
+            <input value={locForm.lat} onChange={(e) => setLocForm({ ...locForm, lat: e.target.value })} placeholder="e.g., 53.5439" />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>Longitude (optional)</span>
+            <input value={locForm.lon} onChange={(e) => setLocForm({ ...locForm, lon: e.target.value })} placeholder="e.g., -113.4909" />
+          </label>
+          <label style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>Google Place ID (optional)</span>
+            <input value={locForm.placeId} onChange={(e) => setLocForm({ ...locForm, placeId: e.target.value })} placeholder="ChIJ..." />
+          </label>
+          <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 8 }}>
+            <button type="button" onClick={async () => {
+              try {
+                const addr = [locForm.addr1, locForm.addr2, locForm.city, locForm.province, locForm.postalCode, locForm.country].filter(Boolean).join(', ');
+                const { googleMapsApiKey } = await fetchJson(`/api/shop/${site.slug}/public-config`);
+                if (!googleMapsApiKey) return;
+                const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(addr)}&key=${encodeURIComponent(googleMapsApiKey)}`;
+                const resp = await fetch(url);
+                const data = await resp.json();
+                const loc = data?.results?.[0];
+                const lat = loc?.geometry?.location?.lat;
+                const lng = loc?.geometry?.location?.lng;
+                const placeId = loc?.place_id;
+                if (typeof lat === 'number' && typeof lng === 'number') {
+                  setLocForm((prev) => ({ ...prev, lat: String(lat), lon: String(lng), placeId: placeId || prev.placeId }));
+                }
+              } catch {}
+            }}>Use Google to fill Lat/Lng</button>
+          </div>
         </div>
       </Modal>
     </div>
