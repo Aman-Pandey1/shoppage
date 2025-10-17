@@ -217,8 +217,8 @@ router.get('/template.xlsx', requireAdmin, async (_req, res) => {
 	xlsx.utils.book_append_sheet(wb, categoriesWs, 'Categories');
 	// Products sheet
 	const productsWs = xlsx.utils.aoa_to_sheet([
-		['name','description','price','spiceLevels','categoryName'],
-		['Butter Chicken','Rich creamy gravy','12.99','Mild,Medium,Hot','Mains']
+		['name','description','price','spiceLevels','categoryName','variants'],
+		['Butter Chicken','Rich creamy gravy','12.99','Mild,Medium,Hot','Mains','Small, Medium +1.50, Large +3']
 	]);
 	xlsx.utils.book_append_sheet(wb, productsWs, 'Products');
 	const buf = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
@@ -237,6 +237,57 @@ router.post('/bulk', requireAdmin, upload.single('file'), async (req, res) => {
 
 		const createdProducts = [];
 		let createdCategories = 0;
+
+		// Normalize a header/key by lowercasing and removing non-alphanumerics
+		function normalizeKey(k) {
+			return String(k || '')
+				.toLowerCase()
+				.replace(/[^a-z0-9]+/g, '');
+		}
+
+		// Build a normalized map of row values for case/space tolerant lookup
+		function buildRowMap(row) {
+			const map = new Map();
+			Object.keys(row || {}).forEach((rawKey) => {
+				const norm = normalizeKey(rawKey);
+				if (!norm) return;
+				if (!map.has(norm)) map.set(norm, row[rawKey]);
+			});
+			return map;
+		}
+
+		// Get first matching value for any of the candidate keys (case/space tolerant)
+		function getCell(rowMap, candidates, defaultValue = '') {
+			for (const c of candidates) {
+				const val = rowMap.get(normalizeKey(c));
+				if (val !== undefined && val !== null && String(val).trim() !== '') return val;
+			}
+			return defaultValue;
+		}
+
+		// Parse a variants CSV like "Small, Medium +1.50, Large +3"
+		function parseVariantsCsv(csv) {
+			const seen = new Set();
+			return String(csv || '')
+				.replace(/\$/g, '')
+				.split(',')
+				.map(s => s.trim())
+				.filter(Boolean)
+				.map((token) => {
+					const cleaned = token.replace(/\$/g, '').trim();
+					const match = cleaned.match(/^(.+?)(?:\s*([+-])\s*(\d+(?:\.\d+)?))?$/);
+					const rawLabel = (match ? match[1] : cleaned).trim();
+					const sign = match && match[2] ? match[2] : '+';
+					const num = match && match[3] ? Number(match[3]) : 0;
+					const price = (sign === '-' ? -1 : 1) * (Number.isFinite(num) ? num : 0);
+					let baseKey = rawLabel.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+					if (!baseKey) baseKey = 'variant';
+					let key = baseKey; let idx = 1;
+					while (seen.has(key)) { key = `${baseKey}_${idx++}`; }
+					seen.add(key);
+					return { key, label: rawLabel, price };
+				});
+		}
 
 		// Helper to ensure a category exists and return its id
     async function ensureCategoryByName(categoryNameInput, imageUrlInput = '') {
@@ -288,19 +339,35 @@ router.post('/bulk', requireAdmin, upload.single('file'), async (req, res) => {
 		const sheet = wb.Sheets[productSheetName];
 		const rows = xlsx.utils.sheet_to_json(sheet, { defval: '' });
 		for (const r of rows) {
-			const name = r.name || r.Name || r['product name'] || r.Product;
+			const rowMap = buildRowMap(r);
+			const name = getCell(rowMap, ['name','product','product name']);
 			if (!name) continue;
-			const price = parseFloat(String(r.price || r.Price || 0));
+			const priceCell = getCell(rowMap, ['price', 'baseprice', 'amount'], 0);
+			const price = parseFloat(String(priceCell || 0));
 			if (Number.isNaN(price)) continue;
-			const description = r.description || r.Description || '';
-			const spiceLevels = String(r.spiceLevels || r['spice level'] || r.SpiceLevels || '').split(',').map((s) => String(s).trim()).filter(Boolean);
-			const categoryName = r.categoryName || r.CategoryName || r.Category || '';
-			const imageUrl = r.imageUrl || r.ImageUrl || '';
-			const isVegCell = r.isVeg ?? r.IsVeg ?? r.veg ?? r.Veg;
-			const isVeg = typeof isVegCell === 'string' ? /^(1|true|yes|veg)$/i.test(isVegCell) : (typeof isVegCell === 'boolean' ? isVegCell : true);
+			const description = getCell(rowMap, [
+				'description','desc','short description','short_description','long description','long_description',
+				'product description','product_description','details','about','info'
+			], '');
+			const spiceLevelsRaw = getCell(rowMap, ['spicelevels','spice level','spice','spice_level'], '');
+			const spiceLevels = String(spiceLevelsRaw || '')
+				.split(/[,/]/)
+				.map((s) => String(s).trim())
+				.filter(Boolean);
+			const categoryName = getCell(rowMap, ['categoryname','category','cat'], '');
+			const imageUrl = getCell(rowMap, ['imageurl','image url','image'], '');
+			const isVegCell = getCell(rowMap, ['isveg','veg'], '');
+			const isVeg = (function(v){
+				if (typeof v === 'boolean') return v;
+				const s = String(v || '').trim();
+				if (!s) return true; // default to Veg
+				return /^(1|true|yes|veg)$/i.test(s);
+			})(isVegCell);
+			const variantsCsv = getCell(rowMap, ['variants','variant','options','sizes','size'], '');
+			const variants = variantsCsv ? parseVariantsCsv(variantsCsv) : [];
 
 			const categoryId = await ensureCategoryByName(categoryName);
-			const payload = { site: siteId, name, description, imageUrl, price, categoryId, spiceLevels, isVeg, extraOptionGroups: [] };
+			const payload = { site: siteId, name, description, imageUrl, price, categoryId, spiceLevels, isVeg, variants, extraOptionGroups: [] };
 			if (mock) {
 				const p = { _id: `p-${Date.now()}-${Math.random().toString(36).slice(2,6)}`, ...payload };
 				mock.products.unshift(p);
