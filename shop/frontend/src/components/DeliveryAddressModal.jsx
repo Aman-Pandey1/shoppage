@@ -34,6 +34,9 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
   // Single-line address text for UI display and autocomplete
   const [addrText, setAddrText] = useState(initialSummary || '');
 
+  // Tolerance to account for small geocoding/routing variance (match backend)
+  const DIST_TOLERANCE_KM = 0.5;
+
   const itemsSubtotalCents = React.useMemo(() => {
     try {
       return (Array.isArray(manifest) ? manifest : []).reduce((sum, it) => sum + (Number(it.priceCents) || 0) * (Number(it.quantity) || 1), 0);
@@ -168,7 +171,8 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
       try {
         setCheckingArea(true);
         const address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
-        const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { address }, pickupLocationIndex: selectedPickupIndex });
+        // Let backend choose nearest pickup location; don't force index from client
+        const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { address } });
         if (cancelled) return;
         const km = (typeof q?.distanceKm === 'number') ? q.distanceKm : null;
         if (km != null) setDistanceKm(km);
@@ -181,7 +185,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         }
         // Cache latest quote to avoid re-quoting on submit
         try { setQuote(q); } catch {}
-        if (typeof maxDeliveryKm === 'number' && km != null && km > maxDeliveryKm) {
+        if (typeof maxDeliveryKm === 'number' && km != null && (km - DIST_TOLERANCE_KM) > maxDeliveryKm) {
           setAddressAreaError(`Outside delivery area (within ${maxDeliveryKm} km)`);
         } else {
           setAddressAreaError('');
@@ -271,7 +275,8 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
         address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
       }
       const normalizedPhone = normalizePhoneForCountry(phone, country);
-      const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { name, phone: normalizedPhone || phone, address }, pickupLocationIndex: selectedPickupIndex });
+      // Let backend select nearest pickup automatically
+      const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { name, phone: normalizedPhone || phone, address } });
       setQuote(q);
       if (typeof q?.distanceKm === 'number') setDistanceKm(q.distanceKm);
       if (typeof q?.customerDeliveryFeeCents === 'number') {
@@ -349,11 +354,12 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
           let quotedFee = Math.max(0, Number(deliveryFeeCentsLocal || 0));
           let chosenIdx = (typeof selectedPickupIndex === 'number' ? selectedPickupIndex : 0);
           if (!quotedFee) {
-            const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { name, phone: normalizedPhone, address }, pickupLocationIndex: selectedPickupIndex });
+            // Fresh quote without forcing pickup index; backend will return nearest index
+            const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { name, phone: normalizedPhone, address } });
             quotedFee = typeof q?.customerDeliveryFeeCents === 'number' ? q.customerDeliveryFeeCents : 0;
             try { setDeliveryFeeCents(quotedFee); setDeliveryFeeCentsLocal(quotedFee); } catch {}
             if (typeof q?.pickupLocationIndex === 'number') { chosenIdx = q.pickupLocationIndex; setSelectedPickupIndex(q.pickupLocationIndex); }
-            if (typeof q?.distanceKm === 'number' && typeof maxDeliveryKm === 'number' && q.distanceKm > maxDeliveryKm) {
+            if (typeof q?.distanceKm === 'number' && typeof maxDeliveryKm === 'number' && (q.distanceKm - DIST_TOLERANCE_KM) > maxDeliveryKm) {
               throw new Error(`Delivery is only available within ${maxDeliveryKm} km of the restaurant.`);
             }
           }
@@ -406,13 +412,14 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
               const normalizedPhone = normalizePhoneForCountry(phone, country);
               if (!normalizedPhone) throw new Error('Enter phone in E.164 like +14155550123');
               const address = { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
-              const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { name, phone: normalizedPhone, address }, pickupLocationIndex: selectedPickupIndex });
+              // Quote without client-specified pickup index
+              const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { name, phone: normalizedPhone, address } });
               if (typeof q?.customerDeliveryFeeCents === 'number') {
                 setDeliveryFeeCents(q.customerDeliveryFeeCents);
                 setDeliveryFeeCentsLocal(q.customerDeliveryFeeCents);
               }
               // Block if over max distance
-              if (typeof maxDeliveryKm === 'number' && typeof q?.distanceKm === 'number' && q.distanceKm > maxDeliveryKm) {
+              if (typeof maxDeliveryKm === 'number' && typeof q?.distanceKm === 'number' && (q.distanceKm - DIST_TOLERANCE_KM) > maxDeliveryKm) {
                 throw new Error(`Delivery is only available within ${maxDeliveryKm} km of the restaurant.`);
               }
               const summary = [addr1, city, postalCode].filter(Boolean).join(', ');

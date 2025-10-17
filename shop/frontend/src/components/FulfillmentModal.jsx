@@ -130,6 +130,7 @@ export const FulfillmentModal = ({
         // Require an address object (from autocomplete) to quote
         if (!addrObj) { setDeliveryAreaError(''); setDeliveryFeeCentsLocal(null); setCheckingArea(false); return; }
         setCheckingArea(true);
+        // Do not specify pickup index; backend will pick nearest and return it
         const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { address: addrObj } });
         if (cancelled) return;
         setDeliveryAreaError('');
