@@ -53,6 +53,25 @@ router.post('/', requireAdmin, async (req, res) => {
   }
 });
 
+// Delete ALL categories for a site
+router.delete('/', requireAdmin, async (req, res) => {
+  try {
+    const { siteId } = req.params;
+    const mock = req.app.locals.mockData;
+    if (mock) {
+      const before = (mock.categories || []).length;
+      mock.categories = (mock.categories || []).filter((c) => c.site !== siteId);
+      const deleted = before - mock.categories.length;
+      try { saveMockData(req.app.locals.mockData); } catch {}
+      return res.json({ deleted });
+    }
+    const result = await Category.deleteMany({ site: siteId });
+    return res.json({ deleted: result?.deletedCount || 0 });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 router.patch('/:id', requireAdmin, async (req, res) => {
 	try {
 		const { siteId, id } = req.params;
