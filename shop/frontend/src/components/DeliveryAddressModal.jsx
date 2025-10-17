@@ -40,7 +40,11 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
 
   const itemsSubtotalCents = React.useMemo(() => {
     try {
-      return (Array.isArray(manifest) ? manifest : []).reduce((sum, it) => sum + (Number(it.priceCents) || 0) * (Number(it.quantity) || 1), 0);
+      return (Array.isArray(manifest) ? manifest : []).reduce((sum, it) => {
+        const unitCents = Math.max(0, Math.round(Number(it.priceCents) || 0));
+        const qty = Number(it.quantity) || 1;
+        return sum + unitCents * qty;
+      }, 0);
     } catch { return 0; }
   }, [manifest]);
 

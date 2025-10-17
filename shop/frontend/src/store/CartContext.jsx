@@ -63,6 +63,24 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
       const raw = localStorage.getItem(storageKey);
       if (raw) {
         const parsed = JSON.parse(raw);
+        // Backfill unitCents on legacy items to keep cart/payment perfectly in sync
+        try {
+          if (parsed && Array.isArray(parsed.items)) {
+            parsed.items = parsed.items.map((it) => {
+              const hasUnitCents = Number.isFinite(it?.unitCents);
+              const qty = Number(it?.quantity) || 1;
+              if (hasUnitCents) {
+                // Ensure totalPrice reflects unitCents for display consistency
+                const unitCents = Math.max(0, Math.round(Number(it.unitCents)));
+                const totalPrice = (unitCents * qty) / 100;
+                return { ...it, unitCents, totalPrice };
+              }
+              const unitCents = Math.round(((Number(it?.basePrice) || 0) + (Number(it?.variant?.price) || 0) + (Number(it?.extraCost) || 0)) * 100);
+              const totalPrice = (unitCents * qty) / 100;
+              return { ...it, unitCents, totalPrice };
+            });
+          }
+        } catch {}
         setState(parsed);
       }
     } catch {}
@@ -109,7 +127,8 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
     const extraCost = calculateExtraCost(selectedOptions);
     const variantAddon = Number(variant?.price || 0);
     const unitPrice = Number(product.price || 0) + variantAddon + extraCost;
-    const totalPrice = unitPrice * quantity;
+    const unitCents = Math.max(0, Math.round(unitPrice * 100));
+    const totalPrice = (unitCents * quantity) / 100;
     const id = generateItemId(product._id, spiceLevel, selectedOptions, variant);
     const newItem = {
       id,
@@ -121,6 +140,7 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
       spiceLevel,
       selectedOptions,
       extraCost,
+      unitCents,
       totalPrice,
       imageUrl: product.imageUrl,
     };
@@ -131,12 +151,14 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
         const updated = prev.items.slice();
         const existing = updated[existingIndex];
         const newQuantity = existing.quantity + quantity;
-        const addon = Number(existing?.variant?.price || 0);
-        const existingUnit = Number(existing.basePrice || 0) + addon + Number(existing.extraCost || 0);
+        const existingUnitCents = Number.isFinite(existing.unitCents)
+          ? Math.max(0, Math.round(Number(existing.unitCents)))
+          : Math.round(((Number(existing.basePrice) || 0) + (Number(existing?.variant?.price) || 0) + (Number(existing.extraCost) || 0)) * 100);
         updated[existingIndex] = {
           ...existing,
+          unitCents: existingUnitCents,
           quantity: newQuantity,
-          totalPrice: existingUnit * newQuantity,
+          totalPrice: (existingUnitCents * newQuantity) / 100,
         };
         return { ...prev, items: updated };
       }
@@ -155,9 +177,10 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
     setState((prev) => {
       const updated = prev.items.map((it) => {
         if (it.id !== id) return it;
-        const addon = Number(it?.variant?.price || 0);
-        const unit = Number(it.basePrice || 0) + addon + Number(it.extraCost || 0);
-        return { ...it, quantity, totalPrice: unit * quantity };
+        const unitCents = Number.isFinite(it.unitCents)
+          ? Math.max(0, Math.round(Number(it.unitCents)))
+          : Math.round(((Number(it.basePrice) || 0) + (Number(it?.variant?.price) || 0) + (Number(it.extraCost) || 0)) * 100);
+        return { ...it, unitCents, quantity, totalPrice: (unitCents * quantity) / 100 };
       });
       return { ...prev, items: updated };
     });
@@ -167,8 +190,9 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
 
   const getCartTotal = useCallback(() => {
     const itemsSubtotalCents = state.items.reduce((sum, it) => {
-      const unitPrice = (Number(it.basePrice) || 0) + (Number(it?.variant?.price) || 0) + (Number(it.extraCost) || 0);
-      const unitCents = Math.round(unitPrice * 100);
+      const unitCents = Number.isFinite(it.unitCents)
+        ? Math.max(0, Math.round(Number(it.unitCents)))
+        : Math.round(((Number(it.basePrice) || 0) + (Number(it?.variant?.price) || 0) + (Number(it.extraCost) || 0)) * 100);
       return sum + unitCents * (Number(it.quantity) || 1);
     }, 0);
     const minCents = Number(state.couponMinSubtotalCents) || 5000;
@@ -179,8 +203,9 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
       // Apply discount at LINE level (unitCents * qty) and then round.
       // This mirrors backend/Stripe rounding and prevents cent-level mismatches.
       discountedCents = state.items.reduce((sum, it) => {
-        const unitPrice = (Number(it.basePrice) || 0) + (Number(it?.variant?.price) || 0) + (Number(it.extraCost) || 0);
-        const unitCents = Math.round(unitPrice * 100);
+        const unitCents = Number.isFinite(it.unitCents)
+          ? Math.max(0, Math.round(Number(it.unitCents)))
+          : Math.round(((Number(it.basePrice) || 0) + (Number(it?.variant?.price) || 0) + (Number(it.extraCost) || 0)) * 100);
         const qty = Number(it.quantity) || 1;
         const lineCents = unitCents * qty;
         const discountedLine = Math.round(lineCents * (100 - pct) / 100);
