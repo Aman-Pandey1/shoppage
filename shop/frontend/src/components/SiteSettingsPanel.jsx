@@ -1,5 +1,6 @@
 import React from 'react';
 import { fetchJsonAllowError, patchJson, resolveAssetUrl, postFile, API_BASE_URL, fetchJson } from '../lib/api';
+import { AddressAutocomplete } from './AddressAutocomplete';
 import { Modal } from './Modal';
 
 export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
@@ -675,6 +676,32 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
           <label style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
             <span>Google Place ID (optional)</span>
             <input value={locForm.placeId} onChange={(e) => setLocForm({ ...locForm, placeId: e.target.value })} placeholder="ChIJ..." />
+          </label>
+          <label style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>Find exact place (Google)</span>
+            <AddressAutocomplete
+              siteSlug={site.slug}
+              value={''}
+              onChange={() => {}}
+              onSelect={(addr) => {
+                try {
+                  setLocForm((prev) => ({
+                    ...prev,
+                    addr1: (Array.isArray(addr.streetAddress) ? addr.streetAddress.join(' ') : '' ) || prev.addr1,
+                    city: addr.city || prev.city,
+                    province: addr.province || prev.province,
+                    postalCode: addr.postalCode || prev.postalCode,
+                    country: (addr.country || prev.country || 'CA'),
+                    lat: (typeof addr.lat === 'number' ? String(addr.lat) : prev.lat),
+                    lon: (typeof addr.lon === 'number' ? String(addr.lon) : prev.lon),
+                    placeId: addr.placeId || prev.placeId,
+                  }));
+                } catch {}
+              }}
+              placeholder="Start typing restaurant address"
+              country={locForm.country}
+            />
+            <span className="muted" style={{ fontSize: 12 }}>Selecting from Google will fill line 1 and coordinates.</span>
           </label>
           <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 8 }}>
             <button type="button" onClick={async () => {
