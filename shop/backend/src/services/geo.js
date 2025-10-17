@@ -146,12 +146,12 @@ export async function distanceBetweenAddressesKm(pickupAddress, dropoffAddress) 
     }
   }
 
-  // Prefer by-road driving distance; fall back to straight-line if needed
-  const byRoadOsrm = await roadDistanceKmViaOsrm(pickupPoint, dropoffPoint);
-  if (typeof byRoadOsrm === 'number') return byRoadOsrm;
-
+  // Prefer Google by-road driving distance; fall back to OSRM, then straight-line
   const byRoadGoogle = await roadDistanceKmViaGoogle(pickupPoint, dropoffPoint);
   if (typeof byRoadGoogle === 'number') return byRoadGoogle;
+
+  const byRoadOsrm = await roadDistanceKmViaOsrm(pickupPoint, dropoffPoint);
+  if (typeof byRoadOsrm === 'number') return byRoadOsrm;
 
   return haversineDistanceKm(pickupPoint, dropoffPoint);
 }
