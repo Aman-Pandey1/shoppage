@@ -452,8 +452,12 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
     const usePerSiteStripeDel = !!site?.stripeSecretKey;
     const piDataDelivery = (!usePerSiteStripeDel && site?.stripeAccountId) ? {
       transfer_data: { destination: site.stripeAccountId },
-      // Collect the platform delivery fee via application fee
-      application_fee_amount: split ? Math.max(0, baselineDeliveryFeeCents - customerDeliveryFeeCents) : baselineDeliveryFeeCents,
+      // Collect full delivery fee on the platform:
+      // - When split is ON: 50% from customer via line item, and the remaining 50%
+      //   is deducted from the restaurant payout via application fee
+      // - When split is OFF: full delivery fee comes from the customer, and we
+      //   still collect it via application fee so the restaurant net is items + tax
+      application_fee_amount: baselineDeliveryFeeCents,
       on_behalf_of: site.stripeAccountId,
     } : undefined;
 
