@@ -163,7 +163,7 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
         {/* On mobile, when the cart is open we only show "Cart" at top */}
         <div className="nav-title">{isCartOpen ? 'Cart' : 'Order Online'}</div>
 
-        <div className="actions" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div className="actions" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
           {supportPhone ? (
             <a
               href={telHref}
@@ -203,7 +203,8 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
                 border: 'none',
                 cursor: 'pointer',
                 position: 'relative',
-                padding: '8px'
+                padding: '8px',
+                overflow: 'visible'
               }}
             >
               <span role="img" aria-label="cart">🛒</span>
