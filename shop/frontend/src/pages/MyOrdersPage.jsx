@@ -157,6 +157,9 @@ export const MyOrdersPage = () => {
                     {it.portion ? ` — Portion: ${it.portion}` : ''}
                     {it.spiceLevel ? ` [${it.spiceLevel}]` : ''}
                     {it.size ? ` — Select Item: ${it.size}` : ''}
+                    {it.portion ? ` — Portion: ${it.portion}` : ''}
+                    {it.flavor ? ` — Flavor: ${it.flavor}` : ''}
+                    {it.quantityOption ? ` — Quantity: ${it.quantityOption}` : ''}
                     × {it.quantity}
                   </li>
                 ))}

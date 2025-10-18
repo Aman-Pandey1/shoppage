@@ -199,6 +199,12 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
                       {Number(item?.portion?.price||0) > 0 ? ` (+$${Number(item.portion.price).toFixed(2)})` : ''}
                     </div>
                   ) : null}
+                  {item.quantityOption ? (
+                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+                      Quantity: {item.quantityOption.label || item.quantityOption.key}
+                      {Number(item?.quantityOption?.price||0) > 0 ? ` (+$${Number(item.quantityOption.price).toFixed(2)})` : ''}
+                    </div>
+                  ) : null}
                   {item.spiceLevel ? <div style={{ fontSize: 12, color: 'var(--muted)' }}>Spice: {item.spiceLevel}</div> : null}
                   {item.selectedOptions.length > 0 ? (
                     <ul style={{ paddingLeft: 18, margin: '6px 0', color: 'var(--text)' }}>

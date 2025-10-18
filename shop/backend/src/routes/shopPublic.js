@@ -35,6 +35,14 @@ function normalizeProductShape(p) {
       return { key, label, price };
     });
   }
+  if (Array.isArray(obj.quantities)) {
+    obj.quantities = obj.quantities.map((v) => {
+      const key = String(v?.key || v?.label || 'quantity').trim();
+      const label = String(v?.label || v?.key || 'Quantity').trim();
+      const price = Number((v?.price ?? v?.priceDelta) || 0) || 0;
+      return { key, label, price };
+    });
+  }
   return obj;
 }
 
@@ -242,7 +250,7 @@ router.get('/:slug/products', async (req, res) => {
 			if (isVeg.toLowerCase() === 'false') filter.isVeg = false;
 		}
     const products = await Product.find(filter)
-      .select('name description imageUrl price categoryId isVeg spiceLevels variants flavors portions extraOptionGroups')
+      .select('name description imageUrl price categoryId isVeg spiceLevels variants flavors portions quantities extraOptionGroups')
       .sort({ name: 1 });
     res.json(products.map(normalizeProductShape));
 	} catch (err) {

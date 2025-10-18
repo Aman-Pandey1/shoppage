@@ -44,7 +44,7 @@ export async function sendOrderEmail({ to, siteName, orderId, orderNumber, items
     const money = (cents) => `$${((Number(cents) || 0) / 100).toFixed(2)}`;
     const itemsHtml = (Array.isArray(items) ? items : []).map(it => `
       <tr>
-        <td style="padding:6px 8px; border-bottom:1px solid #eee;">${it.name}${it.flavor ? ` — Flavor: ${it.flavor}` : ''}${it.portion ? ` — Portion: ${it.portion}` : ''}${it.size ? ` (${it.size})` : ''}${it.spiceLevel ? ` [${it.spiceLevel}]` : ''}</td>
+        <td style="padding:6px 8px; border-bottom:1px solid #eee;">${it.name}${it.flavor ? ` — Flavor: ${it.flavor}` : ''}${it.portion ? ` — Portion: ${it.portion}` : ''}${it.quantityOption ? ` — Quantity: ${it.quantityOption}` : ''}${it.size ? ` (${it.size})` : ''}${it.spiceLevel ? ` [${it.spiceLevel}]` : ''}</td>
         <td style="padding:6px 8px; text-align:center; border-bottom:1px solid #eee;">${it.quantity}</td>
         <td style="padding:6px 8px; text-align:right; border-bottom:1px solid #eee;">${money(it.priceCents)}</td>
       </tr>

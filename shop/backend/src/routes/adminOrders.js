@@ -142,39 +142,27 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
 		doc.y = Math.max(leftEndY, rightEndY) + 10;
 		doc.moveDown(0.2);
 
-		// Items table (centered) helpers
-		const colWidths = [260, 60, 85, 90]; // Name, Qty, Unit, Total
-		const tableWidth = colWidths.reduce((a, b) => a + b, 0);
-		const startX = doc.page.margins.left + (availableWidth - tableWidth) / 2;
+		// Items list (no table) with aligned prices on the right
+		const listX = doc.page.margins.left + 20;
+		const listWidth = availableWidth - 40;
+		const priceColWidth = 100;
 
-    function drawItemsHeader() {
-      doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark)
-        .text('ORDER SUMMARY', startX, doc.y, { width: tableWidth, align: 'center' });
-			doc.moveDown(0.4);
-			doc.save();
-			doc.rect(startX, doc.y - 2, tableWidth, 18).fill(colors.tableHeader);
-			doc.restore();
-			doc.font('Helvetica-Bold').fontSize(10).fillColor(colors.textDark);
-			const headerY = doc.y - 0.5;
-      doc.text('NAME', startX, headerY, { width: colWidths[0], align: 'center' });
-      doc.text('QTY', startX + colWidths[0], headerY, { width: colWidths[1], align: 'center' });
-      doc.text('UNIT', startX + colWidths[0] + colWidths[1], headerY, { width: colWidths[2], align: 'center' });
-      doc.text('TOTAL', startX + colWidths[0] + colWidths[1] + colWidths[2], headerY, { width: colWidths[3], align: 'center' });
-			doc.moveDown(1);
-			doc.moveTo(startX, doc.y).lineTo(startX + tableWidth, doc.y).strokeColor(colors.border).stroke();
+		function drawSectionTitle() {
+			doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark)
+				.text('ORDER SUMMARY', listX, doc.y, { width: listWidth, align: 'center' });
+			doc.moveDown(0.6);
 		}
 
 		const pageBottom = doc.page.height - doc.page.margins.bottom;
 		function ensureRowSpace() {
-			if (doc.y + 22 > pageBottom) {
+			if (doc.y + 20 > pageBottom) {
 				doc.addPage();
-				drawItemsHeader();
+				drawSectionTitle();
 			}
 		}
 
-		drawItemsHeader();
+		drawSectionTitle();
 
-		// Items rows
 		let itemsSubtotal = 0;
 		(Array.isArray(order.items) ? order.items : []).forEach((it, idx) => {
 			ensureRowSpace();
@@ -183,22 +171,22 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
 			const line = unit * qty;
 			itemsSubtotal += line;
 
-			// zebra background for readability
-			doc.save();
-			if (idx % 2 === 0) {
-				doc.rect(startX, doc.y - 2, tableWidth, 18).fill(colors.rowStripe);
-			}
-			doc.restore();
+			// zebra stripe background
+			if (idx % 2 === 0) { doc.save(); doc.rect(listX, doc.y - 2, listWidth, 18).fill(colors.rowStripe); doc.restore(); }
 
 			const rowY = doc.y;
-      doc.font('Helvetica').fillColor(colors.text)
-        .text(`${it.name}${it.flavor ? ' — Flavor: ' + it.flavor : ''}${it.portion ? ' — Portion: ' + it.portion : ''}${it.spiceLevel ? ' [' + it.spiceLevel + ']' : ''} ${it.size ? '(' + it.size + ')' : ''}`, startX, rowY, { width: colWidths[0], align: 'center' });
-			doc.text(String(qty), startX + colWidths[0], rowY, { width: colWidths[1], align: 'center' });
-			doc.text(`$${unit.toFixed(2)}`, startX + colWidths[0] + colWidths[1], rowY, { width: colWidths[2], align: 'center' });
-			doc.text(`$${line.toFixed(2)}`, startX + colWidths[0] + colWidths[1] + colWidths[2], rowY, { width: colWidths[3], align: 'center' });
-
-			doc.moveDown(0.4);
-			doc.moveTo(startX, doc.y).lineTo(startX + tableWidth, doc.y).strokeColor(colors.border).stroke();
+			let label = `${it.name}`;
+			if (it.size) label += ` (${it.size})`;
+			if (it.flavor) label += ` — Flavor: ${it.flavor}`;
+			if (it.portion) label += ` — Portion: ${it.portion}`;
+			if (it.spiceLevel) label += ` [${it.spiceLevel}]`;
+			label += ` x${qty}`;
+			doc.font('Helvetica').fontSize(10).fillColor(colors.text)
+				.text(label, listX, rowY, { width: listWidth - priceColWidth - 12, align: 'left' });
+			doc.font('Helvetica').fontSize(10).fillColor(colors.textDark)
+				.text(`$${line.toFixed(2)}`, listX + listWidth - priceColWidth, rowY, { width: priceColWidth, align: 'right' });
+			doc.moveDown(0.2);
+			doc.moveTo(listX, doc.y).lineTo(listX + listWidth, doc.y).strokeColor(colors.border).stroke();
 		});
 
 		doc.moveDown();
@@ -213,7 +201,7 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
     const coupon = order.meta?.coupon;
 
 		const labelWidth = 220;
-		const valueX = startX + tableWidth - 100;
+		const valueX = listX + listWidth - 100;
 		// Border box for totals
 		doc.save();
 		doc.roundedRect(startX, doc.y - 4, tableWidth, 80, 6).strokeColor(colors.border).stroke();
@@ -254,8 +242,8 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
     }
 
 		// Footer
-    doc.moveDown(1.2);
-    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('THANK YOU FOR YOUR ORDER!', { align: 'center' });
+	    doc.moveDown(1.2);
+	    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('THANK YOU FOR YOUR ORDER!', { align: 'center' });
 
     doc.end();
   } catch (err) {

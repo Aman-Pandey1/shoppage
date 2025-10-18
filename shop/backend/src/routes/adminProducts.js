@@ -41,6 +41,14 @@ function normalizeProductShape(p) {
       return { key, label, price };
     });
   }
+  if (Array.isArray(obj.quantities)) {
+    obj.quantities = obj.quantities.map((v) => {
+      const key = String(v?.key || v?.label || 'quantity').trim();
+      const label = String(v?.label || v?.key || 'Quantity').trim();
+      const price = Number((v?.price ?? v?.priceDelta) || 0) || 0;
+      return { key, label, price };
+    });
+  }
   return obj;
 }
 
@@ -76,7 +84,7 @@ router.get('/', requireAdmin, async (req, res) => {
 			if (isVeg.toLowerCase() === 'false') filter.isVeg = false;
 		}
     const products = await Product.find(filter)
-      .select('name description imageUrl price categoryId isVeg spiceLevels variants flavors portions extraOptionGroups site createdAt updatedAt')
+      .select('name description imageUrl price categoryId isVeg spiceLevels variants flavors portions quantities extraOptionGroups site createdAt updatedAt')
       .sort({ name: 1 });
     res.json(products.map(normalizeProductShape));
 	} catch (err) {
@@ -123,6 +131,11 @@ router.post('/', requireAdmin, async (req, res) => {
         price: Number((v.price ?? v.priceDelta) || 0) || 0,
       })) : [],
       portions: Array.isArray(payload.portions) ? payload.portions.map((v) => ({
+        key: String(v.key || v.label || 'default'),
+        label: String(v.label || v.key || 'Default'),
+        price: Number((v.price ?? v.priceDelta) || 0) || 0,
+      })) : [],
+      quantities: Array.isArray(payload.quantities) ? payload.quantities.map((v) => ({
         key: String(v.key || v.label || 'default'),
         label: String(v.label || v.key || 'Default'),
         price: Number((v.price ?? v.priceDelta) || 0) || 0,
@@ -211,6 +224,16 @@ router.put('/:id', requireAdmin, async (req, res) => {
         : [])
       : undefined;
 
+    const normalizedQuantities = (update.quantities !== undefined)
+      ? (Array.isArray(update.quantities)
+        ? update.quantities.map((v) => ({
+            key: String(v?.key || v?.label || 'default'),
+            label: String(v?.label || v?.key || 'Default'),
+            price: Number((v?.price ?? v?.priceDelta) || 0) || 0,
+          }))
+        : [])
+      : undefined;
+
     const product = await Product.findOneAndUpdate(
       { _id: id, site: siteId },
       { $set: {
@@ -224,6 +247,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
         ...(update.variants !== undefined ? { variants: normalizedVariants } : {}),
         ...(update.flavors !== undefined ? { flavors: normalizedFlavors } : {}),
         ...(update.portions !== undefined ? { portions: normalizedPortions } : {}),
+        ...(update.quantities !== undefined ? { quantities: normalizedQuantities } : {}),
         ...(update.extraOptionGroups !== undefined ? { extraOptionGroups: Array.isArray(update.extraOptionGroups) ? update.extraOptionGroups : [] } : {}),
       } },
       { new: true, runValidators: true, overwrite: false }
