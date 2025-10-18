@@ -25,6 +25,22 @@ function normalizeProductShape(p) {
       return { key, label, price };
     });
   }
+  if (Array.isArray(obj.flavors)) {
+    obj.flavors = obj.flavors.map((v) => {
+      const key = String(v?.key || v?.label || 'flavor').trim();
+      const label = String(v?.label || v?.key || 'Flavor').trim();
+      const price = Number((v?.price ?? v?.priceDelta) || 0) || 0;
+      return { key, label, price };
+    });
+  }
+  if (Array.isArray(obj.portions)) {
+    obj.portions = obj.portions.map((v) => {
+      const key = String(v?.key || v?.label || 'portion').trim();
+      const label = String(v?.label || v?.key || 'Portion').trim();
+      const price = Number((v?.price ?? v?.priceDelta) || 0) || 0;
+      return { key, label, price };
+    });
+  }
   return obj;
 }
 
@@ -60,7 +76,7 @@ router.get('/', requireAdmin, async (req, res) => {
 			if (isVeg.toLowerCase() === 'false') filter.isVeg = false;
 		}
     const products = await Product.find(filter)
-      .select('name description imageUrl price categoryId isVeg spiceLevels variants extraOptionGroups site createdAt updatedAt')
+      .select('name description imageUrl price categoryId isVeg spiceLevels variants flavors portions extraOptionGroups site createdAt updatedAt')
       .sort({ name: 1 });
     res.json(products.map(normalizeProductShape));
 	} catch (err) {
@@ -97,6 +113,16 @@ router.post('/', requireAdmin, async (req, res) => {
       isVeg: typeof payload.isVeg === 'boolean' ? payload.isVeg : true,
       spiceLevels: Array.isArray(payload.spiceLevels) ? payload.spiceLevels : [],
       variants: Array.isArray(payload.variants) ? payload.variants.map((v) => ({
+        key: String(v.key || v.label || 'default'),
+        label: String(v.label || v.key || 'Default'),
+        price: Number((v.price ?? v.priceDelta) || 0) || 0,
+      })) : [],
+      flavors: Array.isArray(payload.flavors) ? payload.flavors.map((v) => ({
+        key: String(v.key || v.label || 'default'),
+        label: String(v.label || v.key || 'Default'),
+        price: Number((v.price ?? v.priceDelta) || 0) || 0,
+      })) : [],
+      portions: Array.isArray(payload.portions) ? payload.portions.map((v) => ({
         key: String(v.key || v.label || 'default'),
         label: String(v.label || v.key || 'Default'),
         price: Number((v.price ?? v.priceDelta) || 0) || 0,
@@ -165,6 +191,26 @@ router.put('/:id', requireAdmin, async (req, res) => {
         : [])
       : undefined;
 
+    const normalizedFlavors = (update.flavors !== undefined)
+      ? (Array.isArray(update.flavors)
+        ? update.flavors.map((v) => ({
+            key: String(v?.key || v?.label || 'default'),
+            label: String(v?.label || v?.key || 'Default'),
+            price: Number((v?.price ?? v?.priceDelta) || 0) || 0,
+          }))
+        : [])
+      : undefined;
+
+    const normalizedPortions = (update.portions !== undefined)
+      ? (Array.isArray(update.portions)
+        ? update.portions.map((v) => ({
+            key: String(v?.key || v?.label || 'default'),
+            label: String(v?.label || v?.key || 'Default'),
+            price: Number((v?.price ?? v?.priceDelta) || 0) || 0,
+          }))
+        : [])
+      : undefined;
+
     const product = await Product.findOneAndUpdate(
       { _id: id, site: siteId },
       { $set: {
@@ -176,6 +222,8 @@ router.put('/:id', requireAdmin, async (req, res) => {
         ...(update.isVeg !== undefined ? { isVeg: update.isVeg } : {}),
         ...(update.spiceLevels !== undefined ? { spiceLevels: update.spiceLevels } : {}),
         ...(update.variants !== undefined ? { variants: normalizedVariants } : {}),
+        ...(update.flavors !== undefined ? { flavors: normalizedFlavors } : {}),
+        ...(update.portions !== undefined ? { portions: normalizedPortions } : {}),
         ...(update.extraOptionGroups !== undefined ? { extraOptionGroups: Array.isArray(update.extraOptionGroups) ? update.extraOptionGroups : [] } : {}),
       } },
       { new: true, runValidators: true, overwrite: false }

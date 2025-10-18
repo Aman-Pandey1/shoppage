@@ -23,6 +23,18 @@ const ProductSchema = new mongoose.Schema({
         label: { type: String, required: true },
         price: { type: Number, default: 0 },
     }],
+	// Optional: flavors (like sauces/tastes) with per-item add-on price
+	flavors: [{
+		key: { type: String, required: true },
+		label: { type: String, required: true },
+		price: { type: Number, default: 0 },
+	}],
+	// Optional: portions (e.g., Half / Full) with per-item price delta
+	portions: [{
+		key: { type: String, required: true },
+		label: { type: String, required: true },
+		price: { type: Number, default: 0 },
+	}],
 	extraOptionGroups: [{
 		groupKey: { type: String, required: true },
 		groupLabel: { type: String, required: true },

@@ -19,6 +19,22 @@ function normalizeProductShape(p) {
       return { key, label, price };
     });
   }
+  if (Array.isArray(obj.flavors)) {
+    obj.flavors = obj.flavors.map((v) => {
+      const key = String(v?.key || v?.label || 'flavor').trim();
+      const label = String(v?.label || v?.key || 'Flavor').trim();
+      const price = Number((v?.price ?? v?.priceDelta) || 0) || 0;
+      return { key, label, price };
+    });
+  }
+  if (Array.isArray(obj.portions)) {
+    obj.portions = obj.portions.map((v) => {
+      const key = String(v?.key || v?.label || 'portion').trim();
+      const label = String(v?.label || v?.key || 'Portion').trim();
+      const price = Number((v?.price ?? v?.priceDelta) || 0) || 0;
+      return { key, label, price };
+    });
+  }
   return obj;
 }
 
@@ -226,7 +242,7 @@ router.get('/:slug/products', async (req, res) => {
 			if (isVeg.toLowerCase() === 'false') filter.isVeg = false;
 		}
     const products = await Product.find(filter)
-      .select('name description imageUrl price categoryId isVeg spiceLevels variants extraOptionGroups')
+      .select('name description imageUrl price categoryId isVeg spiceLevels variants flavors portions extraOptionGroups')
       .sort({ name: 1 });
     res.json(products.map(normalizeProductShape));
 	} catch (err) {
