@@ -374,7 +374,8 @@ input:focus, select:focus, textarea:focus {
 .top-nav {
   position: sticky;
   top: 0;
-  z-index: 50;
+  /* Keep header above order cards and sidebars by default */
+  z-index: 140;
   background: var(--primary);
   background-image: linear-gradient(180deg, var(--primary), var(--primary-600));
   color: #fff;
@@ -384,8 +385,8 @@ input:focus, select:focus, textarea:focus {
 }
 /* Respect top safe area on devices with display cutouts */
 .top-nav { padding-top: max(0px, var(--safe-top)); }
-/* When account menu is open, bump nav above cart */
-.top-nav[data-menu-open="true"] { z-index: 200; }
+/* When account menu is open, bump nav even higher than mobile cart */
+.top-nav[data-menu-open="true"] { z-index: 300; }
 .top-nav__inner {
   max-width: 1280px;
   margin: 0 auto;
