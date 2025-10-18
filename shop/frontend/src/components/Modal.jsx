@@ -11,7 +11,9 @@ const overlayStyle = {
   alignItems: 'center',
   justifyContent: 'center',
   zIndex: 1000,
-  backdropFilter: 'blur(4px)'
+  backdropFilter: 'blur(4px)',
+  overscrollBehavior: 'contain',
+  touchAction: 'none',
 };
 
 const panelStyle = {
@@ -62,6 +64,31 @@ const buttonStyle = {
 };
 
 export const Modal = ({ open, onClose, title, children, footer, maxWidth = 640, closeOnOverlayClick = true }) => {
+  // Lock background scroll and pause background animations while modal is open
+  React.useEffect(() => {
+    if (!open) return;
+    const body = document.body;
+    const prevOverflow = body.style.overflow;
+    const prevPaddingRight = body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    // Maintain a simple modal open counter so nested modals don't fight
+    const currentCount = Number(body.dataset.modalCount || '0');
+    body.dataset.modalCount = String(currentCount + 1);
+    if (currentCount === 0) {
+      body.style.overflow = 'hidden';
+      if (scrollbarWidth > 0) body.style.paddingRight = `${scrollbarWidth}px`;
+      body.classList.add('modal-active');
+    }
+    return () => {
+      const nextCount = Math.max(0, Number(body.dataset.modalCount || '1') - 1);
+      body.dataset.modalCount = String(nextCount);
+      if (nextCount === 0) {
+        body.style.overflow = prevOverflow;
+        body.style.paddingRight = prevPaddingRight;
+        body.classList.remove('modal-active');
+      }
+    };
+  }, [open]);
   if (!open) return null;
   const mergedPanelStyle = { ...panelStyle, width: `min(92vw, ${Number(maxWidth) || 640}px)`, maxWidth: '100%' };
   return (
