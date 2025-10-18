@@ -483,7 +483,8 @@ input:focus, select:focus, textarea:focus {
 
 /* Order details bar */
 .order-bar { padding: 10px; border-radius: 12px; margin: 12px 0; }
-.order-bar__row { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 12px; }
+/* Two columns: left compact controls, right date/time block */
+.order-bar__row { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 12px; align-items: start; }
 .order-bar__group { display: grid; gap: 6px; }
 .order-bar__label { font-size: 12px; color: #6b7280; }
 .order-bar__input { display: inline-flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 36px; padding: 6px 10px; border-radius: 8px; background: #fff; border: 1px solid var(--border); width: 100%; }
@@ -498,9 +499,26 @@ input:focus, select:focus, textarea:focus {
 .order-bar__pair .order-bar__label { margin: 0; }
 /* Allow input to grow but not exceed container */
 .order-bar__pair .order-bar__input { flex: 1 1 auto; }
+
+/* Compact variant for the first Delivery/Takeout dropdown */
+.order-bar__pair--compact .order-bar__input {
+  flex: 0 0 220px; /* Make the dropdown box smaller */
+  max-width: 220px;
+}
+
+/* Subtle ETA (minutes) beside the label */
+.order-bar__eta {
+  font-size: 12px;
+  color: #6b7280; /* muted gray instead of accent/red */
+  line-height: 1; /* align with label baseline */
+}
 @media (max-width: 900px) {
   .order-bar__row { grid-template-columns: 1fr; }
   .order-bar__inline { grid-template-columns: 1fr; }
+  .order-bar__pair--compact .order-bar__input {
+    flex: 1 1 auto;
+    max-width: 100%;
+  }
 }
 
 /* Ensure selects never overflow modal or header on mobile */
