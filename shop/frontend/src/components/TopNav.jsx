@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { User } from 'lucide-react';
 import { fetchJson, getCurrentUser, logout, resolveAssetUrl } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 
@@ -118,17 +118,18 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
       <div className="top-nav__inner">
         <div className="brand" aria-label="Store brand">
           {logoLinkUrl ? (
-            <button
-              className="brand__back"
-              aria-label="Back"
-              title="Back"
-              onClick={() => {
-                if (logoLinkUrl.startsWith('http')) { window.location.href = logoLinkUrl; return; }
+            <a
+              className="brand__home"
+              href={logoLinkUrl || undefined}
+              onClick={(e) => {
+                if (!logoLinkUrl) return;
+                if (logoLinkUrl.startsWith('http')) return; // external
+                e.preventDefault();
                 try { navigate(logoLinkUrl); } catch { window.location.href = logoLinkUrl; }
               }}
             >
-              <ArrowLeft size={18} />
-            </button>
+              Home
+            </a>
           ) : null}
           <a
             className="brand__logo"
@@ -161,7 +162,7 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
           </div>
         </div>
         {/* On mobile, when the cart is open we only show "Cart" at top */}
-        <div className="nav-title">{isCartOpen ? 'Cart' : 'Order Online'}</div>
+        <div className="nav-title">{isCartOpen ? 'Cart' : 'ORDER ONLINE'}</div>
 
         <div className="actions" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 6 }}>
           {supportPhone ? (
@@ -234,11 +235,8 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
           )}
           
           <button className="profile-chip hide-mobile" aria-label="Account" onClick={() => setMenuOpen((v) => !v)}>
-            <span>{initials}</span>
+            {user ? <span>{initials}</span> : <User size={16} />}
           </button>
-          {!user ? (
-            <button className="signin-btn hide-mobile" onClick={onSignIn}>Sign in</button>
-          ) : null}
           {menuOpen ? (
             <div 
               className="card" 
