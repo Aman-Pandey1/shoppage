@@ -121,8 +121,11 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
     }
     const leftEndY = doc.y;
 
-    // Right column: Order details
-    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('ORDER DETAILS', rightX, topY);
+    // Right column: Order/Delivery details
+    const detailsHeader = (order.fulfillmentType || (order.dropoff ? 'delivery' : 'pickup')) === 'delivery'
+      ? 'DELIVERY DETAILS'
+      : 'ORDER DETAILS';
+    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text(detailsHeader, rightX, topY);
     doc.font('Helvetica').fontSize(10).fillColor(colors.text);
     doc.text(`Order #: ${order.orderNumber || String(order._id)}`, rightX, doc.y, { width: columnWidth });
     let siteLike = null;
@@ -132,7 +135,8 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
       try { siteLike = await Site.findById(siteId); } catch {}
     }
     doc.text(`Date: ${formatDateTimeInSiteTz(order.createdAt, siteLike)}`, rightX, doc.y, { width: columnWidth });
-    doc.text(`Fulfillment: ${order.fulfillmentType || (order.dropoff ? 'delivery' : 'pickup')}`, rightX, doc.y, { width: columnWidth });
+    const fulfillmentUpper = String(order.fulfillmentType || (order.dropoff ? 'delivery' : 'pickup')).toUpperCase();
+    doc.text(`Fulfillment: ${fulfillmentUpper}`, rightX, doc.y, { width: columnWidth });
     const rightEndY = doc.y;
 		// Set cursor to the deeper of the two columns to avoid overlap
 		doc.y = Math.max(leftEndY, rightEndY) + 10;
@@ -145,7 +149,7 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
 
     function drawItemsHeader() {
       doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark)
-        .text('ORDER DETAILS', startX, doc.y, { width: tableWidth, align: 'center' });
+        .text('ORDER SUMMARY', startX, doc.y, { width: tableWidth, align: 'center' });
 			doc.moveDown(0.4);
 			doc.save();
 			doc.rect(startX, doc.y - 2, tableWidth, 18).fill(colors.tableHeader);
@@ -223,17 +227,17 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
     row('ITEMS SUBTOTAL', itemsSubtotal);
     if (coupon && typeof coupon.percent === 'number') {
       const discount = itemsSubtotal * (Number(coupon.percent) / 100);
-      row(`COUPON ${coupon.code ? '('+coupon.code+')' : ''} (-${coupon.percent}% )`, -discount);
+      row(`DISCOUNT ${coupon.code ? '('+coupon.code+')' : ''} (-${coupon.percent}% )`, -discount);
     }
-    const taxRatePct = itemsSubtotal > 0 ? Math.round((tax / itemsSubtotal) * 1000) / 10 : null;
-    row(`TAX${taxRatePct !== null ? ` (${taxRatePct}% )` : ''}`, tax);
+    // Always display fixed 5% tax label to match checkout
+    row('TAX (5%)', tax);
     if (tip > 0) row('TIP', tip);
     if (delivery > 0) {
       if (deliveryRestaurant > 0) {
-        row('DELIVERY BY RESTAURANT', deliveryRestaurant);
-        row('DELIVERY FEE (CUSTOMER)', delivery);
+        row('DELIVERY CHARGE (RESTAURANT)', deliveryRestaurant);
+        row('DELIVERY CHARGE (CUSTOMER)', delivery);
       } else {
-        row('DELIVERY FEE', delivery);
+        row('DELIVERY CHARGE', delivery);
       }
     }
     doc.moveDown(0.2);
