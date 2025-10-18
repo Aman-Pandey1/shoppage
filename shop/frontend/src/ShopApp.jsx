@@ -44,6 +44,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   // Track 'Order Now' vs 'Order For Later' selection to allow checkout when closed
   const [orderWhen, setOrderWhen] = useState(null); // 'now' | 'later' | null
   const [pickupSubmitting, setPickupSubmitting] = useState(false);
+  const [pendingQuantityOption, setPendingQuantityOption] = useState(null);
 
   // Additional UI state brought from the alternate implementation
   // Order details state
@@ -148,32 +149,35 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   }
 
   function confirmSpice(result) {
-    const { spice, variant, flavor, portion, quantity } = result || {};
+    const { spice, variant, flavor, portion, quantity, quantityOption } = result || {};
     const confirmedQty = Math.max(1, Math.min(99, Number(quantity || pendingQuantity) || 1));
     setPendingSpice(spice);
     setPendingVariant(variant || null);
     setPendingQuantity(confirmedQty);
+    setPendingQuantityOption(quantityOption || null);
     setSpiceOpen(false);
     if (pendingProduct && pendingProduct.extraOptionGroups && pendingProduct.extraOptionGroups.length > 0) {
       setExtrasOpen(true);
     } else if (pendingProduct) {
-      addItem({ product: pendingProduct, variant: variant || undefined, spiceLevel: spice, flavor: flavor || undefined, portion: portion || undefined, quantity: confirmedQty });
+      addItem({ product: pendingProduct, variant: variant || undefined, spiceLevel: spice, flavor: flavor || undefined, portion: portion || undefined, quantityOption: quantityOption || undefined, quantity: confirmedQty });
       setPendingProduct(null);
       setPendingSpice(undefined);
       setPendingVariant(null);
       setPendingQuantity(1);
+      setPendingQuantityOption(null);
     }
   }
 
   function confirmExtras(selected) {
     setExtrasOpen(false);
     if (pendingProduct) {
-      addItem({ product: pendingProduct, variant: pendingVariant || undefined, spiceLevel: pendingSpice, selectedOptions: selected, quantity: pendingQuantity });
+      addItem({ product: pendingProduct, variant: pendingVariant || undefined, spiceLevel: pendingSpice, selectedOptions: selected, quantityOption: pendingQuantityOption || undefined, quantity: pendingQuantity });
     }
     setPendingProduct(null);
     setPendingSpice(undefined);
     setPendingVariant(null);
     setPendingQuantity(1);
+    setPendingQuantityOption(null);
   }
 
   const { data: categories = [] } = useCategoriesQuery(siteSlug);
@@ -342,6 +346,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         spiceLevel: it.spiceLevel,
         flavor: it?.flavor?.label || it?.flavor?.key || undefined,
         portion: it?.portion?.label || it?.portion?.key || undefined,
+        quantityOption: it?.quantityOption?.label || it?.quantityOption?.key || undefined,
       };
     });
   }, [state.items]);

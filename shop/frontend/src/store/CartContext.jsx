@@ -8,7 +8,7 @@ function calculateExtraCost(selectedOptions) {
   return (selectedOptions || []).reduce((sum, opt) => sum + (opt.priceDelta || 0), 0);
 }
 
-function formatOptionsSummary(product, spiceLevel, selectedOptions, variant, flavor, portion) {
+function formatOptionsSummary(product, spiceLevel, selectedOptions, variant, flavor, portion, quantityOption) {
   try {
     const groups = Array.isArray(product?.extraOptionGroups) ? product.extraOptionGroups : [];
     const groupKeyToLabel = new Map(groups.map((g) => [g.groupKey, g.groupLabel || g.groupKey]));
@@ -27,6 +27,7 @@ function formatOptionsSummary(product, spiceLevel, selectedOptions, variant, fla
     if (flavor && (flavor.label || flavor.key)) parts.push(`Flavor: ${flavor.label || flavor.key}`);
     if (portion && (portion.label || portion.key)) parts.push(`Portion: ${portion.label || portion.key}`);
     if (spiceLevel) parts.push(`Spice: ${spiceLevel}`);
+    if (quantityOption && (quantityOption.label || quantityOption.key)) parts.push(`Quantity: ${quantityOption.label || quantityOption.key}`);
     for (const [gk, labels] of perGroupSelections.entries()) {
       const glabel = groupKeyToLabel.get(gk) || gk;
       parts.push(`${glabel}: ${labels.join(', ')}`);
@@ -38,7 +39,7 @@ function formatOptionsSummary(product, spiceLevel, selectedOptions, variant, fla
   }
 }
 
-function generateItemId(productId, spiceLevel, selectedOptions, variant, flavor, portion) {
+function generateItemId(productId, spiceLevel, selectedOptions, variant, flavor, portion, quantityOption) {
   const optsKey = (selectedOptions || [])
     .slice()
     .sort((a, b) => `${a.groupKey}:${a.optionKey}`.localeCompare(`${b.groupKey}:${b.optionKey}`))
@@ -47,7 +48,8 @@ function generateItemId(productId, spiceLevel, selectedOptions, variant, flavor,
   const variantKey = variant?.key || '';
   const flavorKey = flavor?.key || '';
   const portionKey = portion?.key || '';
-  return `${productId}__${variantKey}__${flavorKey}__${portionKey}__${spiceLevel || ''}__${optsKey}`;
+  const quantityKey = quantityOption?.key || '';
+  return `${productId}__${variantKey}__${flavorKey}__${portionKey}__${quantityKey}__${spiceLevel || ''}__${optsKey}`;
 }
 
 export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => {
@@ -127,15 +129,16 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
 
   const clearCoupon = useCallback(() => setState((prev) => ({ ...prev, coupon: null })), []);
 
-  const addItem = useCallback(({ product, quantity = 1, spiceLevel, selectedOptions = [], variant = null, flavor = null, portion = null }) => {
+  const addItem = useCallback(({ product, quantity = 1, spiceLevel, selectedOptions = [], variant = null, flavor = null, portion = null, quantityOption = null }) => {
     const extraCost = calculateExtraCost(selectedOptions);
     const variantAddon = Number(variant?.price || 0);
     const flavorAddon = Number(flavor?.price || 0);
     const portionAddon = Number(portion?.price || 0);
-    const unitPrice = Number(product.price || 0) + variantAddon + flavorAddon + portionAddon + extraCost;
+    const quantityAddon = Number(quantityOption?.price || 0);
+    const unitPrice = Number(product.price || 0) + variantAddon + flavorAddon + portionAddon + quantityAddon + extraCost;
     const unitCents = Math.max(0, Math.round(unitPrice * 100));
     const totalPrice = (unitCents * quantity) / 100;
-    const id = generateItemId(product._id, spiceLevel, selectedOptions, variant, flavor, portion);
+    const id = generateItemId(product._id, spiceLevel, selectedOptions, variant, flavor, portion, quantityOption);
     const newItem = {
       id,
       productId: product._id,
@@ -144,6 +147,7 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
       variant,
       flavor,
       portion,
+      quantityOption,
       quantity,
       spiceLevel,
       selectedOptions,
@@ -165,6 +169,7 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
             + (Number(existing?.variant?.price) || 0)
             + (Number(existing?.flavor?.price) || 0)
             + (Number(existing?.portion?.price) || 0)
+            + (Number(existing?.quantityOption?.price) || 0)
             + (Number(existing.extraCost) || 0)) * 100);
         updated[existingIndex] = {
           ...existing,
@@ -176,8 +181,8 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
       }
       return { ...prev, items: [...prev.items, newItem] };
     });
-    const optionsSummary = formatOptionsSummary(product, spiceLevel, selectedOptions, variant, flavor, portion);
-    const displayUnit = Number(product.price || 0) + Number(variant?.price || 0) + Number(flavor?.price || 0) + Number(portion?.price || 0) + extraCost;
+    const optionsSummary = formatOptionsSummary(product, spiceLevel, selectedOptions, variant, flavor, portion, quantityOption);
+    const displayUnit = Number(product.price || 0) + Number(variant?.price || 0) + Number(flavor?.price || 0) + Number(portion?.price || 0) + Number(quantityOption?.price || 0) + extraCost;
     setLastAdded({ name: product.name, quantity, price: displayUnit, imageUrl: product.imageUrl, optionsSummary });
   }, []);
 
@@ -195,6 +200,7 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
             + (Number(it?.variant?.price) || 0)
             + (Number(it?.flavor?.price) || 0)
             + (Number(it?.portion?.price) || 0)
+            + (Number(it?.quantityOption?.price) || 0)
             + (Number(it.extraCost) || 0)) * 100);
         return { ...it, unitCents, quantity, totalPrice: (unitCents * quantity) / 100 };
       });
@@ -212,6 +218,7 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
           + (Number(it?.variant?.price) || 0)
           + (Number(it?.flavor?.price) || 0)
           + (Number(it?.portion?.price) || 0)
+          + (Number(it?.quantityOption?.price) || 0)
           + (Number(it.extraCost) || 0)) * 100);
       return sum + unitCents * (Number(it.quantity) || 1);
     }, 0);
@@ -223,12 +230,13 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
       // Apply discount at LINE level (unitCents * qty) and then round.
       // This mirrors backend/Stripe rounding and prevents cent-level mismatches.
       discountedCents = state.items.reduce((sum, it) => {
-        const unitCents = Number.isFinite(it.unitCents)
+      const unitCents = Number.isFinite(it.unitCents)
           ? Math.max(0, Math.round(Number(it.unitCents)))
           : Math.round(((Number(it.basePrice) || 0)
             + (Number(it?.variant?.price) || 0)
             + (Number(it?.flavor?.price) || 0)
             + (Number(it?.portion?.price) || 0)
+          + (Number(it?.quantityOption?.price) || 0)
             + (Number(it.extraCost) || 0)) * 100);
         const qty = Number(it.quantity) || 1;
         const lineCents = unitCents * qty;

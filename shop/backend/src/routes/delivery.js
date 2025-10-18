@@ -240,7 +240,7 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 			site: req.siteId,
 			userId: req.user?.userId,
 			userEmail: req.user?.email,
-      items: (manifestItems || []).map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.price, size: m.size, spiceLevel: m.spiceLevel })),
+			items: (manifestItems || []).map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.price, size: m.size, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion, quantityOption: m.quantityOption })),
 			totalCents,
 			taxCents,
 			tipCents: 0,
