@@ -1,55 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { fetchJson, resolveAssetUrl } from '../lib/api';
+import React from 'react';
+import { resolveAssetUrl } from '../lib/api';
+import { useCategoriesQuery, useCategoryCountsQuery } from '../lib/queries';
 
 export const CategoryGrid = ({ onSelect, siteSlug = 'default' }) => {
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState();
-  const [counts, setCounts] = useState({});
-
-  useEffect(() => {
-    let mounted = true;
-    fetchJson(`/api/shop/${siteSlug}/categories`)
-      .then((data) => {
-        if (mounted) {
-          setCategories(data);
-          setLoading(false);
-        }
-      })
-      .catch((err) => {
-        if (mounted) {
-          setError(err.message);
-          setLoading(false);
-        }
-      });
-    return () => {
-      mounted = false;
-    };
-  }, [siteSlug]);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function loadCounts() {
-      try {
-        const results = await Promise.all(
-          categories.map(async (c) => {
-            const list = await fetchJson(`/api/shop/${siteSlug}/products?categoryId=${encodeURIComponent(String(c._id))}`);
-            return [String(c._id), list.length];
-          })
-        );
-        if (!cancelled) {
-          const next = {};
-          for (const [id, count] of results) next[id] = count;
-          setCounts(next);
-        }
-      } catch {}
-    }
-    if (categories.length > 0) loadCounts();
-    return () => { cancelled = true; };
-  }, [categories, siteSlug]);
+  const { data: categories = [], isLoading: loading, isError, error } = useCategoriesQuery(siteSlug);
+  const counts = useCategoryCountsQuery(siteSlug, categories);
 
   if (loading) return <div>Loading categories...</div>;
-  if (error) return <div style={{ color: 'red' }}>Failed to load categories: {error}</div>;
+  if (isError) return <div style={{ color: 'red' }}>Failed to load categories: {error?.message || 'Unknown error'}</div>;
 
   function getIcon(name) {
     const n = name.toLowerCase();

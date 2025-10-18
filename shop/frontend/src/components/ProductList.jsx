@@ -1,39 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { QuickAddModal } from './QuickAddModal';
-import { fetchJson, resolveAssetUrl } from '../lib/api';
+import { resolveAssetUrl } from '../lib/api';
+import { useProductsQuery } from '../lib/queries';
 
 export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', vegFilter = 'all' }) => {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState();
+  const { data: products = [], isLoading: loading, isError, error } = useProductsQuery({ siteSlug, categoryId: category._id, vegFilter });
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [activeProduct, setActiveProduct] = useState(null);
-
-  useEffect(() => {
-    let mounted = true;
-    const params = new URLSearchParams({ categoryId: String(category._id) });
-    if (vegFilter === 'veg') params.set('veg', 'veg');
-    if (vegFilter === 'nonveg') params.set('veg', 'nonveg');
-    fetchJson(`/api/shop/${siteSlug}/products?${params.toString()}`)
-      .then((data) => {
-        if (mounted) {
-          setProducts(data);
-          setLoading(false);
-        }
-      })
-      .catch((err) => {
-        if (mounted) {
-          setError(err.message);
-          setLoading(false);
-        }
-      });
-    return () => {
-      mounted = false;
-    };
-  }, [category._id, siteSlug, vegFilter]);
+  
 
   if (loading) return <div>Loading products...</div>;
-  if (error) return <div style={{ color: 'red' }}>Failed to load products: {error}</div>;
+  if (isError) return <div style={{ color: 'red' }}>Failed to load products: {error?.message || 'Unknown error'}</div>;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
