@@ -146,6 +146,9 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
 		const listX = doc.page.margins.left + 20;
 		const listWidth = availableWidth - 40;
 		const priceColWidth = 100;
+		// Define commonly used layout anchors for totals/lines below
+		const startX = listX;
+		const tableWidth = listWidth;
 
 		function drawSectionTitle() {
 			doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark)
@@ -229,7 +232,7 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
       }
     }
     doc.moveDown(0.2);
-		doc.moveTo(startX, doc.y).lineTo(startX + tableWidth, doc.y).strokeColor(colors.border).stroke();
+			doc.moveTo(startX, doc.y).lineTo(startX + tableWidth, doc.y).strokeColor(colors.border).stroke();
     doc.moveDown(0.2);
 		doc.font('Helvetica-Bold');
     row('GRAND TOTAL', grandTotal);
