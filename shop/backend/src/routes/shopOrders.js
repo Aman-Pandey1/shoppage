@@ -184,6 +184,13 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
     } else {
       order = await Order.findOne({ _id: orderId, site: req.siteId, userId: req.user?.userId });
       if (!order) return res.status(404).json({ error: 'Order not found' });
+      // Ensure a human-friendly sequential order number exists
+      if (!order.orderNumber) {
+        try {
+          const assigned = await getNextOrderNumber(req.siteId);
+          order = await Order.findByIdAndUpdate(order._id, { orderNumber: assigned }, { new: true });
+        } catch {}
+      }
     }
 
     res.setHeader('Content-Type', 'application/pdf');
