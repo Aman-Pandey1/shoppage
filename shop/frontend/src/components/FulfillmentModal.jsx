@@ -27,6 +27,7 @@ export const FulfillmentModal = ({
   const { setDeliveryFeeCents: setFeeInCart } = useCart();
   const pickupImg = getPickupImage();
   const deliveryImg = getDeliveryImage();
+  const [processedDeliveryImg, setProcessedDeliveryImg] = React.useState(null);
   const [selectedType, setSelectedType] = React.useState(selectedTypeProp || null);
   const [timing, setTiming] = React.useState(null); // 'now' | 'later'
   const [addrText, setAddrText] = React.useState('');
@@ -52,6 +53,57 @@ export const FulfillmentModal = ({
       setCheckingArea(false);
     }
   }, [open, selectedTypeProp]);
+
+  // Convert near-white pixels in the delivery image to transparent so it matches pickup style
+  React.useEffect(() => {
+    let cancelled = false;
+    async function process() {
+      try {
+        if (!deliveryImg) { setProcessedDeliveryImg(null); return; }
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        const src = String(deliveryImg);
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+          img.src = src;
+        });
+        if (cancelled) return;
+        const width = Math.max(1, img.naturalWidth || img.width || 1);
+        const height = Math.max(1, img.naturalHeight || img.height || 1);
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { setProcessedDeliveryImg(null); return; }
+        ctx.drawImage(img, 0, 0, width, height);
+        try {
+          const imageData = ctx.getImageData(0, 0, width, height);
+          const data = imageData.data;
+          // Treat near-white background as transparent
+          for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            // Threshold tuned to remove white/very light greys without affecting illustration
+            if (r > 245 && g > 245 && b > 245) {
+              data[i + 3] = 0; // alpha = 0
+            }
+          }
+          ctx.putImageData(imageData, 0, 0);
+          const out = canvas.toDataURL('image/png');
+          if (!cancelled) setProcessedDeliveryImg(out);
+        } catch {
+          // If getImageData fails (tainted canvas), fall back to original
+          if (!cancelled) setProcessedDeliveryImg(null);
+        }
+      } catch {
+        if (!cancelled) setProcessedDeliveryImg(null);
+      }
+    }
+    process();
+    return () => { cancelled = true; };
+  }, [deliveryImg]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -267,7 +319,21 @@ export const FulfillmentModal = ({
             <div style={{ fontWeight: 800, fontSize: 13 }}>Delivery</div>
             {deliveryImg ? (
               <div style={{ height: 88, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <img src={deliveryImg} alt="Delivery" loading="eager" decoding="async" style={{ display: 'block', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }} />
+                <img
+                  src={processedDeliveryImg || deliveryImg}
+                  alt="Delivery"
+                  loading="eager"
+                  decoding="async"
+                  style={{
+                    display: 'block',
+                    maxWidth: '100%',
+                    maxHeight: '100%',
+                    objectFit: 'contain',
+                    // Blend remaining whites if processing fails
+                    mixBlendMode: 'multiply',
+                    filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))',
+                  }}
+                />
               </div>
             ) : (
               <div style={{ fontSize: 34, height: 88, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🚚</div>
