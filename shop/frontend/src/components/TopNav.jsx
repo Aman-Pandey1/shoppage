@@ -114,7 +114,7 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
   const isDesktop = windowWidth >= 1024;
 
   return (
-    <div className="top-nav" data-menu-open={menuOpen ? 'true' : 'false'} role="banner" style={{ zIndex: menuOpen ? 220 : undefined }}>
+    <div className="top-nav" data-menu-open={menuOpen ? 'true' : 'false'} role="banner" style={{ zIndex: menuOpen ? 320 : undefined }}>
       <div className="top-nav__inner">
         <div className="brand" aria-label="Store brand">
           {logoLinkUrl ? (
@@ -248,7 +248,7 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
                 padding: 8, 
                 borderRadius: 12, 
                 minWidth: 220, 
-                zIndex: 210,
+                zIndex: 330,
                 background: 'white',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                 border: '1px solid #e2e8f0'
