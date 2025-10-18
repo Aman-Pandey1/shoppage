@@ -65,6 +65,12 @@ body {
   background: var(--bg);
 }
 
+/* When a modal is open, prevent background jumping/bubbling and pause sticky animations */
+body.modal-active {
+  overflow: hidden; /* safety for browsers that ignore inline style */
+}
+
+
 /* Intrinsically responsive media */
 img, video {
   max-width: 100%;
