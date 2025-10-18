@@ -126,7 +126,6 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
     doc.font('Helvetica').fontSize(10).fillColor(colors.text);
     doc.text(`Order #: ${order.orderNumber || String(order._id)}`, rightX, doc.y, { width: columnWidth });
     let siteLike = null;
-    const mock = req.app.locals.mockData;
     if (mock) {
       siteLike = (mock.sites || []).find((s) => String(s._id) === String(siteId));
     } else {
