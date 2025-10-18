@@ -67,7 +67,8 @@ router.post('/:siteIdOrSlug', async (req, res) => {
         site = await Site.findOne({ slug: siteIdOrSlug }).lean();
       }
     }
-    const signingKey = (site?.uberWebhookSecret) || process.env.UBER_SIGNING_KEY || process.env.UBER_WEBHOOK_SECRET;
+    // Use only per-site Uber webhook signing secret configured in Admin.
+    const signingKey = site?.uberWebhookSecret || '';
     const sig = req.get('X-Uber-Signature') || req.get('x-uber-signature') || req.get('x-uber-signature-sha256');
     const raw = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body || '');
     const valid = verifySignature(raw, sig, signingKey);
