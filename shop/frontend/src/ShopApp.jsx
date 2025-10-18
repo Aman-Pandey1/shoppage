@@ -190,8 +190,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   useEffect(() => { setSite(siteData || null); }, [siteData]);
 
   // Load pickup locations for popup
-  const { data: locationsData = [] } = useLocationsQuery(siteSlug);
-  const { data: citiesData = [] } = useCitiesQuery(siteSlug);
+  const { data: locationsData = [], isLoading: loadingLocations } = useLocationsQuery(siteSlug);
+  const { data: citiesData = [], isLoading: loadingCities } = useCitiesQuery(siteSlug);
   useEffect(() => {
     const arr = Array.isArray(locationsData) ? locationsData : [];
     setLocations(arr);
@@ -212,7 +212,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   }, [citiesData]);
 
   // Load site opening hours
-  const { data: hoursResp } = useHoursQuery(siteSlug);
+  const { data: hoursResp, isLoading: loadingHours } = useHoursQuery(siteSlug);
   useEffect(() => {
     if (!hoursResp) return;
     if (hoursResp && hoursResp.hours) {
@@ -386,6 +386,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         setDeliveryInlineAddr(addr);
         setDeliveryAddressSummary(summary || '');
       }}
+      loading={loadingHours || loadingLocations || (!hours) || (state.fulfillmentType === 'pickup' && locations.length === 0 && (loadingCities || loadingLocations))}
     />
   );
 
