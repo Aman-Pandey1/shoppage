@@ -6,6 +6,8 @@ const SiteSchema = new mongoose.Schema({
 	domains: [{ type: String }],
 	isActive: { type: Boolean, default: true },
 	brandColor: { type: String, default: '#0ea5e9' },
+	// Optional: header color specifically for the top navigation (separate from brandColor)
+	headerColor: { type: String },
 	// IANA timezone for operating hours (e.g., "America/Edmonton")
 	timeZone: { type: String },
 	// Currency used for Stripe and price displays (ISO code, e.g., 'usd', 'cad')
@@ -22,6 +24,8 @@ const SiteSchema = new mongoose.Schema({
 	supportWhatsappPhone: { type: String },
 	// Optional logo URL displayed in the shop header
 	logoUrl: { type: String },
+	// Optional banner/hero image shown on the shop home page
+	bannerImageUrl: { type: String },
 	// Optional: when set, clicking the logo/back arrow redirects to this URL
 	logoLinkUrl: { type: String },
 	// Stripe Connect: connected account for this site (acct_...)

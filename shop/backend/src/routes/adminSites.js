@@ -26,16 +26,16 @@ router.get('/', requireAdmin, async (_req, res) => {
 
 router.post('/', requireAdmin, async (req, res) => {
 	try {
-    const { name, slug, domains, uberCustomerId, pickup, brandColor, locations, cities, hours, deliveryFeeCents, splitDeliveryFee, logoUrl, logoLinkUrl, stripeAccountId, deliveryProvider, doordashStoreId, tagline, stripePublishableKey, stripeSecretKey, uberClientId, uberClientSecret, uberEnv, uberTokenScopes, doordashDeveloperId, doordashKeyId, doordashSigningSecret, uberWebhookSecret, stripeWebhookSecret, maxDeliveryDistanceKm, currency, minOrderCents, couponMinSubtotalCents, orderNotifyUrl, timeZone, supportWhatsappPhone } = req.body || {};
+    const { name, slug, domains, uberCustomerId, pickup, brandColor, headerColor, locations, cities, hours, deliveryFeeCents, splitDeliveryFee, logoUrl, bannerImageUrl, logoLinkUrl, stripeAccountId, deliveryProvider, doordashStoreId, tagline, stripePublishableKey, stripeSecretKey, uberClientId, uberClientSecret, uberEnv, uberTokenScopes, doordashDeveloperId, doordashKeyId, doordashSigningSecret, uberWebhookSecret, stripeWebhookSecret, maxDeliveryDistanceKm, currency, minOrderCents, couponMinSubtotalCents, orderNotifyUrl, timeZone, supportWhatsappPhone } = req.body || {};
 		if (!name || !slug) return res.status(400).json({ error: 'name and slug are required' });
 		const mock = req.app.locals.mockData;
     if (mock) {
-      const created = { _id: `site-${Date.now()}`, name, slug, domains: domains || [], uberCustomerId, uberClientId, uberClientSecret, uberEnv, uberTokenScopes, uberWebhookSecret, deliveryProvider: deliveryProvider === 'doordash' ? 'doordash' : 'uber', doordashStoreId, doordashDeveloperId, doordashKeyId, doordashSigningSecret, pickup, locations: Array.isArray(locations) ? locations : [], cities: Array.isArray(cities) ? cities : [], hours: hours || undefined, timeZone: timeZone || undefined, deliveryFeeCents: Number(deliveryFeeCents) || 0, splitDeliveryFee: !!splitDeliveryFee, brandColor: brandColor || '#0ea5e9', logoUrl, logoLinkUrl, tagline, isActive: true, stripeAccountId, stripePublishableKey, stripeSecretKey, stripeWebhookSecret, currency: (currency || 'usd').toLowerCase(), minOrderCents: typeof minOrderCents === 'number' ? Number(minOrderCents) : undefined, couponMinSubtotalCents: typeof couponMinSubtotalCents === 'number' ? Number(couponMinSubtotalCents) : undefined, orderNotifyUrl, supportWhatsappPhone };
+      const created = { _id: `site-${Date.now()}`, name, slug, domains: domains || [], uberCustomerId, uberClientId, uberClientSecret, uberEnv, uberTokenScopes, uberWebhookSecret, deliveryProvider: deliveryProvider === 'doordash' ? 'doordash' : 'uber', doordashStoreId, doordashDeveloperId, doordashKeyId, doordashSigningSecret, pickup, locations: Array.isArray(locations) ? locations : [], cities: Array.isArray(cities) ? cities : [], hours: hours || undefined, timeZone: timeZone || undefined, deliveryFeeCents: Number(deliveryFeeCents) || 0, splitDeliveryFee: !!splitDeliveryFee, brandColor: brandColor || '#0ea5e9', headerColor, logoUrl, bannerImageUrl, logoLinkUrl, tagline, isActive: true, stripeAccountId, stripePublishableKey, stripeSecretKey, stripeWebhookSecret, currency: (currency || 'usd').toLowerCase(), minOrderCents: typeof minOrderCents === 'number' ? Number(minOrderCents) : undefined, couponMinSubtotalCents: typeof couponMinSubtotalCents === 'number' ? Number(couponMinSubtotalCents) : undefined, orderNotifyUrl, supportWhatsappPhone };
 			mock.sites.unshift(created);
 			try { saveMockData(req.app.locals.mockData); } catch {}
 			return res.status(201).json(created);
 		}
-    const site = await Site.create({ name, slug, domains: domains || [], uberCustomerId, uberClientId, uberClientSecret, uberEnv, uberTokenScopes, uberWebhookSecret, deliveryProvider: deliveryProvider === 'doordash' ? 'doordash' : 'uber', doordashStoreId, doordashDeveloperId, doordashKeyId, doordashSigningSecret, pickup, locations: Array.isArray(locations) ? locations : [], cities: Array.isArray(cities) ? cities : [], hours, timeZone: timeZone || undefined, deliveryFeeCents: Number(deliveryFeeCents) || 0, splitDeliveryFee: !!splitDeliveryFee, brandColor: brandColor || '#0ea5e9', logoUrl, logoLinkUrl, tagline, stripeAccountId, stripePublishableKey, stripeSecretKey, stripeWebhookSecret, maxDeliveryDistanceKm: typeof maxDeliveryDistanceKm === 'number' ? maxDeliveryDistanceKm : undefined, currency: (currency || 'usd').toLowerCase(), minOrderCents: typeof minOrderCents === 'number' ? Number(minOrderCents) : undefined, couponMinSubtotalCents: typeof couponMinSubtotalCents === 'number' ? Number(couponMinSubtotalCents) : undefined, orderNotifyUrl, supportWhatsappPhone, isActive: true });
+    const site = await Site.create({ name, slug, domains: domains || [], uberCustomerId, uberClientId, uberClientSecret, uberEnv, uberTokenScopes, uberWebhookSecret, deliveryProvider: deliveryProvider === 'doordash' ? 'doordash' : 'uber', doordashStoreId, doordashDeveloperId, doordashKeyId, doordashSigningSecret, pickup, locations: Array.isArray(locations) ? locations : [], cities: Array.isArray(cities) ? cities : [], hours, timeZone: timeZone || undefined, deliveryFeeCents: Number(deliveryFeeCents) || 0, splitDeliveryFee: !!splitDeliveryFee, brandColor: brandColor || '#0ea5e9', headerColor, logoUrl, bannerImageUrl, logoLinkUrl, tagline, stripeAccountId, stripePublishableKey, stripeSecretKey, stripeWebhookSecret, maxDeliveryDistanceKm: typeof maxDeliveryDistanceKm === 'number' ? maxDeliveryDistanceKm : undefined, currency: (currency || 'usd').toLowerCase(), minOrderCents: typeof minOrderCents === 'number' ? Number(minOrderCents) : undefined, couponMinSubtotalCents: typeof couponMinSubtotalCents === 'number' ? Number(couponMinSubtotalCents) : undefined, orderNotifyUrl, supportWhatsappPhone, isActive: true });
 		res.status(201).json(site);
 	} catch (err) {
 		res.status(400).json({ error: err.message });
@@ -45,12 +45,12 @@ router.post('/', requireAdmin, async (req, res) => {
 router.patch('/:siteId', requireAdmin, async (req, res) => {
 	try {
 		const { siteId } = req.params;
-    const { name, slug, domains, isActive, uberCustomerId, pickup, brandColor, locations, cities, hours, deliveryFeeCents, splitDeliveryFee, logoUrl, logoLinkUrl, stripeAccountId, deliveryProvider, doordashStoreId, tagline, stripePublishableKey, stripeSecretKey, uberClientId, uberClientSecret, uberEnv, uberTokenScopes, doordashDeveloperId, doordashKeyId, doordashSigningSecret, uberWebhookSecret, stripeWebhookSecret, maxDeliveryDistanceKm, currency, minOrderCents, couponMinSubtotalCents, orderNotifyUrl, timeZone, supportWhatsappPhone } = req.body || {};
+    const { name, slug, domains, isActive, uberCustomerId, pickup, brandColor, headerColor, locations, cities, hours, deliveryFeeCents, splitDeliveryFee, logoUrl, bannerImageUrl, logoLinkUrl, stripeAccountId, deliveryProvider, doordashStoreId, tagline, stripePublishableKey, stripeSecretKey, uberClientId, uberClientSecret, uberEnv, uberTokenScopes, doordashDeveloperId, doordashKeyId, doordashSigningSecret, uberWebhookSecret, stripeWebhookSecret, maxDeliveryDistanceKm, currency, minOrderCents, couponMinSubtotalCents, orderNotifyUrl, timeZone, supportWhatsappPhone } = req.body || {};
 		const mock = req.app.locals.mockData;
     if (mock) {
 			const idx = mock.sites.findIndex((s) => s._id === siteId);
 			if (idx === -1) return res.status(404).json({ error: 'Not found' });
-      const updated = { ...mock.sites[idx], ...(name !== undefined ? { name } : {}), ...(slug !== undefined ? { slug } : {}), ...(domains !== undefined ? { domains } : {}), ...(isActive !== undefined ? { isActive } : {}), ...(uberCustomerId !== undefined ? { uberCustomerId } : {}), ...(uberClientId !== undefined ? { uberClientId } : {}), ...(uberClientSecret !== undefined ? { uberClientSecret } : {}), ...(uberEnv !== undefined ? { uberEnv } : {}), ...(uberTokenScopes !== undefined ? { uberTokenScopes } : {}), ...(uberWebhookSecret !== undefined ? { uberWebhookSecret } : {}), ...(deliveryProvider !== undefined ? { deliveryProvider: deliveryProvider === 'doordash' ? 'doordash' : 'uber' } : {}), ...(doordashStoreId !== undefined ? { doordashStoreId } : {}), ...(doordashDeveloperId !== undefined ? { doordashDeveloperId } : {}), ...(doordashKeyId !== undefined ? { doordashKeyId } : {}), ...(doordashSigningSecret !== undefined ? { doordashSigningSecret } : {}), ...(pickup !== undefined ? { pickup } : {}), ...(brandColor !== undefined ? { brandColor } : {}), ...(locations !== undefined ? { locations } : {}), ...(cities !== undefined ? { cities } : {}), ...(hours !== undefined ? { hours } : {}), ...(timeZone !== undefined ? { timeZone } : {}), ...(deliveryFeeCents !== undefined ? { deliveryFeeCents: Number(deliveryFeeCents) || 0 } : {}), ...(splitDeliveryFee !== undefined ? { splitDeliveryFee: !!splitDeliveryFee } : {}), ...(maxDeliveryDistanceKm !== undefined ? { maxDeliveryDistanceKm: Number(maxDeliveryDistanceKm) } : {}), ...(logoUrl !== undefined ? { logoUrl } : {}), ...(logoLinkUrl !== undefined ? { logoLinkUrl } : {}), ...(stripeAccountId !== undefined ? { stripeAccountId } : {}), ...(stripePublishableKey !== undefined ? { stripePublishableKey } : {}), ...(stripeSecretKey !== undefined ? { stripeSecretKey } : {}), ...(stripeWebhookSecret !== undefined ? { stripeWebhookSecret } : {}), ...(tagline !== undefined ? { tagline } : {}), ...(currency !== undefined ? { currency: String(currency).toLowerCase() } : {}), ...(minOrderCents !== undefined ? { minOrderCents: Number(minOrderCents) } : {}), ...(couponMinSubtotalCents !== undefined ? { couponMinSubtotalCents: Number(couponMinSubtotalCents) } : {}), ...(orderNotifyUrl !== undefined ? { orderNotifyUrl } : {}), ...(supportWhatsappPhone !== undefined ? { supportWhatsappPhone } : {}) };
+      const updated = { ...mock.sites[idx], ...(name !== undefined ? { name } : {}), ...(slug !== undefined ? { slug } : {}), ...(domains !== undefined ? { domains } : {}), ...(isActive !== undefined ? { isActive } : {}), ...(uberCustomerId !== undefined ? { uberCustomerId } : {}), ...(uberClientId !== undefined ? { uberClientId } : {}), ...(uberClientSecret !== undefined ? { uberClientSecret } : {}), ...(uberEnv !== undefined ? { uberEnv } : {}), ...(uberTokenScopes !== undefined ? { uberTokenScopes } : {}), ...(uberWebhookSecret !== undefined ? { uberWebhookSecret } : {}), ...(deliveryProvider !== undefined ? { deliveryProvider: deliveryProvider === 'doordash' ? 'doordash' : 'uber' } : {}), ...(doordashStoreId !== undefined ? { doordashStoreId } : {}), ...(doordashDeveloperId !== undefined ? { doordashDeveloperId } : {}), ...(doordashKeyId !== undefined ? { doordashKeyId } : {}), ...(doordashSigningSecret !== undefined ? { doordashSigningSecret } : {}), ...(pickup !== undefined ? { pickup } : {}), ...(brandColor !== undefined ? { brandColor } : {}), ...(headerColor !== undefined ? { headerColor } : {}), ...(locations !== undefined ? { locations } : {}), ...(cities !== undefined ? { cities } : {}), ...(hours !== undefined ? { hours } : {}), ...(timeZone !== undefined ? { timeZone } : {}), ...(deliveryFeeCents !== undefined ? { deliveryFeeCents: Number(deliveryFeeCents) || 0 } : {}), ...(splitDeliveryFee !== undefined ? { splitDeliveryFee: !!splitDeliveryFee } : {}), ...(maxDeliveryDistanceKm !== undefined ? { maxDeliveryDistanceKm: Number(maxDeliveryDistanceKm) } : {}), ...(logoUrl !== undefined ? { logoUrl } : {}), ...(bannerImageUrl !== undefined ? { bannerImageUrl } : {}), ...(logoLinkUrl !== undefined ? { logoLinkUrl } : {}), ...(stripeAccountId !== undefined ? { stripeAccountId } : {}), ...(stripePublishableKey !== undefined ? { stripePublishableKey } : {}), ...(stripeSecretKey !== undefined ? { stripeSecretKey } : {}), ...(stripeWebhookSecret !== undefined ? { stripeWebhookSecret } : {}), ...(tagline !== undefined ? { tagline } : {}), ...(currency !== undefined ? { currency: String(currency).toLowerCase() } : {}), ...(minOrderCents !== undefined ? { minOrderCents: Number(minOrderCents) } : {}), ...(couponMinSubtotalCents !== undefined ? { couponMinSubtotalCents: Number(couponMinSubtotalCents) } : {}), ...(orderNotifyUrl !== undefined ? { orderNotifyUrl } : {}), ...(supportWhatsappPhone !== undefined ? { supportWhatsappPhone } : {}) };
 			mock.sites[idx] = updated;
 			try { saveMockData(req.app.locals.mockData); } catch {}
 			return res.json(updated);
@@ -82,6 +82,7 @@ router.patch('/:siteId', requireAdmin, async (req, res) => {
       ...(splitDeliveryFee !== undefined ? { splitDeliveryFee: !!splitDeliveryFee } : {}),
       ...(maxDeliveryDistanceKm !== undefined ? { maxDeliveryDistanceKm: Number(maxDeliveryDistanceKm) } : {}),
       ...(logoUrl !== undefined ? { logoUrl } : {}),
+      ...(bannerImageUrl !== undefined ? { bannerImageUrl } : {}),
       ...(logoLinkUrl !== undefined ? { logoLinkUrl } : {}),
       ...(tagline !== undefined ? { tagline } : {}),
       ...(stripeAccountId !== undefined ? { stripeAccountId } : {}),
@@ -93,6 +94,7 @@ router.patch('/:siteId', requireAdmin, async (req, res) => {
       ...(couponMinSubtotalCents !== undefined ? { couponMinSubtotalCents: Number(couponMinSubtotalCents) } : {}),
       ...(orderNotifyUrl !== undefined ? { orderNotifyUrl } : {}),
       ...(supportWhatsappPhone !== undefined ? { supportWhatsappPhone } : {}),
+      ...(headerColor !== undefined ? { headerColor } : {}),
     };
     const site = await Site.findByIdAndUpdate(
       siteId,
@@ -143,6 +145,46 @@ router.post('/:siteId/logo', requireAdmin, upload.single('file'), async (req, re
     const updated = await Site.findByIdAndUpdate(siteId, { logoUrl: publicUrl }, { new: true });
     if (!updated) return res.status(404).json({ error: 'Not found' });
     res.json({ ok: true, logoUrl: publicUrl, site: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Upload site banner image and set bannerImageUrl. Uses same storage strategy as logo.
+router.post('/:siteId/banner', requireAdmin, upload.single('file'), async (req, res) => {
+  try {
+    const { siteId } = req.params;
+    if (!req.file) return res.status(400).json({ error: 'Missing file' });
+
+    const STORE_IN_DB = String(process.env.STORE_SITE_LOGO_IN_DB || process.env.STORE_IMAGES_IN_DB || 'true')
+      .toLowerCase() === 'true';
+
+    let publicUrl = '';
+    if (STORE_IN_DB) {
+      const mime = (req.file.mimetype && /^image\//.test(req.file.mimetype)) ? req.file.mimetype : 'image/jpeg';
+      const base64 = req.file.buffer.toString('base64');
+      publicUrl = `data:${mime};base64,${base64}`;
+    } else {
+      const dir = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads');
+      try { await mkdir(dir, { recursive: true }); } catch {}
+      const ext = path.extname(req.file.originalname || '') || '.jpg';
+      const fileName = `site-banner-${siteId}-${Date.now()}-${Math.random().toString(36).slice(2,8)}${ext}`;
+      const filePath = path.join(dir, fileName);
+      await writeFile(filePath, req.file.buffer);
+      publicUrl = `/uploads/${fileName}`;
+    }
+
+    const mock = req.app.locals.mockData;
+    if (mock) {
+      const idx = mock.sites.findIndex((s) => s._id === siteId);
+      if (idx === -1) return res.status(404).json({ error: 'Not found' });
+      mock.sites[idx].bannerImageUrl = publicUrl;
+      try { saveMockData(req.app.locals.mockData); } catch {}
+      return res.json({ ok: true, bannerImageUrl: publicUrl, site: mock.sites[idx] });
+    }
+    const updated = await Site.findByIdAndUpdate(siteId, { bannerImageUrl: publicUrl }, { new: true });
+    if (!updated) return res.status(404).json({ error: 'Not found' });
+    res.json({ ok: true, bannerImageUrl: publicUrl, site: updated });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
