@@ -144,11 +144,12 @@ function normalizeE164Phone(raw, fallback) {
 	}
 }
 
-export async function requestQuote({ customerId, pickup, dropoff, creds }) {
+export async function requestQuote({ customerId, pickup, dropoff, creds, allowSimulation = true }) {
     // Simulate only when credentials are missing. Even if mock mode is on,
     // prefer calling Uber's sandbox/production when creds are provided so
     // admin tests and dashboards reflect real deliveries.
     if (isMissingUberCreds(creds)) {
+        if (!allowSimulation) throw new Error('Uber credentials missing');
         return {
             id: `q-${Date.now()}`,
             fee: { amount: 799, currency_code: 'CAD' },
@@ -171,7 +172,7 @@ export async function requestQuote({ customerId, pickup, dropoff, creds }) {
   const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
   if (!res.ok) {
     const text = await safeText(res);
-    if ((envUsed === 'sandbox' || isUsingMock()) && (res.status >= 500 || /address_undeliverable|Cannot find eligible product|internal_server_error/i.test(text))) {
+    if (allowSimulation && (envUsed === 'sandbox' || isUsingMock()) && (res.status >= 500 || /address_undeliverable|Cannot find eligible product|internal_server_error/i.test(text))) {
       // Return a simulated quote to unblock testing
       return {
         id: `q-${Date.now()}`,
