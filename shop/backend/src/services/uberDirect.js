@@ -79,7 +79,9 @@ async function getAccessToken(creds) {
 
   // Audience ordering and fallback strategy:
   // - If audience was provided by the caller, try it first
-  // - Then try the common default 'https://api.uber.com'
+  // - Then try environment-appropriate defaults:
+  //     sandbox: 'https://sandbox-api.uber.com' then 'https://api.uber.com'
+  //     production: 'https://api.uber.com' (legacy apps sometimes accept this in both envs)
   // - Finally, try with no audience parameter at all
   const audienceCandidates = [];
   const addAudience = (a) => {
@@ -87,6 +89,10 @@ async function getAccessToken(creds) {
     if (!audienceCandidates.includes(a)) audienceCandidates.push(a);
   };
   if (typeof audience === 'string' && audience.trim().length > 0) addAudience(audience.trim());
+  // Prefer sandbox audience when env hint is sandbox
+  if (env === 'sandbox') {
+    addAudience('https://sandbox-api.uber.com');
+  }
   addAudience('https://api.uber.com');
   addAudience('');
 
@@ -110,7 +116,9 @@ async function getAccessToken(creds) {
         const data = await res.json();
         const token = data.access_token;
         const expiryMs = Date.now() + (Number(data.expires_in) * 1000);
-        const envUsed = tokenUrl.includes('sandbox-') ? 'sandbox' : 'production';
+        // Respect the requested environment for downstream API base selection.
+        // Token issuance host does not necessarily indicate env.
+        const envUsed = env === 'sandbox' ? 'sandbox' : 'production';
         const key = `${clientId}::${envUsed}`;
         tokenCache.set(key, { token, expiryMs, envUsed });
         return { token, envUsed };
