@@ -29,6 +29,9 @@
   --ring: rgba(14, 165, 233, 0.35);
   --ring-strong: rgba(167, 139, 250, 0.35);
 
+  /* Consistent header height for layout offsets */
+  --header-height: 88px;
+
   /* Radii & shadows */
   --radius: 14px;
   --radius-sm: 10px;
@@ -290,7 +293,7 @@ input:focus, select:focus, textarea:focus {
     transform: translateX(100%);
     transition: transform .25s ease;
     /* Ensure cart drawer sits above sticky header on mobile */
-    z-index: 120;
+    z-index: 800;
   }
   .cart-sidebar[data-open="true"] {
     transform: translateX(0);
@@ -305,7 +308,7 @@ input:focus, select:focus, textarea:focus {
     pointer-events: none;
     transition: opacity .2s ease;
     /* Keep backdrop below the cart drawer but above page */
-    z-index: 110;
+    z-index: 700;
   }
   .cart-backdrop[data-show="true"] {
     opacity: 1;
@@ -375,7 +378,9 @@ input:focus, select:focus, textarea:focus {
   position: sticky;
   top: 0;
   /* Keep header above order cards and sidebars by default */
-  z-index: 140;
+  z-index: 500;
+  /* Lock a consistent visual height to coordinate with sidebars */
+  min-height: var(--header-height);
   background: var(--primary);
   background-image: linear-gradient(180deg, var(--primary), var(--primary-600));
   color: #fff;
@@ -386,7 +391,7 @@ input:focus, select:focus, textarea:focus {
 /* Respect top safe area on devices with display cutouts */
 .top-nav { padding-top: max(0px, var(--safe-top)); }
 /* When account menu is open, bump nav even higher than mobile cart */
-.top-nav[data-menu-open="true"] { z-index: 600; }
+.top-nav[data-menu-open="true"] { z-index: 700; }
 .top-nav__inner {
   max-width: 1280px;
   margin: 0 auto;
