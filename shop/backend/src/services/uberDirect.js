@@ -2,14 +2,11 @@ import fetch from 'node-fetch';
 
 const UBER_TOKEN_URL = 'https://login.uber.com/oauth/v2/token';
 function resolveUberTokenUrls(env) {
-  // Try both production and sandbox login hosts, prioritizing the selected env.
-  // This helps in cases where app credentials/customer IDs are mismatched
-  // between sandbox and production during setup/testing.
-  const envStr = String(env || '').toLowerCase();
-  const urls = envStr === 'sandbox'
-    ? ['https://sandbox-login.uber.com/oauth/v2/token', UBER_TOKEN_URL]
-    : [UBER_TOKEN_URL, 'https://sandbox-login.uber.com/oauth/v2/token'];
-  return Array.from(new Set(urls));
+  // In sandbox, only use sandbox login. In production, only use prod login.
+  // Avoid cross-env tokens that later cause 401s against the customer ID.
+  const envStr = String(env || '').toLowerCase().trim();
+  if (envStr === 'sandbox') return ['https://sandbox-login.uber.com/oauth/v2/token'];
+  return [UBER_TOKEN_URL];
 }
 function isUsingMock() {
   try {
@@ -20,11 +17,11 @@ function isUsingMock() {
 }
 function resolveUberCreds(creds) {
   // Only use per-site credentials passed by callers; do not fall back to env.
-  const clientId = String(creds?.clientId || '');
-  const clientSecret = String(creds?.clientSecret || '');
-  const env = String(creds?.env || 'production').toLowerCase();
-  const scopes = Object.prototype.hasOwnProperty.call(creds || {}, 'scopes') ? (creds?.scopes ?? '') : undefined;
-  const audience = creds?.audience || undefined;
+  const clientId = String(creds?.clientId || '').trim();
+  const clientSecret = String(creds?.clientSecret || '').trim();
+  const env = String(creds?.env || 'production').toLowerCase().trim();
+  const scopes = Object.prototype.hasOwnProperty.call(creds || {}, 'scopes') ? (typeof creds?.scopes === 'string' ? creds.scopes.trim() : creds?.scopes ?? '') : undefined;
+  const audience = typeof creds?.audience === 'string' ? creds.audience.trim() : undefined;
   return { clientId, clientSecret, env, scopes, audience };
 }
 function isMissingUberCreds(creds) {
@@ -41,6 +38,12 @@ function isMissingUberCreds(creds) {
 // persist which environment actually issued the token so API base hosts can align
 // even if the configured env is mismatched.
 const tokenCache = new Map(); // key: `${clientId}::${resolvedEnv}` -> { token, expiryMs, envUsed }
+function invalidateToken(clientId) {
+  try {
+    tokenCache.delete(`${clientId}::production`);
+    tokenCache.delete(`${clientId}::sandbox`);
+  } catch {}
+}
 
 async function getAccessToken(creds) {
   const { clientId, clientSecret, env, audience } = resolveUberCreds(creds);
@@ -196,9 +199,21 @@ export async function requestQuote({ customerId, pickup, dropoff, creds, allowSi
     dropoff_address: formatAddress(dropoff.address),
 		pickup_ready_dt: new Date().toISOString(),
 	};
-  const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
+  let res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
   if (!res.ok) {
     const text = await safeText(res);
+    // If unauthorized, invalidate token and retry once (helps when cached token was minted with wrong audience)
+    if (res.status === 401) {
+      const { clientId } = resolveUberCreds(creds);
+      invalidateToken(clientId);
+      const retryToken = await getAccessToken(creds);
+      const retryBase = (retryToken.envUsed || resolveUberCreds(creds).env) === 'sandbox'
+        ? 'https://sandbox-api.uber.com/v1/customers'
+        : 'https://api.uber.com/v1/customers';
+      const retryUrl = `${retryBase}/${encodeURIComponent(customerId)}/delivery_quotes`;
+      res = await fetch(retryUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${retryToken.token}` }, body: JSON.stringify(payload) });
+      if (res.ok) return res.json();
+    }
     if (allowSimulation && (envUsed === 'sandbox' || isUsingMock()) && (res.status >= 500 || /address_undeliverable|Cannot find eligible product|internal_server_error/i.test(text))) {
       // Return a simulated quote to unblock testing
       return {
@@ -251,9 +266,20 @@ export async function createDelivery({ customerId, pickup, dropoff, manifestItem
 		tip_by_customer: tip || 0,
 		external_id: externalId,
 	};
-  const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
+  let res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
   if (!res.ok) {
     const text = await safeText(res);
+    if (res.status === 401) {
+      const { clientId } = resolveUberCreds(creds);
+      invalidateToken(clientId);
+      const retryToken = await getAccessToken(creds);
+      const retryBase = (retryToken.envUsed || resolveUberCreds(creds).env) === 'sandbox'
+        ? 'https://sandbox-api.uber.com/v1/customers'
+        : 'https://api.uber.com/v1/customers';
+      const retryUrl = `${retryBase}/${encodeURIComponent(customerId)}/deliveries`;
+      res = await fetch(retryUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${retryToken.token}` }, body: JSON.stringify(payload) });
+      if (res.ok) return res.json();
+    }
 		if (res.status === 400 && /manifest_items|toField:\s*size|unknown enum value/i.test(text)) {
       throw new Error('One or more items have an unsupported size. Use Small/Medium/Large or remove size.');
     }
