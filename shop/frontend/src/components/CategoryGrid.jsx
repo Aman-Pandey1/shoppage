@@ -6,7 +6,11 @@ export const CategoryGrid = ({ onSelect, siteSlug = 'default' }) => {
   const { data: categories = [], isLoading: loading, isError, error } = useCategoriesQuery(siteSlug);
   const counts = useCategoryCountsQuery(siteSlug, categories);
 
-  if (loading) return <div>Loading categories...</div>;
+  if (loading) return (
+    <div className="loading-center">
+      <div className="spinner" aria-label="Loading categories" />
+    </div>
+  );
   if (isError) return <div style={{ color: 'red' }}>Failed to load categories: {error?.message || 'Unknown error'}</div>;
 
   function getIcon(name) {

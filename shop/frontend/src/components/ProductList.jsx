@@ -9,7 +9,11 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
   const [activeProduct, setActiveProduct] = useState(null);
   
 
-  if (loading) return <div>Loading products...</div>;
+  if (loading) return (
+    <div className="loading-center">
+      <div className="spinner" aria-label="Loading products" />
+    </div>
+  );
   if (isError) return <div style={{ color: 'red' }}>Failed to load products: {error?.message || 'Unknown error'}</div>;
 
   return (
