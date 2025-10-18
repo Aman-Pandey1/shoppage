@@ -52,6 +52,36 @@ export const StoreBanner = ({ siteSlug, onCta }) => {
     ? `url(${bannerUrl}) center/cover`
     : 'url(https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?q=80&w=1600&auto=format&fit=crop) center/cover';
 
+  // Smoothly shrink banner height on scroll and keep layout in sync via CSS var
+  React.useEffect(() => {
+    const root = document.documentElement;
+    const base = 260; // px (matches CSS default var)
+    const min = 140; // px when fully collapsed
+    let raf = 0;
+    function onScroll() {
+      // Use rAF to avoid layout thrash on rapid scroll
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        try {
+          const y = window.scrollY || document.documentElement.scrollTop || 0;
+          const t = Math.min(1, Math.max(0, y / base));
+          const h = Math.round(min + (base - min) * (1 - t));
+          root.style.setProperty('--banner-height', `${h}px`);
+        } catch {}
+      });
+    }
+    // Initialize once on mount
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      // Restore default on unmount
+      try { root.style.removeProperty('--banner-height'); } catch {}
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+
   return (
     <section
       className="animate-popIn"
@@ -61,19 +91,25 @@ export const StoreBanner = ({ siteSlug, onCta }) => {
         border: 'none',
         marginBottom: 12,
         padding: 0,
+        // Full-bleed, perfectly centered relative to viewport (not page column)
         position: 'relative',
         width: '100vw',
-        marginLeft: '50%',
-        transform: 'translateX(-50%)',
+        left: '50%',
+        right: '50%',
+        marginLeft: '-50vw',
+        marginRight: '-50vw',
       }}
       aria-label="Store banner"
     >
       <div
         style={{
-          position: 'relative',
+          position: 'sticky',
+          top: 'var(--header-height)',
           width: '100%',
           height: 'var(--banner-height, 240px)',
           background: backgroundImage,
+          transition: 'height .25s ease',
+          zIndex: 1,
         }}
       >
         <div

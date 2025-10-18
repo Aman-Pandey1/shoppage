@@ -135,7 +135,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
         top: `calc(var(--header-height) + var(--banner-height) + 12px)`,
         right: 16,
         bottom: 16,
-        width: 360,
+        width: 'var(--cart-width, 360px)',
         background: '#fff',
         border: '1px solid var(--border)',
         borderRadius: 'var(--radius)',
