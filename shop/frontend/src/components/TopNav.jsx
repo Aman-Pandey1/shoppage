@@ -115,7 +115,7 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
   const isDesktop = windowWidth >= 1024;
 
   return (
-    <div className="top-nav" data-menu-open={menuOpen ? 'true' : 'false'} role="banner" style={{ zIndex: menuOpen ? 750 : undefined }}>
+    <div className="top-nav" data-menu-open={menuOpen ? 'true' : 'false'} role="banner" style={{ zIndex: menuOpen ? 900 : undefined }}>
       <div className="top-nav__inner">
         {/* Left: Back To Home */}
         <div className="brand" aria-label="Store brand">
