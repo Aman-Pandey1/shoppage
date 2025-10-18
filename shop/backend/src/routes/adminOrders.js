@@ -4,6 +4,7 @@ import Order from '../models/Order.js';
 import Site from '../models/Site.js';
 import PDFDocument from 'pdfkit';
 import { formatDateTimeInSiteTz } from '../utils/time.js';
+import { getNextOrderNumber } from '../utils/orderNumber.js';
 
 const router = Router({ mergeParams: true });
 
@@ -57,6 +58,13 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
       order = await Order.findOne({ _id: orderId, site: siteId });
     }
     if (!order) return res.status(404).json({ error: 'Order not found' });
+    // Ensure order has a sequential human-friendly number
+    if (!order.orderNumber) {
+      try {
+        const assigned = await getNextOrderNumber(siteId);
+        order = await Order.findByIdAndUpdate(order._id, { orderNumber: assigned }, { new: true });
+      } catch {}
+    }
 
     res.setHeader('Content-Type', 'application/pdf');
     const fileId = (order.orderNumber || String(order._id).slice(-6)).replace(/\s+/g, '');

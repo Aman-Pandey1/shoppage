@@ -2,6 +2,7 @@ import { Router } from 'express';
 import Stripe from 'stripe';
 import Order from '../models/Order.js';
 import Site from '../models/Site.js';
+import { getNextOrderNumber } from '../utils/orderNumber.js';
 import { createDelivery as uberCreateDelivery } from '../services/uberDirect.js';
 import { createDelivery as ddCreateDelivery } from '../services/doordashDrive.js';
 import { sendOrderEmail } from '../utils/mailer.js';
@@ -127,6 +128,12 @@ router.post('/:siteIdOrSlug', async (req, res) => {
             if (idx >= 0) {
               // Mark paid
               list[idx].status = 'paid';
+              // Assign a sequential human-friendly order number if missing
+              if (!list[idx].orderNumber) {
+                const nextSeq = ((req.app.locals.mockData.orderSeq || 1000) + 1);
+                req.app.locals.mockData.orderSeq = nextSeq;
+                list[idx].orderNumber = `BB-${nextSeq}`;
+              }
               try {
                 // If delivery order without provider delivery yet, create it now (real API if creds exist)
                 if (list[idx].fulfillmentType === 'delivery' && !list[idx].uberDeliveryId) {
@@ -170,7 +177,14 @@ router.post('/:siteIdOrSlug', async (req, res) => {
               } catch {}
             }
           } else {
-            const order = await Order.findByIdAndUpdate(orderId, { status: 'paid' }, { new: true });
+            let order = await Order.findByIdAndUpdate(orderId, { status: 'paid' }, { new: true });
+            // Ensure a sequential human-friendly order number exists
+            if (order && !order.orderNumber) {
+              try {
+                const assigned = await getNextOrderNumber(order.site);
+                order = await Order.findByIdAndUpdate(order._id, { orderNumber: assigned }, { new: true });
+              } catch {}
+            }
             try {
               // If delivery order without provider delivery yet, create it now
               if (order && order.fulfillmentType === 'delivery' && !order.uberDeliveryId) {

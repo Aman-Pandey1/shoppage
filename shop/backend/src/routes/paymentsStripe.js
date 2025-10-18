@@ -87,6 +87,13 @@ router.get('/confirm/:sessionId', async (req, res) => {
     if (paid) {
       // Mark order paid
       updatedOrder = await Order.findByIdAndUpdate(orderId, { status: 'paid' }, { new: true });
+      // Assign missing order number now if needed
+      if (updatedOrder && !updatedOrder.orderNumber) {
+        try {
+          const assigned = await getNextOrderNumber(updatedOrder.site);
+          updatedOrder = await Order.findByIdAndUpdate(updatedOrder._id, { orderNumber: assigned }, { new: true });
+        } catch {}
+      }
       if (updatedOrder && updatedOrder.fulfillmentType === 'delivery' && !updatedOrder.uberDeliveryId) {
         // Create delivery now (same logic as webhook)
         const site = await Site.findById(updatedOrder.site);
