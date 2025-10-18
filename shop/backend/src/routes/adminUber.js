@@ -35,7 +35,8 @@ router.get('/sites/:siteId/health', requireAdmin, async (req, res) => {
           phone: testPhone,
           address: pickup.address,
         },
-        creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv, scopes: site?.uberTokenScopes }
+        creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv, scopes: site?.uberTokenScopes },
+        allowSimulation: false
       });
       return res.json({ ok: true, fee: quote?.fee, eta: quote?.dropoff_estimated_dt, simulated: !!quote?.simulated });
     } catch (err) {
@@ -44,10 +45,7 @@ router.get('/sites/:siteId/health', requireAdmin, async (req, res) => {
       if (/address_undeliverable|Cannot find eligible product/i.test(msg)) {
         return res.status(400).json({ ok: false, error: 'Address undeliverable in Uber sandbox. Ensure pickup address is valid and within supported region, or try a nearby address.' });
       }
-      // If Uber token scope is invalid, return simulated OK so admins are unblocked
-      if (/invalid_scope|Uber token error/i.test(msg)) {
-        return res.json({ ok: true, fee: { amount: 799, currency_code: 'CAD' }, eta: null, simulated: true, note: 'Uber scopes invalid; using simulated health.' });
-      }
+      // In strict mode, surface exact errors to the admin instead of masking
       return res.status(400).json({ ok: false, error: err.message });
     }
 	} catch (err) {
