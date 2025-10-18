@@ -218,7 +218,7 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
       const p = order.pickup.location;
       const addr = Array.isArray(p?.address?.streetAddress) ? p.address.streetAddress.join(' ') : '';
       doc.text(`${p.name || 'Restaurant'}`, leftX, doc.y, { width: columnWidth });
-      doc.text(`${addr} ${p?.address?.city || ''} ${p?.address?.province || ''} ${p?.address?.postalCode || ''}`, leftX, doc.y, { width: columnWidth });
+      doc.text(`Address: ${addr} ${p?.address?.city || ''} ${p?.address?.province || ''} ${p?.address?.postalCode || ''}`, leftX, doc.y, { width: columnWidth });
     }
     doc.moveDown(0.6);
     doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('CUSTOMER', leftX, doc.y);
@@ -235,7 +235,7 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
     const leftEndY = doc.y;
 
     // Right column: Delivery details (or Order details for pickup)
-    const rightHdr = (order.fulfillmentType || 'pickup') === 'delivery' ? 'DELIVERY DETAILS' : 'ORDER DETAILS';
+    const rightHdr = 'ORDER DETAILS';
     doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text(rightHdr, rightX, topY);
     doc.font('Helvetica').fontSize(10).fillColor(colors.text);
     doc.text(`Order #: ${order.orderNumber || String(order._id)}`, rightX, doc.y, { width: columnWidth });
@@ -265,8 +265,7 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
       const qty = Number(it.quantity||1);
       const line = unit * qty;
       subtotal += line;
-      // zebra stripe background for readability
-      if (idx % 2 === 0) { doc.save(); doc.rect(listX, doc.y - 2, listWidth, 18).fill(colors.rowStripe); doc.restore(); }
+      // simplified rows without shaded backgrounds for a cleaner look
       const rowY = doc.y;
       // Build left-side label with attributes and quantity
       let label = `${it.name}`;
@@ -307,12 +306,12 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
     doc.moveTo(listX, doc.y).lineTo(listX + listWidth, doc.y).strokeColor(colors.border).stroke();
     doc.moveDown(0.2);
     doc.font('Helvetica-Bold');
-    row('GRAND TOTAL', total);
+    row('TOTAL', total);
 
     // Footer — centered thank you note
     doc.moveDown(1.2);
     doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark)
-      .text('THANK YOU FOR YOUR ORDER!', { align: 'center' });
+      .text('THANK YOU FOR YOUR ORDER!', doc.page.margins.left, doc.y, { width: avail, align: 'center', lineBreak: false });
 
     doc.end();
   } catch (err) {

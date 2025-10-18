@@ -104,7 +104,7 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
       const p = order.pickup.location;
       const addr = Array.isArray(p?.address?.streetAddress) ? p.address.streetAddress.join(' ') : '';
       doc.text(`${p.name || 'Restaurant'}`, leftX, cursorLeft, { width: columnWidth });
-      doc.text(`${addr} ${p?.address?.city || ''} ${p?.address?.province || ''} ${p?.address?.postalCode || ''}`, leftX, doc.y, { width: columnWidth });
+      doc.text(`Address: ${addr} ${p?.address?.city || ''} ${p?.address?.province || ''} ${p?.address?.postalCode || ''}`, leftX, doc.y, { width: columnWidth });
     }
     // small gap then Customer
     doc.moveDown(0.6);
@@ -122,9 +122,7 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
     const leftEndY = doc.y;
 
     // Right column: Order/Delivery details
-    const detailsHeader = (order.fulfillmentType || (order.dropoff ? 'delivery' : 'pickup')) === 'delivery'
-      ? 'DELIVERY DETAILS'
-      : 'ORDER DETAILS';
+    const detailsHeader = 'ORDER DETAILS';
     doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text(detailsHeader, rightX, topY);
     doc.font('Helvetica').fontSize(10).fillColor(colors.text);
     doc.text(`Order #: ${order.orderNumber || String(order._id)}`, rightX, doc.y, { width: columnWidth });
@@ -174,8 +172,7 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
 			const line = unit * qty;
 			itemsSubtotal += line;
 
-			// zebra stripe background
-			if (idx % 2 === 0) { doc.save(); doc.rect(listX, doc.y - 2, listWidth, 18).fill(colors.rowStripe); doc.restore(); }
+      // simplified rows without shaded backgrounds
 
 			const rowY = doc.y;
 			let label = `${it.name}`;
@@ -205,10 +202,7 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
 
 		const labelWidth = 220;
 		const valueX = listX + listWidth - 100;
-		// Border box for totals
-		doc.save();
-		doc.roundedRect(startX, doc.y - 4, tableWidth, 80, 6).strokeColor(colors.border).stroke();
-		doc.restore();
+    // Simple totals area without a rounded box for a cleaner look
     function row(label, value) {
       const y = doc.y;
 			doc.font('Helvetica').fillColor(colors.textDark).text(label, valueX - labelWidth, y, { width: labelWidth, align: 'right' });
@@ -235,7 +229,7 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
 			doc.moveTo(startX, doc.y).lineTo(startX + tableWidth, doc.y).strokeColor(colors.border).stroke();
     doc.moveDown(0.2);
 		doc.font('Helvetica-Bold');
-    row('GRAND TOTAL', grandTotal);
+    row('TOTAL', grandTotal);
 
 		// Notes
     if (order.notes) {
@@ -245,8 +239,9 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
     }
 
 		// Footer
-	    doc.moveDown(1.2);
-	    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('THANK YOU FOR YOUR ORDER!', { align: 'center' });
+      doc.moveDown(1.2);
+      doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark)
+        .text('THANK YOU FOR YOUR ORDER!', doc.page.margins.left, doc.y, { width: availableWidth, align: 'center', lineBreak: false });
 
     doc.end();
   } catch (err) {
