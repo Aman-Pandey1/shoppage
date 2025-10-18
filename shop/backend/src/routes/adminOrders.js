@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import { requireAdmin } from '../middleware/auth.js';
 import Order from '../models/Order.js';
+import Site from '../models/Site.js';
 import PDFDocument from 'pdfkit';
+import { formatDateTimeInSiteTz } from '../utils/time.js';
 
 const router = Router({ mergeParams: true });
 
@@ -57,7 +59,8 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
     if (!order) return res.status(404).json({ error: 'Order not found' });
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=order-${String(order._id).slice(-6)}.pdf`);
+    const fileId = (order.orderNumber || String(order._id).slice(-6)).replace(/\s+/g, '');
+    res.setHeader('Content-Disposition', `attachment; filename=order-${fileId}.pdf`);
 
 		const doc = new PDFDocument({ size: 'A4', margin: 50 });
     doc.pipe(res);
@@ -79,9 +82,9 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
 		// Header band (colorful)
 		const headerY = doc.y;
 		doc.save();
-		doc.rect(doc.page.margins.left, headerY, availableWidth, 40).fill(colors.primary);
+    doc.rect(doc.page.margins.left, headerY, availableWidth, 40).fill(colors.primary);
 		doc.restore();
-		doc.font('Helvetica-Bold').fontSize(22).fillColor(colors.primaryText).text('Order Invoice', doc.page.margins.left + 12, headerY + 10);
+    doc.font('Helvetica-Bold').fontSize(22).fillColor(colors.primaryText).text('ORDER INVOICE', doc.page.margins.left + 12, headerY + 10);
 		// move the cursor just below the header band
     doc.y = headerY + 52;
 
@@ -94,7 +97,7 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
 		const topY = doc.y;
     // Left column: Restaurant first, then Customer
     // Restaurant
-    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('Restaurant', leftX, topY);
+    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('RESTAURANT', leftX, topY);
     doc.font('Helvetica').fontSize(10).fillColor(colors.text);
     let cursorLeft = doc.y;
     if (order.pickup?.location) {
@@ -105,7 +108,7 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
     }
     // small gap then Customer
     doc.moveDown(0.6);
-    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('Customer', leftX, doc.y);
+    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('CUSTOMER', leftX, doc.y);
     doc.font('Helvetica').fontSize(10).fillColor(colors.text);
     if (order.dropoff) {
       const d = order.dropoff || {};
@@ -119,10 +122,17 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
     const leftEndY = doc.y;
 
     // Right column: Order details
-    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('Order details', rightX, topY);
+    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('ORDER DETAILS', rightX, topY);
     doc.font('Helvetica').fontSize(10).fillColor(colors.text);
-    doc.text(`Order #: ${String(order._id)}`, rightX, doc.y, { width: columnWidth });
-    doc.text(`Date: ${new Date(order.createdAt).toLocaleString()}`, rightX, doc.y, { width: columnWidth });
+    doc.text(`Order #: ${order.orderNumber || String(order._id)}`, rightX, doc.y, { width: columnWidth });
+    let siteLike = null;
+    const mock = req.app.locals.mockData;
+    if (mock) {
+      siteLike = (mock.sites || []).find((s) => String(s._id) === String(siteId));
+    } else {
+      try { siteLike = await Site.findById(siteId); } catch {}
+    }
+    doc.text(`Date: ${formatDateTimeInSiteTz(order.createdAt, siteLike)}`, rightX, doc.y, { width: columnWidth });
     doc.text(`Fulfillment: ${order.fulfillmentType || (order.dropoff ? 'delivery' : 'pickup')}`, rightX, doc.y, { width: columnWidth });
     const rightEndY = doc.y;
 		// Set cursor to the deeper of the two columns to avoid overlap
@@ -136,17 +146,17 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
 
     function drawItemsHeader() {
       doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark)
-        .text('Order details', startX, doc.y, { width: tableWidth, align: 'center' });
+        .text('ORDER DETAILS', startX, doc.y, { width: tableWidth, align: 'center' });
 			doc.moveDown(0.4);
 			doc.save();
 			doc.rect(startX, doc.y - 2, tableWidth, 18).fill(colors.tableHeader);
 			doc.restore();
 			doc.font('Helvetica-Bold').fontSize(10).fillColor(colors.textDark);
 			const headerY = doc.y - 0.5;
-			doc.text('Name', startX, headerY, { width: colWidths[0], align: 'center' });
-			doc.text('Qty', startX + colWidths[0], headerY, { width: colWidths[1], align: 'center' });
-			doc.text('Unit', startX + colWidths[0] + colWidths[1], headerY, { width: colWidths[2], align: 'center' });
-			doc.text('Total', startX + colWidths[0] + colWidths[1] + colWidths[2], headerY, { width: colWidths[3], align: 'center' });
+      doc.text('NAME', startX, headerY, { width: colWidths[0], align: 'center' });
+      doc.text('QTY', startX + colWidths[0], headerY, { width: colWidths[1], align: 'center' });
+      doc.text('UNIT', startX + colWidths[0] + colWidths[1], headerY, { width: colWidths[2], align: 'center' });
+      doc.text('TOTAL', startX + colWidths[0] + colWidths[1] + colWidths[2], headerY, { width: colWidths[3], align: 'center' });
 			doc.moveDown(1);
 			doc.moveTo(startX, doc.y).lineTo(startX + tableWidth, doc.y).strokeColor(colors.border).stroke();
 		}
@@ -211,38 +221,38 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
 			doc.text(`$${(Number(value)||0).toFixed(2)}`, valueX, y, { width: 100, align: 'right' });
       doc.moveDown(0.3);
     }
-    row('Items Subtotal', itemsSubtotal);
+    row('ITEMS SUBTOTAL', itemsSubtotal);
     if (coupon && typeof coupon.percent === 'number') {
       const discount = itemsSubtotal * (Number(coupon.percent) / 100);
-      row(`Coupon ${coupon.code ? '('+coupon.code+')' : ''} (-${coupon.percent}% )`, -discount);
+      row(`COUPON ${coupon.code ? '('+coupon.code+')' : ''} (-${coupon.percent}% )`, -discount);
     }
     const taxRatePct = itemsSubtotal > 0 ? Math.round((tax / itemsSubtotal) * 1000) / 10 : null;
-    row(`Tax${taxRatePct !== null ? ` (${taxRatePct}% )` : ''}`, tax);
-    if (tip > 0) row('Tip', tip);
+    row(`TAX${taxRatePct !== null ? ` (${taxRatePct}% )` : ''}`, tax);
+    if (tip > 0) row('TIP', tip);
     if (delivery > 0) {
       if (deliveryRestaurant > 0) {
-        row('Delivery by restaurant', deliveryRestaurant);
-        row('Delivery fee (customer)', delivery);
+        row('DELIVERY BY RESTAURANT', deliveryRestaurant);
+        row('DELIVERY FEE (CUSTOMER)', delivery);
       } else {
-        row('Delivery Fee', delivery);
+        row('DELIVERY FEE', delivery);
       }
     }
     doc.moveDown(0.2);
 		doc.moveTo(startX, doc.y).lineTo(startX + tableWidth, doc.y).strokeColor(colors.border).stroke();
     doc.moveDown(0.2);
 		doc.font('Helvetica-Bold');
-    row('Grand Total', grandTotal);
+    row('GRAND TOTAL', grandTotal);
 
 		// Notes
     if (order.notes) {
       doc.moveDown(0.8);
-			doc.font('Helvetica-Bold').fontSize(10).fillColor(colors.textDark).text('Notes:', startX, doc.y);
+      doc.font('Helvetica-Bold').fontSize(10).fillColor(colors.textDark).text('NOTES:', startX, doc.y);
 			doc.font('Helvetica').fontSize(10).fillColor(colors.text).text(String(order.notes), startX, doc.y, { width: tableWidth });
     }
 
 		// Footer
     doc.moveDown(1.2);
-		doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('Thank you for your order!', { align: 'center' });
+    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('THANK YOU FOR YOUR ORDER!', { align: 'center' });
 
     doc.end();
   } catch (err) {

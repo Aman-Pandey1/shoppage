@@ -135,9 +135,14 @@ export const MyOrdersPage = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div style={{ fontSize: 18 }}>{o.fulfillmentType === 'delivery' ? '🚚' : '🏪'}</div>
-                  <div style={{ fontWeight: 800 }}>#{String(o._id || '').slice(-6)}</div>
+                  <div style={{ fontWeight: 800 }}>{o.orderNumber ? o.orderNumber : `#${String(o._id || '').slice(-6)}`}</div>
                 </div>
-                <div className="muted" style={{ fontSize: 12, color: 'var(--primary-600)' }}>{new Date(o.createdAt).toLocaleString()}</div>
+                <div className="muted" style={{ fontSize: 12, color: 'var(--primary-600)' }}>{(function(){
+                  try {
+                    const tz = 'America/Toronto';
+                    return new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true, timeZone: tz, timeZoneName: 'short' }).format(new Date(o.createdAt));
+                  } catch { return new Date(o.createdAt).toLocaleString(); }
+                })()}</div>
               </div>
               <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>{o.fulfillmentType === 'delivery' ? 'Delivery' : 'Takeout'}</div>
               <ul style={{ margin: '8px 0', paddingLeft: 18 }}>
@@ -169,7 +174,8 @@ export const MyOrdersPage = () => {
                     const blob = await download(`/api/shop/${siteSlug || 'default'}/orders/${o._id}/pdf`);
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
-                    a.href = url; a.download = `order-${String(o._id).slice(-6)}.pdf`; a.click();
+                    const fileId = (o.orderNumber || String(o._id).slice(-6)).replace(/\s+/g, '');
+                    a.href = url; a.download = `order-${fileId}.pdf`; a.click();
                     URL.revokeObjectURL(url);
                   } catch (e) {
                     alert('Failed to download invoice');

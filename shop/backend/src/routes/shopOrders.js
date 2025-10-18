@@ -7,6 +7,8 @@ import Site from '../models/Site.js';
 import { getDelivery } from '../services/uberDirect.js';
 import { sendOrderEmail } from '../utils/mailer.js';
 import PDFDocument from 'pdfkit';
+import { getNextOrderNumber } from '../utils/orderNumber.js';
+import { formatDateTimeInSiteTz } from '../utils/time.js';
 
 const router = Router();
 
@@ -143,17 +145,21 @@ router.post('/:slug/orders/pickup', requireUser, async (req, res) => {
     if (req.app.locals.mockData) {
       if (!Array.isArray(req.app.locals.mockData.orders)) req.app.locals.mockData.orders = [];
       const createdAt = new Date().toISOString();
-      const created = { _id: `o-${Date.now()}`, createdAt, status: 'confirmed', ...orderPayload };
+      // Mock-mode order number sequence
+      const nextSeq = ((req.app.locals.mockData.orderSeq || 1000) + 1);
+      req.app.locals.mockData.orderSeq = nextSeq;
+      const created = { _id: `o-${Date.now()}`, createdAt, status: 'confirmed', orderNumber: `BB-${nextSeq}`, ...orderPayload };
       req.app.locals.mockData.orders.unshift(created);
       try {
-        await sendOrderEmail({ to: created.userEmail, siteName: (req.app.locals.mockData.sites || []).find(s => s._id === req.siteId)?.name || '', orderId: created._id, items: created.items, totalCents: created.totalCents, fulfillmentType: 'pickup' });
+        await sendOrderEmail({ to: created.userEmail, siteName: (req.app.locals.mockData.sites || []).find(s => s._id === req.siteId)?.name || '', orderId: created._id, orderNumber: created.orderNumber, items: created.items, totalCents: created.totalCents, fulfillmentType: 'pickup' });
       } catch {}
       return res.status(201).json(created);
     }
-    const created = await Order.create({ ...orderPayload, status: 'confirmed' });
+    const orderNumber = await getNextOrderNumber(req.siteId);
+    const created = await Order.create({ ...orderPayload, status: 'confirmed', orderNumber });
     try {
       const site = await Site.findById(req.siteId);
-      await sendOrderEmail({ to: created.userEmail, siteName: site?.name || '', orderId: created._id, items: created.items, totalCents: created.totalCents, fulfillmentType: 'pickup' });
+      await sendOrderEmail({ to: created.userEmail, siteName: site?.name || '', orderId: created._id, orderNumber: created.orderNumber, items: created.items, totalCents: created.totalCents, fulfillmentType: 'pickup' });
     } catch {}
     res.status(201).json(created);
   } catch (err) {
@@ -181,7 +187,8 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
     }
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=order-${String(order._id).slice(-6)}.pdf`);
+    const fileId = (order.orderNumber || String(order._id).slice(-6)).replace(/\s+/g, '');
+    res.setHeader('Content-Disposition', `attachment; filename=order-${fileId}.pdf`);
 
     const doc = new PDFDocument({ size: 'A4', margin: 50 });
     doc.pipe(res);
@@ -194,14 +201,14 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
     doc.save();
     doc.rect(doc.page.margins.left, y0, avail, 40).fill(colors.primary);
     doc.restore();
-    doc.font('Helvetica-Bold').fontSize(22).fillColor(colors.primaryText).text('Order Invoice', doc.page.margins.left + 12, y0 + 10);
+    doc.font('Helvetica-Bold').fontSize(22).fillColor(colors.primaryText).text('ORDER INVOICE', doc.page.margins.left + 12, y0 + 10);
     doc.y = y0 + 52;
 
     // Order + user
-    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('Order details');
+    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('ORDER DETAILS');
     doc.font('Helvetica').fontSize(10).fillColor(colors.text);
-    doc.text(`Order #: ${String(order._id)}`);
-    doc.text(`Date: ${new Date(order.createdAt).toLocaleString()}`);
+    doc.text(`Order #: ${order.orderNumber || String(order._id)}`);
+    doc.text(`Date: ${formatDateTimeInSiteTz(order.createdAt, req.site)}`);
     doc.text(`Fulfillment: ${order.fulfillmentType}`);
     doc.moveDown(0.6);
 
@@ -215,10 +222,10 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
       doc.save();
       doc.rect(startX, headerY, width, 18).fill(colors.tableHeader);
       doc.restore();
-      doc.text('Name', startX, headerY + 4, { width: col[0], align: 'center' });
-      doc.text('Qty', startX + col[0], headerY + 4, { width: col[1], align: 'center' });
-      doc.text('Unit', startX + col[0] + col[1], headerY + 4, { width: col[2], align: 'center' });
-      doc.text('Total', startX + col[0] + col[1] + col[2], headerY + 4, { width: col[3], align: 'center' });
+      doc.text('NAME', startX, headerY + 4, { width: col[0], align: 'center' });
+      doc.text('QTY', startX + col[0], headerY + 4, { width: col[1], align: 'center' });
+      doc.text('UNIT', startX + col[0] + col[1], headerY + 4, { width: col[2], align: 'center' });
+      doc.text('TOTAL', startX + col[0] + col[1] + col[2], headerY + 4, { width: col[3], align: 'center' });
       doc.moveDown(1.2);
       doc.moveTo(startX, doc.y).lineTo(startX + width, doc.y).strokeColor(colors.border).stroke();
     }
@@ -254,14 +261,14 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
       doc.text(`$${(Number(value)||0).toFixed(2)}`, valueX, y, { width: 100, align: 'right' });
       doc.moveDown(0.3);
     }
-    row('Items Subtotal', subtotal);
-    row('Tax', tax);
-    if (delivery > 0) row('Delivery Fee', delivery);
+    row('ITEMS SUBTOTAL', subtotal);
+    row('TAX', tax);
+    if (delivery > 0) row('DELIVERY FEE', delivery);
     doc.moveDown(0.2);
     doc.moveTo(startX, doc.y).lineTo(startX + width, doc.y).strokeColor(colors.border).stroke();
     doc.moveDown(0.2);
     doc.font('Helvetica-Bold');
-    row('Grand Total', total);
+    row('GRAND TOTAL', total);
 
     doc.end();
   } catch (err) {

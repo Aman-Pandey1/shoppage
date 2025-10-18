@@ -163,7 +163,7 @@ router.post('/:siteIdOrSlug', async (req, res) => {
                 }
                 const site = (req.app.locals.mockData.sites || []).find((s) => s._id === String(list[idx].site));
                 const siteName = site?.name || '';
-                await sendOrderEmail({ to: list[idx].userEmail, siteName, orderId, items: list[idx].items, totalCents: list[idx].totalCents, deliveryFeeCents: list[idx].deliveryFeeCents, fulfillmentType: list[idx].fulfillmentType, trackingUrl: list[idx].uberTrackingUrl });
+                await sendOrderEmail({ to: list[idx].userEmail, siteName, orderId, orderNumber: list[idx].orderNumber, items: list[idx].items, totalCents: list[idx].totalCents, deliveryFeeCents: list[idx].deliveryFeeCents, fulfillmentType: list[idx].fulfillmentType, trackingUrl: list[idx].uberTrackingUrl });
                 await sendOrderNotify(list[idx], siteName);
               } catch {}
             }
@@ -208,7 +208,7 @@ router.post('/:siteIdOrSlug', async (req, res) => {
             }
             try {
               const site = await Site.findById(order.site);
-              await sendOrderEmail({ to: order.userEmail, siteName: site?.name || '', orderId: order._id, items: order.items, totalCents: order.totalCents, deliveryFeeCents: order.deliveryFeeCents, fulfillmentType: order.fulfillmentType, trackingUrl: order.uberTrackingUrl });
+              await sendOrderEmail({ to: order.userEmail, siteName: site?.name || '', orderId: order._id, orderNumber: order.orderNumber, items: order.items, totalCents: order.totalCents, deliveryFeeCents: order.deliveryFeeCents, fulfillmentType: order.fulfillmentType, trackingUrl: order.uberTrackingUrl });
               await sendOrderNotify(order, site?.name || '');
             } catch {}
           }

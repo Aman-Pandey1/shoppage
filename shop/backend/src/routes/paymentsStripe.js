@@ -10,6 +10,7 @@ import Order from '../models/Order.js';
 import Coupon from '../models/Coupon.js';
 import Site from '../models/Site.js';
 import { calculateDistanceFeeCents, distanceBetweenAddressesKm } from '../services/geo.js';
+import { getNextOrderNumber } from '../utils/orderNumber.js';
 
 const router = Router();
 
@@ -118,7 +119,7 @@ router.get('/confirm/:sessionId', async (req, res) => {
       }
       try {
         const site = await Site.findById(siteId);
-        await sendOrderEmail({ to: updatedOrder?.userEmail, siteName: site?.name || '', orderId: updatedOrder?._id, items: updatedOrder?.items, totalCents: updatedOrder?.totalCents, deliveryFeeCents: updatedOrder?.deliveryFeeCents, fulfillmentType: updatedOrder?.fulfillmentType, trackingUrl: updatedOrder?.uberTrackingUrl });
+        await sendOrderEmail({ to: updatedOrder?.userEmail, siteName: site?.name || '', orderId: updatedOrder?._id, orderNumber: updatedOrder?.orderNumber, items: updatedOrder?.items, totalCents: updatedOrder?.totalCents, deliveryFeeCents: updatedOrder?.deliveryFeeCents, fulfillmentType: updatedOrder?.fulfillmentType, trackingUrl: updatedOrder?.uberTrackingUrl });
         await sendOrderNotify(updatedOrder, site?.name || '', site?.orderNotifyUrl);
       } catch {}
     }
