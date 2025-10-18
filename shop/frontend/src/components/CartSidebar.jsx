@@ -132,7 +132,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
     <aside
       style={{
         position: 'fixed',
-        top: 88,
+        top: `calc(var(--header-height) + var(--banner-height) + 12px)`,
         right: 16,
         bottom: 16,
         width: 360,

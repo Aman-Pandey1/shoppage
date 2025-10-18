@@ -72,7 +72,7 @@ export const StoreBanner = ({ siteSlug, onCta }) => {
         style={{
           position: 'relative',
           width: '100%',
-          height: 240,
+          height: 'var(--banner-height, 240px)',
           background: backgroundImage,
         }}
       >
@@ -88,32 +88,32 @@ export const StoreBanner = ({ siteSlug, onCta }) => {
           style={{
             position: 'absolute',
             inset: 0,
-            display: 'grid',
-            placeItems: 'center',
             padding: '16px',
             color: '#fff',
+            display: 'grid',
+            gridTemplateRows: '1fr auto',
           }}
         >
-          <div style={{ textAlign: 'center', display: 'grid', gap: 10 }}>
+          <div style={{ alignSelf: 'center', textAlign: 'center', display: 'grid', gap: 10 }}>
             <img alt="logo" src={resolveAssetUrl('') || undefined} style={{ display: 'none' }} />
             <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: '.01em' }}>{storeName}</div>
             {tagline ? <div style={{ fontSize: 13, opacity: 0.9 }}>{tagline}</div> : null}
-            <button
-              onClick={onCta}
-              style={{
-                padding: '12px 28px',
-                borderRadius: 9999,
-                background: '#b91c1c',
-                border: 'none',
-                color: '#fff',
-                fontWeight: 900,
-                letterSpacing: '.03em',
-                boxShadow: '0 6px 16px rgba(0,0,0,0.25)'
-              }}
-              aria-label="Start order"
-            >
-              ORDER ONLINE
-            </button>
+          </div>
+          <div
+            style={{
+              alignSelf: 'end',
+              justifySelf: 'center',
+              marginBottom: 12,
+              fontWeight: 900,
+              letterSpacing: '.08em',
+              fontSize: 18,
+              textTransform: 'uppercase'
+            }}
+            onClick={onCta}
+            role="button"
+            aria-label="Order online"
+          >
+            Order Online
           </div>
         </div>
       </div>
