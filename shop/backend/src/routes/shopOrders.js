@@ -204,19 +204,57 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
     doc.font('Helvetica-Bold').fontSize(22).fillColor(colors.primaryText).text('ORDER INVOICE', doc.page.margins.left + 12, y0 + 10);
     doc.y = y0 + 52;
 
-    // Order + user
-    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('ORDER DETAILS');
+    // Two-column header: Restaurant/Customer on the left, Delivery/Order details on the right
+    const availableWidth = avail;
+    const columnGap = 16;
+    const columnWidth = (availableWidth - columnGap) / 2;
+    const leftX = doc.page.margins.left;
+    const rightX = leftX + columnWidth + columnGap;
+    const topY = doc.y;
+    // Left column: Restaurant then Customer
+    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('RESTAURANT', leftX, topY);
     doc.font('Helvetica').fontSize(10).fillColor(colors.text);
-    doc.text(`Order #: ${order.orderNumber || String(order._id)}`);
-    doc.text(`Date: ${formatDateTimeInSiteTz(order.createdAt, req.site)}`);
-    doc.text(`Fulfillment: ${order.fulfillmentType}`);
+    if (order.pickup?.location) {
+      const p = order.pickup.location;
+      const addr = Array.isArray(p?.address?.streetAddress) ? p.address.streetAddress.join(' ') : '';
+      doc.text(`${p.name || 'Restaurant'}`, leftX, doc.y, { width: columnWidth });
+      doc.text(`${addr} ${p?.address?.city || ''} ${p?.address?.province || ''} ${p?.address?.postalCode || ''}`, leftX, doc.y, { width: columnWidth });
+    }
     doc.moveDown(0.6);
+    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('CUSTOMER', leftX, doc.y);
+    doc.font('Helvetica').fontSize(10).fillColor(colors.text);
+    if (order.dropoff) {
+      const d = order.dropoff || {};
+      const addr = Array.isArray(d?.address?.streetAddress) ? d.address.streetAddress.join(' ') : '';
+      doc.text(`Name: ${d.name || '—'}`, leftX, doc.y, { width: columnWidth });
+      doc.text(`Phone: ${d.phone || '—'}`, leftX, doc.y, { width: columnWidth });
+      doc.text(`Address: ${addr} ${d?.address?.city || ''} ${d?.address?.province || ''} ${d?.address?.postalCode || ''}`, leftX, doc.y, { width: columnWidth });
+    } else if (order.userEmail) {
+      doc.text(`Customer: ${order.userEmail}`, leftX, doc.y, { width: columnWidth });
+    }
+    const leftEndY = doc.y;
+
+    // Right column: Delivery details (or Order details for pickup)
+    const rightHdr = (order.fulfillmentType || 'pickup') === 'delivery' ? 'DELIVERY DETAILS' : 'ORDER DETAILS';
+    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text(rightHdr, rightX, topY);
+    doc.font('Helvetica').fontSize(10).fillColor(colors.text);
+    doc.text(`Order #: ${order.orderNumber || String(order._id)}`, rightX, doc.y, { width: columnWidth });
+    doc.text(`Date: ${formatDateTimeInSiteTz(order.createdAt, req.site)}`, rightX, doc.y, { width: columnWidth });
+    const fulfillmentUpperC = String(order.fulfillmentType || 'pickup').toUpperCase();
+    doc.text(`Fulfillment: ${fulfillmentUpperC}`, rightX, doc.y, { width: columnWidth });
+    const rightEndY = doc.y;
+    doc.y = Math.max(leftEndY, rightEndY) + 10;
+    doc.moveDown(0.2);
 
     const startX = doc.page.margins.left + 20;
     const col = [260, 60, 85, 90];
     const width = col.reduce((a,b)=>a+b,0);
     const pageBottom = doc.page.height - doc.page.margins.bottom;
     function drawHeader(){
+      // Section title
+      doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark)
+        .text('ORDER SUMMARY', startX, doc.y, { width: width, align: 'center' });
+      doc.moveDown(0.4);
       doc.font('Helvetica-Bold').fontSize(10).fillColor(colors.textDark);
       const headerY = doc.y;
       doc.save();
@@ -241,7 +279,7 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
       if (idx % 2 === 0) { doc.save(); doc.rect(startX, doc.y - 2, width, 18).fill(colors.rowStripe); doc.restore(); }
       const rowY = doc.y;
       doc.font('Helvetica').fillColor(colors.text)
-        .text(`${it.name}${it.spiceLevel ? ' ['+it.spiceLevel+']' : ''}${it.size ? ' — Select Item: '+it.size : ''}`, startX, rowY, { width: col[0], align: 'center' });
+        .text(`${it.name}${it.spiceLevel ? ' ['+it.spiceLevel+']' : ''}${it.size ? ' ('+it.size+')' : ''}`, startX, rowY, { width: col[0], align: 'center' });
       doc.text(String(qty), startX + col[0], rowY, { width: col[1], align: 'center' });
       doc.text(`$${unit.toFixed(2)}`, startX + col[0] + col[1], rowY, { width: col[2], align: 'center' });
       doc.text(`$${line.toFixed(2)}`, startX + col[0] + col[1] + col[2], rowY, { width: col[3], align: 'center' });
@@ -253,6 +291,7 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
     const tax = Number(order.taxCents||0)/100;
     const delivery = Number(order.deliveryFeeCents||0)/100; // show only customer's half if split
     const total = Number(order.totalCents||0)/100;
+    const coupon = order.meta?.coupon;
     const valueX = startX + width - 100;
     const labelWidth = 220;
     function row(label, value){
@@ -262,8 +301,12 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
       doc.moveDown(0.3);
     }
     row('ITEMS SUBTOTAL', subtotal);
-    row('TAX', tax);
-    if (delivery > 0) row('DELIVERY FEE', delivery);
+    if (coupon && typeof coupon.percent === 'number') {
+      const discount = subtotal * (Number(coupon.percent) / 100);
+      row(`DISCOUNT ${coupon.code ? '('+coupon.code+')' : ''} (-${coupon.percent}% )`, -discount);
+    }
+    row('TAX (5%)', tax);
+    if ((order.fulfillmentType || 'pickup') === 'delivery' && delivery > 0) row('DELIVERY CHARGE', delivery);
     doc.moveDown(0.2);
     doc.moveTo(startX, doc.y).lineTo(startX + width, doc.y).strokeColor(colors.border).stroke();
     doc.moveDown(0.2);

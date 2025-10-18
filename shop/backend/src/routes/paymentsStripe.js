@@ -426,7 +426,8 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
       dropoff,
       pickup: { location: pickup },
       notes: typeof notes === 'string' ? notes.slice(0, 1000) : undefined,
-      meta: { distanceKm },
+      // Include coupon metadata so PDFs can render a Discount row later
+      meta: appliedCoupon ? { distanceKm, coupon: appliedCoupon } : { distanceKm },
       status: 'awaiting_payment',
     };
     let orderId;
