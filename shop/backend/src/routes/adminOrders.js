@@ -22,18 +22,18 @@ router.get('/', requireAdmin, async (req, res) => {
 			if (String(to).length <= 10) toDate.setHours(23, 59, 59, 999);
 		}
 
-		if (mock) {
-			let list = Array.isArray(mock.orders) ? mock.orders : [];
-			list = list.filter((o) => o.site === siteId);
-			// Only show orders that are actually placed/paid
-			list = list.filter((o) => (o.status === 'paid' || o.status === 'confirmed'));
+    if (mock) {
+      let list = Array.isArray(mock.orders) ? mock.orders : [];
+      list = list.filter((o) => o.site === siteId);
+      // Treat orders without a status as historical/placed to avoid disappearing data
+      list = list.filter((o) => (o.status === 'paid' || o.status === 'confirmed' || !o.status));
 			if (fromDate) list = list.filter((o) => new Date(o.createdAt) >= fromDate);
 			if (toDate) list = list.filter((o) => new Date(o.createdAt) <= toDate);
 			list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 			return res.json(list);
 		}
 
-		const filter = { site: siteId, status: { $in: ['paid', 'confirmed'] } };
+    const filter = { site: siteId, $or: [ { status: { $in: ['paid', 'confirmed'] } }, { status: { $exists: false } } ] };
 		if (fromDate || toDate) filter.createdAt = {};
 		if (fromDate) filter.createdAt.$gte = fromDate;
 		if (toDate) filter.createdAt.$lte = toDate;
