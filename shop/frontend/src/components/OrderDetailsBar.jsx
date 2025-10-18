@@ -21,6 +21,8 @@ export const OrderDetailsBar = ({
   siteSlug,
   onAddressSelected,
   minutesUntilReady,
+  // When true, show skeleton loader instead of inputs to avoid layout jank
+  loading = false,
 }) => {
   const selectedDateLabel = React.useMemo(() => {
     try {
@@ -38,6 +40,30 @@ export const OrderDetailsBar = ({
     } catch {}
     return '';
   }, [dateOptions, pickupDate]);
+  if (loading) {
+    return (
+      <div className="order-bar card" aria-busy="true" aria-label="Loading order details">
+        <div className="order-bar__row">
+          <div className="order-bar__group">
+            <div className="skeleton skeleton-text" style={{ width: 100 }} />
+            <div className="skeleton skeleton-input" />
+          </div>
+          <div className="order-bar__group">
+            <div className="skeleton skeleton-text" style={{ width: 160 }} />
+            <div className="order-bar__inline" style={{ gap: 8 }}>
+              <div className="skeleton skeleton-input" />
+              <div className="skeleton skeleton-input" />
+            </div>
+          </div>
+        </div>
+        <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div className="skeleton skeleton-text" style={{ width: 140 }} />
+          <div className="skeleton skeleton-input" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="order-bar card animate-fadeInUp" role="region" aria-label="Order Details">
       <div className="order-bar__row">
