@@ -8,6 +8,10 @@ const OrderItemSchema = new mongoose.Schema({
     size: { type: String },
     // Optional: spice level selected by the customer for this item
     spiceLevel: { type: String },
+    // Optional: flavor selected by the customer for this item
+    flavor: { type: String },
+    // Optional: portion selected by the customer for this item (e.g., Half/Full)
+    portion: { type: String },
 }, { _id: false });
 
 const OrderSchema = new mongoose.Schema({
