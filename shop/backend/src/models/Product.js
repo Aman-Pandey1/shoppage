@@ -35,6 +35,12 @@ const ProductSchema = new mongoose.Schema({
 		label: { type: String, required: true },
 		price: { type: Number, default: 0 },
 	}],
+	// Optional: quantities (e.g., 250g / 500g / 1kg) with per-item price delta
+	quantities: [{
+		key: { type: String, required: true },
+		label: { type: String, required: true },
+		price: { type: Number, default: 0 },
+	}],
 	extraOptionGroups: [{
 		groupKey: { type: String, required: true },
 		groupLabel: { type: String, required: true },

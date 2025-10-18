@@ -231,7 +231,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
       }
       const result = await postJson(`/api/delivery/${siteSlug}/create`, {
         dropoff: { name, phone: normalizedPhone, address },
-        manifestItems: manifest.map(m => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents || 0, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
+        manifestItems: manifest.map(m => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents || 0, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion, quantityOption: m.quantityOption })),
         externalId: `${siteName ? siteName.replace(/\s+/g, '-') : siteSlug}-order-${Date.now()}`,
         pickupLocationIndex: (quote && typeof quote.pickupLocationIndex === 'number') ? quote.pickupLocationIndex : selectedPickupIndex,
         notes,
@@ -282,6 +282,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
                   spiceLevel: m.spiceLevel,
                   flavor: m.flavor,
                   portion: m.portion,
+                  quantityOption: m.quantityOption,
                 })),
                 pickupLocationIndex: chosenIdx,
                 deliveryFeeCents: quotedFee,

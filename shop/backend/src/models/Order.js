@@ -12,6 +12,8 @@ const OrderItemSchema = new mongoose.Schema({
     flavor: { type: String },
     // Optional: portion selected by the customer for this item (e.g., Half/Full)
     portion: { type: String },
+    // Optional: quantity choice selected by the customer (e.g., 250g / 500g)
+    quantityOption: { type: String },
 }, { _id: false });
 
 const OrderSchema = new mongoose.Schema({

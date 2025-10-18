@@ -14,8 +14,10 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
   const [selectedVariantKey, setSelectedVariantKey] = useState('');
   const flavors = Array.isArray(product?.flavors) ? product.flavors : [];
   const portions = Array.isArray(product?.portions) ? product.portions : [];
+  const quantities = Array.isArray(product?.quantities) ? product.quantities : [];
   const [selectedFlavorKey, setSelectedFlavorKey] = useState('');
   const [selectedPortionKey, setSelectedPortionKey] = useState('');
+  const [selectedQuantityKey, setSelectedQuantityKey] = useState('');
   const [qty, setQty] = useState(() => {
     const n = Number(initialQuantity) || 1;
     return Math.max(1, Math.min(99, n));
@@ -32,6 +34,7 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
       setSelectedVariantKey('');
       setSelectedFlavorKey('');
       setSelectedPortionKey('');
+      setSelectedQuantityKey('');
     }
   }, [open, product, initialQuantity]);
 
@@ -58,14 +61,18 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
   const spiceRequired = Array.isArray(product?.spiceLevels) && (product.spiceLevels.length > 0);
   const hasFlavors = flavors.length > 0;
   const hasPortions = portions.length > 0;
+  const hasQuantities = quantities.length > 0;
   const selectedFlavor = flavors.find((f) => f.key === selectedFlavorKey) || null;
   const selectedPortion = portions.find((p) => p.key === selectedPortionKey) || null;
+  const selectedQuantity = quantities.find((q) => q.key === selectedQuantityKey) || null;
   const flavorRequired = hasFlavors;
   const portionRequired = hasPortions;
+  const quantityRequired = hasQuantities;
   const canConfirm = (!spiceRequired || !!selected)
     && (!variantRequired || !!selectedVariantKey)
     && (!flavorRequired || !!selectedFlavorKey)
     && (!portionRequired || !!selectedPortionKey)
+    && (!quantityRequired || !!selectedQuantityKey)
     && qty >= 1;
 
   return (
@@ -88,7 +95,7 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
             }}
           >Cancel</button>
           <button
-            onClick={() => onConfirm({ spice: selected, variant: selectedVariant || undefined, quantity: qty, flavor: selectedFlavor || undefined, portion: selectedPortion || undefined })}
+            onClick={() => onConfirm({ spice: selected, variant: selectedVariant || undefined, quantity: qty, flavor: selectedFlavor || undefined, portion: selectedPortion || undefined, quantityOption: selectedQuantity || undefined })}
             disabled={!canConfirm}
             style={{
               padding: '12px 24px',
@@ -247,6 +254,29 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
               const suffix = addonPrice > 0 ? ` (+$${addonPrice.toFixed(2)})` : '';
               return (
                 <option key={p.key} value={p.key}>{`${p.label}${suffix}`}</option>
+              );
+            })}
+          </select>
+        </div>
+      ) : null}
+
+      {/* Quantity option dropdown (e.g., 250g / 500g) */}
+      {hasQuantities ? (
+        <div style={{ display: 'grid', gap: 6, marginTop: 8, marginBottom: 10 }}>
+          <div style={{ fontWeight: 800 }}>Quantity</div>
+          <select
+            value={selectedQuantityKey}
+            onChange={(e) => setSelectedQuantityKey(e.target.value)}
+            required={quantityRequired}
+            aria-required={quantityRequired}
+            style={{ padding: 10, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--panel)', width: '100%' }}
+          >
+            <option value="" disabled>Select quantity</option>
+            {quantities.map((q) => {
+              const addonPrice = Number(q?.price || 0);
+              const suffix = addonPrice > 0 ? ` (+$${addonPrice.toFixed(2)})` : '';
+              return (
+                <option key={q.key} value={q.key}>{`${q.label}${suffix}`}</option>
               );
             })}
           </select>

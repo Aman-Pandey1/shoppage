@@ -31,6 +31,7 @@ function buildNotifyPayload(order, siteName) {
       spiceLevel: m.spiceLevel,
       flavor: m.flavor,
       portion: m.portion,
+      quantityOption: m.quantityOption,
     })),
     totalCents: order?.totalCents,
     taxCents: order?.taxCents,
@@ -216,6 +217,7 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
         spiceLevel: m.spiceLevel,
         flavor: m.flavor,
         portion: m.portion,
+        quantityOption: m.quantityOption,
       })),
       totalCents,
       taxCents,
@@ -262,7 +264,8 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
     const itemProducts = await Promise.all(items.map(async (it) => {
       const flavorText = it.flavor ? ` — Flavor: ${it.flavor}` : '';
       const portionText = it.portion ? ` — Portion: ${it.portion}` : '';
-      const name = `${it.name}${it.size ? ' — Select Item: ' + it.size : ''}${flavorText}${portionText}`;
+      const qtyText = it.quantityOption ? ` — Quantity: ${it.quantityOption}` : '';
+      const name = `${it.name}${it.size ? ' — Select Item: ' + it.size : ''}${flavorText}${portionText}${qtyText}`;
       const p = await stripe.products.create({ name });
       return p.id;
     }));
@@ -423,7 +426,7 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
       site: req.siteId,
       userId: req.user?.userId,
       userEmail: req.user?.email,
-      items: manifestItems.map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.priceCents || m.price || 0, size: m.size, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
+      items: manifestItems.map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.priceCents || m.price || 0, size: m.size, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion, quantityOption: m.quantityOption })),
       totalCents,
       taxCents,
       deliveryFeeCents: customerDeliveryFeeCents,
@@ -481,7 +484,8 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
     const itemProductsDel = await Promise.all(manifestItems.map(async (it) => {
       const flavorText = it.flavor ? ` — Flavor: ${it.flavor}` : '';
       const portionText = it.portion ? ` — Portion: ${it.portion}` : '';
-      const name = `${it.name}${it.size ? ' — Select Item: ' + it.size : ''}${flavorText}${portionText}`;
+      const qtyText = it.quantityOption ? ` — Quantity: ${it.quantityOption}` : '';
+      const name = `${it.name}${it.size ? ' — Select Item: ' + it.size : ''}${flavorText}${portionText}${qtyText}`;
       const p = await stripe.products.create({ name });
       return p.id;
     }));

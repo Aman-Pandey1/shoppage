@@ -35,6 +35,24 @@ export type Product = {
     // Add-on price that is added to base price when selected
     price?: number;
   }>;
+  // Optional flavors on the product
+  flavors?: Array<{
+    key: string;
+    label: string;
+    price?: number;
+  }>;
+  // Optional portions on the product
+  portions?: Array<{
+    key: string;
+    label: string;
+    price?: number;
+  }>;
+  // Optional quantity choices (labelled like 250g/500g/1kg)
+  quantities?: Array<{
+    key: string;
+    label: string;
+    price?: number;
+  }>;
   extraOptionGroups?: ExtraOptionGroup[];
 };
 
@@ -75,6 +93,9 @@ export type CartItem = {
   quantity: number;
   spiceLevel?: string;
   variant?: { key: string; label?: string; price?: number };
+  flavor?: { key: string; label?: string; price?: number };
+  portion?: { key: string; label?: string; price?: number };
+  quantityOption?: { key: string; label?: string; price?: number };
   selectedOptions: SelectedOption[];
   extraCost: number;
   totalPrice: number;

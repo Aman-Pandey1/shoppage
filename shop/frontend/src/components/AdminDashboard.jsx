@@ -163,7 +163,7 @@ export const AdminDashboard = () => {
   }, [products, filterCategory, vegFilter]);
 
   function startCreate() {
-    setEditing({ name: '', price: 0, categoryId: categories[0]?._id || '', description: '', imageUrl: '', spiceLevels: [], variants: [], flavors: [], portions: [], extraOptionGroups: [] });
+    setEditing({ name: '', price: 0, categoryId: categories[0]?._id || '', description: '', imageUrl: '', spiceLevels: [], variants: [], flavors: [], portions: [], quantities: [], extraOptionGroups: [] });
   }
 
   function startEdit(p) {
@@ -234,6 +234,7 @@ export const AdminDashboard = () => {
       variants: editing.variants || [],
       flavors: editing.flavors || [],
       portions: editing.portions || [],
+      quantities: editing.quantities || [],
       extraOptionGroups: editing.extraOptionGroups || [],
     };
     if (editing._id) {
@@ -697,18 +698,33 @@ export const AdminDashboard = () => {
                       }} />
                     </label>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <span>Flavors (JSON)</span>
-                    <textarea
-                      rows={3}
-                      value={JSON.stringify(editing.flavors || [], null, 2)}
-                      onChange={(e) => {
-                        try {
-                          const parsed = JSON.parse(e.target.value);
-                          setEditing({ ...editing, flavors: parsed });
-                        } catch {}
-                      }}
-                    />
+                  <div style={{ display: 'grid', gap: 6, gridTemplateColumns: '1fr 1fr', alignItems: 'start' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <span>Flavors (JSON)</span>
+                      <textarea
+                        rows={3}
+                        value={JSON.stringify(editing.flavors || [], null, 2)}
+                        onChange={(e) => {
+                          try {
+                            const parsed = JSON.parse(e.target.value);
+                            setEditing({ ...editing, flavors: parsed });
+                          } catch {}
+                        }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <span>Quantities (JSON)</span>
+                      <textarea
+                        rows={3}
+                        value={JSON.stringify(editing.quantities || [], null, 2)}
+                        onChange={(e) => {
+                          try {
+                            const parsed = JSON.parse(e.target.value);
+                            setEditing({ ...editing, quantities: parsed });
+                          } catch {}
+                        }}
+                      />
+                    </div>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <span>Flavors (Editor)</span>
@@ -766,6 +782,63 @@ export const AdminDashboard = () => {
                       next.push({ key: candidate, label: '', price: 0 });
                       setEditing({ ...editing, flavors: next });
                     }}>+ Add flavor</button>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <span>Quantities (Editor)</span>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px auto', gap: 8, alignItems: 'center' }}>
+                      {(editing.quantities || []).map((q, idx) => (
+                        <React.Fragment key={`${q?.key || q?.label || 'q'}-${idx}`}>
+                          <input
+                            placeholder="Label"
+                            value={q?.label || q?.key || ''}
+                            onChange={(e) => {
+                              const label = e.target.value;
+                              const next = [...(editing.quantities || [])];
+                              const cur = { ...next[idx] };
+                              cur.label = label;
+                              if (!cur.key || /^quantity(_\d+)?$/.test(cur.key)) {
+                                let base = String(label || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+                                if (!base) base = 'quantity';
+                                const used = new Set(next.map((vv, ii) => (ii === idx ? null : vv?.key)).filter(Boolean));
+                                let candidate = base; let n = 1;
+                                while (used.has(candidate)) { candidate = `${base}_${n++}`; }
+                                cur.key = candidate;
+                              }
+                              next[idx] = cur;
+                              setEditing({ ...editing, quantities: next });
+                            }}
+                          />
+                          <input
+                            type="number"
+                            step="0.01"
+                            placeholder={'Add-on price'}
+                            value={Number(q?.price) || 0}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              const next = [...(editing.quantities || [])];
+                              const cur = { ...next[idx] };
+                              cur.price = Number.isFinite(val) ? val : 0;
+                              next[idx] = cur;
+                              setEditing({ ...editing, quantities: next });
+                            }}
+                          />
+                          <button onClick={() => {
+                            const next = (editing.quantities || []).slice();
+                            next.splice(idx, 1);
+                            setEditing({ ...editing, quantities: next });
+                          }}>Remove</button>
+                        </React.Fragment>
+                      ))}
+                    </div>
+                    <button onClick={() => {
+                      const next = [...(editing.quantities || [])];
+                      let base = 'quantity';
+                      const used = new Set(next.map((vv) => vv?.key).filter(Boolean));
+                      let candidate = base; let n = 1;
+                      while (used.has(candidate)) { candidate = `${base}_${n++}`; }
+                      next.push({ key: candidate, label: '', price: 0 });
+                      setEditing({ ...editing, quantities: next });
+                    }}>+ Add quantity</button>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <span>Portions (JSON)</span>
