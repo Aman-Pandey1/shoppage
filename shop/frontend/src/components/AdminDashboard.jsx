@@ -250,7 +250,11 @@ export const AdminDashboard = () => {
     setDeleteProductId(id);
   }
 
-  if (loading) return <div>Loading admin...</div>;
+  if (loading) return (
+    <div className="loading-center">
+      <div className="spinner" aria-label="Loading admin" />
+    </div>
+  );
   if (error) return <div style={{ color: 'red' }}>Failed to load admin: {error}</div>;
 
   const selectedSite = sites.find(s => s._id === selectedSiteId);

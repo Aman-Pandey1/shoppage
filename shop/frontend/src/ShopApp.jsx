@@ -8,15 +8,17 @@ import { OrderDetailsBar } from './components/OrderDetailsBar';
 import { AddressAutocomplete } from './components/AddressAutocomplete';
 import { ProductList } from './components/ProductList';
 import { PrivacyPolicyModal } from './components/PrivacyPolicyModal';
-import { FulfillmentModal } from './components/FulfillmentModal';
 import { Modal } from './components/Modal';
 import { AlertModal } from './components/AlertModal';
-import { SpiceModal } from './components/SpiceModal';
-import { ExtrasModal } from './components/ExtrasModal';
-import { AddToCartToast } from './components/AddToCartToast';
-import { DeliveryAddressModal } from './components/DeliveryAddressModal';
-import { fetchJson, getAuthToken, postJson } from './lib/api';
-import { UserAuthModal } from './components/UserAuthModal';
+import { getAuthToken, postJson } from './lib/api';
+import { useCategoriesQuery, useSiteQuery, useLocationsQuery, useCitiesQuery, useHoursQuery } from './lib/queries';
+// Lazy-loaded modals and UI pieces for faster initial paint
+const FulfillmentModal = React.lazy(() => import('./components/FulfillmentModal').then(m => ({ default: m.FulfillmentModal })));
+const DeliveryAddressModal = React.lazy(() => import('./components/DeliveryAddressModal').then(m => ({ default: m.DeliveryAddressModal })));
+const UserAuthModal = React.lazy(() => import('./components/UserAuthModal').then(m => ({ default: m.UserAuthModal })));
+const SpiceModal = React.lazy(() => import('./components/SpiceModal').then(m => ({ default: m.SpiceModal })));
+const ExtrasModal = React.lazy(() => import('./components/ExtrasModal').then(m => ({ default: m.ExtrasModal })));
+const AddToCartToast = React.lazy(() => import('./components/AddToCartToast').then(m => ({ default: m.AddToCartToast })));
 
 const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const { state, setFulfillmentType, addItem, getCartTotal } = useCart();
@@ -174,100 +176,53 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     setPendingQuantity(1);
   }
 
+  const { data: categories = [] } = useCategoriesQuery(siteSlug);
   useEffect(() => {
-    let cancelled = false;
-    async function preselect() {
-      try {
-        const cats = await fetchJson(`/api/shop/${siteSlug}/categories`);
-        if (cancelled) return;
-        setAllCategories(cats);
-        if (initialCategoryId) {
-          const found = cats.find((c) => String(c._id) === String(initialCategoryId));
-          if (found) setSelectedCategory(found);
-        }
-      } catch {}
+    setAllCategories(categories);
+    if (initialCategoryId) {
+      const found = categories.find((c) => String(c._id) === String(initialCategoryId));
+      if (found) setSelectedCategory(found);
     }
-    preselect();
-    return () => { cancelled = true; };
-  }, [initialCategoryId, siteSlug]);
+  }, [categories, initialCategoryId]);
 
   // Load site basics for support info (WhatsApp, etc.)
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const data = await fetchJson(`/api/shop/${siteSlug}/site`);
-        if (!cancelled) setSite(data || null);
-      } catch {
-        if (!cancelled) setSite(null);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [siteSlug]);
+  const { data: siteData } = useSiteQuery(siteSlug);
+  useEffect(() => { setSite(siteData || null); }, [siteData]);
 
   // Load pickup locations for popup
+  const { data: locationsData = [] } = useLocationsQuery(siteSlug);
+  const { data: citiesData = [] } = useCitiesQuery(siteSlug);
   useEffect(() => {
-    let cancelled = false;
-    async function loadLocations() {
-      try {
-        const list = await fetchJson(`/api/shop/${siteSlug}/locations`);
-        if (!cancelled) {
-          const arr = Array.isArray(list) ? list : [];
-          setLocations(arr);
-          // Respect previously chosen location if stored; do not auto-pick first
-          try {
-            const saved = localStorage.getItem('selectedPickupIndex');
-            const savedIdx = Number(saved);
-            if (Number.isFinite(savedIdx) && savedIdx >= 0 && savedIdx < arr.length) {
-              setSelectedLocation(arr[savedIdx]);
-            } else if (!selectedLocation && arr.length === 1) {
-              setSelectedLocation(arr[0]);
-              localStorage.setItem('selectedPickupIndex', '0');
-            }
-          } catch {}
-        }
-      } catch {
-        if (!cancelled) setLocations([]);
+    const arr = Array.isArray(locationsData) ? locationsData : [];
+    setLocations(arr);
+    try {
+      const saved = localStorage.getItem('selectedPickupIndex');
+      const savedIdx = Number(saved);
+      if (Number.isFinite(savedIdx) && savedIdx >= 0 && savedIdx < arr.length) {
+        setSelectedLocation(arr[savedIdx]);
+      } else if (!selectedLocation && arr.length === 1) {
+        setSelectedLocation(arr[0]);
+        localStorage.setItem('selectedPickupIndex', '0');
       }
-    }
-    async function loadCities() {
-      try {
-        const list = await fetchJson(`/api/shop/${siteSlug}/cities`);
-        if (!cancelled) {
-          setCities(Array.isArray(list) ? list : []);
-          // Ensure default tab + city are initialized so dropdowns show a value
-          setSelectedPickupCity('All');
-        }
-      } catch { if (!cancelled) setCities([]); }
-    }
-    loadLocations();
-    loadCities();
-    return () => { cancelled = true; };
-  }, [siteSlug]);
+    } catch {}
+  }, [locationsData]);
+  useEffect(() => {
+    setCities(Array.isArray(citiesData) ? citiesData : []);
+    setSelectedPickupCity('All');
+  }, [citiesData]);
 
   // Load site opening hours
+  const { data: hoursResp } = useHoursQuery(siteSlug);
   useEffect(() => {
-    let cancelled = false;
-    async function loadHours() {
-      try {
-        const resp = await fetchJson(`/api/shop/${siteSlug}/hours`);
-        if (!cancelled) {
-          // Backward compat: support old shape { mon:{},... } or new { hours, timeZone }
-          if (resp && resp.hours) {
-            setHours(resp.hours);
-            setTimeZone(resp.timeZone || '');
-          } else {
-            setHours(resp);
-            setTimeZone('');
-          }
-        }
-      } catch {
-        if (!cancelled) setHours(null);
-      }
+    if (!hoursResp) return;
+    if (hoursResp && hoursResp.hours) {
+      setHours(hoursResp.hours);
+      setTimeZone(hoursResp.timeZone || '');
+    } else {
+      setHours(hoursResp);
+      setTimeZone('');
     }
-    loadHours();
-    return () => { cancelled = true; };
-  }, [siteSlug]);
+  }, [hoursResp]);
 
   // Closed-state logic removed to keep UI always open
 
@@ -487,6 +442,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       </button>
 
       <PrivacyPolicyModal open={privacyOpen} onAccept={handleAcceptPrivacy} />
+      <React.Suspense fallback={<div className="loading-center"><div className="spinner" aria-label="Loading dialog" /></div>}>
       <FulfillmentModal
         open={fulfillmentOpen}
         onClose={() => setFulfillmentOpen(false)}
@@ -515,6 +471,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
           if (summary) setDeliveryInlineAddrText(summary);
         }}
       />
+      </React.Suspense>
       <AlertModal
         open={closedAlertOpen}
         onClose={() => setClosedAlertOpen(false)}
@@ -724,6 +681,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
           </div>
         )}
       </Modal>
+      <React.Suspense fallback={<div className="loading-center"><div className="spinner" aria-label="Loading dialog" /></div>}>
       <DeliveryAddressModal
         open={deliveryModalOpen}
         siteSlug={siteSlug}
@@ -739,7 +697,9 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         initialAddress={deliveryInlineAddr}
         initialSummary={deliveryAddressSummary}
       />
+      </React.Suspense>
       {/* Last delivery ID removed from UI as requested */}
+      <React.Suspense fallback={<div className="loading-center"><div className="spinner" aria-label="Loading dialog" /></div>}>
       <SpiceModal
         open={spiceOpen}
         spiceLevels={pendingProduct?.spiceLevels}
@@ -755,8 +715,14 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         onCancel={() => setSpiceOpen(false)}
         onConfirm={confirmSpice}
       />
+      </React.Suspense>
+      <React.Suspense fallback={<div className="loading-center"><div className="spinner" aria-label="Loading dialog" /></div>}>
       <ExtrasModal open={extrasOpen} groups={pendingProduct?.extraOptionGroups} product={pendingProduct} onCancel={() => setExtrasOpen(false)} onConfirm={confirmExtras} />
-      <AddToCartToast />
+      </React.Suspense>
+      <React.Suspense fallback={null}>
+        <AddToCartToast />
+      </React.Suspense>
+      <React.Suspense fallback={<div className="loading-center"><div className="spinner" aria-label="Loading dialog" /></div>}>
       <UserAuthModal open={loginOpen} onClose={() => setLoginOpen(false)} onSuccess={() => {
         setLoginOpen(false);
         // Stay on the same page. If no order type yet, prompt selection.
@@ -771,6 +737,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         }
         // If pickup, keep user here; they can open order details from cart.
       }} />
+      </React.Suspense>
       <footer className="site-footer">© All Rights Reserved By <a href="https://www.blueboxx.ca/" target="_blank" rel="noopener noreferrer">Blue Boxx</a></footer>
     </div>
   );

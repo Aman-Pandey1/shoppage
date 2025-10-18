@@ -101,7 +101,11 @@ export const MyOrdersPage = () => {
     });
   }, [orders, query, tab]);
 
-  if (loading) return <div>Loading orders…</div>;
+  if (loading) return (
+    <div className="loading-center">
+      <div className="spinner" aria-label="Loading orders" />
+    </div>
+  );
   if (error) return <div style={{ color: 'red' }}>{error}</div>;
 
   return (

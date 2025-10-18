@@ -28,7 +28,11 @@ export const ShopHomePage = () => {
     return () => { cancelled = true; };
   }, []);
 
-  if (loading) return <div>Loading shop…</div>;
+  if (loading) return (
+    <div className="loading-center">
+      <div className="spinner" aria-label="Loading shop" />
+    </div>
+  );
   if (error) return <div style={{ color: 'red' }}>Failed to load site: {error}</div>;
 
   const slug = resolvedSlug || 'default';
