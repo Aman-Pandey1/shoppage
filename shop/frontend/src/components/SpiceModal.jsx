@@ -12,6 +12,10 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
   const [selected, setSelected] = useState(undefined);
   const variants = Array.isArray(product?.variants) ? product.variants : [];
   const [selectedVariantKey, setSelectedVariantKey] = useState('');
+  const flavors = Array.isArray(product?.flavors) ? product.flavors : [];
+  const portions = Array.isArray(product?.portions) ? product.portions : [];
+  const [selectedFlavorKey, setSelectedFlavorKey] = useState('');
+  const [selectedPortionKey, setSelectedPortionKey] = useState('');
   const [qty, setQty] = useState(() => {
     const n = Number(initialQuantity) || 1;
     return Math.max(1, Math.min(99, n));
@@ -26,6 +30,8 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
       setQty(Math.max(1, Math.min(99, n)));
       setBump(false);
       setSelectedVariantKey('');
+      setSelectedFlavorKey('');
+      setSelectedPortionKey('');
     }
   }, [open, product, initialQuantity]);
 
@@ -50,7 +56,17 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
   const hasVariants = variants.length > 0;
   const variantRequired = hasVariants;
   const spiceRequired = Array.isArray(product?.spiceLevels) && (product.spiceLevels.length > 0);
-  const canConfirm = (!spiceRequired || !!selected) && (!variantRequired || !!selectedVariantKey) && qty >= 1;
+  const hasFlavors = flavors.length > 0;
+  const hasPortions = portions.length > 0;
+  const selectedFlavor = flavors.find((f) => f.key === selectedFlavorKey) || null;
+  const selectedPortion = portions.find((p) => p.key === selectedPortionKey) || null;
+  const flavorRequired = hasFlavors;
+  const portionRequired = hasPortions;
+  const canConfirm = (!spiceRequired || !!selected)
+    && (!variantRequired || !!selectedVariantKey)
+    && (!flavorRequired || !!selectedFlavorKey)
+    && (!portionRequired || !!selectedPortionKey)
+    && qty >= 1;
 
   return (
     <Modal
@@ -72,7 +88,7 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
             }}
           >Cancel</button>
           <button
-            onClick={() => onConfirm({ spice: selected, variant: selectedVariant || undefined, quantity: qty })}
+            onClick={() => onConfirm({ spice: selected, variant: selectedVariant || undefined, quantity: qty, flavor: selectedFlavor || undefined, portion: selectedPortion || undefined })}
             disabled={!canConfirm}
             style={{
               padding: '12px 24px',
@@ -185,6 +201,52 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
               const suffix = addonPrice > 0 ? ` (+$${addonPrice.toFixed(2)})` : '';
               return (
                 <option key={v.key} value={v.key}>{`${v.label}${suffix}`}</option>
+              );
+            })}
+          </select>
+        </div>
+      ) : null}
+
+      {/* Flavor dropdown */}
+      {hasFlavors ? (
+        <div style={{ display: 'grid', gap: 6, marginTop: 4 }}>
+          <div style={{ fontWeight: 800 }}>Flavor</div>
+          <select
+            value={selectedFlavorKey}
+            onChange={(e) => setSelectedFlavorKey(e.target.value)}
+            required={flavorRequired}
+            aria-required={flavorRequired}
+            style={{ padding: 10, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--panel)', width: '100%' }}
+          >
+            <option value="" disabled>Select flavor</option>
+            {flavors.map((f) => {
+              const addonPrice = Number(f?.price || 0);
+              const suffix = addonPrice > 0 ? ` (+$${addonPrice.toFixed(2)})` : '';
+              return (
+                <option key={f.key} value={f.key}>{`${f.label}${suffix}`}</option>
+              );
+            })}
+          </select>
+        </div>
+      ) : null}
+
+      {/* Portion dropdown (e.g., Half / Full) */}
+      {hasPortions ? (
+        <div style={{ display: 'grid', gap: 6, marginTop: 8, marginBottom: 10 }}>
+          <div style={{ fontWeight: 800 }}>Portion</div>
+          <select
+            value={selectedPortionKey}
+            onChange={(e) => setSelectedPortionKey(e.target.value)}
+            required={portionRequired}
+            aria-required={portionRequired}
+            style={{ padding: 10, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--panel)', width: '100%' }}
+          >
+            <option value="" disabled>Select portion</option>
+            {portions.map((p) => {
+              const addonPrice = Number(p?.price || 0);
+              const suffix = addonPrice > 0 ? ` (+$${addonPrice.toFixed(2)})` : '';
+              return (
+                <option key={p.key} value={p.key}>{`${p.label}${suffix}`}</option>
               );
             })}
           </select>

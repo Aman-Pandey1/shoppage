@@ -163,7 +163,7 @@ export const AdminDashboard = () => {
   }, [products, filterCategory, vegFilter]);
 
   function startCreate() {
-    setEditing({ name: '', price: 0, categoryId: categories[0]?._id || '', description: '', imageUrl: '', spiceLevels: [], variants: [], extraOptionGroups: [] });
+    setEditing({ name: '', price: 0, categoryId: categories[0]?._id || '', description: '', imageUrl: '', spiceLevels: [], variants: [], flavors: [], portions: [], extraOptionGroups: [] });
   }
 
   function startEdit(p) {
@@ -232,6 +232,8 @@ export const AdminDashboard = () => {
       categoryId: editing.categoryId,
       spiceLevels: editing.spiceLevels || [],
       variants: editing.variants || [],
+      flavors: editing.flavors || [],
+      portions: editing.portions || [],
       extraOptionGroups: editing.extraOptionGroups || [],
     };
     if (editing._id) {
@@ -690,6 +692,32 @@ export const AdminDashboard = () => {
                         }
                       }} />
                     </label>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <span>Flavors (JSON)</span>
+                    <textarea
+                      rows={3}
+                      value={JSON.stringify(editing.flavors || [], null, 2)}
+                      onChange={(e) => {
+                        try {
+                          const parsed = JSON.parse(e.target.value);
+                          setEditing({ ...editing, flavors: parsed });
+                        } catch {}
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <span>Portions (JSON)</span>
+                    <textarea
+                      rows={3}
+                      value={JSON.stringify(editing.portions || [], null, 2)}
+                      onChange={(e) => {
+                        try {
+                          const parsed = JSON.parse(e.target.value);
+                          setEditing({ ...editing, portions: parsed });
+                        } catch {}
+                      }}
+                    />
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <span>Variants (comma-separated)</span>

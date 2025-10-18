@@ -29,6 +29,8 @@ function buildNotifyPayload(order, siteName) {
       priceCents: m.priceCents,
       size: m.size,
       spiceLevel: m.spiceLevel,
+      flavor: m.flavor,
+      portion: m.portion,
     })),
     totalCents: order?.totalCents,
     taxCents: order?.taxCents,
@@ -95,7 +97,7 @@ router.get('/confirm/:sessionId', async (req, res) => {
               storeId: site.doordashStoreId,
               pickup: updatedOrder.pickup.location,
               dropoff: updatedOrder.dropoff,
-              manifestItems: (updatedOrder.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel })),
+              manifestItems: (updatedOrder.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
               tip: 0,
               externalId: String(updatedOrder._id),
             });
@@ -104,7 +106,7 @@ router.get('/confirm/:sessionId', async (req, res) => {
               customerId: site.uberCustomerId,
               pickup: updatedOrder.pickup.location,
               dropoff: updatedOrder.dropoff,
-              manifestItems: (updatedOrder.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel })),
+              manifestItems: (updatedOrder.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
               tip: 0,
               externalId: String(updatedOrder._id),
               creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv }
@@ -212,6 +214,8 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
         priceCents: m.priceCents,
         size: m.size,
         spiceLevel: m.spiceLevel,
+        flavor: m.flavor,
+        portion: m.portion,
       })),
       totalCents,
       taxCents,
@@ -256,7 +260,9 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
 
     // Create concrete Product objects so we can scope the discount to items only
     const itemProducts = await Promise.all(items.map(async (it) => {
-      const name = `${it.name}${it.size ? ' — Select Item: ' + it.size : ''}`;
+      const flavorText = it.flavor ? ` — Flavor: ${it.flavor}` : '';
+      const portionText = it.portion ? ` — Portion: ${it.portion}` : '';
+      const name = `${it.name}${it.size ? ' — Select Item: ' + it.size : ''}${flavorText}${portionText}`;
       const p = await stripe.products.create({ name });
       return p.id;
     }));
@@ -417,7 +423,7 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
       site: req.siteId,
       userId: req.user?.userId,
       userEmail: req.user?.email,
-      items: manifestItems.map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.priceCents || m.price || 0, size: m.size, spiceLevel: m.spiceLevel })),
+      items: manifestItems.map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.priceCents || m.price || 0, size: m.size, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
       totalCents,
       taxCents,
       deliveryFeeCents: customerDeliveryFeeCents,
@@ -473,7 +479,9 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
     const taxRateIdDel = await ensureTaxRateIdDel();
 
     const itemProductsDel = await Promise.all(manifestItems.map(async (it) => {
-      const name = `${it.name}${it.size ? ' — Select Item: ' + it.size : ''}`;
+      const flavorText = it.flavor ? ` — Flavor: ${it.flavor}` : '';
+      const portionText = it.portion ? ` — Portion: ${it.portion}` : '';
+      const name = `${it.name}${it.size ? ' — Select Item: ' + it.size : ''}${flavorText}${portionText}`;
       const p = await stripe.products.create({ name });
       return p.id;
     }));
