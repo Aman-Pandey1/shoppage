@@ -80,13 +80,9 @@ export const OrderDetailsBar = ({
           <div className="order-bar__pair" style={{ width: '100%' }}>
             <div className="order-bar__label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span>Order Date and Time</span>
-              {typeof minutesUntilReady === 'number' && minutesUntilReady >= 0 ? (
-                <span className="order-bar__eta">{minutesUntilReady} mins</span>
-              ) : null}
             </div>
             <div className="order-bar__inline" style={{ gap: 8 }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span className="muted" style={{ fontSize: 12 }}>Day</span>
                 <select
                   value={pickupDate}
                   onChange={(e) => onPickupDateChange && onPickupDateChange(e.target.value)}
