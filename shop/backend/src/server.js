@@ -7,6 +7,7 @@ import fs from 'fs';
 import webhookUberRouter from './routes/webhookUber.js';
 import webhookStripeRouter from './routes/webhookStripe.js';
 import morgan from 'morgan';
+import compression from 'compression';
 import categoriesRouter from './routes/categories.js';
 import productsRouter from './routes/products.js';
 import authRouter, { userAuthRouter } from './routes/auth.js';
@@ -63,6 +64,14 @@ app.use(cors(corsOptions));
 // Handle CORS preflight for all routes using a RegExp to avoid
 // path-to-regexp string parsing issues in Express 5.
 app.options(/.*/, cors(corsOptions));
+// Enable gzip/br compression for JSON/text; skip for webhooks/raw bodies
+app.use(compression({
+  filter: (req, res) => {
+    if (req.path.startsWith('/webhook/')) return false; // raw body needed
+    return compression.filter(req, res);
+  },
+  threshold: 1024,
+}));
 // Mount webhook with raw body BEFORE JSON parser
 app.use('/webhook/uber', express.raw({ type: '*/*' }), webhookUberRouter);
 app.use('/webhook/stripe', express.raw({ type: 'application/json' }), webhookStripeRouter);
