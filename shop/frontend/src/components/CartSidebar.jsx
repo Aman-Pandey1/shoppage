@@ -156,7 +156,14 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
           </div>
         </div>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+      {/* ORDER READY FOR placed at top of sidebar, right after header */}
+      <div className="card" style={{ marginTop: 8, padding: 12, borderRadius: 10, background: 'var(--primary-alpha-04)', border: '1px dashed var(--primary-600)' }}>
+        <div className="muted" style={{ fontSize: 12 }}>ORDER READY FOR</div>
+        <div style={{ fontSize: 20, fontWeight: 800 }}>{timeString}</div>
+        <div className="muted" style={{ fontSize: 12 }}>{eta}</div>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 8 }}>
         <h3 style={{ margin: 0, letterSpacing: '.02em' }}>Your order</h3>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {state.items.length > 0 ? <button onClick={clearCart} className="primary-btn" style={{ padding: '6px 10px', borderRadius: 8 }}>Clear</button> : null}
@@ -284,12 +291,6 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
           <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800 }}>
             <span>Total</span>
             <span>${formatCents(grandTotalCents)}</span>
-          </div>
-          {/* Move ORDER READY FOR section lower in the flow */}
-          <div className="card" style={{ marginTop: 12, padding: 12, borderRadius: 10, background: 'var(--primary-alpha-04)', border: '1px dashed var(--primary-600)' }}>
-            <div className="muted" style={{ fontSize: 12 }}>ORDER READY FOR</div>
-            <div style={{ fontSize: 20, fontWeight: 800 }}>{timeString}</div>
-            <div className="muted" style={{ fontSize: 12 }}>{eta}</div>
           </div>
         </div>
         <button

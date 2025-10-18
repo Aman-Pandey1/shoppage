@@ -433,8 +433,9 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         readyAt={readyAt}
       />
       <TopNav siteSlug={siteSlug} isCartOpen={mobileCartOpen} onSignIn={() => setLoginOpen(true)} onOpenCart={() => setMobileCartOpen(true)} cartCount={state.items.length} />
+      {/* Keep banner directly under header (outside main content) */}
+      <StoreBanner siteSlug={siteSlug} onCta={() => setMobileCartOpen(true)} />
       <main className="content">
-        <StoreBanner siteSlug={siteSlug} onCta={() => setMobileCartOpen(true)} />
 
         <div className="card order-type-card">
           <OrderTypeSelection />
