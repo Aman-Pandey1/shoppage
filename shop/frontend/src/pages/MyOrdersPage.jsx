@@ -23,6 +23,7 @@ export const MyOrdersPage = () => {
   const [trackingError, setTrackingError] = React.useState('');
   const [trackingModal, setTrackingModal] = React.useState({ open: false, url: '', status: '' });
   const [successMsg, setSuccessMsg] = React.useState('');
+  const [lastSessionId, setLastSessionId] = React.useState('');
 
   // Detect success status in query params (e.g., from COD or Stripe)
   React.useEffect(() => {
@@ -37,6 +38,7 @@ export const MyOrdersPage = () => {
           (async () => {
             try {
               await fetchJson(`/api/payments/stripe/confirm/${encodeURIComponent(cs)}`);
+              setLastSessionId(cs);
             } catch {}
           })();
         }
@@ -121,6 +123,27 @@ export const MyOrdersPage = () => {
           <button className={tab === 'all' ? 'primary-btn' : ''} onClick={() => setTab('all')}>All</button>
           <button className={tab === 'pickup' ? 'primary-btn' : ''} onClick={() => setTab('pickup')}>Takeout</button>
           <button className={tab === 'delivery' ? 'primary-btn' : ''} onClick={() => setTab('delivery')}>Delivery</button>
+          <button
+            onClick={async () => {
+              try {
+                const sp = new URLSearchParams(location.search || window.location.search || '');
+                const cs = sp.get('cs') || lastSessionId;
+                if (cs) {
+                  await fetchJson(`/api/payments/stripe/confirm/${encodeURIComponent(cs)}`);
+                }
+                const data = await fetchJson(`/api/shop/${siteSlug || 'default'}/orders/mine?page=${page}&pageSize=${pageSize}`);
+                if (Array.isArray(data)) {
+                  setOrders(data);
+                  setTotalPages(1);
+                } else {
+                  setOrders(Array.isArray(data?.items) ? data.items : []);
+                  setTotalPages(Number(data?.totalPages) || 1);
+                }
+              } catch (e) {
+                alert('Refresh failed');
+              }
+            }}
+          >Refresh payment status</button>
         </div>
       </div>
       <div className="card" style={{ padding: 8, borderRadius: 12, marginBottom: 10 }}>
