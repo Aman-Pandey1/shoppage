@@ -54,14 +54,17 @@ export const StoreBanner = ({ siteSlug, onCta }) => {
 
   return (
     <section
-      className="card animate-popIn"
+      className="animate-popIn"
       style={{
-        borderRadius: 16,
+        borderRadius: 0,
         overflow: 'hidden',
-        border: '1px solid var(--border)',
+        border: 'none',
         marginBottom: 12,
         padding: 0,
         position: 'relative',
+        width: '100vw',
+        marginLeft: '50%',
+        transform: 'translateX(-50%)',
       }}
       aria-label="Store banner"
     >
@@ -69,7 +72,7 @@ export const StoreBanner = ({ siteSlug, onCta }) => {
         style={{
           position: 'relative',
           width: '100%',
-          height: 180,
+          height: 240,
           background: backgroundImage,
         }}
       >
@@ -85,34 +88,33 @@ export const StoreBanner = ({ siteSlug, onCta }) => {
           style={{
             position: 'absolute',
             inset: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+            display: 'grid',
+            placeItems: 'center',
             padding: '16px',
             color: '#fff',
           }}
         >
-          <div style={{ display: 'grid', gap: 4 }}>
-            <div style={{ fontSize: 13, opacity: 0.9 }}>Delivery or Takeout</div>
-            <div style={{ fontWeight: 900, fontSize: 20, letterSpacing: '.01em' }}>{storeName}</div>
+          <div style={{ textAlign: 'center', display: 'grid', gap: 10 }}>
+            <img alt="logo" src={resolveAssetUrl('') || undefined} style={{ display: 'none' }} />
+            <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: '.01em' }}>{storeName}</div>
             {tagline ? <div style={{ fontSize: 13, opacity: 0.9 }}>{tagline}</div> : null}
+            <button
+              onClick={onCta}
+              style={{
+                padding: '12px 28px',
+                borderRadius: 9999,
+                background: '#b91c1c',
+                border: 'none',
+                color: '#fff',
+                fontWeight: 900,
+                letterSpacing: '.03em',
+                boxShadow: '0 6px 16px rgba(0,0,0,0.25)'
+              }}
+              aria-label="Start order"
+            >
+              ORDER ONLINE
+            </button>
           </div>
-          <button
-            className="primary-btn"
-            onClick={onCta}
-            style={{
-              padding: '10px 18px',
-              borderRadius: 9999,
-              background: 'var(--primary-600)',
-              border: '1px solid rgba(255,255,255,0.6)',
-              color: '#fff',
-              fontWeight: 800,
-              letterSpacing: '.03em',
-            }}
-            aria-label="Start order"
-          >
-            {isOpen ? 'ORDER ONLINE' : 'RESTAURANT CLOSED'}
-          </button>
         </div>
       </div>
     </section>
