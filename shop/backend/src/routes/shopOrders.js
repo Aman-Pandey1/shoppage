@@ -64,7 +64,7 @@ router.get('/:slug/orders/:orderId/tracking', requireUser, async (req, res) => {
     let live;
     if (site?.uberCustomerId && order?.uberDeliveryId) {
       try {
-        live = await getDelivery({ customerId: site.uberCustomerId, deliveryId: order.uberDeliveryId, creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv } });
+        live = await getDelivery({ customerId: site.uberCustomerId, deliveryId: order.uberDeliveryId, creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv, scopes: site?.uberTokenScopes } });
       } catch (e) {
         // ignore live fetch errors; fall back to stored fields
       }

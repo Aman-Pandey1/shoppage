@@ -19,11 +19,12 @@ function isUsingMock() {
   return val === 'true';
 }
 function resolveUberCreds(creds) {
-  const clientId = creds?.clientId || process.env.UBER_CLIENT_ID || '';
-  const clientSecret = creds?.clientSecret || process.env.UBER_CLIENT_SECRET || '';
-  const env = String(creds?.env || process.env.UBER_ENV || 'production').toLowerCase();
-  const scopes = (Object.prototype.hasOwnProperty.call(creds || {}, 'scopes') ? (creds?.scopes ?? '') : (process.env.UBER_TOKEN_SCOPES ?? undefined));
-  const audience = creds?.audience || process.env.UBER_TOKEN_AUDIENCE || undefined;
+  // Only use per-site credentials passed by callers; do not fall back to env.
+  const clientId = String(creds?.clientId || '');
+  const clientSecret = String(creds?.clientSecret || '');
+  const env = String(creds?.env || 'production').toLowerCase();
+  const scopes = Object.prototype.hasOwnProperty.call(creds || {}, 'scopes') ? (creds?.scopes ?? '') : undefined;
+  const audience = creds?.audience || undefined;
   return { clientId, clientSecret, env, scopes, audience };
 }
 function isMissingUberCreds(creds) {
@@ -51,7 +52,6 @@ async function getAccessToken(creds) {
   const prodKey = `${clientId}::production`;
   const sbxKey = `${clientId}::sandbox`;
   const existing = [tokenCache.get(prodKey), tokenCache.get(sbxKey)].find((e) => e && now < (e.expiryMs - 30000));
-  const now = Date.now();
   if (existing && now < (existing.expiryMs - 30000)) return { token: existing.token, envUsed: existing.envUsed };
 
   // Scopes ordering and fallback strategy:
@@ -63,7 +63,6 @@ async function getAccessToken(creds) {
   const scopesPropProvided = creds && Object.prototype.hasOwnProperty.call(creds, 'scopes');
   const rawScopes = typeof creds?.scopes === 'string' ? creds.scopes : undefined;
   const trimmedScopes = typeof rawScopes === 'string' ? rawScopes.trim() : undefined;
-  const envDefaultScopes = String(process.env.UBER_TOKEN_SCOPES || '').trim();
   const scopeCandidates = [];
   const addCandidate = (s) => {
     if (typeof s !== 'string') return;
@@ -73,8 +72,6 @@ async function getAccessToken(creds) {
   if (scopesPropProvided) {
     // Caller explicitly provided scopes; empty string means "no scope"
     addCandidate(trimmedScopes && trimmedScopes.length > 0 ? trimmedScopes : '');
-  } else {
-    if (envDefaultScopes) addCandidate(envDefaultScopes);
   }
   // Always include safe fallbacks
   addCandidate('eats.deliveries');
@@ -174,7 +171,7 @@ export async function requestQuote({ customerId, pickup, dropoff, creds }) {
   const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
   if (!res.ok) {
     const text = await safeText(res);
-    if ((env === 'sandbox' || isUsingMock()) && (res.status >= 500 || /address_undeliverable|Cannot find eligible product|internal_server_error/i.test(text))) {
+    if ((envUsed === 'sandbox' || isUsingMock()) && (res.status >= 500 || /address_undeliverable|Cannot find eligible product|internal_server_error/i.test(text))) {
       // Return a simulated quote to unblock testing
       return {
         id: `q-${Date.now()}`,
@@ -236,7 +233,7 @@ export async function createDelivery({ customerId, pickup, dropoff, manifestItem
 		if (res.status === 400 && /pickup_phone_number|dropoff_phone_number|invalid_params/i.test(text)) {
 			throw new Error('Phone number is invalid. Use E.164 format like +14155550123.');
 		}
-    if ((env === 'sandbox' || isUsingMock()) && (res.status >= 500 || /address_undeliverable|Cannot find eligible product|internal_server_error/i.test(text))) {
+    if ((envUsed === 'sandbox' || isUsingMock()) && (res.status >= 500 || /address_undeliverable|Cannot find eligible product|internal_server_error/i.test(text))) {
       // Simulate delivery object for testing
       const id = `d-${Date.now()}`;
       return {
