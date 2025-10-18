@@ -223,11 +223,11 @@ export const FulfillmentModal = ({
             {closedMsg}
           </div>
         ) : null}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
         <button
           onClick={() => setSelectedType('pickup')}
           style={{
-            padding: 4,
+            padding: 2,
             borderRadius: 12,
             overflow: 'hidden',
             border: selectedType === 'pickup' ? '2px solid var(--primary-600)' : '1px solid var(--border)',
@@ -237,21 +237,21 @@ export const FulfillmentModal = ({
           }}
           className="animate-fadeInUp"
         >
-          <div style={{ padding: 6, display: 'grid', gap: 4, textAlign: 'center' }}>
-            <div style={{ fontWeight: 800, fontSize: 14 }}>Takeout</div>
+          <div style={{ padding: 4, display: 'grid', gap: 2, textAlign: 'center' }}>
+            <div style={{ fontWeight: 800, fontSize: 13 }}>Takeout</div>
             {pickupImg ? (
-              <div style={{ height: 76, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <img src={pickupImg} alt="Takeout" loading="eager" decoding="async" style={{ display: 'block', maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }} />
+              <div style={{ height: 88, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <img src={pickupImg} alt="Takeout" loading="eager" decoding="async" style={{ display: 'block', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }} />
               </div>
             ) : (
-              <div style={{ fontSize: 34, height: 76, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🏪</div>
+              <div style={{ fontSize: 34, height: 88, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🏪</div>
             )}
           </div>
         </button>
         <button
           onClick={() => { setSelectedType('delivery'); }}
           style={{
-            padding: 4,
+            padding: 2,
             borderRadius: 12,
             overflow: 'hidden',
             border: selectedType === 'delivery' ? '2px solid var(--primary-600)' : '1px solid var(--border)',
@@ -263,14 +263,14 @@ export const FulfillmentModal = ({
           }}
           className="animate-fadeInUp"
         >
-          <div style={{ padding: 6, display: 'grid', gap: 4, textAlign: 'center' }}>
-            <div style={{ fontWeight: 800, fontSize: 14 }}>Delivery</div>
+          <div style={{ padding: 4, display: 'grid', gap: 2, textAlign: 'center' }}>
+            <div style={{ fontWeight: 800, fontSize: 13 }}>Delivery</div>
             {deliveryImg ? (
-              <div style={{ height: 76, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <img src={deliveryImg} alt="Delivery" loading="eager" decoding="async" style={{ display: 'block', maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }} />
+              <div style={{ height: 88, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <img src={deliveryImg} alt="Delivery" loading="eager" decoding="async" style={{ display: 'block', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }} />
               </div>
             ) : (
-              <div style={{ fontSize: 34, height: 76, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🚚</div>
+              <div style={{ fontSize: 34, height: 88, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🚚</div>
             )}
           </div>
         </button>
