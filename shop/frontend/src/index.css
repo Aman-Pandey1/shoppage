@@ -31,6 +31,8 @@
 
   /* Consistent header height for layout offsets */
   --header-height: 88px;
+  /* Banner height so cart/category can start below it */
+  --banner-height: 260px;
 
   /* Radii & shadows */
   --radius: 14px;
@@ -264,7 +266,8 @@ input:focus, select:focus, textarea:focus {
 /* Layout helpers */
 .content {
   margin-right: 380px; /* space for cart */
-  padding: calc(12px + var(--header-height)) 16px 12px; /* add top offset under fixed header */
+  /* top = header + banner so list starts below banner */
+  padding: calc(12px + var(--header-height) + var(--banner-height)) 16px 12px;
   max-width: 1200px;
 }
 @media (min-width: 1200px) {
@@ -275,7 +278,7 @@ input:focus, select:focus, textarea:focus {
 @media (max-width: 1024px) {
   .content {
     margin-right: 0 !important;
-    padding: calc(12px + var(--header-height)) 12px 12px !important; /* keep offset on mobile too */
+    padding: calc(12px + var(--header-height) + var(--banner-height)) 12px 12px !important; /* keep offset on mobile too */
   }
 
   .cart-sidebar {
@@ -411,14 +414,14 @@ input:focus, select:focus, textarea:focus {
 .brand, .nav-title, .actions { min-width: 0; }
 .brand { display: flex; align-items: center; gap: 6px; }
 .brand__logo {
-  width: 56px;
-  height: 56px;
+  width: 68px;
+  height: 68px;
   display: grid;
   place-items: center;
   font-size: 22px;
 }
 @media (min-width: 480px) {
-  .brand__logo { width: 64px; height: 64px; }
+  .brand__logo { width: 74px; height: 74px; }
 }
 .brand__home {
   margin-left: -6px;
@@ -465,7 +468,7 @@ input:focus, select:focus, textarea:focus {
 /* Extra-small phone optimizations */
 @media (max-width: 375px) {
   .top-nav__inner { padding: 10px 12px; gap: 8px; }
-  .brand__logo { width: 48px; height: 48px; }
+  .brand__logo { width: 56px; height: 56px; }
   .brand__back { width: 36px; height: 36px; margin-left: -4px; }
   .brand__name { font-size: 15px; max-width: 48vw; }
   .nav-title { font-size: 14px; }

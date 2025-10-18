@@ -165,9 +165,10 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
                 src={logoCandidates[logoIndex]}
                 alt="logo"
                 onError={() => setLogoIndex((i) => i + 1)}
+                style={{ transform: 'scale(1.08)' }}
               />
             ) : (
-              <span aria-hidden>🍽️</span>
+              <span aria-hidden style={{ fontSize: 26 }}>🍽️</span>
             )}
           </a>
         </div>
@@ -242,8 +243,13 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
             </button>
           )}
           
-          <button className="profile-chip hide-mobile" aria-label="Account" onClick={() => setMenuOpen((v) => !v)}>
-            {user ? <span>{initials}</span> : <User size={16} />}
+          <button className="profile-chip hide-mobile" aria-label="Account" onClick={() => setMenuOpen((v) => !v)}
+            style={{
+              background: 'var(--primary-600)',
+              color: '#fff'
+            }}
+          >
+            {user ? <span>{initials}</span> : <User size={16} color="#fff" />}
           </button>
           {menuOpen ? (
             <div 
