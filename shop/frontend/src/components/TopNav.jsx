@@ -117,6 +117,7 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
   return (
     <div className="top-nav" data-menu-open={menuOpen ? 'true' : 'false'} role="banner" style={{ zIndex: menuOpen ? 750 : undefined }}>
       <div className="top-nav__inner">
+        {/* Left: Back To Home */}
         <div className="brand" aria-label="Store brand">
           {logoLinkUrl ? (
             <a
@@ -132,11 +133,11 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 8,
-                padding: '6px 10px',
+                padding: '6px 12px',
                 borderRadius: 999,
-                border: '1px solid rgba(255,255,255,0.65)',
-                background: 'rgba(255,255,255,0.10)',
-                color: '#fff',
+                border: '1px solid var(--primary-600)',
+                background: '#fff',
+                color: 'var(--primary-600)',
                 fontWeight: 800,
                 fontSize: 12,
               }}
@@ -144,6 +145,9 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
               Back To Home
             </a>
           ) : null}
+        </div>
+        {/* Center: Logo only */}
+        <div className="nav-title" style={{ justifySelf: 'center' }}>
           <a
             className="brand__logo"
             aria-label="Home"
@@ -166,16 +170,7 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
               <span aria-hidden>🍽️</span>
             )}
           </a>
-          <div className="brand__text">
-            <div className="brand__name">{name}</div>
-            {tagline ? (
-              <div className="brand__tagline hide-mobile">{tagline}</div>
-            ) : null}
-            {/* Address intentionally hidden per design request */}
-          </div>
         </div>
-        {/* On mobile, when the cart is open we only show "Cart" at top */}
-        <div className="nav-title">{isCartOpen ? 'Cart' : 'ORDER ONLINE'}</div>
 
         <div className="actions" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
           {supportPhone ? (
@@ -187,15 +182,14 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 8,
-                padding: '6px 10px',
+                padding: '6px 12px',
                 borderRadius: 999,
-                // Ensure strong contrast on red header
-                border: '1px solid rgba(255,255,255,0.65)',
-                background: 'rgba(255,255,255,0.10)',
+                border: '1px solid var(--primary-600)',
+                background: 'var(--primary-600)',
                 fontSize: 12,
                 textDecoration: 'none',
                 color: '#fff',
-                fontWeight: 700,
+                fontWeight: 800,
               }}
             >
               <span role="img" aria-label="Call">📞</span>

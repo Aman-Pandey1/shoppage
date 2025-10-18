@@ -149,11 +149,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
     >
       <div className="card cart-header" style={{ padding: 14, borderRadius: 12, marginBottom: 12, borderTop: '3px solid var(--primary)', position: 'sticky', top: 0, background: '#fff', zIndex: 1 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <div style={{ fontSize: 12 }} className="muted">ORDER READY FOR</div>
-            <div style={{ fontSize: 20, fontWeight: 800 }}>{timeString}</div>
-            <div style={{ fontSize: 12 }} className="muted">{eta}</div>
-          </div>
+          <div style={{ fontWeight: 800 }}>Your order</div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: 12 }} className="muted">TOTAL</div>
             <div style={{ fontWeight: 800 }}>${formatCents(grandTotalCents)}</div>
@@ -288,6 +284,12 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
           <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800 }}>
             <span>Total</span>
             <span>${formatCents(grandTotalCents)}</span>
+          </div>
+          {/* Move ORDER READY FOR section lower in the flow */}
+          <div className="card" style={{ marginTop: 12, padding: 12, borderRadius: 10, background: 'var(--primary-alpha-04)', border: '1px dashed var(--primary-600)' }}>
+            <div className="muted" style={{ fontSize: 12 }}>ORDER READY FOR</div>
+            <div style={{ fontSize: 20, fontWeight: 800 }}>{timeString}</div>
+            <div className="muted" style={{ fontSize: 12 }}>{eta}</div>
           </div>
         </div>
         <button

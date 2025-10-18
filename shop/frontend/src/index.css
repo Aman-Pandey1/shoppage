@@ -379,15 +379,11 @@ input:focus, select:focus, textarea:focus {
   top: 0;
   left: 0;
   right: 0;
-  /* Keep header above order cards and sidebars by default */
   z-index: 650;
-  /* Lock a consistent visual height to coordinate with sidebars */
   min-height: var(--header-height);
-  background: var(--primary);
-  background-image: linear-gradient(180deg, var(--primary), var(--primary-600));
-  color: #fff;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.05);
-  /* Prevent rare horizontal overflow from absolutely positioned badges */
+  background: #ffffff; /* white background per request */
+  color: var(--text);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.06);
   overflow-x: hidden;
 }
 /* Respect top safe area on devices with display cutouts */
@@ -399,7 +395,7 @@ input:focus, select:focus, textarea:focus {
   margin: 0 auto;
   padding: 14px 16px;
   display: grid;
-  grid-template-columns: minmax(0,1fr) auto minmax(0,1fr);
+  grid-template-columns: 1fr auto 1fr; /* left pill, centered logo, right actions */
   align-items: center;
   gap: 12px;
   width: 100%;
@@ -426,7 +422,7 @@ input:focus, select:focus, textarea:focus {
 }
 .brand__home {
   margin-left: -6px;
-  color: #fff;
+  color: var(--primary-600);
   font-weight: 800;
   letter-spacing: .02em;
 }
@@ -444,7 +440,7 @@ input:focus, select:focus, textarea:focus {
 }
 .brand__name { font-weight: 700; letter-spacing: .01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 52vw; }
 .brand__tagline { font-size: clamp(11px, 2.6vw, 12px); opacity: .95; }
-.nav-title { justify-self: center; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; }
+.nav-title { justify-self: center; font-weight: 800; letter-spacing: .03em; text-transform: none; }
 .actions { justify-self: end; display: flex; align-items: center; gap: 8px; }
 .cart-header-btn { position: relative; display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 9999px; border: 1px solid rgba(255,255,255,0.65); background: rgba(255,255,255,0.08); color: #fff; }
 .cart-header-btn:hover { background: rgba(255,255,255,0.15); }
@@ -456,19 +452,14 @@ input:focus, select:focus, textarea:focus {
 .signin-btn { display: none; }
 
 /* Ensure the phone number pill remains readable over the red header */
-.top-nav .actions a[href^="tel:"] {
-  border: 1px solid rgba(255,255,255,0.65);
-  background: rgba(255,255,255,0.10);
-  color: #fff;
-  font-weight: 700;
-}
+.top-nav .actions a[href^="tel:"] { color: #fff; }
 
 /* Mobile adjustments for centering cart icon */
 @media (max-width: 1024px) {
-  .top-nav__inner { grid-template-columns: minmax(0,1fr) minmax(0,1fr) minmax(0,1fr); }
+  .top-nav__inner { grid-template-columns: 1fr auto 1fr; }
   .nav-title { grid-column: 2 / 3; justify-self: center; }
-  .top-nav .actions { justify-self: center; }
-  .top-nav .cart-header-btn { margin: 0 auto; }
+  .top-nav .actions { justify-self: end; }
+  .top-nav .cart-header-btn { margin-left: auto; }
 }
 
 /* Extra-small phone optimizations */
