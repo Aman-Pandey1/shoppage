@@ -26,7 +26,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [privacyOpen, setPrivacyOpen] = useState(true);
   const [fulfillmentOpen, setFulfillmentOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [allCategories, setAllCategories] = useState([]);
+  // Categories come from query; avoid duplicating into state
   const [pendingProduct, setPendingProduct] = useState(null);
   const [pendingQuantity, setPendingQuantity] = useState(1);
   const [spiceOpen, setSpiceOpen] = useState(false);
@@ -181,13 +181,15 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     setPendingQuantityOption(null);
   }
 
-  const { data: categories = [] } = useCategoriesQuery(siteSlug);
+  const { data: categoriesData } = useCategoriesQuery(siteSlug);
+  const categories = React.useMemo(
+    () => (Array.isArray(categoriesData) ? categoriesData : []),
+    [categoriesData]
+  );
   useEffect(() => {
-    setAllCategories(categories);
-    if (initialCategoryId) {
-      const found = categories.find((c) => String(c._id) === String(initialCategoryId));
-      if (found) setSelectedCategory(found);
-    }
+    if (!initialCategoryId || !Array.isArray(categories) || categories.length === 0) return;
+    const found = categories.find((c) => String(c._id) === String(initialCategoryId));
+    if (found) setSelectedCategory(found);
   }, [categories, initialCategoryId]);
 
   // Load site basics for support info (WhatsApp, etc.)
@@ -195,8 +197,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   useEffect(() => { setSite(siteData || null); }, [siteData]);
 
   // Load pickup locations for popup
-  const { data: locationsData = [], isLoading: loadingLocations } = useLocationsQuery(siteSlug);
-  const { data: citiesData = [], isLoading: loadingCities } = useCitiesQuery(siteSlug);
+  const { data: locationsData, isLoading: loadingLocations } = useLocationsQuery(siteSlug);
+  const { data: citiesData, isLoading: loadingCities } = useCitiesQuery(siteSlug);
   useEffect(() => {
     const arr = Array.isArray(locationsData) ? locationsData : [];
     setLocations(arr);
@@ -712,7 +714,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         open={spiceOpen}
         spiceLevels={pendingProduct?.spiceLevels}
         product={pendingProduct}
-        category={(pendingProduct && allCategories.find(c => String(c._id) === String(pendingProduct.categoryId))) || selectedCategory || null}
+        category={(pendingProduct && categories.find(c => String(c._id) === String(pendingProduct.categoryId))) || selectedCategory || null}
         siteLogoSrc={(function(){
           try {
             const el = document.querySelector('.brand__logo img');
