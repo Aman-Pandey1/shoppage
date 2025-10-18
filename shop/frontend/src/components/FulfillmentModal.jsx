@@ -93,20 +93,18 @@ export const FulfillmentModal = ({
       const keys = ['sun','mon','tue','wed','thu','fri','sat'];
       const cfg = hours[keys[dayIdx]];
       if (!cfg) { setClosedMsg(''); setClosedNow(false); return; }
-      if (cfg.closed) {
-        const openText = nextOpenText(hours, dayIdx);
-        setClosedMsg(`We are currently closed.\nWe will open today at ${openText}. You can Pre-Order for later.`);
-        setClosedNow(true);
-        return;
-      }
-      const [oh, om] = String(cfg.open || '10:00').split(':').map(Number);
-      const [ch, cm] = String(cfg.close || '22:00').split(':').map(Number);
+      const [oh, om] = String(cfg?.open || '10:00').split(':').map(Number);
+      const [ch, cm] = String(cfg?.close || '22:00').split(':').map(Number);
       const nowMin = now.getHours()*60 + now.getMinutes();
       const openMin = (oh||0)*60 + (om||0);
+      // Last order 15 minutes before close
       const lastOrder = (ch||0)*60 + Math.max(0, (cm||0)-15);
-      if (!(nowMin >= openMin && nowMin <= lastOrder)) {
-        const openText = timeLabel(oh||10, om||0);
-        setClosedMsg(`We are currently closed.\nWe will open today at ${openText}. You can Pre-Order for later.`);
+      const isClosed = !!cfg?.closed || !(nowMin >= openMin && nowMin <= lastOrder);
+      if (isClosed) {
+        const openText = cfg?.closed ? nextOpenText(hours, dayIdx) : timeLabel(oh||10, om||0);
+        // Remove the space before AM/PM to match requested copy (e.g., 10:00AM)
+        const openNoSpace = String(openText || '').replace(/\s*(AM|PM)$/i, '$1');
+        setClosedMsg(`Order Now Is Closed. We Will Be Back At ${openNoSpace}. You Can Pre-Order For Later.....`);
         setClosedNow(true);
       } else {
         setClosedMsg('');
@@ -208,11 +206,28 @@ export const FulfillmentModal = ({
 
   function renderTypeButtons() {
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
+      <>
+        {closedMsg ? (
+          <div style={{
+            color: 'var(--danger)',
+            background: 'var(--danger-alpha-06, rgba(220,53,69,0.06))',
+            border: '1px solid var(--danger-alpha-20, rgba(220,53,69,0.2))',
+            padding: 10,
+            borderRadius: 10,
+            marginBottom: 8,
+            whiteSpace: 'pre-line',
+            textAlign: 'center',
+            fontWeight: 700,
+            fontSize: 13,
+          }}>
+            {closedMsg}
+          </div>
+        ) : null}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
         <button
           onClick={() => setSelectedType('pickup')}
           style={{
-            padding: 6,
+            padding: 4,
             borderRadius: 12,
             overflow: 'hidden',
             border: selectedType === 'pickup' ? '2px solid var(--primary-600)' : '1px solid var(--border)',
@@ -222,21 +237,21 @@ export const FulfillmentModal = ({
           }}
           className="animate-fadeInUp"
         >
-          <div style={{ padding: 8, display: 'grid', gap: 6, textAlign: 'center' }}>
-            <div style={{ fontWeight: 800 }}>Takeout</div>
+          <div style={{ padding: 6, display: 'grid', gap: 4, textAlign: 'center' }}>
+            <div style={{ fontWeight: 800, fontSize: 14 }}>Takeout</div>
             {pickupImg ? (
-              <div style={{ height: 84, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <img src={pickupImg} alt="Takeout" loading="eager" decoding="async" style={{ display: 'block', maxWidth: '78%', maxHeight: '78%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }} />
+              <div style={{ height: 76, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <img src={pickupImg} alt="Takeout" loading="eager" decoding="async" style={{ display: 'block', maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }} />
               </div>
             ) : (
-              <div style={{ fontSize: 32, height: 84, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🏪</div>
+              <div style={{ fontSize: 34, height: 76, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🏪</div>
             )}
           </div>
         </button>
         <button
           onClick={() => { setSelectedType('delivery'); }}
           style={{
-            padding: 6,
+            padding: 4,
             borderRadius: 12,
             overflow: 'hidden',
             border: selectedType === 'delivery' ? '2px solid var(--primary-600)' : '1px solid var(--border)',
@@ -248,23 +263,19 @@ export const FulfillmentModal = ({
           }}
           className="animate-fadeInUp"
         >
-          <div style={{ padding: 8, display: 'grid', gap: 6, textAlign: 'center' }}>
-            <div style={{ fontWeight: 800 }}>Delivery</div>
-            {closedMsg ? (
-              <div style={{ color: 'var(--danger)', whiteSpace: 'pre-line', fontSize: 12 }}>
-                {closedMsg}
-              </div>
-            ) : null}
+          <div style={{ padding: 6, display: 'grid', gap: 4, textAlign: 'center' }}>
+            <div style={{ fontWeight: 800, fontSize: 14 }}>Delivery</div>
             {deliveryImg ? (
-              <div style={{ height: 84, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <img src={deliveryImg} alt="Delivery" loading="eager" decoding="async" style={{ display: 'block', maxWidth: '78%', maxHeight: '78%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }} />
+              <div style={{ height: 76, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <img src={deliveryImg} alt="Delivery" loading="eager" decoding="async" style={{ display: 'block', maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }} />
               </div>
             ) : (
-              <div style={{ fontSize: 32, height: 84, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🚚</div>
+              <div style={{ fontSize: 34, height: 76, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🚚</div>
             )}
           </div>
         </button>
-      </div>
+        </div>
+      </>
     );
   }
 
@@ -322,6 +333,26 @@ export const FulfillmentModal = ({
     // delivery
     return (
       <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>
+        {timing === 'later' ? (
+          <div className="form-grid" style={{ gap: 12 }}>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span>Day</span>
+              <select value={pickupDate || ''} onChange={(e) => onPickupDateChange && onPickupDateChange(e.target.value)}>
+                {(Array.isArray(dateOptions) ? dateOptions : []).map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label || opt.value}</option>
+                ))}
+              </select>
+            </label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span>Time</span>
+              <select value={pickupTime || ''} onChange={(e) => onPickupTimeChange && onPickupTimeChange(e.target.value)}>
+                {(Array.isArray(timeOptions) ? timeOptions : []).map((t) => (
+                  <option key={(t.value || t)} value={t.value || t} disabled={!!t.disabled}>{t.label || t}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+        ) : null}
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <span>Delivery Address</span>
           {AddressAutocomplete ? (
