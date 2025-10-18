@@ -77,16 +77,30 @@ async function getAccessToken(creds) {
   addCandidate('eats.deliveries');
   addCandidate('');
 
+  // Audience ordering and fallback strategy:
+  // - If audience was provided by the caller, try it first
+  // - Then try the common default 'https://api.uber.com'
+  // - Finally, try with no audience parameter at all
+  const audienceCandidates = [];
+  const addAudience = (a) => {
+    if (typeof a !== 'string') return;
+    if (!audienceCandidates.includes(a)) audienceCandidates.push(a);
+  };
+  if (typeof audience === 'string' && audience.trim().length > 0) addAudience(audience.trim());
+  addAudience('https://api.uber.com');
+  addAudience('');
+
   const tokenUrls = resolveUberTokenUrls(env);
   let lastError = '';
   for (const tokenUrl of tokenUrls) {
     for (const scopeCandidate of scopeCandidates) {
+      for (const audienceCandidate of audienceCandidates) {
       const body = new URLSearchParams();
       body.append('grant_type', 'client_credentials');
       body.append('client_id', clientId);
       body.append('client_secret', clientSecret);
       if (scopeCandidate) body.append('scope', scopeCandidate);
-      if (audience) body.append('audience', audience);
+        if (audienceCandidate) body.append('audience', audienceCandidate);
       const res = await fetch(tokenUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -107,7 +121,7 @@ async function getAccessToken(creds) {
         lastError = msg;
         // Retry on invalid_scope only; otherwise, if tokenUrl is not the primary, go to next URL
         if (/invalid_scope/i.test(text)) {
-          continue; // try next scope or next host
+            continue; // try next audience, then next scope or next host
         }
         // For other 4xx errors, do not attempt other scopes; break to next host
         if (res.status >= 400 && res.status < 500) break;
@@ -119,10 +133,11 @@ async function getAccessToken(creds) {
           throw e;
         }
       }
+      }
     }
   }
   if (/invalid_scope/i.test(String(lastError || ''))) {
-    const hint = ' Hint: Ensure your Uber app has the "eats.deliveries" permission enabled. If it is not approved for Eats Deliveries, set Uber Token Scopes to blank in Site Settings. Also verify Sandbox vs Production match for both your app credentials and customer ID.';
+    const hint = ' Hint: Ensure your Uber app has the "eats.deliveries" permission enabled. If it is not approved for Eats Deliveries, set Uber Token Scopes to blank in Site Settings. Also verify Sandbox vs Production match for both your app credentials and customer ID. If your app requires an OAuth audience, we also tried https://api.uber.com.';
     throw new Error((lastError || 'Uber token error') + hint);
   }
   throw new Error(lastError || 'Uber token error');
