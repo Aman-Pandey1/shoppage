@@ -146,7 +146,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   }
 
   function confirmSpice(result) {
-    const { spice, variant, quantity } = result || {};
+    const { spice, variant, flavor, portion, quantity } = result || {};
     const confirmedQty = Math.max(1, Math.min(99, Number(quantity || pendingQuantity) || 1));
     setPendingSpice(spice);
     setPendingVariant(variant || null);
@@ -155,7 +155,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     if (pendingProduct && pendingProduct.extraOptionGroups && pendingProduct.extraOptionGroups.length > 0) {
       setExtrasOpen(true);
     } else if (pendingProduct) {
-      addItem({ product: pendingProduct, variant: variant || undefined, spiceLevel: spice, quantity: confirmedQty });
+      addItem({ product: pendingProduct, variant: variant || undefined, spiceLevel: spice, flavor: flavor || undefined, portion: portion || undefined, quantity: confirmedQty });
       setPendingProduct(null);
       setPendingSpice(undefined);
       setPendingVariant(null);
@@ -385,6 +385,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         priceCents: unitCents,
         size: (it?.variant?.label || it?.variant?.key || undefined),
         spiceLevel: it.spiceLevel,
+        flavor: it?.flavor?.label || it?.flavor?.key || undefined,
+        portion: it?.portion?.label || it?.portion?.key || undefined,
       };
     });
   }, [state.items]);
@@ -536,7 +538,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                 if (!manifest.length) { setOrderError('Please add items to your cart before confirming'); return; }
                 if (!selectedLocation) setSelectedLocation(chosenLocation);
                 const payload = {
-                  items: manifest.map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.priceCents || 0, size: m.size, spiceLevel: m.spiceLevel })),
+                  items: manifest.map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.priceCents || 0, size: m.size, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
                   tipCents: 0,
                   pickup: {
                     location: chosenLocation,

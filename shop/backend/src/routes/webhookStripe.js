@@ -24,6 +24,8 @@ function buildNotifyPayload(order, siteName) {
       quantity: m.quantity,
       priceCents: m.priceCents,
       spiceLevel: m.spiceLevel,
+      flavor: m.flavor,
+      portion: m.portion,
     })),
     totalCents: order?.totalCents,
     taxCents: order?.taxCents,
@@ -137,7 +139,7 @@ router.post('/:siteIdOrSlug', async (req, res) => {
                         storeId: site.doordashStoreId,
                         pickup: list[idx].pickup.location,
                         dropoff: list[idx].dropoff,
-                        manifestItems: (list[idx].items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel })),
+                        manifestItems: (list[idx].items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
                         tip: 0,
                         externalId: String(list[idx]._id),
                       });
@@ -146,7 +148,7 @@ router.post('/:siteIdOrSlug', async (req, res) => {
                         customerId: site.uberCustomerId,
                         pickup: list[idx].pickup.location,
                         dropoff: list[idx].dropoff,
-                        manifestItems: (list[idx].items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel })),
+                        manifestItems: (list[idx].items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
                         tip: 0,
                         externalId: String(list[idx]._id),
                         creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv, scopes: site?.uberTokenScopes }
@@ -181,7 +183,7 @@ router.post('/:siteIdOrSlug', async (req, res) => {
                       storeId: site.doordashStoreId,
                       pickup: order.pickup.location,
                       dropoff: order.dropoff,
-                      manifestItems: (order.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel })),
+                      manifestItems: (order.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
                       tip: 0,
                       externalId: String(order._id),
                     });
@@ -190,7 +192,7 @@ router.post('/:siteIdOrSlug', async (req, res) => {
                       customerId: site.uberCustomerId,
                       pickup: order.pickup.location,
                       dropoff: order.dropoff,
-                      manifestItems: (order.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel })),
+                      manifestItems: (order.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
                       tip: 0,
                       externalId: String(order._id),
                       creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv, scopes: site?.uberTokenScopes }

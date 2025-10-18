@@ -149,6 +149,8 @@ export const MyOrdersPage = () => {
                 {(Array.isArray(o.items) ? o.items : []).map((it, idx) => (
                   <li key={idx}>
                     {it.name}
+                    {it.flavor ? ` — Flavor: ${it.flavor}` : ''}
+                    {it.portion ? ` — Portion: ${it.portion}` : ''}
                     {it.spiceLevel ? ` [${it.spiceLevel}]` : ''}
                     {it.size ? ` — Select Item: ${it.size}` : ''}
                     × {it.quantity}

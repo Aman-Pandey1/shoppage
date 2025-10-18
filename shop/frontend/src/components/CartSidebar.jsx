@@ -187,6 +187,18 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
                       {Number(item?.variant?.price||0) > 0 ? ` (+$${Number(item.variant.price).toFixed(2)})` : ''}
                     </div>
                   ) : null}
+                  {item.flavor ? (
+                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+                      Flavor: {item.flavor.label || item.flavor.key}
+                      {Number(item?.flavor?.price||0) > 0 ? ` (+$${Number(item.flavor.price).toFixed(2)})` : ''}
+                    </div>
+                  ) : null}
+                  {item.portion ? (
+                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+                      Portion: {item.portion.label || item.portion.key}
+                      {Number(item?.portion?.price||0) > 0 ? ` (+$${Number(item.portion.price).toFixed(2)})` : ''}
+                    </div>
+                  ) : null}
                   {item.spiceLevel ? <div style={{ fontSize: 12, color: 'var(--muted)' }}>Spice: {item.spiceLevel}</div> : null}
                   {item.selectedOptions.length > 0 ? (
                     <ul style={{ paddingLeft: 18, margin: '6px 0', color: 'var(--text)' }}>
