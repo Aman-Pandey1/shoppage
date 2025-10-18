@@ -498,6 +498,15 @@ input:focus, select:focus, textarea:focus {
 .order-bar__input { display: inline-flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 36px; padding: 6px 10px; border-radius: 8px; background: #fff; border: 1px solid var(--border); width: 100%; }
 .order-bar__inline { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 8px; }
 .order-bar .chev { opacity: .7; }
+/* Inline label-control pair for tight horizontal alignment */
+.order-bar__pair {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.order-bar__pair .order-bar__label { margin: 0; }
+/* Allow input to grow but not exceed container */
+.order-bar__pair .order-bar__input { flex: 1 1 auto; }
 @media (max-width: 900px) {
   .order-bar__row { grid-template-columns: 1fr; }
   .order-bar__inline { grid-template-columns: 1fr; }
