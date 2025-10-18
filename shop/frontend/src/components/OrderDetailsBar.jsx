@@ -68,7 +68,7 @@ export const OrderDetailsBar = ({
     <div className="order-bar card animate-fadeInUp" role="region" aria-label="Order Details">
       <div className="order-bar__row">
         <div className="order-bar__group">
-          <div className="order-bar__pair">
+          <div className="order-bar__pair order-bar__pair--compact">
             <div className="order-bar__label">Order Details</div>
             <button className="order-bar__input" onClick={onChangeOrderType} style={{ padding: '6px 10px', minHeight: 36 }}>
               <span>{orderType}</span>
@@ -81,7 +81,7 @@ export const OrderDetailsBar = ({
             <div className="order-bar__label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span>Order Date and Time</span>
               {typeof minutesUntilReady === 'number' && minutesUntilReady >= 0 ? (
-                <span className="muted" style={{ fontSize: 12, color: 'var(--primary-600)' }}>{minutesUntilReady} mins</span>
+                <span className="order-bar__eta">{minutesUntilReady} mins</span>
               ) : null}
             </div>
             <div className="order-bar__inline" style={{ gap: 8 }}>
