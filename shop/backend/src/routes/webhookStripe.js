@@ -158,7 +158,15 @@ router.post('/:siteIdOrSlug', async (req, res) => {
                         manifestItems: (list[idx].items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
                         tip: 0,
                         externalId: String(list[idx]._id),
-                        creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv, scopes: site?.uberTokenScopes }
+                        creds: {
+                          clientId: site?.uberClientId,
+                          clientSecret: site?.uberClientSecret,
+                          env: site?.uberEnv,
+                          scopes: site?.uberTokenScopes,
+                          audience: String(site?.uberEnv || '').toLowerCase() === 'sandbox'
+                            ? 'https://sandbox-api.uber.com'
+                            : 'https://api.uber.com',
+                        }
                       });
                     }
                     if (delivery) {
@@ -209,7 +217,15 @@ router.post('/:siteIdOrSlug', async (req, res) => {
                       manifestItems: (order.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
                       tip: 0,
                       externalId: String(order._id),
-                      creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv, scopes: site?.uberTokenScopes }
+                      creds: {
+                        clientId: site?.uberClientId,
+                        clientSecret: site?.uberClientSecret,
+                        env: site?.uberEnv,
+                        scopes: site?.uberTokenScopes,
+                        audience: String(site?.uberEnv || '').toLowerCase() === 'sandbox'
+                          ? 'https://sandbox-api.uber.com'
+                          : 'https://api.uber.com',
+                      }
                     });
                   }
                   if (delivery) {

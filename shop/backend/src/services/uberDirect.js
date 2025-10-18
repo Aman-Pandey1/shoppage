@@ -116,9 +116,13 @@ async function getAccessToken(creds) {
         const data = await res.json();
         const token = data.access_token;
         const expiryMs = Date.now() + (Number(data.expires_in) * 1000);
-        // Respect the requested environment for downstream API base selection.
-        // Token issuance host does not necessarily indicate env.
-        const envUsed = env === 'sandbox' ? 'sandbox' : 'production';
+        // Determine which environment the token should be used against.
+        // Prefer detecting from token host and explicit audience used; fall back to requested env.
+        const fromSandboxHost = /sandbox-login\.uber\.com/i.test(String(tokenUrl));
+        const fromSandboxAudience = /^https:\/\/sandbox-api\.uber\.com$/i.test(String(audienceCandidate || ''));
+        const envUsed = (fromSandboxHost || fromSandboxAudience)
+          ? 'sandbox'
+          : (env === 'sandbox' ? 'sandbox' : 'production');
         const key = `${clientId}::${envUsed}`;
         tokenCache.set(key, { token, expiryMs, envUsed });
         return { token, envUsed };

@@ -117,7 +117,14 @@ router.get('/confirm/:sessionId', async (req, res) => {
               manifestItems: (updatedOrder.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
               tip: 0,
               externalId: String(updatedOrder._id),
-              creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv }
+              creds: {
+                clientId: site?.uberClientId,
+                clientSecret: site?.uberClientSecret,
+                env: site?.uberEnv,
+                audience: String(site?.uberEnv || '').toLowerCase() === 'sandbox'
+                  ? 'https://sandbox-api.uber.com'
+                  : 'https://api.uber.com',
+              }
             });
           }
           if (delivery) {
