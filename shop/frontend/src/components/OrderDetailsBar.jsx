@@ -73,22 +73,6 @@ export const OrderDetailsBar = ({
             <span>{orderType}</span>
             <span className="chev">▾</span>
           </button>
-          {/* Delivery Address moved under Delivery/Takeout for better alignment */}
-          {showAddressInput && AddressAutocomplete ? (
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span className="muted" style={{ fontSize: 12 }}>Delivery Address</span>
-              <div style={{ flex: 1 }}>
-                <AddressAutocomplete
-                  siteSlug={siteSlug}
-                  value={addressInput}
-                  onChange={onAddressInputChange}
-                  onSelect={(addr, summary) => onAddressSelected && onAddressSelected(addr, summary)}
-                  placeholder="Address"
-                  country="CA"
-                />
-              </div>
-            </label>
-          ) : null}
         </div>
         <div className="order-bar__group">
           <div className="order-bar__label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -143,33 +127,54 @@ export const OrderDetailsBar = ({
           </div>
         </div>
       </div>
-      {Array.isArray(locations) && locations.length > 0 ? (
-        <label style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <span className="muted" style={{ fontSize: 12 }}>Restaurant Location</span>
-          <select
-            className="order-bar__input"
-            aria-label="Select restaurant location"
-            value={(typeof selectedLocationIndex === 'number' && selectedLocationIndex >= 0) ? String(selectedLocationIndex) : ''}
-            onChange={(e) => onChangeLocation && onChangeLocation(Number(e.target.value))}
-            style={{ padding: '6px 10px', borderRadius: 8, width: '100%' }}
-          >
-            {(typeof selectedLocationIndex !== 'number' || selectedLocationIndex < 0) ? (
-              <option value="" disabled>Select a location</option>
-            ) : null}
-            {locations.map((loc, idx) => {
-              const text = `${loc?.name || 'Restaurant'} — ${(loc?.address?.streetAddress || []).join(' ')}, ${loc?.address?.city || ''}`;
-              return (
-                <option key={`${loc?.name || 'loc'}-${idx}`} value={String(idx)}>{text}</option>
-              );
-            })}
-          </select>
-        </label>
-      ) : (addressSummary ? (
-        <div className="muted" style={{ marginTop: 8, textAlign: 'left', fontSize: 12 }}>
-          <strong style={{ color: 'var(--text)', fontWeight: 700 }}>Restaurant Location</strong>
-          <span> — {addressSummary}</span>
-        </div>
-      ) : null)}
+      {/* Second row: Restaurant Location (left) and Delivery Address (right) */}
+      <div className="order-bar__row" style={{ marginTop: 8 }}>
+        {Array.isArray(locations) && locations.length > 0 ? (
+          <div className="order-bar__group">
+            <span className="muted" style={{ fontSize: 12 }}>Restaurant Location</span>
+            <select
+              className="order-bar__input"
+              aria-label="Select restaurant location"
+              value={(typeof selectedLocationIndex === 'number' && selectedLocationIndex >= 0) ? String(selectedLocationIndex) : ''}
+              onChange={(e) => onChangeLocation && onChangeLocation(Number(e.target.value))}
+              style={{ padding: '6px 10px', borderRadius: 8, width: '100%' }}
+            >
+              {(typeof selectedLocationIndex !== 'number' || selectedLocationIndex < 0) ? (
+                <option value="" disabled>Select a location</option>
+              ) : null}
+              {locations.map((loc, idx) => {
+                const text = `${loc?.name || 'Restaurant'} — ${(loc?.address?.streetAddress || []).join(' ')}, ${loc?.address?.city || ''}`;
+                return (
+                  <option key={`${loc?.name || 'loc'}-${idx}`} value={String(idx)}>{text}</option>
+                );
+              })}
+            </select>
+          </div>
+        ) : (addressSummary ? (
+          <div className="order-bar__group">
+            <span className="muted" style={{ fontSize: 12 }}>Restaurant Location</span>
+            <div className="order-bar__input" style={{ alignItems: 'center' }}>
+              <span>{addressSummary}</span>
+            </div>
+          </div>
+        ) : null)}
+
+        {showAddressInput && AddressAutocomplete ? (
+          <div className="order-bar__group">
+            <span className="muted" style={{ fontSize: 12 }}>Delivery Address</span>
+            <div style={{ flex: 1 }}>
+              <AddressAutocomplete
+                siteSlug={siteSlug}
+                value={addressInput}
+                onChange={onAddressInputChange}
+                onSelect={(addr, summary) => onAddressSelected && onAddressSelected(addr, summary)}
+                placeholder="Address"
+                country="CA"
+              />
+            </div>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 };
