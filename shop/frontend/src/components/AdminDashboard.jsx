@@ -47,13 +47,12 @@ export const AdminDashboard = () => {
   const [confirmDeleteAllOpen, setConfirmDeleteAllOpen] = useState(false);
   const [confirmDeleteAllCategoriesOpen, setConfirmDeleteAllCategoriesOpen] = useState(false);
 
-  async function loadAll() {
+  async function loadSites() {
     try {
       setLoading(true);
       const sitesList = await fetchJson('/api/admin/sites');
       setSites(sitesList);
-      // Choose a valid site id. If a previously saved or selected id
-      // is not present (e.g., from mock mode like "mock-site"),
+      // Choose a valid site id. If previously saved/selected is missing,
       // fall back to a matching slug or the first site.
       const availableIds = new Set(sitesList.map((s) => s._id));
       let nextSiteId = selectedSiteId;
@@ -73,21 +72,32 @@ export const AdminDashboard = () => {
         nextSiteId = sitesList[0]?._id || '';
       }
 
-      setSelectedSiteId(nextSiteId);
-      try { localStorage.setItem('admin_selected_site', nextSiteId); } catch {}
-
-      if (!nextSiteId) {
-        setCategories([]);
-        setProducts([]);
-        return;
+      if (nextSiteId && nextSiteId !== selectedSiteId) {
+        setSelectedSiteId(nextSiteId);
+        try { localStorage.setItem('admin_selected_site', nextSiteId); } catch {}
+        const current = sitesList.find(s => s._id === nextSiteId);
+        if (current) {
+          try { localStorage.setItem('admin_selected_site_slug', current.slug); } catch {}
+        }
       }
+    } catch (err) {
+      setError(err.message || 'Failed to load');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadSiteData(siteId) {
+    try {
+      if (!siteId) { setCategories([]); setProducts([]); return; }
+      setLoading(true);
       const [cats, prods] = await Promise.all([
-        fetchJson(`/api/admin/sites/${nextSiteId}/categories`),
-        fetchJson(`/api/admin/sites/${nextSiteId}/products`),
+        fetchJson(`/api/admin/sites/${siteId}/categories`),
+        fetchJson(`/api/admin/sites/${siteId}/products`),
       ]);
       setCategories(cats);
       setProducts(prods);
-      const current = sitesList.find(s => s._id === nextSiteId);
+      const current = sites.find(s => s._id === siteId);
       if (current) {
         try { localStorage.setItem('admin_selected_site_slug', current.slug); } catch {}
       }
@@ -98,7 +108,11 @@ export const AdminDashboard = () => {
     }
   }
 
-  useEffect(() => { loadAll(); }, [selectedSiteId]);
+  // Load sites once on mount
+  useEffect(() => { loadSites(); }, []);
+
+  // Load site-specific data when selection changes
+  useEffect(() => { if (selectedSiteId) loadSiteData(selectedSiteId); }, [selectedSiteId]);
 
   useEffect(() => {
     async function loadOrders() {
@@ -136,6 +150,7 @@ export const AdminDashboard = () => {
   useEffect(() => {
     async function loadBilling() {
       if (!selectedSiteId) return setBilling(null);
+      if (activeTab !== 'billing') return; // only fetch when viewing billing
       try {
         const data = await fetchJson(`/api/admin/sites/${selectedSiteId}/billing`);
         setBilling(data);

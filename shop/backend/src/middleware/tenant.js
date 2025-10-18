@@ -1,25 +1,34 @@
 import Site from '../models/Site.js';
 
+// Escape a string for safe use inside a RegExp pattern
+function escapeRegExp(input) {
+  return String(input).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 export async function tenantBySlug(req, res, next) {
 	try {
 		// Mock fallback: bypass DB when mock data is enabled
-		if (req.app?.locals?.mockData) {
-			const { slug } = req.params;
-			const resolvedSlug = slug || 'default';
-			const mock = req.app.locals.mockData;
-			let site = mock.sites.find((s) => s.slug === resolvedSlug);
-			if (!site && resolvedSlug !== 'default') {
-				site = mock.sites.find((s) => s.slug === 'default');
-			}
-			if (!site) return res.status(404).json({ error: 'Site not found' });
-			req.site = site;
-			req.siteId = site._id;
-			return next();
-		}
+    if (req.app?.locals?.mockData) {
+      const { slug } = req.params;
+      const resolvedSlug = slug || 'default';
+      const mock = req.app.locals.mockData;
+      // Case-insensitive slug match to make routing resilient to casing differences
+      const lc = String(resolvedSlug).toLowerCase();
+      let site = mock.sites.find((s) => String(s.slug).toLowerCase() === lc);
+      if (!site && lc !== 'default') {
+        site = mock.sites.find((s) => String(s.slug).toLowerCase() === 'default');
+      }
+      if (!site) return res.status(404).json({ error: 'Site not found' });
+      req.site = site;
+      req.siteId = site._id;
+      return next();
+    }
 
-		const { slug } = req.params;
-		if (!slug) return res.status(400).json({ error: 'Missing site slug' });
-		const site = await Site.findOne({ slug, isActive: true });
+    const { slug } = req.params;
+    if (!slug) return res.status(400).json({ error: 'Missing site slug' });
+    // Case-insensitive exact match on slug for DB-backed sites
+    const slugRegex = new RegExp(`^${escapeRegExp(slug)}$`, 'i');
+    const site = await Site.findOne({ slug: slugRegex, isActive: true });
 		if (!site) return res.status(404).json({ error: 'Site not found' });
 		req.site = site;
 		req.siteId = site._id;
