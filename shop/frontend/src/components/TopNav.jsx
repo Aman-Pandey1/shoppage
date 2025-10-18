@@ -19,7 +19,8 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
         if (!cancelled) {
           setSite(data || {});
           try {
-            const base = (data && data.brandColor) ? data.brandColor : '#0ea5e9';
+            // Prefer explicit headerColor if provided; fallback to brandColor; then default red theme
+            const base = (data && (data.headerColor || data.brandColor)) ? (data.headerColor || data.brandColor) : '#ea5a4b';
             document.documentElement.style.setProperty('--primary', base);
             document.documentElement.style.setProperty('--primary-600', base);
             const rgba = (hex, a) => {
@@ -127,8 +128,20 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
                 e.preventDefault();
                 try { navigate(logoLinkUrl); } catch { window.location.href = logoLinkUrl; }
               }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '6px 10px',
+                borderRadius: 999,
+                border: '1px solid rgba(255,255,255,0.65)',
+                background: 'rgba(255,255,255,0.10)',
+                color: '#fff',
+                fontWeight: 800,
+                fontSize: 12,
+              }}
             >
-              Home
+              Back To Home
             </a>
           ) : null}
           <a
@@ -150,7 +163,7 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
                 onError={() => setLogoIndex((i) => i + 1)}
               />
             ) : (
-              <span>🍽️</span>
+              <span aria-hidden>🍽️</span>
             )}
           </a>
           <div className="brand__text">
