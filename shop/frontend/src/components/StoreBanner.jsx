@@ -87,29 +87,28 @@ export const StoreBanner = ({ siteSlug, onCta }) => {
       className="animate-popIn"
       style={{
         borderRadius: 0,
-        overflow: 'hidden',
         border: 'none',
-        marginBottom: 12,
         padding: 0,
-        // Full-bleed, perfectly centered relative to viewport (not page column)
+        margin: 0,
+        height: 0, // reserve no extra flow space; content padding handles offset
+        overflow: 'visible',
         position: 'relative',
-        width: '100vw',
-        left: '50%',
-        right: '50%',
-        marginLeft: '-50vw',
-        marginRight: '-50vw',
+        pointerEvents: 'none',
       }}
       aria-label="Store banner"
     >
       <div
         style={{
-          position: 'sticky',
+          position: 'fixed',
           top: 'var(--header-height)',
-          width: '100%',
+          left: 0,
+          right: 0,
+          width: '100vw',
           height: 'var(--banner-height, 240px)',
           background: backgroundImage,
           transition: 'height .25s ease',
-          zIndex: 1,
+          zIndex: 600, // stay below header (650) but above content
+          pointerEvents: 'auto',
         }}
       >
         <div

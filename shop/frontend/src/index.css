@@ -267,8 +267,8 @@ input:focus, select:focus, textarea:focus {
 /* Layout helpers */
 .content {
   margin-right: calc(var(--cart-width) + 20px); /* space for cart */
-  /* top = header only; banner itself is a sticky element that occupies flow */
-  padding: calc(12px + var(--header-height)) 16px 12px;
+  /* top = header + banner to sit below fixed banner */
+  padding: calc(12px + var(--header-height) + var(--banner-height)) 16px 12px;
   max-width: 1200px;
 }
 @media (min-width: 1200px) {
@@ -279,7 +279,7 @@ input:focus, select:focus, textarea:focus {
 @media (max-width: 1024px) {
   .content {
     margin-right: 0 !important;
-    padding: calc(12px + var(--header-height)) 12px 12px !important;
+    padding: calc(12px + var(--header-height) + var(--banner-height)) 12px 12px !important;
   }
 
   .cart-sidebar {
