@@ -212,7 +212,7 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
     const rightX = leftX + columnWidth + columnGap;
     const topY = doc.y;
     // Left column: Restaurant then Customer
-    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('RESTAURANT', leftX, topY);
+    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('RESTAURANT ADDRESS', leftX, topY);
     doc.font('Helvetica').fontSize(10).fillColor(colors.text);
     if (order.pickup?.location) {
       const p = order.pickup.location;
@@ -221,7 +221,7 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
       doc.text(`Address: ${addr} ${p?.address?.city || ''} ${p?.address?.province || ''} ${p?.address?.postalCode || ''}`, leftX, doc.y, { width: columnWidth });
     }
     doc.moveDown(0.6);
-    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('CUSTOMER', leftX, doc.y);
+    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('CUSTOMER ADDRESS', leftX, doc.y);
     doc.font('Helvetica').fontSize(10).fillColor(colors.text);
     if (order.dropoff) {
       const d = order.dropoff || {};
@@ -235,7 +235,7 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
     const leftEndY = doc.y;
 
     // Right column: Delivery details (or Order details for pickup)
-    const rightHdr = 'ORDER DETAILS';
+    const rightHdr = 'ORDER DETAIL';
     doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text(rightHdr, rightX, topY);
     doc.font('Helvetica').fontSize(10).fillColor(colors.text);
     doc.text(`Order #: ${order.orderNumber || String(order._id)}`, rightX, doc.y, { width: columnWidth });
@@ -296,9 +296,14 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
       doc.moveDown(0.3);
     }
     row('ITEMS SUBTOTAL', subtotal);
-    if (coupon && typeof coupon.percent === 'number') {
-      const discount = subtotal * (Number(coupon.percent) / 100);
-      row(`DISCOUNT ${coupon.code ? '('+coupon.code+')' : ''} (-${coupon.percent}% )`, -discount);
+    // Show discount even if coupon metadata is missing by deriving from totals
+    const itemsAfterDiscount = Math.max(0, total - tax - ((order.fulfillmentType || 'pickup') === 'delivery' ? delivery : 0));
+    const computedDiscount = Math.max(0, subtotal - itemsAfterDiscount);
+    if (computedDiscount > 0.0001) {
+      const discountLabel = (coupon && typeof coupon.percent === 'number')
+        ? `DISCOUNT ${coupon.code ? '('+coupon.code+')' : ''} (-${coupon.percent}% )`
+        : 'DISCOUNT';
+      row(discountLabel, -computedDiscount);
     }
     row('TAX (5%)', tax);
     if ((order.fulfillmentType || 'pickup') === 'delivery' && delivery > 0) row('DELIVERY CHARGE', delivery);

@@ -97,7 +97,7 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
 		const topY = doc.y;
     // Left column: Restaurant first, then Customer
     // Restaurant
-    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('RESTAURANT', leftX, topY);
+    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('RESTAURANT ADDRESS', leftX, topY);
     doc.font('Helvetica').fontSize(10).fillColor(colors.text);
     let cursorLeft = doc.y;
     if (order.pickup?.location) {
@@ -108,7 +108,7 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
     }
     // small gap then Customer
     doc.moveDown(0.6);
-    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('CUSTOMER', leftX, doc.y);
+    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('CUSTOMER ADDRESS', leftX, doc.y);
     doc.font('Helvetica').fontSize(10).fillColor(colors.text);
     if (order.dropoff) {
       const d = order.dropoff || {};
@@ -122,7 +122,7 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
     const leftEndY = doc.y;
 
     // Right column: Order/Delivery details
-    const detailsHeader = 'ORDER DETAILS';
+    const detailsHeader = 'ORDER DETAIL';
     doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text(detailsHeader, rightX, topY);
     doc.font('Helvetica').fontSize(10).fillColor(colors.text);
     doc.text(`Order #: ${order.orderNumber || String(order._id)}`, rightX, doc.y, { width: columnWidth });
@@ -210,9 +210,14 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
       doc.moveDown(0.3);
     }
     row('ITEMS SUBTOTAL', itemsSubtotal);
-    if (coupon && typeof coupon.percent === 'number') {
-      const discount = itemsSubtotal * (Number(coupon.percent) / 100);
-      row(`DISCOUNT ${coupon.code ? '('+coupon.code+')' : ''} (-${coupon.percent}% )`, -discount);
+    // Compute discount from totals so it shows even without coupon metadata
+    const itemsAfterDiscount = Math.max(0, grandTotal - tax - (delivery > 0 ? delivery : 0) - (tip > 0 ? tip : 0));
+    const computedDiscount = Math.max(0, itemsSubtotal - itemsAfterDiscount);
+    if (computedDiscount > 0.0001) {
+      const discountLabel = (coupon && typeof coupon.percent === 'number')
+        ? `DISCOUNT ${coupon.code ? '('+coupon.code+')' : ''} (-${coupon.percent}% )`
+        : 'DISCOUNT';
+      row(discountLabel, -computedDiscount);
     }
     // Always display fixed 5% tax label to match checkout
     row('TAX (5%)', tax);
