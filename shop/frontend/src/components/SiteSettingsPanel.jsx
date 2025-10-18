@@ -38,6 +38,8 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
   const [logoLinkUrl, setLogoLinkUrl] = React.useState(site?.logoLinkUrl || '');
   const [supportWhatsappPhone, setSupportWhatsappPhone] = React.useState(site?.supportWhatsappPhone || '');
   const [logoFile, setLogoFile] = React.useState(null);
+  const [bannerImageUrl, setBannerImageUrl] = React.useState(site?.bannerImageUrl || '');
+  const [bannerFile, setBannerFile] = React.useState(null);
   const [hours, setHours] = React.useState(site?.hours || {
     mon: { open: '10:00', close: '22:00', closed: false },
     tue: { open: '10:00', close: '22:00', closed: false },
@@ -123,6 +125,8 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
     setLogoLinkUrl(site?.logoLinkUrl || '');
     setTagline(site?.tagline || '');
     setLogoFile(null);
+    setBannerImageUrl(site?.bannerImageUrl || '');
+    setBannerFile(null);
     setCurrency(site?.currency || 'usd');
     setTimeZone(site?.timeZone || '');
     setMinOrderCents(site?.minOrderCents ?? '');
@@ -235,6 +239,26 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
         <div className="card" style={{ gridColumn: '1 / -1', padding: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
           <img src={resolveAssetUrl(logoUrl)} alt="logo" style={{ width: 64, height: 64, objectFit: 'contain' }} />
           <div className="muted" style={{ fontSize: 12 }}>Preview</div>
+        </div>
+      ) : null}
+
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span>Banner image URL</span>
+        <input value={bannerImageUrl} onChange={(e) => setBannerImageUrl(e.target.value)} placeholder="https://... or /uploads/..." />
+        <span className="muted" style={{ fontSize: 12 }}>Shown at the top of the shop home page.</span>
+      </label>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span>Or upload banner</span>
+        <input type="file" accept="image/*" onChange={(e) => setBannerFile(e.target.files?.[0] || null)} />
+      </label>
+      {bannerImageUrl ? (
+        <div className="card" style={{ gridColumn: '1 / -1', padding: 10, display: 'grid', gap: 8 }}>
+          <div className="muted" style={{ fontSize: 12 }}>Banner preview</div>
+          <img
+            src={resolveAssetUrl(bannerImageUrl)}
+            alt="banner"
+            style={{ width: '100%', maxHeight: 220, objectFit: 'cover', borderRadius: 6 }}
+          />
         </div>
       ) : null}
 
@@ -551,6 +575,7 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
             hours,
             logoUrl,
             logoLinkUrl,
+            bannerImageUrl,
             tagline,
             supportWhatsappPhone,
             stripeAccountId,
@@ -577,6 +602,13 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
               const data = await postFile(`/api/admin/sites/${selectedSiteId}/logo`, logoFile);
               updated = data.site || updated;
               setLogoUrl(data.logoUrl || updated.logoUrl || '');
+            } catch {}
+          }
+          if (bannerFile) {
+            try {
+              const data = await postFile(`/api/admin/sites/${selectedSiteId}/banner`, bannerFile);
+              updated = data.site || updated;
+              setBannerImageUrl(data.bannerImageUrl || updated.bannerImageUrl || '');
             } catch {}
           }
           onSiteUpdated(updated);
