@@ -147,7 +147,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
       className="cart-sidebar"
       data-open={open ? 'true' : 'false'}
     >
-      <div className="card cart-header" style={{ padding: 14, borderRadius: 12, marginBottom: 12, borderTop: '3px solid var(--primary)', position: 'sticky', top: 0, background: '#fff', zIndex: 1 }}>
+      <div className="card cart-header" style={{ padding: 14, borderRadius: 12, marginBottom: 12, borderTop: '3px solid var(--primary)', position: 'sticky', top: 0, background: '#fff', zIndex: 2 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontWeight: 800 }}>Your order</div>
           <div style={{ textAlign: 'right' }}>
@@ -156,8 +156,8 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
           </div>
         </div>
       </div>
-      {/* ORDER READY FOR placed at top of sidebar, right after header */}
-      <div className="card" style={{ marginTop: 8, padding: 12, borderRadius: 10, background: 'var(--primary-alpha-04)', border: '1px dashed var(--primary-600)' }}>
+      {/* ORDER READY FOR placed at top of sidebar, right after header; keep sticky under header */}
+      <div className="card" style={{ marginTop: 8, padding: 12, borderRadius: 10, background: 'var(--primary-alpha-04)', border: '1px dashed var(--primary-600)', position: 'sticky', top: 58, zIndex: 1 }}>
         <div className="muted" style={{ fontSize: 12 }}>ORDER READY FOR</div>
         <div style={{ fontSize: 20, fontWeight: 800 }}>{timeString}</div>
         <div className="muted" style={{ fontSize: 12 }}>{eta}</div>

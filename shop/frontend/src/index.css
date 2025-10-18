@@ -394,12 +394,18 @@ input:focus, select:focus, textarea:focus {
   background: #ffffff; /* white background per request */
   color: var(--text);
   box-shadow: 0 1px 0 rgba(0,0,0,0.06);
-  overflow-x: hidden;
+  /* Remove any tiny scrollbars appearing in header */
+  overflow: visible;
+  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.top-nav::-webkit-scrollbar { /* Chrome/Safari */
+  display: none;
 }
 /* Respect top safe area on devices with display cutouts */
 .top-nav { padding-top: max(0px, var(--safe-top)); }
 /* When account menu is open, bump nav even higher than mobile cart */
-.top-nav[data-menu-open="true"] { z-index: 900; }
+.top-nav[data-menu-open="true"] { z-index: 1100; }
 .top-nav__inner {
   max-width: 1280px;
   margin: 0 auto;
