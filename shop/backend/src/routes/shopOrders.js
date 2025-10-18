@@ -246,45 +246,41 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
     doc.y = Math.max(leftEndY, rightEndY) + 10;
     doc.moveDown(0.2);
 
-    const startX = doc.page.margins.left + 20;
-    const col = [260, 60, 85, 90];
-    const width = col.reduce((a,b)=>a+b,0);
+    // Items list (no table) with aligned prices on the right
+    const listX = doc.page.margins.left + 20;
+    const listWidth = avail - 40;
+    const priceColWidth = 100; // fixed width for currency column
     const pageBottom = doc.page.height - doc.page.margins.bottom;
-    function drawHeader(){
-      // Section title
+    function drawSectionTitle(){
       doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark)
-        .text('ORDER SUMMARY', startX, doc.y, { width: width, align: 'center' });
-      doc.moveDown(0.4);
-      doc.font('Helvetica-Bold').fontSize(10).fillColor(colors.textDark);
-      const headerY = doc.y;
-      doc.save();
-      doc.rect(startX, headerY, width, 18).fill(colors.tableHeader);
-      doc.restore();
-      doc.text('NAME', startX, headerY + 4, { width: col[0], align: 'center' });
-      doc.text('QTY', startX + col[0], headerY + 4, { width: col[1], align: 'center' });
-      doc.text('UNIT', startX + col[0] + col[1], headerY + 4, { width: col[2], align: 'center' });
-      doc.text('TOTAL', startX + col[0] + col[1] + col[2], headerY + 4, { width: col[3], align: 'center' });
-      doc.moveDown(1.2);
-      doc.moveTo(startX, doc.y).lineTo(startX + width, doc.y).strokeColor(colors.border).stroke();
+        .text('ORDER SUMMARY', listX, doc.y, { width: listWidth, align: 'center' });
+      doc.moveDown(0.6);
     }
-    function ensure(){ if (doc.y + 22 > pageBottom) { doc.addPage(); drawHeader(); } }
-    drawHeader();
+    function ensureRow(){ if (doc.y + 20 > pageBottom) { doc.addPage(); drawSectionTitle(); } }
+    drawSectionTitle();
     let subtotal = 0;
     (Array.isArray(order.items) ? order.items : []).forEach((it, idx) => {
-      ensure();
+      ensureRow();
       const unit = Number(it.priceCents||0)/100;
       const qty = Number(it.quantity||1);
       const line = unit * qty;
       subtotal += line;
-      if (idx % 2 === 0) { doc.save(); doc.rect(startX, doc.y - 2, width, 18).fill(colors.rowStripe); doc.restore(); }
+      // zebra stripe background for readability
+      if (idx % 2 === 0) { doc.save(); doc.rect(listX, doc.y - 2, listWidth, 18).fill(colors.rowStripe); doc.restore(); }
       const rowY = doc.y;
-      doc.font('Helvetica').fillColor(colors.text)
-        .text(`${it.name}${it.flavor ? ' — Flavor: '+it.flavor : ''}${it.portion ? ' — Portion: '+it.portion : ''}${it.spiceLevel ? ' ['+it.spiceLevel+']' : ''}${it.size ? ' ('+it.size+')' : ''}`, startX, rowY, { width: col[0], align: 'center' });
-      doc.text(String(qty), startX + col[0], rowY, { width: col[1], align: 'center' });
-      doc.text(`$${unit.toFixed(2)}`, startX + col[0] + col[1], rowY, { width: col[2], align: 'center' });
-      doc.text(`$${line.toFixed(2)}`, startX + col[0] + col[1] + col[2], rowY, { width: col[3], align: 'center' });
-      doc.moveDown(0.4);
-      doc.moveTo(startX, doc.y).lineTo(startX + width, doc.y).strokeColor(colors.border).stroke();
+      // Build left-side label with attributes and quantity
+      let label = `${it.name}`;
+      if (it.size) label += ` (${it.size})`;
+      if (it.flavor) label += ` — Flavor: ${it.flavor}`;
+      if (it.portion) label += ` — Portion: ${it.portion}`;
+      if (it.spiceLevel) label += ` [${it.spiceLevel}]`;
+      label += ` x${qty}`;
+      doc.font('Helvetica').fontSize(10).fillColor(colors.text)
+        .text(label, listX, rowY, { width: listWidth - priceColWidth - 12, align: 'left' });
+      doc.font('Helvetica').fontSize(10).fillColor(colors.textDark)
+        .text(`$${line.toFixed(2)}`, listX + listWidth - priceColWidth, rowY, { width: priceColWidth, align: 'right' });
+      doc.moveDown(0.2);
+      doc.moveTo(listX, doc.y).lineTo(listX + listWidth, doc.y).strokeColor(colors.border).stroke();
     });
 
     doc.moveDown();
@@ -292,7 +288,7 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
     const delivery = Number(order.deliveryFeeCents||0)/100; // show only customer's half if split
     const total = Number(order.totalCents||0)/100;
     const coupon = order.meta?.coupon;
-    const valueX = startX + width - 100;
+    const valueX = listX + listWidth - priceColWidth;
     const labelWidth = 220;
     function row(label, value){
       const y = doc.y;
@@ -308,10 +304,15 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
     row('TAX (5%)', tax);
     if ((order.fulfillmentType || 'pickup') === 'delivery' && delivery > 0) row('DELIVERY CHARGE', delivery);
     doc.moveDown(0.2);
-    doc.moveTo(startX, doc.y).lineTo(startX + width, doc.y).strokeColor(colors.border).stroke();
+    doc.moveTo(listX, doc.y).lineTo(listX + listWidth, doc.y).strokeColor(colors.border).stroke();
     doc.moveDown(0.2);
     doc.font('Helvetica-Bold');
     row('GRAND TOTAL', total);
+
+    // Footer — centered thank you note
+    doc.moveDown(1.2);
+    doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark)
+      .text('THANK YOU FOR YOUR ORDER!', { align: 'center' });
 
     doc.end();
   } catch (err) {
