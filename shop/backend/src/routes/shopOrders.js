@@ -148,7 +148,7 @@ router.post('/:slug/orders/pickup', requireUser, async (req, res) => {
       // Mock-mode order number sequence
       const nextSeq = ((req.app.locals.mockData.orderSeq || 1000) + 1);
       req.app.locals.mockData.orderSeq = nextSeq;
-      const created = { _id: `o-${Date.now()}`, createdAt, status: 'confirmed', orderNumber: `BB-${nextSeq}`, ...orderPayload };
+      const created = { _id: `o-${Date.now()}`, createdAt, status: 'paid', orderNumber: `BB-${nextSeq}`, ...orderPayload };
       req.app.locals.mockData.orders.unshift(created);
       try {
         await sendOrderEmail({ to: created.userEmail, siteName: (req.app.locals.mockData.sites || []).find(s => s._id === req.siteId)?.name || '', orderId: created._id, orderNumber: created.orderNumber, items: created.items, totalCents: created.totalCents, fulfillmentType: 'pickup' });
@@ -156,7 +156,7 @@ router.post('/:slug/orders/pickup', requireUser, async (req, res) => {
       return res.status(201).json(created);
     }
     const orderNumber = await getNextOrderNumber(req.siteId);
-    const created = await Order.create({ ...orderPayload, status: 'confirmed', orderNumber });
+    const created = await Order.create({ ...orderPayload, status: 'paid', orderNumber });
     try {
       const site = await Site.findById(req.siteId);
       await sendOrderEmail({ to: created.userEmail, siteName: site?.name || '', orderId: created._id, orderNumber: created.orderNumber, items: created.items, totalCents: created.totalCents, fulfillmentType: 'pickup' });
