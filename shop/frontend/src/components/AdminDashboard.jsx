@@ -564,9 +564,14 @@ export const AdminDashboard = () => {
                       const notes = o.notes ? String(o.notes).slice(0, 60) : '';
                       return (
                         <tr key={o._id}>
-                          <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>#{String(o._id || '').slice(-6)}</td>
+                          <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>{o.orderNumber ? o.orderNumber : `#${String(o._id || '').slice(-6)}`}</td>
                           <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>{customer}{notes ? <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>Notes: {notes}{o.notes.length > 60 ? '…' : ''}</div> : null}</td>
-                          <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>{new Date(o.createdAt).toLocaleString()}</td>
+                          <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>{(function(){
+                            try {
+                              const tz = (selectedSite && selectedSite.timeZone) ? selectedSite.timeZone : 'America/Toronto';
+                              return new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true, timeZone: tz, timeZoneName: 'short' }).format(new Date(o.createdAt));
+                            } catch { return new Date(o.createdAt).toLocaleString(); }
+                          })()}</td>
                           <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>
                             <div style={{ fontWeight: 800, color: 'var(--primary-600)' }}>${((o.totalCents||0)/100).toFixed(2)}</div>
                             <div className="muted" style={{ fontSize: 12 }}>Tax: ${tax}</div>
@@ -581,7 +586,8 @@ export const AdminDashboard = () => {
                                 const blob = await download(`/api/admin/sites/${selectedSiteId}/orders/${o._id}/pdf`);
                                 const url = URL.createObjectURL(blob);
                                 const a = document.createElement('a');
-                                a.href = url; a.download = `order-${String(o._id).slice(-6)}.pdf`; a.click();
+                                const fileId = (o.orderNumber || String(o._id).slice(-6)).replace(/\s+/g, '');
+                                a.href = url; a.download = `order-${fileId}.pdf`; a.click();
                                 URL.revokeObjectURL(url);
                               } catch (e) {
                                 alert('Failed to download PDF');

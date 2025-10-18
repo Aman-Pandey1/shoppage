@@ -35,11 +35,12 @@ async function resolveTransporter() {
   return cachedTransporter;
 }
 
-export async function sendOrderEmail({ to, siteName, orderId, items, totalCents, deliveryFeeCents = 0, fulfillmentType = 'pickup', trackingUrl = '' }) {
+export async function sendOrderEmail({ to, siteName, orderId, orderNumber, items, totalCents, deliveryFeeCents = 0, fulfillmentType = 'pickup', trackingUrl = '' }) {
   try {
     if (!to) return;
     const from = process.env.SMTP_FROM || 'orders@blueboxx.ca';
-    const subject = `Your ${siteName || 'Order'} is confirmed (#${String(orderId).slice(-6)})`;
+    const printableId = orderNumber || `#${String(orderId).slice(-6)}`;
+    const subject = `Your ${siteName || 'Order'} is confirmed (${printableId})`;
     const money = (cents) => `$${((Number(cents) || 0) / 100).toFixed(2)}`;
     const itemsHtml = (Array.isArray(items) ? items : []).map(it => `
       <tr>
@@ -51,7 +52,7 @@ export async function sendOrderEmail({ to, siteName, orderId, items, totalCents,
     const html = `
       <div style="font-family:Arial, Helvetica, sans-serif; color:#0f172a;">
         <h2 style="margin-bottom:6px;">Thanks for your order!</h2>
-        <div style="color:#334155; margin-bottom:12px;">Order <strong>#${String(orderId).slice(-6)}</strong> at <strong>${siteName || ''}</strong> has been confirmed.</div>
+        <div style="color:#334155; margin-bottom:12px;">Order <strong>${printableId}</strong> at <strong>${siteName || ''}</strong> has been confirmed.</div>
         <table style="width:100%; border-collapse:collapse;">
           <thead>
             <tr>

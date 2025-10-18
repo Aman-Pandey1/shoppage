@@ -7,6 +7,7 @@ import Site from '../models/Site.js';
 import { requestQuote as uberRequestQuote, createDelivery as uberCreateDelivery } from '../services/uberDirect.js';
 import { requestQuote as ddRequestQuote, createDelivery as ddCreateDelivery } from '../services/doordashDrive.js';
 import { distanceBetweenAddressesKm, calculateDistanceFeeCents } from '../services/geo.js';
+import { getNextOrderNumber } from '../utils/orderNumber.js';
 
 const router = Router();
 
@@ -258,10 +259,13 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 		if (req.app.locals.mockData) {
 			if (!Array.isArray(req.app.locals.mockData.orders)) req.app.locals.mockData.orders = [];
 			const createdAt = new Date().toISOString();
-			req.app.locals.mockData.orders.unshift({ _id: `o-${Date.now()}`, createdAt, ...orderPayload });
+      const nextSeq = ((req.app.locals.mockData.orderSeq || 1000) + 1);
+      req.app.locals.mockData.orderSeq = nextSeq;
+      req.app.locals.mockData.orders.unshift({ _id: `o-${Date.now()}`, createdAt, orderNumber: `BB-${nextSeq}`, ...orderPayload });
 			try { saveMockData(req.app.locals.mockData); } catch {}
 		} else {
-			await Order.create(orderPayload);
+      const orderNumber = await getNextOrderNumber(req.siteId);
+      await Order.create({ ...orderPayload, orderNumber });
 		}
     res.status(201).json({ ...delivery, distanceKm, distanceFeeCents: fullDeliveryFeeCents, customerDeliveryFeeCents, pickupLocationIndex: chosenIdx });
 	} catch (err) {

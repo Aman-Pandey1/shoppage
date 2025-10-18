@@ -14,6 +14,8 @@ const OrderSchema = new mongoose.Schema({
     site: { type: mongoose.Schema.Types.ObjectId, ref: 'Site', required: true, index: true },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false, index: true },
     userEmail: { type: String },
+    // Human-friendly order number like "BB-1001"
+    orderNumber: { type: String, index: true },
     fulfillmentType: { type: String, enum: ['pickup', 'delivery', 'created'], default: 'created' },
     items: [OrderItemSchema],
     totalCents: { type: Number, required: true },
