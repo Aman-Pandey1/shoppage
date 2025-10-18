@@ -1,9 +1,10 @@
 import React from 'react';
-import { fetchJson } from '../lib/api';
+import { fetchJson, resolveAssetUrl } from '../lib/api';
 
 export const StoreBanner = ({ siteSlug, onCta }) => {
   const [storeName, setStoreName] = React.useState('');
-  const tagline = 'Fresh, fast & delicious';
+  const [tagline, setTagline] = React.useState('');
+  const [bannerUrl, setBannerUrl] = React.useState('');
   const [hours, setHours] = React.useState(null);
   const [isOpen, setIsOpen] = React.useState(true);
 
@@ -12,7 +13,11 @@ export const StoreBanner = ({ siteSlug, onCta }) => {
     async function load() {
       try {
         const data = await fetchJson(`/api/shop/${siteSlug}/site`);
-        if (!cancelled) setStoreName(data.name || 'Our Store');
+        if (!cancelled) {
+          setStoreName(data.name || 'Our Store');
+          setTagline(typeof data?.tagline === 'string' ? data.tagline : '');
+          setBannerUrl(resolveAssetUrl(data?.bannerImageUrl || ''));
+        }
       } catch {}
     }
     async function loadHours() {
@@ -43,6 +48,10 @@ export const StoreBanner = ({ siteSlug, onCta }) => {
     } catch { setIsOpen(true); }
   }, [hours]);
 
+  const backgroundImage = bannerUrl
+    ? `url(${bannerUrl}) center/cover`
+    : 'url(https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?q=80&w=1600&auto=format&fit=crop) center/cover';
+
   return (
     <section
       className="card animate-popIn"
@@ -61,8 +70,7 @@ export const StoreBanner = ({ siteSlug, onCta }) => {
           position: 'relative',
           width: '100%',
           height: 180,
-          background:
-            'url(https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?q=80&w=1600&auto=format&fit=crop) center/cover',
+          background: backgroundImage,
         }}
       >
         <div
@@ -87,20 +95,23 @@ export const StoreBanner = ({ siteSlug, onCta }) => {
           <div style={{ display: 'grid', gap: 4 }}>
             <div style={{ fontSize: 13, opacity: 0.9 }}>Delivery or Takeout</div>
             <div style={{ fontWeight: 900, fontSize: 20, letterSpacing: '.01em' }}>{storeName}</div>
-            <div style={{ fontSize: 13, opacity: 0.9 }}>{tagline}</div>
+            {tagline ? <div style={{ fontSize: 13, opacity: 0.9 }}>{tagline}</div> : null}
           </div>
           <button
             className="primary-btn"
             onClick={onCta}
             style={{
-              padding: '10px 14px',
+              padding: '10px 18px',
               borderRadius: 9999,
-              background: 'linear-gradient(180deg, var(--primary-alpha-25), var(--primary-alpha-12))',
-              border: '1px solid var(--primary-600)',
+              background: 'var(--primary-600)',
+              border: '1px solid rgba(255,255,255,0.6)',
+              color: '#fff',
+              fontWeight: 800,
+              letterSpacing: '.03em',
             }}
             aria-label="Start order"
           >
-            {isOpen ? 'Order online' : 'Restaurant closed'}
+            {isOpen ? 'ORDER ONLINE' : 'RESTAURANT CLOSED'}
           </button>
         </div>
       </div>

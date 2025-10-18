@@ -5,6 +5,7 @@ import { CategoryGrid } from './components/CategoryGrid';
 // import { StoreHeader } from './components/StoreHeader';
 import { TopNav } from './components/TopNav';
 import { OrderDetailsBar } from './components/OrderDetailsBar';
+import { StoreBanner } from './components/StoreBanner';
 import { AddressAutocomplete } from './components/AddressAutocomplete';
 import { ProductList } from './components/ProductList';
 import { PrivacyPolicyModal } from './components/PrivacyPolicyModal';
@@ -433,7 +434,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       />
       <TopNav siteSlug={siteSlug} isCartOpen={mobileCartOpen} onSignIn={() => setLoginOpen(true)} onOpenCart={() => setMobileCartOpen(true)} cartCount={state.items.length} />
       <main className="content">
-        {/* closed banner removed per requirement */}
+        <StoreBanner siteSlug={siteSlug} onCta={() => setMobileCartOpen(true)} />
 
         <div className="card order-type-card">
           <OrderTypeSelection />
