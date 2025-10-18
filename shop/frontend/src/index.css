@@ -386,7 +386,7 @@ input:focus, select:focus, textarea:focus {
 /* Respect top safe area on devices with display cutouts */
 .top-nav { padding-top: max(0px, var(--safe-top)); }
 /* When account menu is open, bump nav even higher than mobile cart */
-.top-nav[data-menu-open="true"] { z-index: 300; }
+.top-nav[data-menu-open="true"] { z-index: 600; }
 .top-nav__inner {
   max-width: 1280px;
   margin: 0 auto;
