@@ -261,7 +261,7 @@ export const FulfillmentModal = ({
       <>
         {closedMsg ? (
           <div style={{
-            color: 'var(--danger)',
+            color: '#a21b0c',
             background: 'var(--danger-alpha-06, rgba(220,53,69,0.06))',
             border: '1px solid var(--danger-alpha-20, rgba(220,53,69,0.2))',
             padding: 10,
@@ -480,14 +480,14 @@ export const FulfillmentModal = ({
               </svg>
               Validating address…
             </span>
-          ) : 'OK'}
+          ) : 'Proceed To Menu'}
         </button>
       </div>
     );
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={'Select Order Mode'} footer={renderFooter()} maxWidth={520} closeOnOverlayClick={false}>
+    <Modal open={open} onClose={onClose} title={<div style={{ textAlign: 'center', width: '100%' }}>Select Order Mode</div>} footer={renderFooter()} maxWidth={520} closeOnOverlayClick={false}>
       {renderTypeButtons()}
       {renderTimingButtons()}
       {renderFollowUp()}
