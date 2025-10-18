@@ -27,6 +27,10 @@ router.get('/sites/:siteId/health', requireAdmin, async (req, res) => {
       const pickup = site.pickup?.address ? site.pickup : (Array.isArray(site.locations) && site.locations.length ? site.locations[0] : null);
       const testPhone = (pickup?.phone && /^\+?[1-9]\d{7,14}$/.test(String(pickup.phone).replace(/[^\d+]/g, '')))
         ? String(pickup.phone).replace(/[^\d+]/g, '') : '+10000000000';
+      const envHint = String(site?.uberEnv || '').toLowerCase();
+      const audience = envHint === 'sandbox' ? 'https://sandbox-api.uber.com' : 'https://api.uber.com';
+      const scopesHint = typeof site?.uberTokenScopes === 'string' ? site.uberTokenScopes.trim() : undefined;
+      const scopesDisplay = (scopesHint === '' ? '(none)' : (scopesHint || 'eats.deliveries? or none'));
       const quote = await requestQuote({
         customerId: site.uberCustomerId,
         pickup,
@@ -35,10 +39,17 @@ router.get('/sites/:siteId/health', requireAdmin, async (req, res) => {
           phone: testPhone,
           address: pickup.address,
         },
-        creds: { clientId: site?.uberClientId, clientSecret: site?.uberClientSecret, env: site?.uberEnv, scopes: site?.uberTokenScopes },
+        // Pass audience explicitly based on selected environment to avoid sandbox failures
+        creds: {
+          clientId: site?.uberClientId,
+          clientSecret: site?.uberClientSecret,
+          env: site?.uberEnv,
+          scopes: site?.uberTokenScopes,
+          audience,
+        },
         allowSimulation: false
       });
-      return res.json({ ok: true, fee: quote?.fee, eta: quote?.dropoff_estimated_dt, simulated: !!quote?.simulated });
+      return res.json({ ok: true, fee: quote?.fee, eta: quote?.dropoff_estimated_dt, simulated: !!quote?.simulated, env: envHint || 'production', audience, scopes: scopesDisplay });
     } catch (err) {
       // Beautify common undeliverable errors
       const msg = String(err?.message || '');
