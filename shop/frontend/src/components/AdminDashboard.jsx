@@ -707,6 +707,63 @@ export const AdminDashboard = () => {
                     />
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <span>Flavors (Editor)</span>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px auto', gap: 8, alignItems: 'center' }}>
+                      {(editing.flavors || []).map((f, idx) => (
+                        <React.Fragment key={`${f?.key || f?.label || 'f'}-${idx}`}>
+                          <input
+                            placeholder="Label"
+                            value={f?.label || f?.key || ''}
+                            onChange={(e) => {
+                              const label = e.target.value;
+                              const next = [...(editing.flavors || [])];
+                              const cur = { ...next[idx] };
+                              cur.label = label;
+                              if (!cur.key || /^flavor(_\d+)?$/.test(cur.key)) {
+                                let base = String(label || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+                                if (!base) base = 'flavor';
+                                const used = new Set(next.map((vv, ii) => (ii === idx ? null : vv?.key)).filter(Boolean));
+                                let candidate = base; let n = 1;
+                                while (used.has(candidate)) { candidate = `${base}_${n++}`; }
+                                cur.key = candidate;
+                              }
+                              next[idx] = cur;
+                              setEditing({ ...editing, flavors: next });
+                            }}
+                          />
+                          <input
+                            type="number"
+                            step="0.01"
+                            placeholder={'Add-on price'}
+                            value={Number(f?.price) || 0}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              const next = [...(editing.flavors || [])];
+                              const cur = { ...next[idx] };
+                              cur.price = Number.isFinite(val) ? val : 0;
+                              next[idx] = cur;
+                              setEditing({ ...editing, flavors: next });
+                            }}
+                          />
+                          <button onClick={() => {
+                            const next = (editing.flavors || []).slice();
+                            next.splice(idx, 1);
+                            setEditing({ ...editing, flavors: next });
+                          }}>Remove</button>
+                        </React.Fragment>
+                      ))}
+                    </div>
+                    <button onClick={() => {
+                      const next = [...(editing.flavors || [])];
+                      let base = 'flavor';
+                      const used = new Set(next.map((vv) => vv?.key).filter(Boolean));
+                      let candidate = base; let n = 1;
+                      while (used.has(candidate)) { candidate = `${base}_${n++}`; }
+                      next.push({ key: candidate, label: '', price: 0 });
+                      setEditing({ ...editing, flavors: next });
+                    }}>+ Add flavor</button>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <span>Portions (JSON)</span>
                     <textarea
                       rows={3}
