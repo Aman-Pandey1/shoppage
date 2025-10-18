@@ -107,7 +107,7 @@ export const StoreBanner = ({ siteSlug, onCta }) => {
           height: 'var(--banner-height, 240px)',
           background: backgroundImage,
           transition: 'height .25s ease',
-          zIndex: 600, // stay below header (650) but above content
+          zIndex: 650, // keep behind header (900 when menu open) but above content
           pointerEvents: 'auto',
         }}
       >

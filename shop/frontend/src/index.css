@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Define CSS variables at the root scope */
 :root {
   font-family: Poppins, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Avenir, Helvetica, Arial, Noto Sans, "Apple Color Emoji", "Segoe UI Emoji";
   line-height: 1.5;
@@ -398,7 +399,7 @@ input:focus, select:focus, textarea:focus {
 /* Respect top safe area on devices with display cutouts */
 .top-nav { padding-top: max(0px, var(--safe-top)); }
 /* When account menu is open, bump nav even higher than mobile cart */
-.top-nav[data-menu-open="true"] { z-index: 750; }
+.top-nav[data-menu-open="true"] { z-index: 900; }
 .top-nav__inner {
   max-width: 1280px;
   margin: 0 auto;
