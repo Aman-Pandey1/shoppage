@@ -1,6 +1,7 @@
 import React from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { fetchJson, getAuthToken } from '../lib/api';
+import { useSiteQuery } from '../lib/queries';
 import { download } from '../lib/api';
 import { LoginModal } from '../components/LoginModal';
 import { TrackingModal } from '../components/TrackingModal';
@@ -9,6 +10,8 @@ export const MyOrdersPage = () => {
   const params = useParams();
   const siteSlug = params.siteSlug;
   const location = useLocation();
+  const { data: siteInfo } = useSiteQuery(siteSlug || 'default');
+  const siteTz = (siteInfo && siteInfo.timeZone) ? siteInfo.timeZone : 'America/Edmonton';
   const [orders, setOrders] = React.useState([]);
   const [page, setPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(12);
@@ -143,7 +146,7 @@ export const MyOrdersPage = () => {
                 </div>
                 <div className="muted" style={{ fontSize: 12, color: 'var(--primary-600)' }}>{(function(){
                   try {
-                    const tz = 'America/Toronto';
+                    const tz = siteTz || 'America/Edmonton';
                     return new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true, timeZone: tz, timeZoneName: 'short' }).format(new Date(o.createdAt));
                   } catch { return new Date(o.createdAt).toLocaleString(); }
                 })()}</div>
