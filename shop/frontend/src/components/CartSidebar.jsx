@@ -283,7 +283,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
           </div>
           {state.fulfillmentType === 'delivery' ? (
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span className="muted">Delivery fee</span>
+              <span className="muted">Delivery Charge</span>
               <span>${formatCents(deliveryDisplayCents)}</span>
             </div>
           ) : null}
