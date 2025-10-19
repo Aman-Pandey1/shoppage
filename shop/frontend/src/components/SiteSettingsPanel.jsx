@@ -34,6 +34,8 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
   const [deliveryFee, setDeliveryFee] = React.useState(((Number(site?.deliveryFeeCents)||0)/100).toFixed(2));
   const [splitDeliveryFee, setSplitDeliveryFee] = React.useState(!!site?.splitDeliveryFee);
   const [maxDeliveryDistanceKm, setMaxDeliveryDistanceKm] = React.useState(site?.maxDeliveryDistanceKm ?? '');
+  const [freeDeliveryEnabled, setFreeDeliveryEnabled] = React.useState(!!site?.freeDeliveryEnabled);
+  const [freeDeliveryMinSubtotalCents, setFreeDeliveryMinSubtotalCents] = React.useState(site?.freeDeliveryMinSubtotalCents ?? '');
   const [logoUrl, setLogoUrl] = React.useState(site?.logoUrl || '');
   const [logoLinkUrl, setLogoLinkUrl] = React.useState(site?.logoLinkUrl || '');
   const [supportWhatsappPhone, setSupportWhatsappPhone] = React.useState(site?.supportWhatsappPhone || '');
@@ -98,6 +100,8 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
     setDeliveryFee(((Number(site?.deliveryFeeCents)||0)/100).toFixed(2));
     setSplitDeliveryFee(!!site?.splitDeliveryFee);
     setMaxDeliveryDistanceKm(site?.maxDeliveryDistanceKm ?? '');
+    setFreeDeliveryEnabled(!!site?.freeDeliveryEnabled);
+    setFreeDeliveryMinSubtotalCents(site?.freeDeliveryMinSubtotalCents ?? '');
     setStripeAccountId(site?.stripeAccountId || '');
     setStripePublishableKey(site?.stripePublishableKey || '');
     setStripeSecretKey(site?.stripeSecretKey || '');
@@ -401,6 +405,15 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
         <span className="muted" style={{ fontSize: 12 }}>Orders beyond this distance will be blocked.</span>
       </label>
       <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <input type="checkbox" checked={!!freeDeliveryEnabled} onChange={(e) => setFreeDeliveryEnabled(e.target.checked)} />
+        <span>Enable free delivery above items subtotal threshold</span>
+      </label>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span>Free delivery threshold (items subtotal, cents)</span>
+        <input type="number" min={0} value={freeDeliveryMinSubtotalCents} onChange={(e) => setFreeDeliveryMinSubtotalCents(e.target.value)} placeholder="e.g., 3500 for $35.00" />
+        <span className="muted" style={{ fontSize: 12 }}>Customers above this subtotal pay $0 delivery. We will deduct the delivery fee from the restaurant payout via Stripe application fee.</span>
+      </label>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <input type="checkbox" checked={!!splitDeliveryFee} onChange={(e) => setSplitDeliveryFee(e.target.checked)} />
         <span>Split delivery fee 50/50 (half customer, half restaurant)</span>
       </label>
@@ -572,6 +585,8 @@ export const SiteSettingsPanel = ({ site, selectedSiteId, onSiteUpdated }) => {
             deliveryFeeCents: Math.max(0, Math.round(Number(deliveryFee || 0) * 100)),
             splitDeliveryFee: !!splitDeliveryFee,
             maxDeliveryDistanceKm: maxDeliveryDistanceKm === '' ? undefined : Number(maxDeliveryDistanceKm),
+            freeDeliveryEnabled: !!freeDeliveryEnabled,
+            freeDeliveryMinSubtotalCents: (freeDeliveryMinSubtotalCents === '' ? undefined : Number(freeDeliveryMinSubtotalCents)),
             hours,
             logoUrl,
             logoLinkUrl,

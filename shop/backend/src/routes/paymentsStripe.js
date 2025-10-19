@@ -407,13 +407,25 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
       : 800;
     const fullDeliveryFeeCents = calculateDistanceFeeCents(distanceKm, baseFee);
     const split = !!site.splitDeliveryFee;
+    // Free-delivery eligibility is based on items subtotal BEFORE discount
+    const freeEnabled = !!site.freeDeliveryEnabled;
+    const freeMinCents = (typeof site.freeDeliveryMinSubtotalCents === 'number')
+      ? Math.max(0, Number(site.freeDeliveryMinSubtotalCents) || 0)
+      : null;
+    const freeEligible = !!freeEnabled && freeMinCents !== null && subtotalBeforeDiscount >= freeMinCents;
+
     let customerDeliveryFeeCents = split ? Math.round(fullDeliveryFeeCents / 2) : fullDeliveryFeeCents;
-    // By default, baseline is what we computed from distance; if client quoted, we'll override
+    // By default, baseline is what we computed from distance; if client quoted, we'll override (unless free applies)
     let baselineDeliveryFeeCents = fullDeliveryFeeCents;
     let restaurantDeliveryFeeCents = split ? (fullDeliveryFeeCents - customerDeliveryFeeCents) : 0;
 
-    // Trust the client-quoted delivery fee exactly to keep cart and payment in sync
-    if (typeof clientDeliveryFeeCents === 'number') {
+    if (freeEligible) {
+      // Customer pays $0 delivery; restaurant covers full delivery via application fee
+      customerDeliveryFeeCents = 0;
+      baselineDeliveryFeeCents = fullDeliveryFeeCents;
+      restaurantDeliveryFeeCents = fullDeliveryFeeCents;
+    } else if (typeof clientDeliveryFeeCents === 'number') {
+      // Trust the client-quoted delivery fee exactly to keep cart and payment in sync
       const quoted = Math.max(0, Math.round(Number(clientDeliveryFeeCents)));
       customerDeliveryFeeCents = quoted;
       // Use client's quote to derive the baseline so the split stays consistent end-to-end
@@ -450,7 +462,9 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
       pickup: { location: pickup },
       notes: typeof notes === 'string' ? notes.slice(0, 1000) : undefined,
       // Include coupon metadata so PDFs can render a Discount row later
-      meta: appliedCoupon ? { distanceKm, coupon: appliedCoupon } : { distanceKm },
+      meta: appliedCoupon
+        ? { distanceKm, coupon: appliedCoupon, freeDeliveryApplied: !!freeEligible }
+        : { distanceKm, freeDeliveryApplied: !!freeEligible },
       status: 'awaiting_payment',
     };
     let orderId;
