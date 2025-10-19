@@ -29,14 +29,17 @@ router.get('/:slug/orders/mine', requireUser, async (req, res) => {
       const items = all.slice(start, start + pageSize);
       return res.json({ items, page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) });
     }
+    // Support matching by stored userId OR legacy userEmail
     const email = String(req.user?.email || '').trim();
-    const or = [];
-    if (req.user?.userId) or.push({ userId: req.user.userId });
-    if (email) or.push({ userEmail: { $regex: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } });
+    const userOr = [];
+    if (req.user?.userId) userOr.push({ userId: req.user.userId });
+    if (email) userOr.push({ userEmail: { $regex: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } });
+
+    // Show successful orders and any historical orders that may not have a status (to avoid missing older data)
     const filter = {
       site: req.siteId,
-      status: { $in: ['paid', 'confirmed'] },
-      ...(or.length ? { $or: or } : {}),
+      ...(userOr.length ? { $or: userOr } : {}),
+      $or: [ { status: { $in: ['paid', 'confirmed'] } }, { status: { $exists: false } } ],
     };
     const total = await Order.countDocuments(filter);
     const items = await Order.find(filter)

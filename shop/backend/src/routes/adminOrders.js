@@ -33,6 +33,7 @@ router.get('/', requireAdmin, async (req, res) => {
 			return res.json(list);
 		}
 
+    // Include successful orders and legacy orders with missing status so older orders remain visible
     const filter = { site: siteId, $or: [ { status: { $in: ['paid', 'confirmed'] } }, { status: { $exists: false } } ] };
 		if (fromDate || toDate) filter.createdAt = {};
 		if (fromDate) filter.createdAt.$gte = fromDate;
