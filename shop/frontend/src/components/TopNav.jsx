@@ -165,7 +165,7 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
                 src={logoCandidates[logoIndex]}
                 alt="logo"
                 onError={() => setLogoIndex((i) => i + 1)}
-                style={{ transform: 'scale(1.08)' }}
+                style={{ transform: 'translateY(-2px)' }}
               />
             ) : (
               <span aria-hidden style={{ fontSize: 26 }}>🍽️</span>

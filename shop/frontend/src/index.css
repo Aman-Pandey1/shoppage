@@ -428,13 +428,13 @@ input:focus, select:focus, textarea:focus {
 .brand { display: flex; align-items: center; gap: 6px; }
 .brand__logo {
   width: 120px; /* increase width for better visibility */
-  height: 68px; /* keep height similar */
+  height: 60px; /* slightly shorter so it clears banner */
   display: grid;
   place-items: center;
   font-size: 22px;
 }
 @media (min-width: 480px) {
-  .brand__logo { width: 150px; height: 74px; }
+  .brand__logo { width: 150px; height: 66px; }
 }
 .brand__home {
   margin-left: -6px;
