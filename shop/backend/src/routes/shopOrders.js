@@ -27,6 +27,15 @@ router.get('/:slug/orders/mine', requireUser, async (req, res) => {
       const total = all.length;
       const start = (page - 1) * pageSize;
       const items = all.slice(start, start + pageSize);
+      // Backfill missing order numbers in mock data using in-memory sequence
+      const needs = items.filter((o) => !o.orderNumber);
+      if (needs.length) {
+        needs.forEach((o) => {
+          const nextSeq = ((req.app.locals.mockData.orderSeq || 1000) + 1);
+          req.app.locals.mockData.orderSeq = nextSeq;
+          o.orderNumber = `BB-${nextSeq}`;
+        });
+      }
       return res.json({ items, page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) });
     }
     // Support matching by stored userId OR legacy userEmail
@@ -46,6 +55,17 @@ router.get('/:slug/orders/mine', requireUser, async (req, res) => {
       .sort({ createdAt: -1 })
       .skip((page - 1) * pageSize)
       .limit(pageSize);
+    // Ensure each visible order has an orderNumber for display/backfill legacy
+    const toAssign = items.filter((o) => !o.orderNumber);
+    if (toAssign.length) {
+      for (const ord of toAssign) {
+        try {
+          const assigned = await getNextOrderNumber(req.siteId);
+          await Order.findByIdAndUpdate(ord._id, { orderNumber: assigned });
+          ord.orderNumber = assigned;
+        } catch {}
+      }
+    }
     res.json({ items, page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -209,6 +229,11 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
       if (!order) return res.status(404).json({ error: 'Order not found' });
       if (String(order.userEmail || '') !== String(req.user?.email || '')) {
         return res.status(403).json({ error: 'Forbidden' });
+      }
+      if (!order.orderNumber) {
+        const nextSeq = ((req.app.locals.mockData.orderSeq || 1000) + 1);
+        req.app.locals.mockData.orderSeq = nextSeq;
+        order.orderNumber = `BB-${nextSeq}`;
       }
     } else {
     {
