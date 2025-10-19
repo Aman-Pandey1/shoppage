@@ -56,7 +56,7 @@ export const StoreBanner = ({ siteSlug, onCta }) => {
   React.useEffect(() => {
     const root = document.documentElement;
     const base = 260; // px (matches CSS default var)
-    const min = 140; // px when fully collapsed
+    const min = 0; // allow banner to fully collapse so content/cart reach header
     let raf = 0;
     function onScroll() {
       // Use rAF to avoid layout thrash on rapid scroll
@@ -139,16 +139,33 @@ export const StoreBanner = ({ siteSlug, onCta }) => {
               alignSelf: 'end',
               justifySelf: 'center',
               marginBottom: 12,
-              fontWeight: 900,
-              letterSpacing: '.08em',
-              fontSize: 18,
-              textTransform: 'uppercase'
+              pointerEvents: 'auto',
             }}
-            onClick={onCta}
-            role="button"
-            aria-label="Order online"
           >
-            Order Online
+            <button
+              onClick={onCta}
+              role="button"
+              aria-label="Order online"
+              className="elevated"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                padding: '10px 18px',
+                borderRadius: 9999,
+                border: '1px solid var(--primary-600)',
+                background: 'var(--primary-600)',
+                color: '#fff',
+                fontWeight: 900,
+                letterSpacing: '.04em',
+                fontSize: 16,
+                textTransform: 'uppercase',
+                cursor: 'pointer'
+              }}
+            >
+              Order Online
+            </button>
           </div>
         </div>
       </div>

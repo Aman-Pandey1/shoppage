@@ -261,7 +261,7 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
                 padding: 8, 
                 borderRadius: 12, 
                 minWidth: 220, 
-                zIndex: 900,
+                zIndex: 1200, // ensure above banner and cart
                 background: 'white',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                 border: '1px solid #e2e8f0'
