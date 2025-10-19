@@ -27,18 +27,38 @@ router.get('/', requireAdmin, async (req, res) => {
       list = list.filter((o) => o.site === siteId);
       // Treat orders without a status as historical/placed to avoid disappearing data
       list = list.filter((o) => (o.status === 'paid' || o.status === 'confirmed' || !o.status));
-			if (fromDate) list = list.filter((o) => new Date(o.createdAt) >= fromDate);
-			if (toDate) list = list.filter((o) => new Date(o.createdAt) <= toDate);
-			list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-			return res.json(list);
-		}
+      if (fromDate) list = list.filter((o) => new Date(o.createdAt) >= fromDate);
+      if (toDate) list = list.filter((o) => new Date(o.createdAt) <= toDate);
+      // Backfill missing order numbers for mock data using an in-memory counter
+      const missing = list.filter((o) => !o.orderNumber);
+      if (missing.length) {
+        missing.forEach((o) => {
+          const nextSeq = ((req.app.locals.mockData.orderSeq || 1000) + 1);
+          req.app.locals.mockData.orderSeq = nextSeq;
+          o.orderNumber = `BB-${nextSeq}`;
+        });
+      }
+      list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      return res.json(list);
+    }
 
     // Include successful orders and legacy orders with missing status so older orders remain visible
     const filter = { site: siteId, $or: [ { status: { $in: ['paid', 'confirmed'] } }, { status: { $exists: false } } ] };
 		if (fromDate || toDate) filter.createdAt = {};
 		if (fromDate) filter.createdAt.$gte = fromDate;
 		if (toDate) filter.createdAt.$lte = toDate;
-		const orders = await Order.find(filter).sort({ createdAt: -1 });
+    const orders = await Order.find(filter).sort({ createdAt: -1 });
+    // Backfill missing order numbers for existing orders lazily
+    const toAssign = orders.filter((o) => !o.orderNumber);
+    if (toAssign.length) {
+      for (const ord of toAssign) {
+        try {
+          const assigned = await getNextOrderNumber(siteId);
+          await Order.findByIdAndUpdate(ord._id, { orderNumber: assigned });
+          ord.orderNumber = assigned;
+        } catch {}
+      }
+    }
 		res.json(orders);
 	} catch (err) {
 		res.status(400).json({ error: err.message });
@@ -61,10 +81,16 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
     if (!order) return res.status(404).json({ error: 'Order not found' });
     // Ensure order has a sequential human-friendly number
     if (!order.orderNumber) {
-      try {
-        const assigned = await getNextOrderNumber(siteId);
-        order = await Order.findByIdAndUpdate(order._id, { orderNumber: assigned }, { new: true });
-      } catch {}
+      if (mock) {
+        const nextSeq = ((req.app.locals.mockData.orderSeq || 1000) + 1);
+        req.app.locals.mockData.orderSeq = nextSeq;
+        order.orderNumber = `BB-${nextSeq}`;
+      } else {
+        try {
+          const assigned = await getNextOrderNumber(siteId);
+          order = await Order.findByIdAndUpdate(order._id, { orderNumber: assigned }, { new: true });
+        } catch {}
+      }
     }
 
     res.setHeader('Content-Type', 'application/pdf');
