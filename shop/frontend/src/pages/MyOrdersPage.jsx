@@ -143,7 +143,7 @@ export const MyOrdersPage = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div style={{ fontSize: 18 }}>{o.fulfillmentType === 'delivery' ? '🚚' : '🏪'}</div>
-                  <div style={{ fontWeight: 800 }}>{o.orderNumber || `#${String(o._id).slice(-6)}`}</div>
+                  <div style={{ fontWeight: 800 }}>{o.orderNumber || `BB-${String(o._id).slice(-6)}`}</div>
                 </div>
                 <div className="muted" style={{ fontSize: 12, color: 'var(--primary-600)' }}>{(function(){
                   try {
@@ -187,7 +187,7 @@ export const MyOrdersPage = () => {
                     const blob = await download(`/api/shop/${siteSlug || 'default'}/orders/${o._id}/pdf`);
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
-                    const fileId = (o.orderNumber || String(o._id).slice(-6)).replace(/\s+/g, '');
+                    const fileId = (o.orderNumber || `BB-${String(o._id).slice(-6)}`).replace(/\s+/g, '');
                     a.href = url; a.download = `order-${fileId}.pdf`; a.click();
                     URL.revokeObjectURL(url);
                   } catch (e) {

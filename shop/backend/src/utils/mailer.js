@@ -39,7 +39,10 @@ export async function sendOrderEmail({ to, siteName, orderId, orderNumber, items
   try {
     if (!to) return;
     const from = process.env.SMTP_FROM || 'orders@blueboxx.ca';
-    const printableId = orderNumber || `#${String(orderId).slice(-6)}`;
+    // Prefer human-friendly order number; fallback to <PREFIX>-<last6>
+    const prefixRaw = process.env.ORDER_NUMBER_PREFIX || 'BB-';
+    const prefixSafe = String(prefixRaw).endsWith('-') ? String(prefixRaw) : `${String(prefixRaw)}-`;
+    const printableId = orderNumber || `${prefixSafe}${String(orderId).slice(-6)}`;
     const subject = `Your ${siteName || 'Order'} is confirmed (${printableId})`;
     const money = (cents) => `$${((Number(cents) || 0) / 100).toFixed(2)}`;
     const itemsHtml = (Array.isArray(items) ? items : []).map(it => `
