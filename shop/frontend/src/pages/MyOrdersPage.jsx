@@ -99,8 +99,9 @@ export const MyOrdersPage = () => {
     const q = query.toLowerCase();
     return list.filter((o) => {
       const idStr = String(o?._id || '').toLowerCase();
+      const orderNum = String(o?.orderNumber || '').toLowerCase();
       const items = Array.isArray(o?.items) ? o.items : [];
-      return idStr.includes(q) || items.some((it) => String(it?.name || '').toLowerCase().includes(q));
+      return idStr.includes(q) || orderNum.includes(q) || items.some((it) => String(it?.name || '').toLowerCase().includes(q));
     });
   }, [orders, query, tab]);
 
