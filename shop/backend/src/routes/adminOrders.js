@@ -119,14 +119,21 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
     doc.moveDown(0.6);
     doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('CUSTOMER ADDRESS', leftX, doc.y);
     doc.font('Helvetica').fontSize(10).fillColor(colors.text);
-    if (order.dropoff) {
-      const d = order.dropoff || {};
-      const addr = Array.isArray(d?.address?.streetAddress) ? d.address.streetAddress.join(' ') : '';
-      doc.text(`Name: ${d.name || '—'}`, leftX, doc.y, { width: columnWidth });
-      doc.text(`Phone: ${d.phone || '—'}`, leftX, doc.y, { width: columnWidth });
-      doc.text(`Address: ${addr} ${d?.address?.city || ''} ${d?.address?.province || ''} ${d?.address?.postalCode || ''}`, leftX, doc.y, { width: columnWidth });
-    } else if (order.pickup?.location) {
-      if (order.userEmail) doc.text(`Customer: ${order.userEmail}`, leftX, doc.y, { width: columnWidth });
+    {
+      const isDelivery = String(order.fulfillmentType || (order.dropoff ? 'delivery' : 'pickup')) === 'delivery';
+      if (isDelivery) {
+        if (order.dropoff) {
+          const d = order.dropoff || {};
+          const addr = Array.isArray(d?.address?.streetAddress) ? d.address.streetAddress.join(' ') : '';
+          doc.text(`Name: ${d.name || '—'}`, leftX, doc.y, { width: columnWidth });
+          doc.text(`Phone: ${d.phone || '—'}`, leftX, doc.y, { width: columnWidth });
+          doc.text(`Address: ${addr} ${d?.address?.city || ''} ${d?.address?.province || ''} ${d?.address?.postalCode || ''}`, leftX, doc.y, { width: columnWidth });
+        } else {
+          doc.text('Delivery', leftX, doc.y, { width: columnWidth });
+        }
+      } else {
+        doc.text('Pickup', leftX, doc.y, { width: columnWidth });
+      }
     }
     const leftEndY = doc.y;
 

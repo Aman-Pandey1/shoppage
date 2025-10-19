@@ -29,8 +29,18 @@ router.get('/:slug/orders/mine', requireUser, async (req, res) => {
       const items = all.slice(start, start + pageSize);
       return res.json({ items, page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) });
     }
+    // Support matching by stored userId OR legacy userEmail
+    const email = String(req.user?.email || '').trim();
+    const userOr = [];
+    if (req.user?.userId) userOr.push({ userId: req.user.userId });
+    if (email) userOr.push({ userEmail: { $regex: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } });
+
     // Show successful orders and any historical orders that may not have a status (to avoid missing older data)
-    const filter = { site: req.siteId, userId: req.user?.userId, $or: [ { status: { $in: ['paid', 'confirmed'] } }, { status: { $exists: false } } ] };
+    const filter = {
+      site: req.siteId,
+      ...(userOr.length ? { $or: userOr } : {}),
+      $or: [ { status: { $in: ['paid', 'confirmed'] } }, { status: { $exists: false } } ],
+    };
     const total = await Order.countDocuments(filter);
     const items = await Order.find(filter)
       .sort({ createdAt: -1 })
@@ -60,7 +70,13 @@ router.get('/:slug/orders/:orderId/tracking', requireUser, async (req, res) => {
         uberStatus: order.uberStatus || 'unknown',
       });
     }
-    order = await Order.findOne({ _id: orderId, site: req.siteId, userId: req.user?.userId });
+    {
+      const email = String(req.user?.email || '').trim();
+      const or = [];
+      if (req.user?.userId) or.push({ userId: req.user.userId });
+      if (email) or.push({ userEmail: { $regex: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } });
+      order = await Order.findOne({ _id: orderId, site: req.siteId, ...(or.length ? { $or: or } : {}) });
+    }
     if (!order) return res.status(404).json({ error: 'Order not found' });
     // If we have Uber delivery ID and site has uberCustomerId, fetch live status
     const site = await Site.findById(req.siteId);
@@ -195,7 +211,13 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
         return res.status(403).json({ error: 'Forbidden' });
       }
     } else {
-      order = await Order.findOne({ _id: orderId, site: req.siteId, userId: req.user?.userId });
+    {
+      const email = String(req.user?.email || '').trim();
+      const or = [];
+      if (req.user?.userId) or.push({ userId: req.user.userId });
+      if (email) or.push({ userEmail: { $regex: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } });
+      order = await Order.findOne({ _id: orderId, site: req.siteId, ...(or.length ? { $or: or } : {}) });
+    }
       if (!order) return res.status(404).json({ error: 'Order not found' });
       // Ensure a human-friendly sequential order number exists
       if (!order.orderNumber) {
@@ -243,14 +265,21 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
     doc.moveDown(0.6);
     doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text('CUSTOMER ADDRESS', leftX, doc.y);
     doc.font('Helvetica').fontSize(10).fillColor(colors.text);
-    if (order.dropoff) {
-      const d = order.dropoff || {};
-      const addr = Array.isArray(d?.address?.streetAddress) ? d.address.streetAddress.join(' ') : '';
-      doc.text(`Name: ${d.name || '—'}`, leftX, doc.y, { width: columnWidth });
-      doc.text(`Phone: ${d.phone || '—'}`, leftX, doc.y, { width: columnWidth });
-      doc.text(`Address: ${addr} ${d?.address?.city || ''} ${d?.address?.province || ''} ${d?.address?.postalCode || ''}`, leftX, doc.y, { width: columnWidth });
-    } else if (order.userEmail) {
-      doc.text(`Customer: ${order.userEmail}`, leftX, doc.y, { width: columnWidth });
+    {
+      const isDelivery = String(order.fulfillmentType || (order.dropoff ? 'delivery' : 'pickup')) === 'delivery';
+      if (isDelivery) {
+        if (order.dropoff) {
+          const d = order.dropoff || {};
+          const addr = Array.isArray(d?.address?.streetAddress) ? d.address.streetAddress.join(' ') : '';
+          doc.text(`Name: ${d.name || '—'}`, leftX, doc.y, { width: columnWidth });
+          doc.text(`Phone: ${d.phone || '—'}`, leftX, doc.y, { width: columnWidth });
+          doc.text(`Address: ${addr} ${d?.address?.city || ''} ${d?.address?.province || ''} ${d?.address?.postalCode || ''}`, leftX, doc.y, { width: columnWidth });
+        } else {
+          doc.text('Delivery', leftX, doc.y, { width: columnWidth });
+        }
+      } else {
+        doc.text('Pickup', leftX, doc.y, { width: columnWidth });
+      }
     }
     const leftEndY = doc.y;
 
