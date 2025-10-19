@@ -13,6 +13,9 @@ export async function getNextOrderNumber(siteId) {
     { $inc: { seq: 1 }, $setOnInsert: { seq: startBase } },
     { new: true, upsert: true }
   );
+  // Normalize prefix: ensure a trailing hyphen so format is e.g., "BB-1001"
+  const rawPrefix = process.env.ORDER_NUMBER_PREFIX || DEFAULT_PREFIX;
+  const prefix = String(rawPrefix).endsWith('-') ? String(rawPrefix) : `${String(rawPrefix)}-`;
   const seq = Number(doc?.seq || DEFAULT_START);
-  return `${process.env.ORDER_NUMBER_PREFIX || DEFAULT_PREFIX}${seq}`;
+  return `${prefix}${seq}`;
 }

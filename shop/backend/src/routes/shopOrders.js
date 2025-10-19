@@ -29,7 +29,8 @@ router.get('/:slug/orders/mine', requireUser, async (req, res) => {
       const items = all.slice(start, start + pageSize);
       return res.json({ items, page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) });
     }
-    const filter = { site: req.siteId, userId: req.user?.userId, status: { $in: ['paid', 'confirmed'] } };
+    // Show successful orders and any historical orders that may not have a status (to avoid missing older data)
+    const filter = { site: req.siteId, userId: req.user?.userId, $or: [ { status: { $in: ['paid', 'confirmed'] } }, { status: { $exists: false } } ] };
     const total = await Order.countDocuments(filter);
     const items = await Order.find(filter)
       .sort({ createdAt: -1 })
