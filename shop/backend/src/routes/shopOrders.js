@@ -254,7 +254,10 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
     }
 
     res.setHeader('Content-Type', 'application/pdf');
-    const fileId = (order.orderNumber || String(order._id).slice(-6)).replace(/\s+/g, '');
+    // Use human-friendly order number for filenames; fallback to <PREFIX>-<last6>
+    const prefixRaw = process.env.ORDER_NUMBER_PREFIX || 'BB-';
+    const prefixSafe = String(prefixRaw).endsWith('-') ? String(prefixRaw) : `${String(prefixRaw)}-`;
+    const fileId = (order.orderNumber || `${prefixSafe}${String(order._id).slice(-6)}`).replace(/\s+/g, '');
     res.setHeader('Content-Disposition', `attachment; filename=order-${fileId}.pdf`);
 
     const doc = new PDFDocument({ size: 'A4', margin: 50 });
@@ -312,7 +315,9 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
     const rightHdr = 'ORDER DETAIL';
     doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text(rightHdr, rightX, topY);
     doc.font('Helvetica').fontSize(10).fillColor(colors.text);
-    doc.text(`Order #: ${order.orderNumber || String(order._id)}`, rightX, doc.y, { width: columnWidth });
+    // Always show a business-friendly order id; fallback to <PREFIX>-<last6>
+    const displayOrderId = order.orderNumber || `${prefixSafe}${String(order._id).slice(-6)}`;
+    doc.text(`Order #: ${displayOrderId}`, rightX, doc.y, { width: columnWidth });
     // Force MDT label when using Alberta default
     doc.text(`Date: ${formatDateTimeInSiteTz(order.createdAt, req.site, { forceMdtLabel: true })}`, rightX, doc.y, { width: columnWidth });
     const fulfillmentUpperC = String(order.fulfillmentType || 'pickup').toUpperCase();
