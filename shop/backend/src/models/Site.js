@@ -56,6 +56,10 @@ const SiteSchema = new mongoose.Schema({
 	deliveryFeeCents: { type: Number, default: 0 },
 	// When true, split delivery fee 50/50 between customer and restaurant
 	splitDeliveryFee: { type: Boolean, default: false },
+	// Enable free delivery for the customer when items subtotal reaches a threshold
+	freeDeliveryEnabled: { type: Boolean, default: false },
+	// Items subtotal threshold (in cents) to grant free delivery to customer
+	freeDeliveryMinSubtotalCents: { type: Number },
 	// Maximum delivery distance allowed in kilometers (if set)
 	maxDeliveryDistanceKm: { type: Number },
 	// New: support multiple pickup locations for a site while keeping legacy `pickup`

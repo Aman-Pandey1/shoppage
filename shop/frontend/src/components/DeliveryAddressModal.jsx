@@ -206,7 +206,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
       address = initialAddress || { streetAddress: [addr1, ...(addr2 ? [addr2] : [])], city, province, postalCode, country };
       const normalizedPhone = normalizePhoneForCountry(phone, country);
       // Let backend select nearest pickup automatically
-      const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { name, phone: normalizedPhone || phone, address } });
+      const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { name, phone: normalizedPhone || phone, address }, itemsSubtotalCents });
       setQuote(q);
       if (typeof q?.distanceKm === 'number') setDistanceKm(q.distanceKm);
       if (typeof q?.customerDeliveryFeeCents === 'number') {
@@ -287,6 +287,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
                 pickupLocationIndex: chosenIdx,
                 deliveryFeeCents: quotedFee,
                 coupon: state?.coupon || undefined,
+                itemsSubtotalCents,
               };
               const res = await postJson(`/api/payments/stripe/${siteSlug}/checkout/delivery`, payload);
               const url = res?.url;

@@ -77,7 +77,7 @@ router.post('/:slug/quote', async (req, res) => {
 	    if (!hasPickupCfg) {
 	      return res.status(400).json({ error: 'No pickup location configured' });
 	    }
-    const { dropoff, pickupLocationIndex } = req.body || {};
+    const { dropoff, pickupLocationIndex, itemsSubtotalCents } = req.body || {};
 		if (!dropoff?.address?.streetAddress) return res.status(400).json({ error: 'Invalid dropoff address' });
 		// Determine pickup location: use provided index if valid, otherwise choose nearest to dropoff
         const locs = (Array.isArray(site.locations) && site.locations.length)
@@ -148,8 +148,14 @@ router.post('/:slug/quote', async (req, res) => {
       : 800;
     const fullDeliveryFeeCents = calculateDistanceFeeCents(distanceKm, baseFee);
     const split = !!site.splitDeliveryFee;
-    const customerDeliveryFeeCents = split ? Math.round(fullDeliveryFeeCents / 2) : fullDeliveryFeeCents;
-	    res.json({ ...quote, distanceKm, distanceFeeCents: fullDeliveryFeeCents, customerDeliveryFeeCents, pickupLocationIndex: chosenIdx });
+    const freeEnabled = !!site.freeDeliveryEnabled;
+    const freeMin = (typeof site.freeDeliveryMinSubtotalCents === 'number')
+      ? Math.max(0, Number(site.freeDeliveryMinSubtotalCents) || 0)
+      : null;
+    const itemsSubtotal = (typeof itemsSubtotalCents === 'number') ? Math.max(0, Math.round(Number(itemsSubtotalCents))) : null;
+    const freeEligible = !!freeEnabled && freeMin !== null && itemsSubtotal !== null && itemsSubtotal >= freeMin;
+    const customerDeliveryFeeCents = freeEligible ? 0 : (split ? Math.round(fullDeliveryFeeCents / 2) : fullDeliveryFeeCents);
+      res.json({ ...quote, distanceKm, distanceFeeCents: fullDeliveryFeeCents, customerDeliveryFeeCents, pickupLocationIndex: chosenIdx, freeDeliveryApplied: !!freeEligible });
 	} catch (err) {
 		res.status(400).json({ error: err.message });
 	}
@@ -259,8 +265,14 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
     if (itemsTotal < minOrderCents) return res.status(400).json({ error: `Minimum total amount should be $${(minOrderCents/100).toFixed(2)} required for delivery` });
     const split = !!site.splitDeliveryFee;
     const fullDeliveryFeeCents = Number(distanceFeeCents) || 0;
-    const customerDeliveryFeeCents = split ? Math.round(fullDeliveryFeeCents / 2) : fullDeliveryFeeCents;
-    const restaurantDeliveryFeeCents = split ? (fullDeliveryFeeCents - customerDeliveryFeeCents) : 0;
+    // Free delivery threshold based on items total BEFORE tax/fees
+    const freeEnabled = !!site.freeDeliveryEnabled;
+    const freeMin = (typeof site.freeDeliveryMinSubtotalCents === 'number')
+      ? Math.max(0, Number(site.freeDeliveryMinSubtotalCents) || 0)
+      : null;
+    const freeEligible = !!freeEnabled && freeMin !== null && itemsTotal >= freeMin;
+    const customerDeliveryFeeCents = freeEligible ? 0 : (split ? Math.round(fullDeliveryFeeCents / 2) : fullDeliveryFeeCents);
+    const restaurantDeliveryFeeCents = freeEligible ? fullDeliveryFeeCents : (split ? (fullDeliveryFeeCents - customerDeliveryFeeCents) : 0);
 		const taxCents = Math.round(itemsTotal * 0.05);
     const totalCents = itemsTotal + taxCents + customerDeliveryFeeCents;
 		const trackingUrl = delivery?.tracking_url || delivery?.trackingUrl || delivery?.share_url || delivery?.tracking_url_v2 || '';
@@ -282,7 +294,7 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
       fulfillmentType: 'delivery',
 			dropoff,
 			pickup: { location: pickup },
-      meta: { distanceKm },
+      meta: { distanceKm, freeDeliveryApplied: !!freeEligible },
       notes: typeof notes === 'string' ? notes.slice(0, 1000) : undefined,
 		};
 		if (req.app.locals.mockData) {

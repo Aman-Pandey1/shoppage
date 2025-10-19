@@ -24,7 +24,7 @@ export const FulfillmentModal = ({
   onConfirmDelivery, // ({ when, address, summary })
   selectedType: selectedTypeProp,
 }) => {
-  const { setDeliveryFeeCents: setFeeInCart } = useCart();
+  const { state: cartState, setDeliveryFeeCents: setFeeInCart } = useCart();
   const pickupImg = getPickupImage();
   const deliveryImg = getDeliveryImage();
   const [processedDeliveryImg, setProcessedDeliveryImg] = React.useState(null);
@@ -37,11 +37,32 @@ export const FulfillmentModal = ({
   const [checkingArea, setCheckingArea] = React.useState(false);
   // Admin-configured delivery radius in kilometers
   const [maxDeliveryKm, setMaxDeliveryKm] = React.useState(null);
+  const [freeDeliveryEnabled, setFreeDeliveryEnabled] = React.useState(false);
+  const [freeDeliveryMinSubtotalCents, setFreeDeliveryMinSubtotalCents] = React.useState(null);
 
   // Hours and closed message for delivery
   const [hours, setHours] = React.useState(null);
   const [closedMsg, setClosedMsg] = React.useState('');
   const [closedNow, setClosedNow] = React.useState(false);
+
+  // Compute items subtotal (in cents) to decide free-delivery eligibility during quote
+  const itemsSubtotalCentsForQuote = React.useMemo(() => {
+    try {
+      const items = Array.isArray(cartState?.items) ? cartState.items : [];
+      return items.reduce((sum, it) => {
+        const unitCents = Number.isFinite(it.unitCents)
+          ? Math.max(0, Math.round(Number(it.unitCents)))
+          : Math.round(((Number(it?.basePrice) || 0)
+            + (Number(it?.variant?.price) || 0)
+            + (Number(it?.flavor?.price) || 0)
+            + (Number(it?.portion?.price) || 0)
+            + (Number(it?.quantityOption?.price) || 0)
+            + (Number(it?.extraCost) || 0)) * 100);
+        const qty = Number(it.quantity) || 1;
+        return sum + (unitCents * qty);
+      }, 0);
+    } catch { return 0; }
+  }, [cartState?.items]);
 
   React.useEffect(() => {
     if (open) {
@@ -130,6 +151,8 @@ export const FulfillmentModal = ({
             ? Number(site.maxDeliveryDistanceKm)
             : null;
           setMaxDeliveryKm(km);
+          setFreeDeliveryEnabled(!!site?.freeDeliveryEnabled);
+          setFreeDeliveryMinSubtotalCents(typeof site?.freeDeliveryMinSubtotalCents === 'number' ? Number(site.freeDeliveryMinSubtotalCents) : null);
         }
       } catch { if (!cancelled) setMaxDeliveryKm(null); }
     }
@@ -203,7 +226,8 @@ export const FulfillmentModal = ({
         if (!addrObj) { setDeliveryAreaError(''); setDeliveryFeeCentsLocal(null); setCheckingArea(false); return; }
         setCheckingArea(true);
         // Do not specify pickup index; backend will pick nearest and return it
-        const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { address: addrObj } });
+        // Send items subtotal so server can decide free-delivery eligibility
+        const q = await postJson(`/api/delivery/${siteSlug}/quote`, { dropoff: { address: addrObj }, itemsSubtotalCents: itemsSubtotalCentsForQuote });
         if (cancelled) return;
         // Early radius validation using admin-configured maxDeliveryKm
         if (typeof q?.distanceKm === 'number' && typeof maxDeliveryKm === 'number' && isFinite(maxDeliveryKm)) {

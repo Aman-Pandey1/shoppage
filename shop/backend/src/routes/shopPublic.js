@@ -117,6 +117,11 @@ router.get('/:slug/site', async (req, res) => {
     const couponMinSubtotalCents = (typeof site.couponMinSubtotalCents === 'number')
       ? Math.max(0, Number(site.couponMinSubtotalCents) || 0)
       : Math.max(0, Number(process.env.COUPON_MIN_SUBTOTAL_CENTS) || 5000);
+    // Expose free-delivery configuration for client UX
+    const freeDeliveryEnabled = !!site.freeDeliveryEnabled;
+    const freeDeliveryMinSubtotalCents = (typeof site.freeDeliveryMinSubtotalCents === 'number')
+      ? Math.max(0, Number(site.freeDeliveryMinSubtotalCents) || 0)
+      : undefined;
     return res.json({
       siteId: req.siteId,
       slug: site.slug,
@@ -134,6 +139,8 @@ router.get('/:slug/site', async (req, res) => {
       supportWhatsappPhone: site.supportWhatsappPhone || '',
       minOrderCents,
       couponMinSubtotalCents,
+      freeDeliveryEnabled,
+      freeDeliveryMinSubtotalCents,
       currency: (site.currency || String(process.env.STRIPE_CURRENCY || 'usd').toLowerCase()),
     });
   } catch (err) {
