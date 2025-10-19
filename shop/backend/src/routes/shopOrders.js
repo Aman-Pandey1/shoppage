@@ -258,7 +258,8 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
     doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text(rightHdr, rightX, topY);
     doc.font('Helvetica').fontSize(10).fillColor(colors.text);
     doc.text(`Order #: ${order.orderNumber || String(order._id)}`, rightX, doc.y, { width: columnWidth });
-    doc.text(`Date: ${formatDateTimeInSiteTz(order.createdAt, req.site)}`, rightX, doc.y, { width: columnWidth });
+    // Force MDT label when using Alberta default
+    doc.text(`Date: ${formatDateTimeInSiteTz(order.createdAt, req.site, { forceMdtLabel: true })}`, rightX, doc.y, { width: columnWidth });
     const fulfillmentUpperC = String(order.fulfillmentType || 'pickup').toUpperCase();
     doc.text(`Fulfillment: ${fulfillmentUpperC}`, rightX, doc.y, { width: columnWidth });
     const rightEndY = doc.y;

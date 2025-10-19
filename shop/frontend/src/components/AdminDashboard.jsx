@@ -590,7 +590,7 @@ export const AdminDashboard = () => {
                           <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>{customer}{notes ? <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>Notes: {notes}{o.notes.length > 60 ? '…' : ''}</div> : null}</td>
                           <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>{(function(){
                             try {
-                              const tz = (selectedSite && selectedSite.timeZone) ? selectedSite.timeZone : 'America/Toronto';
+                              const tz = (selectedSite && selectedSite.timeZone) ? selectedSite.timeZone : 'America/Edmonton';
                               return new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true, timeZone: tz, timeZoneName: 'short' }).format(new Date(o.createdAt));
                             } catch { return new Date(o.createdAt).toLocaleString(); }
                           })()}</td>
