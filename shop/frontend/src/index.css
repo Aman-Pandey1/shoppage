@@ -389,7 +389,7 @@ input:focus, select:focus, textarea:focus {
   top: 0;
   left: 0;
   right: 0;
-  z-index: 650;
+  z-index: 700; /* keep above banner (650) but below overlays */
   min-height: var(--header-height);
   background: #ffffff; /* white background per request */
   color: var(--text);
@@ -416,6 +416,16 @@ input:focus, select:focus, textarea:focus {
   gap: 12px;
   width: 100%;
 }
+
+/* Ensure the banner always sits fully below the header by
+   matching the CSS variable to the actual header content height
+   at different breakpoints. */
+@media (min-width: 480px) {
+  :root { --header-height: 96px; } /* 66px logo + 2*14px padding */
+}
+@media (max-width: 375px) {
+  :root { --header-height: 76px; } /* 56px logo + 2*10px padding */
+}
 /* On large screens, let the header go edge-to-edge so
    brand sits flush left and actions flush right */
 @media (min-width: 1280px) {
@@ -432,6 +442,8 @@ input:focus, select:focus, textarea:focus {
   display: grid;
   place-items: center;
   font-size: 22px;
+  /* Nudge the logo up a bit so it stays visually clear of the banner */
+  transform: translateY(-4px);
 }
 @media (min-width: 480px) {
   .brand__logo { width: 150px; height: 66px; }
@@ -452,6 +464,7 @@ input:focus, select:focus, textarea:focus {
   object-fit: contain; /* prevent cropping the logo */
   border-radius: 0;
   padding: 0; /* remove inset */
+  transform: translateY(-2px);
   background: transparent; /* no box */
 }
 .brand__name { font-weight: 700; letter-spacing: .01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 52vw; }
