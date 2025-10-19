@@ -4,13 +4,15 @@ import { formatCents } from '../lib/money';
 import { fetchJson } from '../lib/api';
 
 export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
-  const { state, removeItem, updateQuantity, clearCart, getCartTotal, setNotes, applyCoupon, clearCoupon, setCouponMinSubtotalCents } = useCart();
+  const { state, removeItem, updateQuantity, clearCart, getCartTotal, setNotes, applyCoupon, clearCoupon, setCouponMinSubtotalCents, setDeliveryFeeCents } = useCart();
   const [code, setCode] = React.useState('');
   const [couponError, setCouponError] = React.useState('');
   const [checking, setChecking] = React.useState(false);
   const [now, setNow] = React.useState(Date.now());
   const [autoTried, setAutoTried] = React.useState(false);
   const [isSplitDelivery, setIsSplitDelivery] = React.useState(false);
+  const [freeDeliveryEnabled, setFreeDeliveryEnabled] = React.useState(false);
+  const [freeDeliveryMinSubtotalCents, setFreeDeliveryMinSubtotalCents] = React.useState(null);
   React.useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 30000);
     return () => clearInterval(t);
@@ -49,6 +51,12 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
           }
           if (!cancelled && site) {
             setIsSplitDelivery(!!site.splitDeliveryFee);
+            setFreeDeliveryEnabled(!!site.freeDeliveryEnabled);
+            setFreeDeliveryMinSubtotalCents(
+              typeof site.freeDeliveryMinSubtotalCents === 'number'
+                ? Number(site.freeDeliveryMinSubtotalCents)
+                : null
+            );
           }
         } catch {}
         const min = Number(state.couponMinSubtotalCents) || 5000;
@@ -81,6 +89,10 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
 
   // Coupon + delivery context
   const deliveryFeeCents = state.fulfillmentType === 'delivery' ? (Number(state.deliveryFeeCents || 0)) : 0;
+  const eligibleForFreeDelivery = React.useMemo(() => {
+    const min = (typeof freeDeliveryMinSubtotalCents === 'number') ? freeDeliveryMinSubtotalCents : null;
+    return !!freeDeliveryEnabled && min !== null && itemsSubtotalCents >= min;
+  }, [freeDeliveryEnabled, freeDeliveryMinSubtotalCents, itemsSubtotalCents]);
   // Use the same cents-based eligibility as backend/site setting
   const hasEligibleCoupon = React.useMemo(() => {
     const minCents = Number(state.couponMinSubtotalCents) || 5000;
@@ -107,12 +119,15 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
 
   // Display tax and delivery exactly as charged (no gross-up)
   const taxDisplayCents = taxAfterDiscountCents;
-  const deliveryDisplayCents = deliveryFeeCents;
+  const deliveryDisplayCents = React.useMemo(() => {
+    if (state.fulfillmentType === 'delivery' && eligibleForFreeDelivery) return 0;
+    return deliveryFeeCents;
+  }, [state.fulfillmentType, eligibleForFreeDelivery, deliveryFeeCents]);
 
   // Final payable total
   const grandTotalCents = React.useMemo(() => (
-    Math.max(0, itemsAfterDiscountCents + taxAfterDiscountCents + deliveryFeeCents)
-  ), [itemsAfterDiscountCents, taxAfterDiscountCents, deliveryFeeCents]);
+    Math.max(0, itemsAfterDiscountCents + taxAfterDiscountCents + deliveryDisplayCents)
+  ), [itemsAfterDiscountCents, taxAfterDiscountCents, deliveryDisplayCents]);
 
   // Displayed subtotal before discount and discount amount
   const displayedSubtotalCents = React.useMemo(() => (
@@ -231,6 +246,26 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
       )}
 
       <div className="card" style={{ marginTop: 12, borderRadius: 'var(--radius-sm)', padding: 12 }}>
+        {freeDeliveryEnabled && typeof freeDeliveryMinSubtotalCents === 'number' ? (
+          <div
+            className="animate-fadeInUp"
+            style={{
+              marginBottom: 10,
+              padding: 10,
+              borderRadius: 8,
+              background: 'var(--primary-alpha-04)',
+              border: '1px dashed var(--primary-600)'
+            }}
+          >
+            {eligibleForFreeDelivery ? (
+              <div style={{ fontSize: 12 }}><strong>Free delivery applied</strong> — delivery charge $0</div>
+            ) : (
+              <div style={{ fontSize: 12 }}>
+                Free delivery over ${formatCents(freeDeliveryMinSubtotalCents)} — add ${formatCents(Math.max(0, Number(freeDeliveryMinSubtotalCents) - itemsSubtotalCents))} more
+              </div>
+            )}
+          </div>
+        ) : null}
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
           <span className="muted" style={{ fontSize: 12 }}>Coupon code</span>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
