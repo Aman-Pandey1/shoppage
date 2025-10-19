@@ -586,7 +586,7 @@ export const AdminDashboard = () => {
                       const notes = o.notes ? String(o.notes).slice(0, 60) : '';
                       return (
                         <tr key={o._id}>
-                          <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>{o.orderNumber || '—'}</td>
+                          <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>{o.orderNumber || `#${String(o._id).slice(-6)}`}</td>
                           <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>{customer}{notes ? <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>Notes: {notes}{o.notes.length > 60 ? '…' : ''}</div> : null}</td>
                           <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>{(function(){
                             try {

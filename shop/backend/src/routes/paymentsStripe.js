@@ -244,15 +244,19 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
     };
 
     // Create order now so webhook can mark it paid later
+    // Assign a human-friendly order number IMMEDIATELY so UI/PDFs never show a blank value
     let orderId;
     if (mock) {
       if (!Array.isArray(req.app.locals.mockData.orders)) req.app.locals.mockData.orders = [];
       const createdAt = new Date().toISOString();
-      const created = { _id: `o-${Date.now()}`, createdAt, ...orderPayload };
+      const nextSeq = ((req.app.locals.mockData.orderSeq || 1000) + 1);
+      req.app.locals.mockData.orderSeq = nextSeq;
+      const created = { _id: `o-${Date.now()}`, createdAt, orderNumber: `BB-${nextSeq}`, ...orderPayload };
       req.app.locals.mockData.orders.unshift(created);
       orderId = created._id;
     } else {
-      const created = await Order.create(orderPayload);
+      const orderNumber = await getNextOrderNumber(req.siteId);
+      const created = await Order.create({ ...orderPayload, orderNumber });
       orderId = created._id;
     }
 
@@ -471,11 +475,14 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
     if (mock) {
       if (!Array.isArray(req.app.locals.mockData.orders)) req.app.locals.mockData.orders = [];
       const createdAt = new Date().toISOString();
-      const created = { _id: `o-${Date.now()}`, createdAt, ...orderPayload };
+      const nextSeq = ((req.app.locals.mockData.orderSeq || 1000) + 1);
+      req.app.locals.mockData.orderSeq = nextSeq;
+      const created = { _id: `o-${Date.now()}`, createdAt, orderNumber: `BB-${nextSeq}`, ...orderPayload };
       req.app.locals.mockData.orders.unshift(created);
       orderId = created._id;
     } else {
-      const created = await Order.create(orderPayload);
+      const orderNumber = await getNextOrderNumber(req.siteId);
+      const created = await Order.create({ ...orderPayload, orderNumber });
       orderId = created._id;
     }
 
