@@ -156,8 +156,8 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
           </div>
         </div>
       </div>
-      {/* ORDER READY FOR placed at top of sidebar, right after header; keep sticky under header */}
-      <div className="card" style={{ marginTop: 8, padding: 12, borderRadius: 10, background: 'var(--primary-alpha-04)', border: '1px dashed var(--primary-600)', position: 'sticky', top: 58, zIndex: 1 }}>
+      {/* ORDER READY FOR section should scroll with content (no sticky) */}
+      <div className="card" style={{ marginTop: 8, padding: 12, borderRadius: 10, background: 'var(--primary-alpha-04)', border: '1px dashed var(--primary-600)' }}>
         <div className="muted" style={{ fontSize: 12 }}>ORDER READY FOR</div>
         <div style={{ fontSize: 20, fontWeight: 800 }}>{timeString}</div>
         <div className="muted" style={{ fontSize: 12 }}>{eta}</div>
