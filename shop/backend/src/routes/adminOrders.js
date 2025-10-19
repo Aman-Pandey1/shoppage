@@ -140,7 +140,8 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
     } else {
       try { siteLike = await Site.findById(siteId); } catch {}
     }
-    doc.text(`Date: ${formatDateTimeInSiteTz(order.createdAt, siteLike)}`, rightX, doc.y, { width: columnWidth });
+    // Force MDT label when using Alberta default
+    doc.text(`Date: ${formatDateTimeInSiteTz(order.createdAt, siteLike, { forceMdtLabel: true })}`, rightX, doc.y, { width: columnWidth });
     const fulfillmentUpper = String(order.fulfillmentType || (order.dropoff ? 'delivery' : 'pickup')).toUpperCase();
     doc.text(`Fulfillment: ${fulfillmentUpper}`, rightX, doc.y, { width: columnWidth });
     const rightEndY = doc.y;

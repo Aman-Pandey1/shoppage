@@ -45,16 +45,21 @@ export function resolveSiteTimeZone(siteLike) {
   return inferred || 'America/Edmonton';
 }
 
-export function formatDateTimeInSiteTz(dateInput, siteLike) {
+export function formatDateTimeInSiteTz(dateInput, siteLike, options = {}) {
   try {
     const tz = resolveSiteTimeZone(siteLike);
     const d = new Date(dateInput);
-    const fmt = new Intl.DateTimeFormat('en-CA', {
+    const baseFmt = new Intl.DateTimeFormat('en-CA', {
       year: 'numeric', month: 'short', day: '2-digit',
       hour: '2-digit', minute: '2-digit', hour12: true,
-      timeZone: tz, timeZoneName: 'short'
+      timeZone: tz,
+      ...(options.forceMdtLabel ? {} : { timeZoneName: 'short' })
     });
-    return fmt.format(d);
+    const formatted = baseFmt.format(d);
+    if (options.forceMdtLabel && tz === 'America/Edmonton') {
+      return `${formatted} MDT`;
+    }
+    return formatted;
   } catch {
     // Fallback to ISO when Intl fails
     try { return new Date(dateInput).toISOString(); } catch { return String(dateInput || ''); }
