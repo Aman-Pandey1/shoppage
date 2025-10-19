@@ -143,7 +143,7 @@ export const MyOrdersPage = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div style={{ fontSize: 18 }}>{o.fulfillmentType === 'delivery' ? '🚚' : '🏪'}</div>
-                  <div style={{ fontWeight: 800 }}>{o.orderNumber || '—'}</div>
+                  <div style={{ fontWeight: 800 }}>{o.orderNumber || `#${String(o._id).slice(-6)}`}</div>
                 </div>
                 <div className="muted" style={{ fontSize: 12, color: 'var(--primary-600)' }}>{(function(){
                   try {
