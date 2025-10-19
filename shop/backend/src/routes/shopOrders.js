@@ -19,14 +19,39 @@ router.get('/:slug/orders/mine', requireUser, async (req, res) => {
     const page = Math.max(1, Number(req.query.page) || 1);
     const pageSize = Math.min(50, Math.max(1, Number(req.query.pageSize) || 12));
     const mock = req.app.locals.mockData;
-  if (mock) {
+    // Local helper to normalize display of order numbers like "BB1001" -> "BB-1001"
+    function normalizeOrderNumberString(v) {
+      const raw = String(v || '').trim();
+      const m = raw.match(/^([A-Za-z]+)[\s-]?(\d+)$/);
+      if (m) {
+        return `${m[1].toUpperCase()}-${m[2]}`;
+      }
+      return raw || '';
+    }
+
+    if (mock) {
       const all = (mock.orders || [])
         .filter((o) => o.site === req.siteId && o.userEmail === req.user?.email)
-        // Only show successful orders to users
-        .filter((o) => o.status === 'paid' || o.status === 'confirmed');
+        // Include successful and legacy/missing-status orders so history does not disappear
+        .filter((o) => o.status === 'paid' || o.status === 'confirmed' || !o.status || o.status === 'awaiting_payment');
       const total = all.length;
       const start = (page - 1) * pageSize;
-      const items = all.slice(start, start + pageSize);
+      const slice = all.slice(start, start + pageSize);
+      // Normalize/backfill order numbers in mock mode for consistent display
+      const seqStart = Number(req.app.locals.mockData.orderSeq || 1000);
+      let nextSeq = seqStart;
+      const items = slice.map((o) => {
+        const copy = { ...o };
+        if (!copy.orderNumber) {
+          nextSeq += 1;
+          copy.orderNumber = `BB-${nextSeq}`;
+        } else {
+          copy.orderNumber = normalizeOrderNumberString(copy.orderNumber);
+        }
+        return copy;
+      });
+      // Persist the incremented sequence only if we assigned at least one
+      if (nextSeq !== seqStart) req.app.locals.mockData.orderSeq = nextSeq;
       return res.json({ items, page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) });
     }
     const email = String(req.user?.email || '').trim();
@@ -35,14 +60,40 @@ router.get('/:slug/orders/mine', requireUser, async (req, res) => {
     if (email) or.push({ userEmail: { $regex: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } });
     const filter = {
       site: req.siteId,
-      status: { $in: ['paid', 'confirmed'] },
+      // Include paid/confirmed, legacy with missing status, and awaiting_payment (recent pending)
+      $or: [
+        { status: { $in: ['paid', 'confirmed'] } },
+        { status: { $exists: false } },
+        { status: 'awaiting_payment' },
+      ],
       ...(or.length ? { $or: or } : {}),
     };
     const total = await Order.countDocuments(filter);
-    const items = await Order.find(filter)
+    const docs = await Order.find(filter)
       .sort({ createdAt: -1 })
       .skip((page - 1) * pageSize)
       .limit(pageSize);
+    // Backfill missing order numbers and normalize hyphenated format for display
+    const items = await Promise.all(docs.map(async (doc) => {
+      const o = doc.toObject();
+      let current = String(o.orderNumber || '');
+      const normalized = normalizeOrderNumberString(current);
+      if (!current) {
+        try {
+          const assigned = await getNextOrderNumber(req.siteId);
+          await Order.findByIdAndUpdate(o._id, { orderNumber: assigned });
+          o.orderNumber = assigned;
+        } catch {
+          o.orderNumber = normalized; // best effort for display
+        }
+      } else if (normalized && normalized !== current) {
+        o.orderNumber = normalized;
+        try { await Order.findByIdAndUpdate(o._id, { orderNumber: normalized }); } catch {}
+      } else {
+        o.orderNumber = normalized || current;
+      }
+      return o;
+    }));
     res.json({ items, page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) });
   } catch (err) {
     res.status(400).json({ error: err.message });

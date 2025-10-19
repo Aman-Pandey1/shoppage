@@ -14,5 +14,14 @@ export async function getNextOrderNumber(siteId) {
     { new: true, upsert: true }
   );
   const seq = Number(doc?.seq || DEFAULT_START);
-  return `${process.env.ORDER_NUMBER_PREFIX || DEFAULT_PREFIX}${seq}`;
+  // Normalize prefix to guarantee format like "BB-1001"
+  const raw = String(process.env.ORDER_NUMBER_PREFIX || DEFAULT_PREFIX).trim();
+  let prefix = raw.replace(/\s+/g, '');
+  // Remove any trailing dashes so we don't end up with double dashes
+  prefix = prefix.replace(/-+$/g, '');
+  // Uppercase alphabetic prefixes for consistency (BB, INV, etc.)
+  prefix = prefix.toUpperCase();
+  // Always ensure a single dash between prefix and sequence
+  prefix = `${prefix}-`;
+  return `${prefix}${seq}`;
 }

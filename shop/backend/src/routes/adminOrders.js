@@ -22,11 +22,29 @@ router.get('/', requireAdmin, async (req, res) => {
 			if (String(to).length <= 10) toDate.setHours(23, 59, 59, 999);
 		}
 
-    if (mock) {
+		if (mock) {
       let list = Array.isArray(mock.orders) ? mock.orders : [];
       list = list.filter((o) => o.site === siteId);
       // Treat orders without a status as historical/placed to avoid disappearing data
       list = list.filter((o) => (o.status === 'paid' || o.status === 'confirmed' || !o.status));
+			// Normalize or backfill order numbers for display
+			function normalizeOrderNumberString(v){
+				const raw = String(v || '').trim();
+				const m = raw.match(/^([A-Za-z]+)[\s-]?(\d+)$/);
+				return m ? `${m[1].toUpperCase()}-${m[2]}` : raw;
+			}
+			let nextSeq = Number(req.app.locals.mockData.orderSeq || 1000);
+			list = list.map((o) => {
+				const copy = { ...o };
+				if (!copy.orderNumber) {
+					nextSeq += 1;
+					copy.orderNumber = `BB-${nextSeq}`;
+				} else {
+					copy.orderNumber = normalizeOrderNumberString(copy.orderNumber);
+				}
+				return copy;
+			});
+			if (nextSeq !== Number(req.app.locals.mockData.orderSeq || 1000)) req.app.locals.mockData.orderSeq = nextSeq;
 			if (fromDate) list = list.filter((o) => new Date(o.createdAt) >= fromDate);
 			if (toDate) list = list.filter((o) => new Date(o.createdAt) <= toDate);
 			list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -37,7 +55,32 @@ router.get('/', requireAdmin, async (req, res) => {
 		if (fromDate || toDate) filter.createdAt = {};
 		if (fromDate) filter.createdAt.$gte = fromDate;
 		if (toDate) filter.createdAt.$lte = toDate;
-		const orders = await Order.find(filter).sort({ createdAt: -1 });
+		const docs = await Order.find(filter).sort({ createdAt: -1 });
+		function normalizeOrderNumberString(v){
+			const raw = String(v || '').trim();
+			const m = raw.match(/^([A-Za-z]+)[\s-]?(\d+)$/);
+			return m ? `${m[1].toUpperCase()}-${m[2]}` : raw;
+		}
+		const orders = await Promise.all(docs.map(async (doc) => {
+			const o = doc.toObject();
+			let current = String(o.orderNumber || '');
+			const normalized = normalizeOrderNumberString(current);
+			if (!current) {
+				try {
+					const assigned = await getNextOrderNumber(siteId);
+					await Order.findByIdAndUpdate(o._id, { orderNumber: assigned });
+					o.orderNumber = assigned;
+				} catch {
+					o.orderNumber = normalized;
+				}
+			} else if (normalized && normalized !== current) {
+				o.orderNumber = normalized;
+				try { await Order.findByIdAndUpdate(o._id, { orderNumber: normalized }); } catch {}
+			} else {
+				o.orderNumber = normalized || current;
+			}
+			return o;
+		}));
 		res.json(orders);
 	} catch (err) {
 		res.status(400).json({ error: err.message });
