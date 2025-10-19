@@ -29,7 +29,15 @@ router.get('/:slug/orders/mine', requireUser, async (req, res) => {
       const items = all.slice(start, start + pageSize);
       return res.json({ items, page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) });
     }
-    const filter = { site: req.siteId, userId: req.user?.userId, status: { $in: ['paid', 'confirmed'] } };
+    const email = String(req.user?.email || '').trim();
+    const or = [];
+    if (req.user?.userId) or.push({ userId: req.user.userId });
+    if (email) or.push({ userEmail: { $regex: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } });
+    const filter = {
+      site: req.siteId,
+      status: { $in: ['paid', 'confirmed'] },
+      ...(or.length ? { $or: or } : {}),
+    };
     const total = await Order.countDocuments(filter);
     const items = await Order.find(filter)
       .sort({ createdAt: -1 })
@@ -59,7 +67,13 @@ router.get('/:slug/orders/:orderId/tracking', requireUser, async (req, res) => {
         uberStatus: order.uberStatus || 'unknown',
       });
     }
-    order = await Order.findOne({ _id: orderId, site: req.siteId, userId: req.user?.userId });
+    {
+      const email = String(req.user?.email || '').trim();
+      const or = [];
+      if (req.user?.userId) or.push({ userId: req.user.userId });
+      if (email) or.push({ userEmail: { $regex: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } });
+      order = await Order.findOne({ _id: orderId, site: req.siteId, ...(or.length ? { $or: or } : {}) });
+    }
     if (!order) return res.status(404).json({ error: 'Order not found' });
     // If we have Uber delivery ID and site has uberCustomerId, fetch live status
     const site = await Site.findById(req.siteId);
@@ -194,7 +208,13 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
         return res.status(403).json({ error: 'Forbidden' });
       }
     } else {
-      order = await Order.findOne({ _id: orderId, site: req.siteId, userId: req.user?.userId });
+    {
+      const email = String(req.user?.email || '').trim();
+      const or = [];
+      if (req.user?.userId) or.push({ userId: req.user.userId });
+      if (email) or.push({ userEmail: { $regex: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } });
+      order = await Order.findOne({ _id: orderId, site: req.siteId, ...(or.length ? { $or: or } : {}) });
+    }
       if (!order) return res.status(404).json({ error: 'Order not found' });
       // Ensure a human-friendly sequential order number exists
       if (!order.orderNumber) {
