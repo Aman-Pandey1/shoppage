@@ -94,7 +94,10 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
     }
 
     res.setHeader('Content-Type', 'application/pdf');
-    const fileId = (order.orderNumber || String(order._id).slice(-6)).replace(/\s+/g, '');
+    // Prefer human-friendly order number in filename; fallback <PREFIX>-<last6>
+    const prefixRaw = process.env.ORDER_NUMBER_PREFIX || 'BB-';
+    const prefixSafe = String(prefixRaw).endsWith('-') ? String(prefixRaw) : `${String(prefixRaw)}-`;
+    const fileId = (order.orderNumber || `${prefixSafe}${String(order._id).slice(-6)}`).replace(/\s+/g, '');
     res.setHeader('Content-Disposition', `attachment; filename=order-${fileId}.pdf`);
 
 		const doc = new PDFDocument({ size: 'A4', margin: 50 });
@@ -167,7 +170,8 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
     const detailsHeader = 'ORDER DETAIL';
     doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark).text(detailsHeader, rightX, topY);
     doc.font('Helvetica').fontSize(10).fillColor(colors.text);
-    doc.text(`Order #: ${order.orderNumber || String(order._id)}`, rightX, doc.y, { width: columnWidth });
+    const displayOrderId = order.orderNumber || `${prefixSafe}${String(order._id).slice(-6)}`;
+    doc.text(`Order #: ${displayOrderId}`, rightX, doc.y, { width: columnWidth });
     let siteLike = null;
     if (mock) {
       siteLike = (mock.sites || []).find((s) => String(s._id) === String(siteId));
