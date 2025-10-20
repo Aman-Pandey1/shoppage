@@ -10,12 +10,13 @@ export async function getNextOrderNumber(siteId) {
   const startBase = Math.max(0, Number(DEFAULT_START) - 1);
   const doc = await Counter.findOneAndUpdate(
     { _id: key },
-    { $inc: { seq: 1 }, $setOnInsert: { seq: startBase } },
+    { $inc: { seq: 1 } },
     { new: true, upsert: true }
   );
   // Normalize prefix: ensure a trailing hyphen so format is e.g., "BB-1001"
   const rawPrefix = process.env.ORDER_NUMBER_PREFIX || DEFAULT_PREFIX;
   const prefix = String(rawPrefix).endsWith('-') ? String(rawPrefix) : `${String(rawPrefix)}-`;
-  const seq = Number(doc?.seq || DEFAULT_START);
+  const seqOffset = Number(doc?.seq || 1);
+  const seq = startBase + seqOffset;
   return `${prefix}${seq}`;
 }
