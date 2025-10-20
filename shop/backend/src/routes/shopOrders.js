@@ -216,8 +216,6 @@ router.post('/:slug/orders/pickup', requireUser, async (req, res) => {
   }
 });
 
-export default router;
-
 // Generate a PDF invoice for a user's own order
 router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
   try {
@@ -403,4 +401,6 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 });
+
+export default router;
 
