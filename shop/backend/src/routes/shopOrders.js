@@ -227,7 +227,9 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
       if (!order) return res.status(404).json({ error: 'Order not found' });
       // Allow admin to download any order for this site
       if (String(req.user?.role || '') !== 'admin') {
-        if (String(order.userEmail || '') !== String(req.user?.email || '')) {
+        const orderEmailLc = String(order.userEmail || '').toLowerCase();
+        const reqEmailLc = String(req.user?.email || '').toLowerCase();
+        if (orderEmailLc !== reqEmailLc) {
           return res.status(403).json({ error: 'Forbidden' });
         }
       }
@@ -246,6 +248,21 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
         if (req.user?.userId) or.push({ userId: req.user.userId });
         if (email) or.push({ userEmail: { $regex: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } });
         order = await Order.findOne({ _id: orderId, site: req.siteId, ...(or.length ? { $or: or } : {}) });
+      }
+      // Fallback: if not found by site/user filter, try by ID then authorize owner/admin and site
+      if (!order) {
+        const raw = await Order.findById(orderId);
+        if (raw) {
+          const isAdmin = String(req.user?.role || '') === 'admin';
+          const emailLc = String(req.user?.email || '').toLowerCase();
+          const isOwner = (
+            (req.user?.userId && String(raw.userId || '') === String(req.user.userId)) ||
+            (emailLc && String(raw.userEmail || '').toLowerCase() === emailLc)
+          );
+          if ((isAdmin || isOwner) && String(raw.site || '') === String(req.siteId || '')) {
+            order = raw;
+          }
+        }
       }
       if (!order) return res.status(404).json({ error: 'Order not found' });
       // Ensure a human-friendly sequential order number exists
