@@ -109,11 +109,15 @@ router.get('/orders/:orderId/pdf', requireUser, async (req, res) => {
     if (mock) {
       order = (mock.orders || []).find((o) => String(o._id) === String(orderId));
       if (!order) return res.status(404).json({ error: 'Order not found' });
-      // Allow admin override; otherwise compare emails case-insensitively
+      // Allow admin override; otherwise authorize by matching userId OR email (case-insensitive)
       if (String(req.user?.role || '') !== 'admin') {
+        const matchesUserId = (
+          req.user?.userId && String(order.userId || '') === String(req.user.userId)
+        );
         const orderEmailLc = String(order.userEmail || '').toLowerCase();
         const reqEmailLc = String(req.user?.email || '').toLowerCase();
-        if (orderEmailLc !== reqEmailLc) {
+        const matchesEmail = !!reqEmailLc && orderEmailLc === reqEmailLc;
+        if (!matchesUserId && !matchesEmail) {
           return res.status(403).json({ error: 'Forbidden' });
         }
       }
@@ -142,6 +146,8 @@ router.get('/orders/:orderId/pdf', requireUser, async (req, res) => {
         if (!isOwner && String(req.user?.role || '') !== 'admin') {
           return res.status(403).json({ error: 'Forbidden' });
         }
+        // Do not require a pre-resolved site context for the slugless endpoint.
+        // Authorize above, then proceed with the raw order.
         order = raw;
       }
       if (!order.orderNumber) {
