@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams, useLocation } from 'react-router-dom';
-import { fetchJson, getAuthToken } from '../lib/api';
+import { fetchJson, getAuthToken, getCurrentUser } from '../lib/api';
 import { useSiteQuery } from '../lib/queries';
 import { download } from '../lib/api';
 import { LoginModal } from '../components/LoginModal';
@@ -185,15 +185,43 @@ export const MyOrdersPage = () => {
                 <button onClick={async () => {
                   try {
                     let blob;
+                    const initialSlug = siteSlug || 'default';
+                    // 1) Try slug-based endpoint first
                     try {
-                      blob = await download(`/api/shop/${siteSlug || 'default'}/orders/${o._id}/pdf`);
-                    } catch (err) {
-                      const msg = String(err?.message || '');
-                      if (/\b404\b/.test(msg)) {
-                        // Fallback to legacy endpoint without slug
-                        blob = await download(`/api/shop/orders/${o._id}/pdf`);
-                      } else {
-                        throw err;
+                      blob = await download(`/api/shop/${initialSlug}/orders/${o._id}/pdf`);
+                    } catch (err1) {
+                      const msg1 = String(err1?.message || '');
+                      // 1a) If slug might be wrong, re-resolve from server and retry once
+                      if (/\b404\b/i.test(msg1) || /Site not found/i.test(msg1)) {
+                        try {
+                          const hostSite = await fetchJson(`/api/shop/host-site`);
+                          const resolvedSlug = hostSite?.slug || initialSlug;
+                          if (resolvedSlug && resolvedSlug !== initialSlug) {
+                            try {
+                              blob = await download(`/api/shop/${resolvedSlug}/orders/${o._id}/pdf`);
+                            } catch {}
+                          }
+                        } catch {}
+                      }
+                      // 2) Legacy fallback without slug if still not resolved
+                      if (!blob && /\b404\b/.test(msg1)) {
+                        try {
+                          blob = await download(`/api/shop/orders/${o._id}/pdf`);
+                        } catch {}
+                      }
+                      // 3) If admin is logged in, use admin endpoint as last resort
+                      if (!blob) {
+                        try {
+                          const user = getCurrentUser();
+                          const siteId = siteInfo?.siteId;
+                          if (user?.role === 'admin' && siteId) {
+                            blob = await download(`/api/admin/sites/${siteId}/orders/${o._id}/pdf`);
+                          } else {
+                            throw err1;
+                          }
+                        } catch (errFinal) {
+                          throw errFinal;
+                        }
                       }
                     }
                     const url = URL.createObjectURL(blob);
