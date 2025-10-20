@@ -124,7 +124,19 @@ router.get('/orders/:orderId/pdf', requireUser, async (req, res) => {
       if (req.user?.userId) or.push({ userId: req.user.userId });
       if (email) or.push({ userEmail: { $regex: new RegExp(`^${email.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}$`, 'i') } });
       order = await Order.findOne({ _id: orderId, ...(or.length ? { $or: or } : {}) });
-      if (!order) return res.status(404).json({ error: 'Order not found' });
+      if (!order) {
+        // Fallback: fetch by ID first, then enforce ownership so valid users don't see 404
+        const raw = await Order.findById(orderId);
+        if (!raw) return res.status(404).json({ error: 'Order not found' });
+        const isOwner = (
+          (req.user?.userId && String(raw.userId || '') === String(req.user.userId)) ||
+          (email && String(raw.userEmail || '').toLowerCase() === email.toLowerCase())
+        );
+        if (!isOwner && String(req.user?.role || '') !== 'admin') {
+          return res.status(403).json({ error: 'Forbidden' });
+        }
+        order = raw;
+      }
       if (!order.orderNumber) {
         try {
           const assigned = await getNextOrderNumber(order.site);
