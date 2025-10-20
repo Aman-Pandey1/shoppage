@@ -122,7 +122,9 @@ router.get('/orders/:orderId/pdf', requireUser, async (req, res) => {
       const email = String(req.user?.email || '').trim();
       const or = [];
       if (req.user?.userId) or.push({ userId: req.user.userId });
-      if (email) or.push({ userEmail: { $regex: new RegExp(`^${email.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}$`, 'i') } });
+      // Escape RegExp metacharacters in the email using the standard pattern
+      // so we can safely create a case-insensitive exact-match regex.
+      if (email) or.push({ userEmail: { $regex: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } });
       order = await Order.findOne({ _id: orderId, ...(or.length ? { $or: or } : {}) });
       if (!order) {
         // Fallback: fetch by ID first, then enforce ownership so valid users don't see 404
