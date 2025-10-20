@@ -186,42 +186,47 @@ export const MyOrdersPage = () => {
                   try {
                     let blob;
                     const initialSlug = siteSlug || 'default';
-                    // 1) Try slug-based endpoint first
+                    // 1) Prefer legacy slugless endpoint first (resolves site from order and enforces ownership)
                     try {
-                      blob = await download(`/api/shop/${initialSlug}/orders/${o._id}/pdf`);
-                    } catch (err1) {
-                      const msg1 = String(err1?.message || '');
-                      // 1a) If slug might be wrong, re-resolve from server and retry once
-                      if (/\b404\b/i.test(msg1) || /Site not found/i.test(msg1)) {
+                      blob = await download(`/api/shop/orders/${o._id}/pdf`);
+                    } catch (err0) {
+                      const msg0 = String(err0?.message || '');
+                      // 2) Try slug-based with current route slug
+                      if (!blob && (/\b404\b/i.test(msg0) || /\b403\b/i.test(msg0))) {
                         try {
-                          const hostSite = await fetchJson(`/api/shop/host-site`);
-                          const resolvedSlug = hostSite?.slug || initialSlug;
-                          if (resolvedSlug && resolvedSlug !== initialSlug) {
+                          blob = await download(`/api/shop/${initialSlug}/orders/${o._id}/pdf`);
+                        } catch (err1) {
+                          const msg1 = String(err1?.message || '');
+                          // 2a) Re-resolve slug from host and retry once
+                          if (/\b404\b/i.test(msg1) || /Site not found/i.test(msg1) || /\b403\b/i.test(msg1)) {
                             try {
-                              blob = await download(`/api/shop/${resolvedSlug}/orders/${o._id}/pdf`);
+                              const hostSite = await fetchJson(`/api/shop/host-site`);
+                              const resolvedSlug = hostSite?.slug || initialSlug;
+                              if (resolvedSlug) {
+                                try {
+                                  blob = await download(`/api/shop/${resolvedSlug}/orders/${o._id}/pdf`);
+                                } catch {}
+                              }
                             } catch {}
                           }
-                        } catch {}
-                      }
-                      // 2) Legacy fallback without slug if still not resolved
-                      if (!blob && /\b404\b/.test(msg1)) {
-                        try {
-                          blob = await download(`/api/shop/orders/${o._id}/pdf`);
-                        } catch {}
-                      }
-                      // 3) If admin is logged in, use admin endpoint as last resort
-                      if (!blob) {
-                        try {
-                          const user = getCurrentUser();
-                          const siteId = siteInfo?.siteId;
-                          if (user?.role === 'admin' && siteId) {
-                            blob = await download(`/api/admin/sites/${siteId}/orders/${o._id}/pdf`);
-                          } else {
-                            throw err1;
+                          // 3) If admin is logged in, use admin endpoint as last resort
+                          if (!blob) {
+                            try {
+                              const user = getCurrentUser();
+                              const siteId = siteInfo?.siteId;
+                              if (user?.role === 'admin' && siteId) {
+                                blob = await download(`/api/admin/sites/${siteId}/orders/${o._id}/pdf`);
+                              } else {
+                                throw err1;
+                              }
+                            } catch (errFinal) {
+                              throw errFinal;
+                            }
                           }
-                        } catch (errFinal) {
-                          throw errFinal;
                         }
+                      } else {
+                        // If err wasn't 403/404, rethrow now
+                        throw err0;
                       }
                     }
                     const url = URL.createObjectURL(blob);
