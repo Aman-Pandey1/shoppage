@@ -196,52 +196,74 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
               <span className="hide-mobile">{supportPhone}</span>
             </a>
           ) : null}
-          {/* Cart button - hidden on desktop, visible on mobile and tablet */}
+          {/* Mobile: Cart + Account buttons */}
           {!isDesktop && (
-            <button
-              className="cart-header-btn"
-              aria-label="Open cart"
-              onClick={() => { if (typeof onOpenCart === 'function') onOpenCart(); }}
-              title="Cart"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                position: 'relative',
-                padding: '8px',
-                overflow: 'visible'
-              }}
-            >
-              <span role="img" aria-label="cart">🛒</span>
-              {Number(cartCount) > 0 ? (
-                <span 
-                  className="cart-header-badge" 
-                  aria-label={`Items in cart: ${cartCount}`}
-                  style={{
-                    position: 'absolute',
-                    top: '2px',
-                    right: '2px',
-                    background: '#ff4444',
-                    color: 'white',
-                    borderRadius: '50%',
-                    width: '18px',
-                    height: '18px',
-                    fontSize: '10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 'bold'
-                  }}
-                >
-                  {cartCount}
-                </span>
-              ) : null}
-            </button>
+            <>
+              <button
+                className="cart-header-btn"
+                aria-label="Open cart"
+                onClick={() => { if (typeof onOpenCart === 'function') onOpenCart(); }}
+                title="Cart"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  position: 'relative',
+                  padding: '8px',
+                  overflow: 'visible'
+                }}
+              >
+                <span role="img" aria-label="cart">🛒</span>
+                {Number(cartCount) > 0 ? (
+                  <span 
+                    className="cart-header-badge" 
+                    aria-label={`Items in cart: ${cartCount}`}
+                    style={{
+                      position: 'absolute',
+                      top: '2px',
+                      right: '2px',
+                      background: '#ff4444',
+                      color: 'white',
+                      borderRadius: '50%',
+                      width: '18px',
+                      height: '18px',
+                      fontSize: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    {cartCount}
+                  </span>
+                ) : null}
+              </button>
+              <button
+                className="account-header-btn"
+                aria-label="Account menu"
+                title="Account"
+                onClick={() => setMenuOpen((v) => !v)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'transparent',
+                  border: '1px solid var(--primary-600)',
+                  borderRadius: 999,
+                  color: 'var(--primary-600)',
+                  cursor: 'pointer',
+                  padding: '6px 10px'
+                }}
+              >
+                {user ? <span style={{ fontWeight: 800, fontSize: 12 }}>{initials}</span> : <User size={16} color="var(--primary-600)" />}
+              </button>
+            </>
           )}
           
+          {/* Desktop: account chip remains; hidden on mobile */}
           <button className="profile-chip hide-mobile" aria-label="Account" onClick={() => setMenuOpen((v) => !v)}
             style={{
               background: 'var(--primary-600)',
@@ -264,7 +286,7 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
                 background: 'white',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                 border: '1px solid #e2e8f0'
-              }} 
+              }}
               onMouseLeave={() => setMenuOpen(false)}
             >
               <div style={{ padding: '6px 10px', fontWeight: 700 }}>{user?.email || 'Account'}</div>
