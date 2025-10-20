@@ -225,8 +225,11 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
     if (mock) {
       order = (mock.orders || []).find((o) => String(o._id) === String(orderId) && o.site === req.siteId);
       if (!order) return res.status(404).json({ error: 'Order not found' });
-      if (String(order.userEmail || '') !== String(req.user?.email || '')) {
-        return res.status(403).json({ error: 'Forbidden' });
+      // Allow admin to download any order for this site
+      if (String(req.user?.role || '') !== 'admin') {
+        if (String(order.userEmail || '') !== String(req.user?.email || '')) {
+          return res.status(403).json({ error: 'Forbidden' });
+        }
       }
       if (!order.orderNumber) {
         const nextSeq = ((req.app.locals.mockData.orderSeq || 1000) + 1);
@@ -234,13 +237,16 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
         order.orderNumber = `BB-${nextSeq}`;
       }
     } else {
-    {
-      const email = String(req.user?.email || '').trim();
-      const or = [];
-      if (req.user?.userId) or.push({ userId: req.user.userId });
-      if (email) or.push({ userEmail: { $regex: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } });
-      order = await Order.findOne({ _id: orderId, site: req.siteId, ...(or.length ? { $or: or } : {}) });
-    }
+      if (String(req.user?.role || '') === 'admin') {
+        // Admin may download any order for this site
+        order = await Order.findOne({ _id: orderId, site: req.siteId });
+      } else {
+        const email = String(req.user?.email || '').trim();
+        const or = [];
+        if (req.user?.userId) or.push({ userId: req.user.userId });
+        if (email) or.push({ userEmail: { $regex: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } });
+        order = await Order.findOne({ _id: orderId, site: req.siteId, ...(or.length ? { $or: or } : {}) });
+      }
       if (!order) return res.status(404).json({ error: 'Order not found' });
       // Ensure a human-friendly sequential order number exists
       if (!order.orderNumber) {
