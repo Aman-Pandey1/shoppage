@@ -184,7 +184,18 @@ export const MyOrdersPage = () => {
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
                 <button onClick={async () => {
                   try {
-                    const blob = await download(`/api/shop/${siteSlug || 'default'}/orders/${o._id}/pdf`);
+                    let blob;
+                    try {
+                      blob = await download(`/api/shop/${siteSlug || 'default'}/orders/${o._id}/pdf`);
+                    } catch (err) {
+                      const msg = String(err?.message || '');
+                      if (/\b404\b/.test(msg)) {
+                        // Fallback to legacy endpoint without slug
+                        blob = await download(`/api/shop/orders/${o._id}/pdf`);
+                      } else {
+                        throw err;
+                      }
+                    }
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     const fileId = (o.orderNumber || `BB-${String(o._id).slice(-6)}`).replace(/\s+/g, '');
