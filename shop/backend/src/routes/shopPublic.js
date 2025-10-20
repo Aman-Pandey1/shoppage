@@ -109,8 +109,13 @@ router.get('/orders/:orderId/pdf', requireUser, async (req, res) => {
     if (mock) {
       order = (mock.orders || []).find((o) => String(o._id) === String(orderId));
       if (!order) return res.status(404).json({ error: 'Order not found' });
-      if (String(order.userEmail || '') !== String(req.user?.email || '')) {
-        return res.status(403).json({ error: 'Forbidden' });
+      // Allow admin override; otherwise compare emails case-insensitively
+      if (String(req.user?.role || '') !== 'admin') {
+        const orderEmailLc = String(order.userEmail || '').toLowerCase();
+        const reqEmailLc = String(req.user?.email || '').toLowerCase();
+        if (orderEmailLc !== reqEmailLc) {
+          return res.status(403).json({ error: 'Forbidden' });
+        }
       }
       if (!order.orderNumber) {
         const nextSeq = ((req.app.locals.mockData.orderSeq || 1000) + 1);
