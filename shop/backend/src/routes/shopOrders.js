@@ -222,6 +222,7 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
     const { orderId } = req.params;
     const mock = req.app.locals.mockData;
     let order;
+    let siteLike;
     if (mock) {
       order = (mock.orders || []).find((o) => String(o._id) === String(orderId) && o.site === req.siteId);
       if (!order) return res.status(404).json({ error: 'Order not found' });
@@ -238,6 +239,8 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
         req.app.locals.mockData.orderSeq = nextSeq;
         order.orderNumber = `BB-${nextSeq}`;
       }
+      // Resolve site-like from mock for time zone/branding in PDF
+      try { siteLike = (mock.sites || []).find((s) => String(s._id) === String(order.site)); } catch {}
     } else {
       if (String(req.user?.role || '') === 'admin') {
         // Admin may download any order for this site
@@ -249,7 +252,7 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
         if (email) or.push({ userEmail: { $regex: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } });
         order = await Order.findOne({ _id: orderId, site: req.siteId, ...(or.length ? { $or: or } : {}) });
       }
-      // Fallback: if not found by site/user filter, try by ID then authorize owner/admin and site
+      // Fallback: if not found by site/user filter, try by ID then authorize owner/admin
       if (!order) {
         const raw = await Order.findById(orderId);
         if (raw) {
@@ -259,9 +262,10 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
             (req.user?.userId && String(raw.userId || '') === String(req.user.userId)) ||
             (emailLc && String(raw.userEmail || '').toLowerCase() === emailLc)
           );
-          if ((isAdmin || isOwner) && String(raw.site || '') === String(req.siteId || '')) {
+          if (isAdmin || isOwner) {
             order = raw;
           }
+          try { siteLike = await Site.findById(raw.site); } catch {}
         }
       }
       if (!order) return res.status(404).json({ error: 'Order not found' });
@@ -271,6 +275,10 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
           const assigned = await getNextOrderNumber(req.siteId);
           order = await Order.findByIdAndUpdate(order._id, { orderNumber: assigned }, { new: true });
         } catch {}
+      }
+      // Resolve siteLike from DB if not already set
+      if (!siteLike) {
+        try { siteLike = await Site.findById(order.site); } catch {}
       }
     }
 
@@ -340,7 +348,7 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
     const displayOrderId = order.orderNumber || `${prefixSafe}${String(order._id).slice(-6)}`;
     doc.text(`Order #: ${displayOrderId}`, rightX, doc.y, { width: columnWidth });
     // Force MDT label when using Alberta default
-    doc.text(`Date: ${formatDateTimeInSiteTz(order.createdAt, req.site, { forceMdtLabel: true })}`, rightX, doc.y, { width: columnWidth });
+    doc.text(`Date: ${formatDateTimeInSiteTz(order.createdAt, (siteLike || req.site), { forceMdtLabel: true })}`, rightX, doc.y, { width: columnWidth });
     const fulfillmentUpperC = String(order.fulfillmentType || 'pickup').toUpperCase();
     doc.text(`Fulfillment: ${fulfillmentUpperC}`, rightX, doc.y, { width: columnWidth });
     const rightEndY = doc.y;
