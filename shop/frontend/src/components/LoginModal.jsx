@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { login, loginUser } from '../lib/api';
+import { login, loginUser, postJson, setAuthToken } from '../lib/api';
 
 export const LoginModal = ({ open, onClose, onSuccess, mode = 'user' }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState();
+  // Only applicable for user auth; admin stays login-only
+  const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
 
   if (!open) return null;
 
@@ -16,6 +19,9 @@ export const LoginModal = ({ open, onClose, onSuccess, mode = 'user' }) => {
     try {
       if (mode === 'admin') {
         await login(email, password);
+      } else if (authMode === 'register') {
+        const res = await postJson('/api/user/register', { email, password, name });
+        if (res?.token) setAuthToken(res.token);
       } else {
         await loginUser(email, password);
       }
@@ -43,21 +49,41 @@ export const LoginModal = ({ open, onClose, onSuccess, mode = 'user' }) => {
         padding: 16,
         boxShadow: 'var(--shadow-pop)'
       }} className="animate-popIn">
-        <h3 style={{ marginTop: 0 }}>{mode === 'admin' ? 'Admin Login' : 'Login'}</h3>
+        <h3 style={{ marginTop: 0 }}>
+          {mode === 'admin' ? 'Admin Login' : (authMode === 'register' ? 'Create account' : 'Login')}
+        </h3>
         {error ? <div style={{ color: 'var(--danger)', marginBottom: 8 }}>{error}</div> : null}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }} autoComplete="off">
+        {mode !== 'admin' ? (
+          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+            <button className={authMode === 'login' ? 'primary-btn' : ''} onClick={() => setAuthMode('login')}>Login</button>
+            <button className={authMode === 'register' ? 'primary-btn' : ''} onClick={() => setAuthMode('register')}>Sign-Up</button>
+          </div>
+        ) : null}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }} autoComplete="on">
+          {mode !== 'admin' && authMode === 'register' ? (
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span>Name</span>
+              <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
+            </label>
+          ) : null}
           <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <span>Email</span>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="off" inputMode="email" />
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" inputMode="email" />
           </label>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <span>Password</span>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete={mode === 'admin' || authMode === 'login' ? 'current-password' : 'new-password'}
+            />
           </label>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 6 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginTop: 6 }}>
             <button type="button" onClick={onClose}>Cancel</button>
             <button className="primary-btn" disabled={loading}>
-              {loading ? 'Logging in...' : 'Login'}
+              {loading ? (mode === 'admin' ? 'Logging in...' : (authMode === 'register' ? 'Creating…' : 'Logging in...')) : (mode === 'admin' ? 'Login' : (authMode === 'register' ? 'Create account' : 'Login'))}
             </button>
           </div>
         </form>

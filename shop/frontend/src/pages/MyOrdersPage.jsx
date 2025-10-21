@@ -191,12 +191,20 @@ export const MyOrdersPage = () => {
                       blob = await download(`/api/shop/orders/${o._id}/pdf`);
                     } catch (err0) {
                       const msg0 = String(err0?.message || '');
+                      if (/\b401\b/.test(msg0) || /Missing token/i.test(msg0)) {
+                        setLoginOpen(true);
+                        throw err0;
+                      }
                       // 2) Try slug-based with current route slug
                       if (!blob && (/\b404\b/i.test(msg0) || /\b403\b/i.test(msg0))) {
                         try {
                           blob = await download(`/api/shop/${initialSlug}/orders/${o._id}/pdf`);
                         } catch (err1) {
                           const msg1 = String(err1?.message || '');
+                          if (/\b401\b/.test(msg1) || /Missing token/i.test(msg1)) {
+                            setLoginOpen(true);
+                            throw err1;
+                          }
                           // 2a) Re-resolve slug from host and retry once
                           if (/\b404\b/i.test(msg1) || /Site not found/i.test(msg1) || /\b403\b/i.test(msg1)) {
                             try {
@@ -235,7 +243,16 @@ export const MyOrdersPage = () => {
                     a.href = url; a.download = `order-${fileId}.pdf`; a.click();
                     URL.revokeObjectURL(url);
                   } catch (e) {
-                    alert('Failed to download invoice');
+                    const msg = String(e?.message || '');
+                    if (/\b401\b/.test(msg)) {
+                      alert('Please login to download your invoice.');
+                    } else if (/\b403\b/.test(msg)) {
+                      alert('You can only download invoices for your own orders.');
+                    } else if (/\b404\b/.test(msg)) {
+                      alert('Invoice not found for this order.');
+                    } else {
+                      alert('Failed to download invoice');
+                    }
                   }
                 }}>Download invoice (PDF)</button>
               </div>
