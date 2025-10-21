@@ -1,0 +1,28 @@
+# Exclude dev files and node_modules to let EB install
+**/node_modules/
+**/.git/
+**/.gitignore
+**/.env*
+**/.DS_Store
+**/tests/**
+**/coverage/**
+**/.vscode/**
+**/*.log
+
+# Exclude frontend source; only keep built assets
+shop/frontend/src/**
+shop/frontend/node_modules/**
+shop/frontend/public/**
+shop/frontend/*.config.*
+shop/frontend/*.config.js
+shop/frontend/*.config.ts
+shop/frontend/*.config.cjs
+shop/frontend/*.config.mjs
+shop/frontend/vite.config.*
+shop/frontend/tsconfig*.json
+shop/frontend/eslint*.{js,cjs,mjs,ts}
+shop/frontend/tailwind.config.*
+shop/frontend/postcss.config.*
+
+# Keep only dist
+!shop/frontend/dist/**

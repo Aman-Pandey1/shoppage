@@ -1,12 +1,18 @@
 export const API_BASE_URL = (() => {
-  const fromEnv = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL)
-    ? String(import.meta.env.VITE_API_URL).trim()
-    : '';
-  if (fromEnv) {
+  const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {};
+  const fromEnv = env && env.VITE_API_URL ? String(env.VITE_API_URL).trim() : '';
+  const isDevBuild = !!(env && env.DEV);
+  // Only honor VITE_API_URL during local dev builds
+  if (isDevBuild && fromEnv) {
     return fromEnv.replace(/\/$/, '');
   }
-  if (typeof window !== 'undefined' && /\.onrender\.com$/i.test(window.location.hostname)) {
-    return 'https://shoppagebackend-aru0.onrender.com';
+  if (typeof window !== 'undefined') {
+    // Preserve existing Render.com behavior for backwards compatibility
+    if (/\.onrender\.com$/i.test(window.location.hostname)) {
+      return 'https://shoppagebackend-aru0.onrender.com';
+    }
+    // Default to same-origin when served behind a single Node/EB app
+    return String(window.location.origin || '').replace(/\/$/, '');
   }
   return 'http://localhost:4000';
 })();
