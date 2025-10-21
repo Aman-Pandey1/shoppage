@@ -47,11 +47,11 @@ export const UserAuthModal = ({ open, onClose, onSuccess }) => {
         ) : null}
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <span>Email</span>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
         </label>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <span>Password</span>
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
         </label>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           <button type="button" onClick={onClose}>Cancel</button>
