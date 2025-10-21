@@ -3,6 +3,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import fs from 'fs';
 import webhookUberRouter from './routes/webhookUber.js';
 import webhookStripeRouter from './routes/webhookStripe.js';
@@ -321,6 +322,17 @@ app.use("/api/shop", shopOrdersRouter);
 app.use('/api/payments/stripe', paymentsStripeRouter);
 // Delivery endpoints by site slug (Uber Direct)
 app.use("/api/delivery", deliveryRouter);
+
+// Serve React frontend build (Vite output) when present
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const FRONTEND_DIST_DIR = path.resolve(__dirname, '../../frontend/dist');
+if (fs.existsSync(FRONTEND_DIST_DIR)) {
+  app.use(express.static(FRONTEND_DIST_DIR));
+  app.get(/^(?!\/(?:api|uploads|webhook)\b).*/, (_req, res) => {
+    res.sendFile(path.join(FRONTEND_DIST_DIR, 'index.html'));
+  });
+}
 
 async function start() {
   if (!USE_MOCK_DATA && MONGO_URI) {

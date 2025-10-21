@@ -1,0 +1,1 @@
+web: npm --prefix shop/backend start
