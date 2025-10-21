@@ -228,9 +228,13 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
       if (!order) return res.status(404).json({ error: 'Order not found' });
       // Allow admin to download any order for this site
       if (String(req.user?.role || '') !== 'admin') {
+        const matchesUserId = (
+          req.user?.userId && String(order.userId || '') === String(req.user.userId)
+        );
         const orderEmailLc = String(order.userEmail || '').toLowerCase();
         const reqEmailLc = String(req.user?.email || '').toLowerCase();
-        if (orderEmailLc !== reqEmailLc) {
+        const matchesEmail = !!reqEmailLc && orderEmailLc === reqEmailLc;
+        if (!matchesUserId && !matchesEmail) {
           return res.status(403).json({ error: 'Forbidden' });
         }
       }
