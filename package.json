@@ -7,11 +7,7 @@
     "shop/backend"
   ],
   "scripts": {
-    "dev": "concurrently -c auto -n FRONTEND,BACKEND \"npm run dev:frontend\" \"npm run dev:backend\"",
-    "dev:frontend": "npm -w shop/frontend run dev",
-    "dev:backend": "npm -w shop/backend run dev",
-    "build": "npm -w shop/frontend run build",
-    "start": "npm -w shop/backend run start"
+    "start": "node backend/src/server.js"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"

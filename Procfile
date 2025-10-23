@@ -1,1 +1,2 @@
-web: npm --prefix shop/backend start
+
+web: node backend/src/server.js
