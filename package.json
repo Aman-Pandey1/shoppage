@@ -10,6 +10,7 @@
     "dev": "concurrently -c auto -n FRONTEND,BACKEND \"npm run dev:frontend\" \"npm run dev:backend\"",
     "dev:frontend": "npm -w shop/frontend run dev",
     "dev:backend": "npm -w shop/backend run dev",
+    "prestart": "npm --prefix shop/frontend install --include=dev && npm --prefix shop/frontend run build",
     "build": "npm -w shop/frontend run build",
     "start": "npm -w shop/backend run start"
   },
