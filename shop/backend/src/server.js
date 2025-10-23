@@ -327,10 +327,45 @@ app.use("/api/delivery", deliveryRouter);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const FRONTEND_DIST_DIR = path.resolve(__dirname, '../../frontend/dist');
-if (fs.existsSync(FRONTEND_DIST_DIR)) {
+const HAS_FRONTEND_BUILD = fs.existsSync(FRONTEND_DIST_DIR);
+if (HAS_FRONTEND_BUILD) {
   app.use(express.static(FRONTEND_DIST_DIR));
   app.get(/^(?!\/(?:api|uploads|webhook)\b).*/, (_req, res) => {
     res.sendFile(path.join(FRONTEND_DIST_DIR, 'index.html'));
+  });
+}
+
+// Health checks and default root handler for environments without a built frontend
+// Elastic Beanstalk (and many load balancers) hit "/" by default for health.
+// Previously this returned 404 leading to unhealthy status. Keep it after
+// API mounts but before server start, and only when there's no SPA build.
+if (!HAS_FRONTEND_BUILD) {
+  app.get('/', (_req, res) => {
+    res
+      .status(200)
+      .type('html')
+      .send(
+        [
+          '<!doctype html>',
+          '<html lang="en">',
+          '<head>',
+          '<meta charset="utf-8" />',
+          '<meta name="viewport" content="width=device-width, initial-scale=1" />',
+          '<title>Order Online API</title>',
+          '<style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial,sans-serif;padding:2rem;line-height:1.5}code{background:#f2f4f8;padding:.1rem .3rem;border-radius:.25rem}</style>',
+          '</head>',
+          '<body>',
+          '<h1>Service running</h1>',
+          '<p>Backend is up and responding.</p>',
+          '<ul>',
+          '<li>Health: <a href="/health">/health</a></li>',
+          '<li>Categories API: <a href="/api/categories">/api/categories</a></li>',
+          '<li>Products API: <a href="/api/products">/api/products</a></li>',
+          '</ul>',
+          '<p>Add a built frontend to <code>shop/frontend/dist</code> to serve the app here.</p>',
+          '</body></html>'
+        ].join('')
+      );
   });
 }
 
