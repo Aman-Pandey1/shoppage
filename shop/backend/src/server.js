@@ -329,8 +329,14 @@ const __dirname = path.dirname(__filename);
 const FRONTEND_DIST_DIR = path.resolve(__dirname, '../../frontend/dist');
 const HAS_FRONTEND_BUILD = fs.existsSync(FRONTEND_DIST_DIR);
 if (HAS_FRONTEND_BUILD) {
-  app.use(express.static(FRONTEND_DIST_DIR));
-  app.get(/^(?!\/(?:api|uploads|webhook)\b).*/, (_req, res) => {
+  // Serve hashed assets with long cache; index.html with short cache
+  const ASSETS_DIR = path.join(FRONTEND_DIST_DIR, 'assets');
+  if (fs.existsSync(ASSETS_DIR)) {
+    app.use('/assets', express.static(ASSETS_DIR, { maxAge: '1y', immutable: true }));
+  }
+  app.use(express.static(FRONTEND_DIST_DIR, { maxAge: '1h' }));
+  // SPA fallback for non-API routes, but do NOT catch asset paths
+  app.get(/^(?!\/(?:api|uploads|webhook|assets|favicon\.ico|favicon\.svg|robots\.txt|manifest\.json)\b).*/, (_req, res) => {
     res.sendFile(path.join(FRONTEND_DIST_DIR, 'index.html'));
   });
 }
