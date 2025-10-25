@@ -9,10 +9,14 @@ import { getNextOrderNumber } from '../utils/orderNumber.js';
 const router = Router({ mergeParams: true });
 
 // List orders for a site with optional from/to date filters (inclusive)
+// Adds pagination via ?page=&pageSize=. Excludes awaiting_payment by default.
 router.get('/', requireAdmin, async (req, res) => {
 	try {
 		const { siteId } = req.params;
 		const { from, to } = req.query;
+		const wantPage = (typeof req.query.page !== 'undefined') || (typeof req.query.pageSize !== 'undefined') || String(req.query.paginate || '').toLowerCase() === 'true';
+		const page = Math.max(1, Number(req.query.page) || 1);
+		const pageSize = Math.min(100, Math.max(1, Number(req.query.pageSize) || 20));
 		const mock = req.app.locals.mockData;
 
 		const fromDate = from ? new Date(from) : null;
@@ -22,32 +26,70 @@ router.get('/', requireAdmin, async (req, res) => {
 			if (String(to).length <= 10) toDate.setHours(23, 59, 59, 999);
 		}
 
-    if (mock) {
-      let list = Array.isArray(mock.orders) ? mock.orders : [];
-      list = list.filter((o) => o.site === siteId);
-      // Include paid, confirmed, and awaiting_payment orders; also keep legacy orders with missing status
-      list = list.filter((o) => (o.status === 'paid' || o.status === 'confirmed' || o.status === 'awaiting_payment' || !o.status));
-      if (fromDate) list = list.filter((o) => new Date(o.createdAt) >= fromDate);
-      if (toDate) list = list.filter((o) => new Date(o.createdAt) <= toDate);
-      // Backfill missing order numbers for mock data using an in-memory counter
-      const missing = list.filter((o) => !o.orderNumber);
-      if (missing.length) {
-        missing.forEach((o) => {
-          const nextSeq = ((req.app.locals.mockData.orderSeq || 1000) + 1);
-          req.app.locals.mockData.orderSeq = nextSeq;
-          o.orderNumber = `BB-${nextSeq}`;
-        });
-      }
-      list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      return res.json(list);
-    }
+		if (mock) {
+			let list = Array.isArray(mock.orders) ? mock.orders : [];
+			list = list.filter((o) => o.site === siteId);
+			// Include only successful orders (paid/confirmed); also keep legacy orders with missing status
+			list = list.filter((o) => (o.status === 'paid' || o.status === 'confirmed' || !o.status || o.status === 'prepared'));
+			// Canonicalize legacy 'prepared' -> 'paid' for display (and persist in mock data)
+			list.forEach((o) => { if (o.status === 'prepared') o.status = 'paid'; });
+			if (fromDate) list = list.filter((o) => new Date(o.createdAt) >= fromDate);
+			if (toDate) list = list.filter((o) => new Date(o.createdAt) <= toDate);
+			list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-    // Include successful and pending (awaiting_payment) orders, plus legacy orders with missing status
-    const filter = { site: siteId, $or: [ { status: { $in: ['paid', 'confirmed', 'awaiting_payment'] } }, { status: { $exists: false } } ] };
+			const total = list.length;
+			let items = list;
+			if (wantPage) {
+				const start = (page - 1) * pageSize;
+				items = list.slice(start, start + pageSize);
+			}
+			// Backfill missing order numbers for visible items using an in-memory counter
+			const missing = items.filter((o) => !o.orderNumber);
+			if (missing.length) {
+				missing.forEach((o) => {
+					const nextSeq = ((req.app.locals.mockData.orderSeq || 1000) + 1);
+					req.app.locals.mockData.orderSeq = nextSeq;
+					o.orderNumber = `BB-${nextSeq}`;
+				});
+			}
+			if (wantPage) {
+				return res.json({ items, page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) });
+			}
+			return res.json(items);
+		}
+
+		// Include only successful orders (paid/confirmed); plus legacy orders with missing or 'prepared' status
+		const filter = {
+			site: siteId,
+			$or: [
+				{ status: { $in: ['paid', 'confirmed', 'prepared'] } },
+				{ status: { $exists: false } },
+			],
+		};
 		if (fromDate || toDate) filter.createdAt = {};
 		if (fromDate) filter.createdAt.$gte = fromDate;
 		if (toDate) filter.createdAt.$lte = toDate;
-    const orders = await Order.find(filter).sort({ createdAt: -1 });
+
+		let total = null;
+		let orders;
+		if (wantPage) {
+			total = await Order.countDocuments(filter);
+			orders = await Order.find(filter)
+				.sort({ createdAt: -1 })
+				.skip((page - 1) * pageSize)
+				.limit(pageSize);
+		} else {
+			orders = await Order.find(filter).sort({ createdAt: -1 });
+		}
+
+		// Canonicalize any legacy 'prepared' statuses to 'paid' and persist quietly
+		const preparedIds = orders.filter((o) => String(o.status) === 'prepared').map((o) => o._id);
+		if (preparedIds.length) {
+			try {
+				await Order.updateMany({ _id: { $in: preparedIds } }, { $set: { status: 'paid' } });
+				orders.forEach((o) => { if (o.status === 'prepared') o.status = 'paid'; });
+			} catch {}
+		}
     // Backfill missing order numbers for existing orders lazily
     const toAssign = orders.filter((o) => !o.orderNumber);
     if (toAssign.length) {
@@ -59,6 +101,9 @@ router.get('/', requireAdmin, async (req, res) => {
         } catch {}
       }
     }
+		if (wantPage) {
+			return res.json({ items: orders, page, pageSize, total: (total ?? orders.length), totalPages: Math.max(1, Math.ceil((total ?? orders.length) / pageSize)) });
+		}
 		res.json(orders);
 	} catch (err) {
 		res.status(400).json({ error: err.message });
