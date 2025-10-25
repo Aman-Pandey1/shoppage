@@ -6,7 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import webhookUberRouter from './routes/webhookUber.js';
-import webhookStripeRouter from './routes/webhookStripe.js';
+import webhookStripeRouter, { webhookStripeNoSite } from './routes/webhookStripe.js';
 import morgan from 'morgan';
 import compression from 'compression';
 import categoriesRouter from './routes/categories.js';
@@ -76,6 +76,8 @@ app.use(compression({
 // Mount webhook with raw body BEFORE JSON parser
 app.use('/webhook/uber', express.raw({ type: '*/*' }), webhookUberRouter);
 app.use('/webhook/stripe', express.raw({ type: 'application/json' }), webhookStripeRouter);
+// Also accept events posted directly to /webhook/stripe when the sender cannot include a site param
+app.use('/webhook/stripe', express.raw({ type: 'application/json' }), webhookStripeNoSite);
 // Increase body limits to avoid 413 errors on larger payloads (e.g., images/base64)
 app.use(express.json({ limit: String(process.env.JSON_LIMIT || '25mb') }));
 app.use(express.urlencoded({ extended: true, limit: String(process.env.JSON_LIMIT || '25mb') }));

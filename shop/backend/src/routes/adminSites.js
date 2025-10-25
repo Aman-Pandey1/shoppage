@@ -231,8 +231,11 @@ adminBillingRouter.get('/sites/:siteId/billing', requireAdmin, async (req, res) 
     if (mock) {
       const orders = (mock.orders || [])
         .filter((o) => o.site === siteId)
-        // Include successful orders and historical entries without status
-        .filter((o) => o.status === 'paid' || o.status === 'confirmed' || !o.status);
+        // Only include fully paid orders (treat legacy 'prepared' as paid)
+        .filter((o) => {
+          const s = String(o.status || '').toLowerCase();
+          return s === 'paid' || s === 'prepared';
+        });
       const isToday = (o) => new Date(o.createdAt || 0) >= startOfDay;
       const isWeek = (o) => new Date(o.createdAt || 0) >= startOfWeek;
       const isMonth = (o) => new Date(o.createdAt || 0) >= startOfMonth;
@@ -275,20 +278,20 @@ adminBillingRouter.get('/sites/:siteId/billing', requireAdmin, async (req, res) 
       });
     }
 
-    const paidOrMissingStatus = {
+    const paidStatusMatch = {
       site: new mongoose.Types.ObjectId(siteId),
-      $or: [ { status: { $in: ['paid', 'confirmed'] } }, { status: { $exists: false } } ],
+      status: { $in: ['paid', 'prepared'] },
     };
     const [todayAgg] = await Order.aggregate([
-      { $match: { ...paidOrMissingStatus, createdAt: { $gte: startOfDay } } },
+      { $match: { ...paidStatusMatch, createdAt: { $gte: startOfDay } } },
       { $group: { _id: null, total: { $sum: '$totalCents' }, deliveryFees: { $sum: '$deliveryFeeCents' }, tax: { $sum: '$taxCents' }, tips: { $sum: '$tipCents' } } },
     ]);
     const [weekAgg] = await Order.aggregate([
-      { $match: { ...paidOrMissingStatus, createdAt: { $gte: startOfWeek } } },
+      { $match: { ...paidStatusMatch, createdAt: { $gte: startOfWeek } } },
       { $group: { _id: null, total: { $sum: '$totalCents' }, deliveryFees: { $sum: '$deliveryFeeCents' }, tax: { $sum: '$taxCents' }, tips: { $sum: '$tipCents' } } },
     ]);
     const [monthAgg] = await Order.aggregate([
-      { $match: { ...paidOrMissingStatus, createdAt: { $gte: startOfMonth } } },
+      { $match: { ...paidStatusMatch, createdAt: { $gte: startOfMonth } } },
       { $group: { _id: null, total: { $sum: '$totalCents' }, deliveryFees: { $sum: '$deliveryFeeCents' }, tax: { $sum: '$taxCents' }, tips: { $sum: '$tipCents' } } },
     ]);
 

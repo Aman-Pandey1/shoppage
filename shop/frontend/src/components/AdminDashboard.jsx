@@ -10,6 +10,10 @@ export const AdminDashboard = () => {
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [ordersPage, setOrdersPage] = useState(1);
+  const [ordersPageSize, setOrdersPageSize] = useState(20);
+  const [ordersTotal, setOrdersTotal] = useState(0);
+  const [ordersStatus, setOrdersStatus] = useState('successful');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState();
   const [filterCategory, setFilterCategory] = useState('');
@@ -123,8 +127,19 @@ export const AdminDashboard = () => {
         const params = new URLSearchParams();
         if (ordersFrom) params.set('from', ordersFrom);
         if (ordersTo) params.set('to', ordersTo);
-        const data = await fetchJson(`/api/admin/sites/${selectedSiteId}/orders${params.toString() ? ('?' + params.toString()) : ''}`);
-        setOrders(Array.isArray(data) ? data : []);
+        if (ordersStatus) params.set('status', ordersStatus);
+        params.set('page', String(ordersPage));
+        params.set('pageSize', String(ordersPageSize));
+        const data = await fetchJson(`/api/admin/sites/${selectedSiteId}/orders?${params.toString()}`);
+        if (data && Array.isArray(data.items)) {
+          setOrders(data.items);
+          setOrdersTotal(Number(data.total)||0);
+        } else {
+          // Backward compatibility if server returns an array
+          const list = Array.isArray(data) ? data : [];
+          setOrders(list);
+          setOrdersTotal(list.length);
+        }
       } catch (e) {
         setOrdersError(e.message || 'Failed to load orders');
       } finally {
@@ -132,7 +147,7 @@ export const AdminDashboard = () => {
       }
     }
     loadOrders();
-  }, [activeTab, selectedSiteId, ordersFrom, ordersTo]);
+  }, [activeTab, selectedSiteId, ordersFrom, ordersTo, ordersPage, ordersPageSize, ordersStatus]);
 
   useEffect(() => {
     async function loadCoupons() {
@@ -551,7 +566,7 @@ export const AdminDashboard = () => {
           <div className="card" style={{ padding: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ fontWeight: 800 }}>Orders</div>
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span className="muted" style={{ fontSize: 12 }}>From</span>
                   <input type="date" value={ordersFrom} onChange={(e) => setOrdersFrom(e.target.value)} />
@@ -561,6 +576,20 @@ export const AdminDashboard = () => {
                   <input type="date" value={ordersTo} onChange={(e) => setOrdersTo(e.target.value)} />
                 </label>
                 <button onClick={() => { setOrdersFrom(''); setOrdersTo(''); }}>Clear</button>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span className="muted" style={{ fontSize: 12 }}>Status</span>
+                  <select value={ordersStatus} onChange={(e) => { setOrdersStatus(e.target.value); setOrdersPage(1); }}>
+                    <option value="successful">Successful</option>
+                    <option value="paid">Paid</option>
+                    <option value="confirmed">Confirmed</option>
+                  </select>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span className="muted" style={{ fontSize: 12 }}>Page size</span>
+                  <select value={ordersPageSize} onChange={(e) => { setOrdersPageSize(Number(e.target.value)); setOrdersPage(1); }}>
+                    {[10,20,30,50,100].map((n) => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </label>
               </div>
             </div>
             {ordersLoading ? <div style={{ marginTop: 10 }}>Loading orders…</div> : null}
@@ -575,6 +604,7 @@ export const AdminDashboard = () => {
                       <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>Date</th>
                       <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>Price</th>
                       <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>Items</th>
+                      <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>Status</th>
                       <th style={{ textAlign: 'right', padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>Actions</th>
                     </tr>
                   </thead>
@@ -602,6 +632,9 @@ export const AdminDashboard = () => {
                             ) : null}
                           </td>
                           <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>{itemsText}</td>
+                          <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>
+                            <span className="muted" style={{ fontSize: 12, padding: '2px 6px', borderRadius: 6, background: '#f1f5f9' }}>{String(o.status || 'paid')}</span>
+                          </td>
                           <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>
                             <button onClick={async () => {
                               try {
@@ -623,6 +656,18 @@ export const AdminDashboard = () => {
                 </table>
                 {(!orders || orders.length === 0) ? (
                   <div className="muted" style={{ marginTop: 8 }}>No orders for selected filters.</div>
+                ) : null}
+                {(orders && orders.length > 0) ? (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
+                    <div className="muted" style={{ fontSize: 12 }}>
+                      Showing {(ordersPage - 1) * ordersPageSize + 1}-{Math.min(ordersPage * ordersPageSize, ordersTotal)} of {ordersTotal}
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button disabled={ordersPage <= 1} onClick={() => setOrdersPage((p) => Math.max(1, p - 1))}>Prev</button>
+                      <span className="muted" style={{ alignSelf: 'center' }}>Page {ordersPage}</span>
+                      <button disabled={(ordersPage * ordersPageSize) >= ordersTotal} onClick={() => setOrdersPage((p) => p + 1)}>Next</button>
+                    </div>
+                  </div>
                 ) : null}
               </div>
             ) : null}
