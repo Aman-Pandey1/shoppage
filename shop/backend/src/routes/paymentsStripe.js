@@ -79,8 +79,20 @@ router.get('/confirm/:sessionId', async (req, res) => {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
     if (!session) return res.status(404).json({ error: 'Session not found' });
     const paid = (session.payment_status === 'paid') || (session.status === 'complete');
-    const orderId = session.metadata?.orderId;
-    const siteId = session.metadata?.siteId;
+    let orderId = session.metadata?.orderId;
+    let siteId = session.metadata?.siteId;
+
+    // Fallback: if metadata is missing, resolve by externalId (checkout session id)
+    if ((!orderId || !siteId) && paid) {
+      try {
+        const candidate = await Order.findOne({ externalId: session.id });
+        if (candidate) {
+          orderId = String(candidate._id);
+          siteId = String(candidate.site);
+        }
+      } catch {}
+    }
+
     if (!orderId || !siteId) return res.status(400).json({ error: 'Missing order or site metadata' });
 
     let updatedOrder = null;

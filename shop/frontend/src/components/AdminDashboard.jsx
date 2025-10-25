@@ -575,6 +575,7 @@ export const AdminDashboard = () => {
                       <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>Date</th>
                       <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>Price</th>
                       <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>Items</th>
+                      <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>Status</th>
                       <th style={{ textAlign: 'right', padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>Actions</th>
                     </tr>
                   </thead>
@@ -602,6 +603,9 @@ export const AdminDashboard = () => {
                             ) : null}
                           </td>
                           <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>{itemsText}</td>
+                          <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>
+                            <span className="muted" style={{ fontSize: 12, padding: '2px 6px', borderRadius: 6, background: '#f1f5f9' }}>{String(o.status || 'paid')}</span>
+                          </td>
                           <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>
                             <button onClick={async () => {
                               try {
