@@ -13,6 +13,7 @@ export const AdminDashboard = () => {
   const [ordersPage, setOrdersPage] = useState(1);
   const [ordersPageSize, setOrdersPageSize] = useState(20);
   const [ordersTotal, setOrdersTotal] = useState(0);
+  const [ordersStatus, setOrdersStatus] = useState('successful');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState();
   const [filterCategory, setFilterCategory] = useState('');
@@ -126,6 +127,7 @@ export const AdminDashboard = () => {
         const params = new URLSearchParams();
         if (ordersFrom) params.set('from', ordersFrom);
         if (ordersTo) params.set('to', ordersTo);
+        if (ordersStatus) params.set('status', ordersStatus);
         params.set('page', String(ordersPage));
         params.set('pageSize', String(ordersPageSize));
         const data = await fetchJson(`/api/admin/sites/${selectedSiteId}/orders?${params.toString()}`);
@@ -145,7 +147,7 @@ export const AdminDashboard = () => {
       }
     }
     loadOrders();
-  }, [activeTab, selectedSiteId, ordersFrom, ordersTo, ordersPage, ordersPageSize]);
+  }, [activeTab, selectedSiteId, ordersFrom, ordersTo, ordersPage, ordersPageSize, ordersStatus]);
 
   useEffect(() => {
     async function loadCoupons() {
@@ -574,6 +576,14 @@ export const AdminDashboard = () => {
                   <input type="date" value={ordersTo} onChange={(e) => setOrdersTo(e.target.value)} />
                 </label>
                 <button onClick={() => { setOrdersFrom(''); setOrdersTo(''); }}>Clear</button>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span className="muted" style={{ fontSize: 12 }}>Status</span>
+                  <select value={ordersStatus} onChange={(e) => { setOrdersStatus(e.target.value); setOrdersPage(1); }}>
+                    <option value="successful">Successful</option>
+                    <option value="paid">Paid</option>
+                    <option value="confirmed">Confirmed</option>
+                  </select>
+                </label>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span className="muted" style={{ fontSize: 12 }}>Page size</span>
                   <select value={ordersPageSize} onChange={(e) => { setOrdersPageSize(Number(e.target.value)); setOrdersPage(1); }}>

@@ -14,6 +14,7 @@ router.get('/', requireAdmin, async (req, res) => {
 	try {
 		const { siteId } = req.params;
 		const { from, to } = req.query;
+		const statusParam = String(req.query.status || 'successful').toLowerCase();
 		const wantPage = (typeof req.query.page !== 'undefined') || (typeof req.query.pageSize !== 'undefined') || String(req.query.paginate || '').toLowerCase() === 'true';
 		const page = Math.max(1, Number(req.query.page) || 1);
 		const pageSize = Math.min(100, Math.max(1, Number(req.query.pageSize) || 20));
@@ -29,8 +30,14 @@ router.get('/', requireAdmin, async (req, res) => {
 		if (mock) {
 			let list = Array.isArray(mock.orders) ? mock.orders : [];
 			list = list.filter((o) => o.site === siteId);
-			// Include only successful orders (paid/confirmed); also keep legacy orders with missing status
-			list = list.filter((o) => (o.status === 'paid' || o.status === 'confirmed' || !o.status || o.status === 'prepared'));
+			// Apply status filter
+			list = list.filter((o) => {
+				const s = String(o.status || '').toLowerCase();
+				if (statusParam === 'paid') return s === 'paid' || s === 'prepared';
+				if (statusParam === 'confirmed') return s === 'confirmed';
+				// default: successful => paid/confirmed/legacy prepared or missing
+				return s === 'paid' || s === 'confirmed' || s === 'prepared' || !s;
+			});
 			// Canonicalize legacy 'prepared' -> 'paid' for display (and persist in mock data)
 			list.forEach((o) => { if (o.status === 'prepared') o.status = 'paid'; });
 			if (fromDate) list = list.filter((o) => new Date(o.createdAt) >= fromDate);
@@ -58,14 +65,15 @@ router.get('/', requireAdmin, async (req, res) => {
 			return res.json(items);
 		}
 
-		// Include only successful orders (paid/confirmed); plus legacy orders with missing or 'prepared' status
-		const filter = {
-			site: siteId,
-			$or: [
-				{ status: { $in: ['paid', 'confirmed', 'prepared'] } },
-				{ status: { $exists: false } },
-			],
-		};
+		// Include only successful orders by default; support status=paid|confirmed|
+		const filter = { site: siteId };
+		if (statusParam === 'paid') {
+			filter.$or = [ { status: { $in: ['paid', 'prepared'] } } ];
+		} else if (statusParam === 'confirmed') {
+			filter.$or = [ { status: 'confirmed' } ];
+		} else {
+			filter.$or = [ { status: { $in: ['paid', 'confirmed', 'prepared'] } }, { status: { $exists: false } } ];
+		}
 		if (fromDate || toDate) filter.createdAt = {};
 		if (fromDate) filter.createdAt.$gte = fromDate;
 		if (toDate) filter.createdAt.$lte = toDate;
