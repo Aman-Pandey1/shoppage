@@ -61,7 +61,8 @@ function getStripeClient(site) {
   const siteSecret = site?.stripeSecretKey;
   const secret = siteSecret || process.env.STRIPE_SECRET_KEY;
   if (!secret) throw new Error('Missing STRIPE_SECRET_KEY');
-  return new Stripe(secret);
+  // Explicitly pin to a modern API version to match client
+  return new Stripe(secret, { apiVersion: process.env.STRIPE_API_VERSION || '2024-06-20' });
 }
 
 // Health endpoint for a specific site (optional)
@@ -120,7 +121,14 @@ router.post('/:siteIdOrSlug', async (req, res) => {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object;
-        const orderId = session.metadata?.orderId;
+        // Try metadata first, then fallback to externalId lookup
+        let orderId = session.metadata?.orderId;
+        if (!orderId) {
+          try {
+            const byExternal = await Order.findOne({ externalId: session.id });
+            if (byExternal) orderId = String(byExternal._id);
+          } catch {}
+        }
         if (orderId) {
           if (req.app.locals.mockData) {
             const list = req.app.locals.mockData.orders || [];
@@ -257,4 +265,44 @@ router.post('/:siteIdOrSlug', async (req, res) => {
 });
 
 export default router;
+
+// Optional: accept webhook without site param at /webhook/stripe (server mounts raw body)
+// Some setups post to a single endpoint and we resolve the order by externalId
+export const webhookStripeNoSite = Router();
+webhookStripeNoSite.post('/', async (req, res) => {
+  try {
+    // Attempt to parse JSON event when no secret configured (we don't know site here)
+    let payload;
+    try {
+      payload = typeof req.body === 'string' ? JSON.parse(req.body) : (Buffer.isBuffer(req.body) ? JSON.parse(req.body.toString('utf8')) : req.body);
+    } catch (e) {
+      return res.status(400).send(`Invalid payload: ${e.message}`);
+    }
+    if (!payload || !payload.type) return res.status(400).send('Invalid event');
+    if (payload.type === 'checkout.session.completed') {
+      const session = payload.data?.object || {};
+      let orderId = session?.metadata?.orderId;
+      if (!orderId && session?.id) {
+        try {
+          const byExternal = await Order.findOne({ externalId: session.id });
+          if (byExternal) orderId = String(byExternal._id);
+        } catch {}
+      }
+      if (orderId) {
+        try {
+          let order = await Order.findByIdAndUpdate(orderId, { status: 'paid' }, { new: true });
+          if (order && !order.orderNumber) {
+            try {
+              const assigned = await getNextOrderNumber(order.site);
+              order = await Order.findByIdAndUpdate(order._id, { orderNumber: assigned }, { new: true });
+            } catch {}
+          }
+        } catch {}
+      }
+    }
+    return res.json({ received: true });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+});
 
