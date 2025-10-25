@@ -1,0 +1,308 @@
+import { Router } from 'express';
+import Stripe from 'stripe';
+import Order from '../models/Order.js';
+import Site from '../models/Site.js';
+import { getNextOrderNumber } from '../utils/orderNumber.js';
+import { createDelivery as uberCreateDelivery } from '../services/uberDirect.js';
+import { createDelivery as ddCreateDelivery } from '../services/doordashDrive.js';
+import { sendOrderEmail } from '../utils/mailer.js';
+import fetch from 'node-fetch';
+
+const router = Router();
+
+// Notify Blueboxx backend by default after payment events
+const ORDER_NOTIFY_URL = process.env.ORDER_NOTIFY_URL || 'https://blueboxx-backend.onrender.com/api/order/notify';
+
+function buildNotifyPayload(order, siteName) {
+  return {
+    _id: String(order?._id || ''),
+    site: siteName || '',
+    userId: order?.userId ? String(order.userId) : undefined,
+    userEmail: order?.userEmail || '',
+    fulfillmentType: order?.fulfillmentType,
+    items: (order?.items || []).map((m) => ({
+      name: m.name,
+      quantity: m.quantity,
+      priceCents: m.priceCents,
+      spiceLevel: m.spiceLevel,
+      flavor: m.flavor,
+      portion: m.portion,
+    })),
+    totalCents: order?.totalCents,
+    taxCents: order?.taxCents,
+    tipCents: typeof order?.tipCents === 'number' ? order.tipCents : 0,
+    deliveryFeeCents: typeof order?.deliveryFeeCents === 'number' ? order.deliveryFeeCents : 0,
+    deliveryFeeRestaurantCents: typeof order?.deliveryFeeRestaurantCents === 'number' ? order.deliveryFeeRestaurantCents : 0,
+    notes: order?.notes || '',
+    status: order?.status,
+    pickup: order?.pickup,
+    dropoff: order?.dropoff,
+    meta: order?.meta,
+    createdAt: order?.createdAt,
+    updatedAt: order?.updatedAt,
+    externalId: order?.externalId,
+  };
+}
+
+async function sendOrderNotify(order, siteName) {
+  try {
+    const payload = buildNotifyPayload(order, siteName);
+    await fetch(ORDER_NOTIFY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    // Non-blocking: ignore notify errors
+  }
+}
+
+function getStripeClient(site) {
+  const siteSecret = site?.stripeSecretKey;
+  const secret = siteSecret || process.env.STRIPE_SECRET_KEY;
+  if (!secret) throw new Error('Missing STRIPE_SECRET_KEY');
+  // Explicitly pin to a modern API version to match client
+  return new Stripe(secret, { apiVersion: process.env.STRIPE_API_VERSION || '2024-06-20' });
+}
+
+// Health endpoint for a specific site (optional)
+router.get('/:siteIdOrSlug', async (req, res) => {
+  try {
+    const { siteIdOrSlug } = req.params;
+    let site = null;
+    const mock = req.app?.locals?.mockData;
+    if (mock) {
+      site = (mock.sites || []).find((s) => s._id === siteIdOrSlug || s.slug === siteIdOrSlug);
+    } else {
+      try { site = await Site.findById(siteIdOrSlug); } catch {}
+      if (!site) site = await Site.findOne({ slug: siteIdOrSlug });
+    }
+    if (!site) return res.status(404).json({ ok: false, error: 'Site not found' });
+    return res.json({ ok: true, siteId: String(site._id), slug: site.slug, hasSecret: !!site.stripeWebhookSecret });
+  } catch (err) {
+    return res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
+// IMPORTANT: This route must be mounted with express.raw({ type: 'application/json' })
+router.post('/:siteIdOrSlug', async (req, res) => {
+  const { siteIdOrSlug } = req.params;
+  let site = null;
+  const mock = req.app?.locals?.mockData;
+  if (mock) {
+    site = (mock.sites || []).find((s) => s._id === siteIdOrSlug || s.slug === siteIdOrSlug) || null;
+  } else {
+    try { site = await Site.findById(siteIdOrSlug); } catch {}
+    if (!site) site = await Site.findOne({ slug: siteIdOrSlug });
+  }
+
+  const stripe = getStripeClient(site);
+  const configuredSecret = site?.stripeWebhookSecret || process.env.STRIPE_WEBHOOK_SECRET;
+  let event = null;
+
+  if (configuredSecret) {
+    const signature = req.headers['stripe-signature'];
+    const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body || '');
+    try {
+      event = stripe.webhooks.constructEvent(rawBody, signature, configuredSecret);
+    } catch (err) {
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+  } else {
+    try {
+      const json = typeof req.body === 'string' ? req.body : Buffer.isBuffer(req.body) ? req.body.toString('utf8') : JSON.stringify(req.body || {});
+      event = JSON.parse(json);
+    } catch (err) {
+      return res.status(400).send(`Invalid webhook payload: ${err.message}`);
+    }
+  }
+
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object;
+        // Try metadata first, then fallback to externalId lookup
+        let orderId = session.metadata?.orderId;
+        if (!orderId) {
+          try {
+            const byExternal = await Order.findOne({ externalId: session.id });
+            if (byExternal) orderId = String(byExternal._id);
+          } catch {}
+        }
+        if (orderId) {
+          if (req.app.locals.mockData) {
+            const list = req.app.locals.mockData.orders || [];
+            const idx = list.findIndex((o) => String(o._id) === String(orderId));
+            if (idx >= 0) {
+              // Mark paid
+              list[idx].status = 'paid';
+              // Assign a sequential human-friendly order number if missing
+              if (!list[idx].orderNumber) {
+                const nextSeq = ((req.app.locals.mockData.orderSeq || 1000) + 1);
+                req.app.locals.mockData.orderSeq = nextSeq;
+                list[idx].orderNumber = `BB-${nextSeq}`;
+              }
+              try {
+                // If delivery order without provider delivery yet, create it now (real API if creds exist)
+                if (list[idx].fulfillmentType === 'delivery' && !list[idx].uberDeliveryId) {
+                  const site = (req.app.locals.mockData.sites || []).find((s) => s._id === String(list[idx].site));
+                  if (site && list[idx]?.dropoff && list[idx]?.pickup?.location) {
+                    const provider = site.deliveryProvider || 'uber';
+                    let delivery = null;
+                    if (provider === 'doordash' && site.doordashStoreId) {
+                      delivery = await ddCreateDelivery({
+                        storeId: site.doordashStoreId,
+                        pickup: list[idx].pickup.location,
+                        dropoff: list[idx].dropoff,
+                        manifestItems: (list[idx].items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
+                        tip: 0,
+                        externalId: String(list[idx]._id),
+                      });
+                    } else if (site.uberCustomerId) {
+                      delivery = await uberCreateDelivery({
+                        customerId: site.uberCustomerId,
+                        pickup: list[idx].pickup.location,
+                        dropoff: list[idx].dropoff,
+                        manifestItems: (list[idx].items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
+                        tip: 0,
+                        externalId: String(list[idx]._id),
+                        creds: {
+                          clientId: site?.uberClientId,
+                          clientSecret: site?.uberClientSecret,
+                          env: site?.uberEnv,
+                          scopes: site?.uberTokenScopes,
+                          audience: String(site?.uberEnv || '').toLowerCase() === 'sandbox'
+                            ? 'https://sandbox-api.uber.com'
+                            : 'https://api.uber.com',
+                        }
+                      });
+                    }
+                    if (delivery) {
+                      const trackingUrl = delivery?.tracking_url || delivery?.trackingUrl || delivery?.share_url || '';
+                      const status = delivery?.status || delivery?.state || delivery?.current_status || '';
+                      list[idx].uberDeliveryId = delivery?.id || delivery?.delivery_id;
+                      list[idx].uberTrackingUrl = trackingUrl;
+                      list[idx].uberStatus = status;
+                    }
+                  }
+                }
+                const site = (req.app.locals.mockData.sites || []).find((s) => s._id === String(list[idx].site));
+                const siteName = site?.name || '';
+                await sendOrderEmail({ to: list[idx].userEmail, siteName, orderId, orderNumber: list[idx].orderNumber, items: list[idx].items, totalCents: list[idx].totalCents, deliveryFeeCents: list[idx].deliveryFeeCents, fulfillmentType: list[idx].fulfillmentType, trackingUrl: list[idx].uberTrackingUrl });
+                await sendOrderNotify(list[idx], siteName);
+              } catch {}
+            }
+          } else {
+            let order = await Order.findByIdAndUpdate(orderId, { status: 'paid' }, { new: true });
+            // Ensure a sequential human-friendly order number exists
+            if (order && !order.orderNumber) {
+              try {
+                const assigned = await getNextOrderNumber(order.site);
+                order = await Order.findByIdAndUpdate(order._id, { orderNumber: assigned }, { new: true });
+              } catch {}
+            }
+            try {
+              // If delivery order without provider delivery yet, create it now
+              if (order && order.fulfillmentType === 'delivery' && !order.uberDeliveryId) {
+                const site = await Site.findById(order.site);
+                if (order?.dropoff && order?.pickup?.location && site) {
+                  const provider = site.deliveryProvider || 'uber';
+                  let delivery = null;
+                  if (provider === 'doordash' && site.doordashStoreId) {
+                    delivery = await ddCreateDelivery({
+                      storeId: site.doordashStoreId,
+                      pickup: order.pickup.location,
+                      dropoff: order.dropoff,
+                      manifestItems: (order.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
+                      tip: 0,
+                      externalId: String(order._id),
+                    });
+                  } else if (site.uberCustomerId) {
+                    delivery = await uberCreateDelivery({
+                      customerId: site.uberCustomerId,
+                      pickup: order.pickup.location,
+                      dropoff: order.dropoff,
+                      manifestItems: (order.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
+                      tip: 0,
+                      externalId: String(order._id),
+                      creds: {
+                        clientId: site?.uberClientId,
+                        clientSecret: site?.uberClientSecret,
+                        env: site?.uberEnv,
+                        scopes: site?.uberTokenScopes,
+                        audience: String(site?.uberEnv || '').toLowerCase() === 'sandbox'
+                          ? 'https://sandbox-api.uber.com'
+                          : 'https://api.uber.com',
+                      }
+                    });
+                  }
+                  if (delivery) {
+                    const trackingUrl = delivery?.tracking_url || delivery?.trackingUrl || delivery?.share_url || '';
+                    const status = delivery?.status || delivery?.state || delivery?.current_status || '';
+                    await Order.findByIdAndUpdate(order._id, { uberDeliveryId: delivery?.id || delivery?.delivery_id, uberTrackingUrl: trackingUrl, uberStatus: status });
+                  }
+                }
+              }
+            } catch (e) {
+              // swallow Uber errors; order remains paid
+            }
+            try {
+              const site = await Site.findById(order.site);
+              await sendOrderEmail({ to: order.userEmail, siteName: site?.name || '', orderId: order._id, orderNumber: order.orderNumber, items: order.items, totalCents: order.totalCents, deliveryFeeCents: order.deliveryFeeCents, fulfillmentType: order.fulfillmentType, trackingUrl: order.uberTrackingUrl });
+              await sendOrderNotify(order, site?.name || '');
+            } catch {}
+          }
+        }
+        break;
+      }
+      default:
+        break;
+    }
+    res.json({ received: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+export default router;
+
+// Optional: accept webhook without site param at /webhook/stripe (server mounts raw body)
+// Some setups post to a single endpoint and we resolve the order by externalId
+export const webhookStripeNoSite = Router();
+webhookStripeNoSite.post('/', async (req, res) => {
+  try {
+    // Attempt to parse JSON event when no secret configured (we don't know site here)
+    let payload;
+    try {
+      payload = typeof req.body === 'string' ? JSON.parse(req.body) : (Buffer.isBuffer(req.body) ? JSON.parse(req.body.toString('utf8')) : req.body);
+    } catch (e) {
+      return res.status(400).send(`Invalid payload: ${e.message}`);
+    }
+    if (!payload || !payload.type) return res.status(400).send('Invalid event');
+    if (payload.type === 'checkout.session.completed') {
+      const session = payload.data?.object || {};
+      let orderId = session?.metadata?.orderId;
+      if (!orderId && session?.id) {
+        try {
+          const byExternal = await Order.findOne({ externalId: session.id });
+          if (byExternal) orderId = String(byExternal._id);
+        } catch {}
+      }
+      if (orderId) {
+        try {
+          let order = await Order.findByIdAndUpdate(orderId, { status: 'paid' }, { new: true });
+          if (order && !order.orderNumber) {
+            try {
+              const assigned = await getNextOrderNumber(order.site);
+              order = await Order.findByIdAndUpdate(order._id, { orderNumber: assigned }, { new: true });
+            } catch {}
+          }
+        } catch {}
+      }
+    }
+    return res.json({ received: true });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+});
+
