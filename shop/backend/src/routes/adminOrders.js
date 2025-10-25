@@ -25,8 +25,8 @@ router.get('/', requireAdmin, async (req, res) => {
     if (mock) {
       let list = Array.isArray(mock.orders) ? mock.orders : [];
       list = list.filter((o) => o.site === siteId);
-      // Treat orders without a status as historical/placed to avoid disappearing data
-      list = list.filter((o) => (o.status === 'paid' || o.status === 'confirmed' || !o.status));
+      // Include paid, confirmed, and awaiting_payment orders; also keep legacy orders with missing status
+      list = list.filter((o) => (o.status === 'paid' || o.status === 'confirmed' || o.status === 'awaiting_payment' || !o.status));
       if (fromDate) list = list.filter((o) => new Date(o.createdAt) >= fromDate);
       if (toDate) list = list.filter((o) => new Date(o.createdAt) <= toDate);
       // Backfill missing order numbers for mock data using an in-memory counter
@@ -42,8 +42,8 @@ router.get('/', requireAdmin, async (req, res) => {
       return res.json(list);
     }
 
-    // Include successful orders and legacy orders with missing status so older orders remain visible
-    const filter = { site: siteId, $or: [ { status: { $in: ['paid', 'confirmed'] } }, { status: { $exists: false } } ] };
+    // Include successful and pending (awaiting_payment) orders, plus legacy orders with missing status
+    const filter = { site: siteId, $or: [ { status: { $in: ['paid', 'confirmed', 'awaiting_payment'] } }, { status: { $exists: false } } ] };
 		if (fromDate || toDate) filter.createdAt = {};
 		if (fromDate) filter.createdAt.$gte = fromDate;
 		if (toDate) filter.createdAt.$lte = toDate;
