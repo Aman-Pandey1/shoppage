@@ -38,14 +38,15 @@ router.post('/', requireAdmin, async (req, res) => {
     const providedImage = String(req.body?.imageUrl || '').trim();
     const imageUrl = providedImage || `https://picsum.photos/seed/${encodeURIComponent((name || 'category').toLowerCase())}/400/400`;
     const sortIndex = Number(req.body?.sortIndex) || 0;
+    const pickupOnly = !!req.body?.pickupOnly;
     const mock = req.app.locals.mockData;
     if (mock) {
-      const created = { _id: `c-${Date.now()}`, name, imageUrl, sortIndex, site: siteId };
+      const created = { _id: `c-${Date.now()}`, name, imageUrl, sortIndex, pickupOnly, site: siteId };
       mock.categories.unshift(created);
       try { saveMockData(req.app.locals.mockData); } catch {}
       return res.status(201).json(created);
     }
-    const payload = { site: siteId, name, imageUrl, sortIndex };
+    const payload = { site: siteId, name, imageUrl, sortIndex, pickupOnly };
     const created = await Category.create(payload);
     res.status(201).json(created);
   } catch (err) {
@@ -79,11 +80,13 @@ router.patch('/:id', requireAdmin, async (req, res) => {
         if (mock) {
             const idx = mock.categories.findIndex((c) => c._id === id && c.site === siteId);
             if (idx === -1) return res.status(404).json({ error: 'Not found' });
-            const incoming = { ...req.body };
+        const incoming = { ...req.body };
             // Prevent wiping imageUrl when an empty string is sent from UI
             if (!(typeof incoming.imageUrl === 'string' && incoming.imageUrl.trim().length > 0)) {
               delete incoming.imageUrl;
             }
+        // Normalize pickupOnly to boolean if provided
+        if (incoming.pickupOnly !== undefined) incoming.pickupOnly = !!incoming.pickupOnly;
             const updated = { ...mock.categories[idx], ...incoming };
             mock.categories[idx] = updated;
             try { saveMockData(req.app.locals.mockData); } catch {}
@@ -93,6 +96,7 @@ router.patch('/:id', requireAdmin, async (req, res) => {
         if (incoming.imageUrl !== undefined && !String(incoming.imageUrl || '').trim()) {
           delete incoming.imageUrl;
         }
+        if (incoming.pickupOnly !== undefined) incoming.pickupOnly = !!incoming.pickupOnly;
         const updated = await Category.findOneAndUpdate({ _id: id, site: siteId }, incoming, { new: true });
 		if (!updated) return res.status(404).json({ error: 'Not found' });
 		res.json(updated);
