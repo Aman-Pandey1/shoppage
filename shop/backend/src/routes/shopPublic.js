@@ -432,10 +432,13 @@ router.get('/:slug/categories', async (req, res) => {
 	try {
 		const mock = req.app.locals.mockData;
 		if (mock) {
-			const categories = mock.categories.filter((c) => c.site === req.siteId).sort((a, b) => (a.sortIndex - b.sortIndex) || a.name.localeCompare(b.name));
+      const categories = mock.categories
+        .filter((c) => c.site === req.siteId)
+        .map((c) => ({ ...c, pickupOnly: !!c.pickupOnly }))
+        .sort((a, b) => (a.sortIndex - b.sortIndex) || a.name.localeCompare(b.name));
 			return res.json(categories);
 		}
-		const categories = await Category.find({ site: req.siteId }).sort({ sortIndex: 1, name: 1 });
+    const categories = await Category.find({ site: req.siteId }).sort({ sortIndex: 1, name: 1 });
 		res.json(categories);
 	} catch (err) {
 		res.status(400).json({ error: err.message });
