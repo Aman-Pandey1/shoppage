@@ -44,7 +44,7 @@ export const AdminDashboard = () => {
   const [siteForm, setSiteForm] = useState({ name: '', slug: '', domainsText: '' });
 
   const [isCategoryFormOpen, setIsCategoryFormOpen] = useState(false);
-  const [categoryForm, setCategoryForm] = useState({ name: '', imageUrl: '', file: null });
+  const [categoryForm, setCategoryForm] = useState({ name: '', imageUrl: '', file: null, pickupOnly: false });
   const [deleteCategoryId, setDeleteCategoryId] = useState(null);
 
   const [deleteProductId, setDeleteProductId] = useState(null);
@@ -490,11 +490,16 @@ export const AdminDashboard = () => {
                     ) : null}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ fontWeight: 800 }}>{c.name}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ fontWeight: 800 }}>{c.name}</div>
+                      {c.pickupOnly ? (
+                        <span title="Pickup only" style={{ fontSize: 11, padding: '2px 6px', borderRadius: 6, background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>Pickup only</span>
+                      ) : null}
+                    </div>
                     <div className="muted" style={{ fontSize: 12 }}>ID: {c._id.slice(-6)}</div>
                   </div>
                   <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
-                    <button onClick={() => { setCategoryForm({ id: c._id, name: c.name, imageUrl: c.imageUrl || '', file: null }); setIsCategoryFormOpen(true); }}>Edit</button>
+                    <button onClick={() => { setCategoryForm({ id: c._id, name: c.name, imageUrl: c.imageUrl || '', file: null, pickupOnly: !!c.pickupOnly }); setIsCategoryFormOpen(true); }}>Edit</button>
                     <button className="danger" onClick={() => setDeleteCategoryId(c._id)}>Delete</button>
                   </div>
                 </div>
@@ -1127,9 +1132,9 @@ export const AdminDashboard = () => {
                   // First create/update the category basic fields
                   let cat;
                   if (categoryForm.id) {
-                    cat = await patchJson(`/api/admin/sites/${selectedSiteId}/categories/${categoryForm.id}`, { name: categoryForm.name, imageUrl: categoryForm.imageUrl });
+                    cat = await patchJson(`/api/admin/sites/${selectedSiteId}/categories/${categoryForm.id}`, { name: categoryForm.name, imageUrl: categoryForm.imageUrl, pickupOnly: !!categoryForm.pickupOnly });
                   } else {
-                    cat = await postJson(`/api/admin/sites/${selectedSiteId}/categories`, { name: categoryForm.name, imageUrl: categoryForm.imageUrl });
+                    cat = await postJson(`/api/admin/sites/${selectedSiteId}/categories`, { name: categoryForm.name, imageUrl: categoryForm.imageUrl, pickupOnly: !!categoryForm.pickupOnly });
                   }
                   // If a file is selected, upload it and update imageUrl
                   if (categoryForm.file) {
@@ -1143,7 +1148,7 @@ export const AdminDashboard = () => {
                   // Apply to list and close
                   setCategories((prev) => categoryForm.id ? prev.map((c) => c._id === cat._id ? cat : c) : [cat, ...prev]);
                   setIsCategoryFormOpen(false);
-                  setCategoryForm({ name: '', imageUrl: '', file: null });
+                  setCategoryForm({ name: '', imageUrl: '', file: null, pickupOnly: false });
                 }}
               >{categoryForm.id ? 'Save changes' : 'Create'}</button>
             </>
@@ -1157,6 +1162,14 @@ export const AdminDashboard = () => {
             <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <span>Image URL</span>
               <input value={categoryForm.imageUrl} onChange={(e) => setCategoryForm({ ...categoryForm, imageUrl: e.target.value })} />
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="checkbox"
+                checked={!!categoryForm.pickupOnly}
+                onChange={(e) => setCategoryForm({ ...categoryForm, pickupOnly: e.target.checked })}
+              />
+              <span>Pickup-only (disable delivery for this category)</span>
             </label>
             <label style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
               <span>Or upload image</span>

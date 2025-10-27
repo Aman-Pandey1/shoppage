@@ -281,6 +281,7 @@ export const FulfillmentModal = ({
   // This applies to both Takeout and Delivery modes.
 
   function renderTypeButtons() {
+    const hasPickupOnlyItems = Array.isArray(cartState?.items) && cartState.items.some(it => it.pickupOnly === true);
     return (
       <>
         {closedMsg ? (
@@ -325,7 +326,7 @@ export const FulfillmentModal = ({
           </div>
         </button>
         <button
-          onClick={() => { setSelectedType('delivery'); }}
+          onClick={() => { if (!hasPickupOnlyItems) setSelectedType('delivery'); }}
           style={{
             padding: 2,
             borderRadius: 12,
@@ -334,8 +335,8 @@ export const FulfillmentModal = ({
             background: selectedType === 'delivery'
               ? 'linear-gradient(180deg, var(--primary-alpha-25), var(--primary-alpha-12))'
               : 'linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0.35))',
-            opacity: 1,
-            cursor: 'pointer',
+            opacity: hasPickupOnlyItems ? 0.6 : 1,
+            cursor: hasPickupOnlyItems ? 'not-allowed' : 'pointer',
           }}
           className="animate-fadeInUp"
         >
@@ -365,6 +366,11 @@ export const FulfillmentModal = ({
           </div>
         </button>
         </div>
+        {hasPickupOnlyItems ? (
+          <div className="muted" style={{ fontSize: 12, marginTop: 6, color: '#92400e' }}>
+            Your cart has pickup-only items. Delivery is disabled.
+          </div>
+        ) : null}
       </>
     );
   }

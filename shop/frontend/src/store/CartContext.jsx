@@ -129,7 +129,7 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
 
   const clearCoupon = useCallback(() => setState((prev) => ({ ...prev, coupon: null })), []);
 
-  const addItem = useCallback(({ product, quantity = 1, spiceLevel, selectedOptions = [], variant = null, flavor = null, portion = null, quantityOption = null }) => {
+  const addItem = useCallback(({ product, quantity = 1, spiceLevel, selectedOptions = [], variant = null, flavor = null, portion = null, quantityOption = null, pickupOnlyCategory = false }) => {
     const extraCost = calculateExtraCost(selectedOptions);
     const variantAddon = Number(variant?.price || 0);
     const flavorAddon = Number(flavor?.price || 0);
@@ -142,6 +142,7 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
     const newItem = {
       id,
       productId: product._id,
+      categoryId: product.categoryId,
       name: product.name,
       basePrice: product.price,
       variant,
@@ -155,6 +156,7 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
       unitCents,
       totalPrice,
       imageUrl: product.imageUrl,
+      pickupOnly: !!pickupOnlyCategory,
     };
 
     setState((prev) => {
@@ -176,6 +178,7 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
           unitCents: existingUnitCents,
           quantity: newQuantity,
           totalPrice: (existingUnitCents * newQuantity) / 100,
+          pickupOnly: !!(existing.pickupOnly || pickupOnlyCategory),
         };
         return { ...prev, items: updated };
       }
@@ -183,7 +186,7 @@ export const CartProvider = ({ children, storageKey = DEFAULT_STORAGE_KEY }) => 
     });
     const optionsSummary = formatOptionsSummary(product, spiceLevel, selectedOptions, variant, flavor, portion, quantityOption);
     const displayUnit = Number(product.price || 0) + Number(variant?.price || 0) + Number(flavor?.price || 0) + Number(portion?.price || 0) + Number(quantityOption?.price || 0) + extraCost;
-    setLastAdded({ name: product.name, quantity, price: displayUnit, imageUrl: product.imageUrl, optionsSummary });
+    setLastAdded({ name: product.name, quantity, price: displayUnit, imageUrl: product.imageUrl, optionsSummary, pickupOnly: !!pickupOnlyCategory });
   }, []);
 
   const removeItem = useCallback((id) => {

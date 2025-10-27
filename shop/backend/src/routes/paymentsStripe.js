@@ -10,6 +10,7 @@ import Order from '../models/Order.js';
 import Coupon from '../models/Coupon.js';
 import Site from '../models/Site.js';
 import { calculateDistanceFeeCents, distanceBetweenAddressesKm } from '../services/geo.js';
+import Category from '../models/Category.js';
 import { getNextOrderNumber } from '../utils/orderNumber.js';
 
 const router = Router();
@@ -373,6 +374,24 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
     if (!Array.isArray(manifestItems) || manifestItems.length === 0) {
       return res.status(400).json({ error: 'Items required' });
     }
+
+    // Block delivery if any category is pickup-only
+    try {
+      const isPickupOnlyCategory = async (catId) => {
+        if (!catId) return false;
+        if (mock) {
+          const cat = (req.app.locals.mockData.categories || []).find((c) => c.site === req.siteId && String(c._id) === String(catId));
+          return !!(cat && cat.pickupOnly);
+        }
+        const found = await Category.findOne({ _id: catId, site: req.siteId });
+        return !!(found && found.pickupOnly);
+      };
+      for (const it of manifestItems) {
+        if (await isPickupOnlyCategory(it.categoryId)) {
+          return res.status(400).json({ error: 'Cart contains pickup-only items. Delivery is not available.' });
+        }
+      }
+    } catch {}
 
     let site;
     if (mock) {
