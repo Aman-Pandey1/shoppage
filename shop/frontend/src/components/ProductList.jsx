@@ -27,6 +27,11 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
           </div>
           <div className="muted" style={{ fontSize: 13 }}>{products.length} items</div>
         </div>
+        {category?.pickupOnly ? (
+          <div className="animate-fadeInUp" style={{ marginTop: 8, fontSize: 12, color: '#92400e', background: '#fef3c7', border: '1px solid #fde68a', padding: '6px 10px', borderRadius: 8 }}>
+            This category is pickup only. Delivery is not available for these items.
+          </div>
+        ) : null}
       </div>
 
       {/* Category image banner - improved styling */}
@@ -92,7 +97,7 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
                     const hasSpice = Array.isArray(p?.spiceLevels) && p.spiceLevels.length > 0;
                     const hasExtras = Array.isArray(p?.extraOptionGroups) && p.extraOptionGroups.length > 0;
                     if (hasVariants || hasSpice || hasExtras) {
-                      onAdd(p, 1);
+                      onAdd({ product: p, quantity: 1, pickupOnlyCategory: !!category?.pickupOnly });
                       return;
                     }
                     setActiveProduct(p);
@@ -120,7 +125,7 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
             const prod = activeProduct;
             setQuickAddOpen(false);
             setActiveProduct(null);
-            onAdd(prod, Math.max(1, Math.min(99, Number(qty) || 1)));
+            onAdd({ product: prod, quantity: Math.max(1, Math.min(99, Number(qty) || 1)), pickupOnlyCategory: !!category?.pickupOnly });
           }}
         />
       )}

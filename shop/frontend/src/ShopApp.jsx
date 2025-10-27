@@ -133,7 +133,10 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     setFulfillmentOpen(false);
   }
 
-  function startAddToCart(product, quantity = 1) {
+  function startAddToCart(argProduct, quantity = 1) {
+    // Support both legacy signature (product, quantity) and new object with pickupOnlyCategory flag
+    const product = (argProduct && argProduct.product) ? argProduct.product : argProduct;
+    const pickupOnlyCategory = !!(argProduct && argProduct.pickupOnlyCategory);
     setPendingProduct(product);
     setPendingQuantity(Math.max(1, Math.min(99, Number(quantity) || 1)));
     // Show unified modal for variants/spice in a single popup
@@ -142,7 +145,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     } else if (product.extraOptionGroups && product.extraOptionGroups.length > 0) {
       setExtrasOpen(true);
     } else {
-      addItem({ product, quantity: Math.max(1, Math.min(99, Number(quantity) || 1)) });
+      addItem({ product, quantity: Math.max(1, Math.min(99, Number(quantity) || 1)), pickupOnlyCategory });
       setPendingProduct(null);
       setPendingQuantity(1);
       // Do not open payment/details modals on add-to-cart; user will open from cart
@@ -160,7 +163,9 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     if (pendingProduct && pendingProduct.extraOptionGroups && pendingProduct.extraOptionGroups.length > 0) {
       setExtrasOpen(true);
     } else if (pendingProduct) {
-      addItem({ product: pendingProduct, variant: variant || undefined, spiceLevel: spice, flavor: flavor || undefined, portion: portion || undefined, quantityOption: quantityOption || undefined, quantity: confirmedQty });
+      // Derive pickupOnly flag by checking the selectedCategory if available
+      const isPickupOnly = !!(selectedCategory && selectedCategory.pickupOnly);
+      addItem({ product: pendingProduct, variant: variant || undefined, spiceLevel: spice, flavor: flavor || undefined, portion: portion || undefined, quantityOption: quantityOption || undefined, quantity: confirmedQty, pickupOnlyCategory: isPickupOnly });
       setPendingProduct(null);
       setPendingSpice(undefined);
       setPendingVariant(null);
@@ -172,7 +177,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   function confirmExtras(selected) {
     setExtrasOpen(false);
     if (pendingProduct) {
-      addItem({ product: pendingProduct, variant: pendingVariant || undefined, spiceLevel: pendingSpice, selectedOptions: selected, quantityOption: pendingQuantityOption || undefined, quantity: pendingQuantity });
+      const isPickupOnly = !!(selectedCategory && selectedCategory.pickupOnly);
+      addItem({ product: pendingProduct, variant: pendingVariant || undefined, spiceLevel: pendingSpice, selectedOptions: selected, quantityOption: pendingQuantityOption || undefined, quantity: pendingQuantity, pickupOnlyCategory: isPickupOnly });
     }
     setPendingProduct(null);
     setPendingSpice(undefined);
@@ -345,6 +351,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         name: it.name,
         quantity: it.quantity,
         priceCents: unitCents,
+        productId: it.productId,
+        categoryId: it.categoryId,
         size: (it?.variant?.label || it?.variant?.key || undefined),
         spiceLevel: it.spiceLevel,
         flavor: it?.flavor?.label || it?.flavor?.key || undefined,

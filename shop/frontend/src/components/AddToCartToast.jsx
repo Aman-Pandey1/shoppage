@@ -46,6 +46,9 @@ export const AddToCartToast = () => {
         <div style={{ display: 'grid', gap: 2 }}>
           <div style={{ fontWeight: 800, letterSpacing: '.01em' }}>{msg}</div>
           {lastAdded ? <div className="muted" style={{ fontSize: 12 }}>${lastAdded.price.toFixed(2)} each</div> : null}
+          {lastAdded?.pickupOnly ? (
+            <div style={{ fontSize: 11, color: '#92400e' }}>This product is pickup only</div>
+          ) : null}
           {lastAdded?.optionsSummary ? (
             <div className="muted" style={{ fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lastAdded.optionsSummary}</div>
           ) : null}
