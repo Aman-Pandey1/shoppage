@@ -147,7 +147,8 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
     <aside
       style={{
         position: 'fixed',
-        top: `calc(var(--header-height) + var(--banner-height) + 12px)`,
+        // Anchor to header only; offset banner via transform for GPU-smooth motion
+        top: `calc(var(--header-height) + 12px)`,
         right: 16,
         bottom: 16,
         width: 'var(--cart-width, 360px)',
@@ -156,6 +157,9 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
         borderRadius: 'var(--radius)',
         padding: 16,
         overflowY: 'auto',
+        // Use transform instead of changing 'top' each scroll to prevent jitter
+        transform: 'translateY(var(--banner-height))',
+        willChange: 'transform',
         // Ensure desktop cart sits above content and banner, below header dropdown
         zIndex: 700,
       }}
