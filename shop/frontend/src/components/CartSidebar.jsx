@@ -147,10 +147,10 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
     <aside
       style={{
         position: 'fixed',
-        // Anchor below header + dynamic banner height so height is always correct
-        top: `calc(var(--header-height) + var(--banner-height) + 12px)`,
+          // Anchor below header; ignore banner on desktop so cart can reach top when scrolled
+          top: `calc(var(--header-height) + 12px)`,
         right: 16,
-        bottom: 16,
+          bottom: 12,
         width: 'var(--cart-width, 360px)',
         background: '#fff',
         border: '1px solid var(--border)',
