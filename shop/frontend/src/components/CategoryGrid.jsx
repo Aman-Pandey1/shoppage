@@ -40,7 +40,7 @@ export const CategoryGrid = ({ onSelect, siteSlug = 'default' }) => {
             borderRadius: 'var(--radius)',
             padding: 0,
             cursor: 'pointer',
-            textAlign: 'center',
+            textAlign: 'left',
             background: '#fff',
             color: 'var(--text)',
             boxShadow: 'var(--shadow-soft)',
