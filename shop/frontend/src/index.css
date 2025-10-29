@@ -35,6 +35,7 @@
   /* Banner height so cart/category can start below it (can be updated on scroll) */
   --banner-height: 260px;
   --cart-width: 360px; /* desktop aside width used for content offset */
+  --cart-gap: 28px; /* extra space between content and cart on desktop */
   /* Bottom spacing for product list; large on mobile, small on desktop */
   --product-list-bottom: calc(96px + var(--safe-bottom));
   /* Max page width for centered layout on large screens */
@@ -281,7 +282,7 @@ input:focus, select:focus, textarea:focus {
   max-width: min(var(--page-max), calc(100vw - var(--cart-width) - 64px));
   margin-left: auto;
   margin-right: auto;
-  padding-right: calc(var(--cart-width) + 20px);
+  padding-right: calc(var(--cart-width) + var(--cart-gap));
   /* Ensure at least a screenful of content area so very short pages
      don't cause awkward jumps relative to the fixed cart */
   min-height: calc(100vh - var(--header-height) - var(--banner-height) - 24px);
@@ -780,6 +781,7 @@ input:focus, select:focus, textarea:focus {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 20px;
   align-items: start;
+  justify-items: center; /* center tiles within grid cells */
 }
 @media (max-width: 1024px) {
   .category-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
@@ -792,4 +794,9 @@ input:focus, select:focus, textarea:focus {
 }
 @media (max-width: 340px) {
   .category-grid { grid-template-columns: 1fr; gap: 10px; }
+}
+
+/* Center product cards grid when columns don't fill full width */
+.products-grid {
+  justify-content: center;
 }
