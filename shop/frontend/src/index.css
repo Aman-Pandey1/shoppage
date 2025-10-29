@@ -35,11 +35,6 @@
   /* Banner height so cart/category can start below it (can be updated on scroll) */
   --banner-height: 260px;
   --cart-width: 360px; /* desktop aside width used for content offset */
-  --cart-gap: 28px; /* extra space between content and cart on desktop */
-  /* Bottom spacing for product list; large on mobile, small on desktop */
-  --product-list-bottom: calc(96px + var(--safe-bottom));
-  /* Max page width for centered layout on large screens */
-  --page-max: 1280px;
 
   /* Radii & shadows */
   --radius: 14px;
@@ -63,10 +58,6 @@
 /* Global layout stability and overflow guards */
 *, *::before, *::after { box-sizing: border-box; }
 html, body { max-width: 100%; overflow-x: hidden; }
-/* Keep layout width stable when the vertical scrollbar appears/disappears (Windows).
-   Using scrollbar-gutter ensures the cart/sidebar doesn't jiggle on short pages. */
-html { overflow-y: auto; scrollbar-gutter: stable both-edges; }
-body { overflow-y: auto; }
 /* Ensure app never creates horizontal scrolling on small screens */
 .shop-app { overflow-x: hidden; }
 
@@ -276,26 +267,13 @@ input:focus, select:focus, textarea:focus {
 
 /* Layout helpers */
 .content {
-  /* Offset for header + banner so content starts below the fixed banner */
+  margin-right: calc(var(--cart-width) + 20px); /* space for cart */
+  /* top = header + banner to sit below fixed banner */
   padding: calc(12px + var(--header-height) + var(--banner-height)) 16px 12px;
-  /* Center content and reserve space for the fixed cart on desktop */
-  max-width: min(var(--page-max), calc(100vw - var(--cart-width) - 64px));
-  margin-left: auto;
-  margin-right: auto;
-  padding-right: calc(var(--cart-width) + var(--cart-gap));
-  /* Ensure at least a screenful of content area so very short pages
-     don't cause awkward jumps relative to the fixed cart */
-  min-height: calc(100vh - var(--header-height) - var(--banner-height) - 24px);
+  max-width: 1200px;
 }
-@media (min-width: 1280px) {
-  .content { max-width: min(var(--page-max), calc(100vw - var(--cart-width) - 64px)); }
-}
-
-/* On desktop, anchor cart to the right edge of the centered container */
-@media (min-width: 1025px) {
-  .cart-sidebar {
-    right: max(16px, calc((100vw - var(--page-max)) / 2 + 16px)) !important;
-  }
+@media (min-width: 1200px) {
+  .content { max-width: 1280px; }
 }
 
 /* Responsive layout adjustments + mobile drawer behavior */
@@ -448,16 +426,12 @@ input:focus, select:focus, textarea:focus {
 @media (max-width: 375px) {
   :root { --header-height: 76px; } /* 56px logo + 2*10px padding */
 }
-/* Keep header content constrained for alignment with page content */
+/* On large screens, let the header go edge-to-edge so
+   brand sits flush left and actions flush right */
 @media (min-width: 1280px) {
-  .top-nav__inner { max-width: 1280px; }
-}
-
-/* Reduce extra bottom space on larger screens where FAB/order bars aren't present */
-@media (min-width: 1024px) {
-  :root { --product-list-bottom: 24px; }
-  /* Stabilize layout on desktop: content height shouldn't depend on banner height while scrolling */
-  .content { min-height: calc(100vh - var(--header-height) - 24px); }
+  .top-nav__inner {
+    max-width: none;
+  }
 }
 /* Allow grid children to shrink instead of forcing overflow */
 .brand, .nav-title, .actions { min-width: 0; }
@@ -781,7 +755,6 @@ input:focus, select:focus, textarea:focus {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 20px;
   align-items: start;
-  justify-items: center; /* center tiles within grid cells */
 }
 @media (max-width: 1024px) {
   .category-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
@@ -794,9 +767,4 @@ input:focus, select:focus, textarea:focus {
 }
 @media (max-width: 340px) {
   .category-grid { grid-template-columns: 1fr; gap: 10px; }
-}
-
-/* Center product cards grid when columns don't fill full width */
-.products-grid {
-  justify-content: center;
 }
