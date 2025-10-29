@@ -273,16 +273,20 @@ input:focus, select:focus, textarea:focus {
 
 /* Layout helpers */
 .content {
-  margin-right: calc(var(--cart-width) + 20px); /* space for cart */
-  /* top = header + banner to sit below fixed banner */
+  /* Reserve space for the fixed cart on desktop */
+  margin-right: calc(var(--cart-width) + 20px);
+  /* Offset for header + banner so content starts below the fixed banner */
   padding: calc(12px + var(--header-height) + var(--banner-height)) 16px 12px;
-  max-width: 1200px;
+  /* Constrain content width on large screens to avoid stretching */
+  max-width: min(1280px, calc(100vw - var(--cart-width) - 64px));
+  /* Keep content snug to the cart on very wide screens for balanced layout */
+  margin-left: auto;
   /* Ensure at least a screenful of content area so very short pages
      don't cause awkward jumps relative to the fixed cart */
   min-height: calc(100vh - var(--header-height) - var(--banner-height) - 24px);
 }
-@media (min-width: 1200px) {
-  .content { max-width: 1280px; }
+@media (min-width: 1280px) {
+  .content { max-width: min(1280px, calc(100vw - var(--cart-width) - 64px)); }
 }
 
 /* Responsive layout adjustments + mobile drawer behavior */
@@ -435,17 +439,16 @@ input:focus, select:focus, textarea:focus {
 @media (max-width: 375px) {
   :root { --header-height: 76px; } /* 56px logo + 2*10px padding */
 }
-/* On large screens, let the header go edge-to-edge so
-   brand sits flush left and actions flush right */
+/* Keep header content constrained for alignment with page content */
 @media (min-width: 1280px) {
-  .top-nav__inner {
-    max-width: none;
-  }
+  .top-nav__inner { max-width: 1280px; }
 }
 
 /* Reduce extra bottom space on larger screens where FAB/order bars aren't present */
 @media (min-width: 1024px) {
   :root { --product-list-bottom: 24px; }
+  /* Stabilize layout on desktop: content height shouldn't depend on banner height while scrolling */
+  .content { min-height: calc(100vh - var(--header-height) - 24px); }
 }
 /* Allow grid children to shrink instead of forcing overflow */
 .brand, .nav-title, .actions { min-width: 0; }
