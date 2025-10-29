@@ -35,6 +35,8 @@
   /* Banner height so cart/category can start below it (can be updated on scroll) */
   --banner-height: 260px;
   --cart-width: 360px; /* desktop aside width used for content offset */
+  /* Bottom spacing for product list; large on mobile, small on desktop */
+  --product-list-bottom: calc(96px + var(--safe-bottom));
 
   /* Radii & shadows */
   --radius: 14px;
@@ -432,6 +434,11 @@ input:focus, select:focus, textarea:focus {
   .top-nav__inner {
     max-width: none;
   }
+}
+
+/* Reduce extra bottom space on larger screens where FAB/order bars aren't present */
+@media (min-width: 1024px) {
+  :root { --product-list-bottom: 24px; }
 }
 /* Allow grid children to shrink instead of forcing overflow */
 .brand, .nav-title, .actions { min-width: 0; }
