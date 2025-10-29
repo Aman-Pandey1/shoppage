@@ -517,7 +517,14 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* Order details bar */
-.order-bar { padding: 10px; border-radius: 12px; margin: 12px 0; }
+.order-bar {
+  padding: 12px;
+  border-radius: 14px;
+  margin: 12px 0;
+  background: #ffffff;
+  border: 3px solid #111827; /* bold outline like screenshot */
+  box-shadow: none;
+}
 /* Two columns: left compact controls, right date/time block */
 .order-bar__row { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 12px; align-items: start; }
 .order-bar__group { display: grid; gap: 6px; }
