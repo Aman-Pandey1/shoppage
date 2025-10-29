@@ -17,7 +17,7 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
   if (isError) return <div style={{ color: 'red' }}>Failed to load products: {error?.message || 'Unknown error'}</div>;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 60 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 96 }}>
       {/* Category header */}
           <div className="card animate-fadeInUp" style={{ padding: 14, borderRadius: 'var(--radius)', borderTop: '3px solid var(--primary)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
