@@ -37,6 +37,8 @@
   --cart-width: 360px; /* desktop aside width used for content offset */
   /* Bottom spacing for product list; large on mobile, small on desktop */
   --product-list-bottom: calc(96px + var(--safe-bottom));
+  /* Max page width for centered layout on large screens */
+  --page-max: 1280px;
 
   /* Radii & shadows */
   --radius: 14px;
@@ -273,20 +275,26 @@ input:focus, select:focus, textarea:focus {
 
 /* Layout helpers */
 .content {
-  /* Reserve space for the fixed cart on desktop */
-  margin-right: calc(var(--cart-width) + 20px);
   /* Offset for header + banner so content starts below the fixed banner */
   padding: calc(12px + var(--header-height) + var(--banner-height)) 16px 12px;
-  /* Constrain content width on large screens to avoid stretching */
-  max-width: min(1280px, calc(100vw - var(--cart-width) - 64px));
-  /* Keep content snug to the cart on very wide screens for balanced layout */
+  /* Center content and reserve space for the fixed cart on desktop */
+  max-width: min(var(--page-max), calc(100vw - var(--cart-width) - 64px));
   margin-left: auto;
+  margin-right: auto;
+  padding-right: calc(var(--cart-width) + 20px);
   /* Ensure at least a screenful of content area so very short pages
      don't cause awkward jumps relative to the fixed cart */
   min-height: calc(100vh - var(--header-height) - var(--banner-height) - 24px);
 }
 @media (min-width: 1280px) {
-  .content { max-width: min(1280px, calc(100vw - var(--cart-width) - 64px)); }
+  .content { max-width: min(var(--page-max), calc(100vw - var(--cart-width) - 64px)); }
+}
+
+/* On desktop, anchor cart to the right edge of the centered container */
+@media (min-width: 1025px) {
+  .cart-sidebar {
+    right: max(16px, calc((100vw - var(--page-max)) / 2 + 16px)) !important;
+  }
 }
 
 /* Responsive layout adjustments + mobile drawer behavior */
