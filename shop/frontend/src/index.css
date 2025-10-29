@@ -58,6 +58,8 @@
 /* Global layout stability and overflow guards */
 *, *::before, *::after { box-sizing: border-box; }
 html, body { max-width: 100%; overflow-x: hidden; }
+/* Always reserve vertical scrollbar space to prevent layout shift/jitter */
+html { scrollbar-gutter: stable; }
 /* Ensure app never creates horizontal scrolling on small screens */
 .shop-app { overflow-x: hidden; }
 
@@ -274,6 +276,8 @@ input:focus, select:focus, textarea:focus {
 }
 @media (min-width: 1200px) {
   .content { max-width: 1280px; }
+  /* Keep cart anchored to header on large screens to avoid shake during banner collapse */
+  .cart-sidebar { top: calc(var(--header-height) + 12px) !important; }
 }
 
 /* Responsive layout adjustments + mobile drawer behavior */
