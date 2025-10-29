@@ -52,31 +52,45 @@ export const StoreBanner = ({ siteSlug, onCta }) => {
     ? `url(${bannerUrl}) center/cover`
     : 'url(https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?q=80&w=1600&auto=format&fit=crop) center/cover';
 
-  // Smoothly shrink banner height on scroll and keep layout in sync via CSS var
+  // Smoothly shrink banner height on scroll (desktop keeps a minimum to avoid layout jump)
   React.useEffect(() => {
     const root = document.documentElement;
     const base = 260; // px (matches CSS default var)
-    const min = 0; // allow banner to fully collapse so content/cart reach header
     let raf = 0;
+
+    function getMin() {
+      try {
+        const w = window.innerWidth || 0;
+        // Keep a visible banner on desktop/laptop to prevent cart/bannner from jumping
+        // Mobile may fully collapse to maximize space
+        return w >= 1024 ? 140 : 0;
+      } catch {
+        return 120;
+      }
+    }
+
     function onScroll() {
-      // Use rAF to avoid layout thrash on rapid scroll
       if (raf) return;
       raf = requestAnimationFrame(() => {
         raf = 0;
         try {
           const y = window.scrollY || document.documentElement.scrollTop || 0;
           const t = Math.min(1, Math.max(0, y / base));
+          const min = getMin();
           const h = Math.round(min + (base - min) * (1 - t));
           root.style.setProperty('--banner-height', `${h}px`);
         } catch {}
       });
     }
+
     // Initialize once on mount
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
+    // Recompute on resize to adapt the minimum height per breakpoint
+    window.addEventListener('resize', onScroll, { passive: true });
     return () => {
       window.removeEventListener('scroll', onScroll);
-      // Restore default on unmount
+      window.removeEventListener('resize', onScroll);
       try { root.style.removeProperty('--banner-height'); } catch {}
       if (raf) cancelAnimationFrame(raf);
     };
