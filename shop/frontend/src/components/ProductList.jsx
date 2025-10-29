@@ -17,7 +17,7 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
   if (isError) return <div style={{ color: 'red' }}>Failed to load products: {error?.message || 'Unknown error'}</div>;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 'var(--product-list-bottom, 96px)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 96 }}>
       {/* Category header */}
           <div className="card animate-fadeInUp" style={{ padding: 14, borderRadius: 'var(--radius)', borderTop: '3px solid var(--primary)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -60,16 +60,8 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
         </div>
       </div>
 
-      {/* Text-only items grid (responsive, centered on mobile) */}
-      <div
-        className="products-grid"
-        style={{
-          display: 'grid',
-          gap: 12,
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 280px))',
-          justifyContent: 'center',
-        }}
-      >
+      {/* Text-only items grid (2–3 per row responsive) */}
+      <div className="products-grid" style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
         {products.map((p, idx) => (
           <div key={p._id} className="card animate-fadeInUp" style={{ padding: 12, animationDelay: `${idx * 35}ms` }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'start' }}>

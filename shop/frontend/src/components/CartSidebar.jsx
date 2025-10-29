@@ -147,24 +147,23 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
     <aside
       style={{
         position: 'fixed',
-          // Anchor below header; ignore banner on desktop so cart can reach top when scrolled
-          top: `calc(var(--header-height) + 12px)`,
+        // Anchor below header + dynamic banner height so height is always correct
+        top: `calc(var(--header-height) + var(--banner-height) + 12px)`,
         right: 16,
-          bottom: 12,
+        bottom: 16,
         width: 'var(--cart-width, 360px)',
         background: '#fff',
         border: '1px solid var(--border)',
         borderRadius: 'var(--radius)',
         padding: 16,
         overflowY: 'auto',
-        overscrollBehavior: 'contain',
         // Ensure desktop cart sits above content and banner, below header dropdown
         zIndex: 700,
       }}
       className="cart-sidebar"
       data-open={open ? 'true' : 'false'}
     >
-      <div className="card cart-header" style={{ padding: 14, borderRadius: 12, marginBottom: 12, borderTop: '3px solid var(--primary)', position: 'sticky', top: -16, background: '#fff', zIndex: 2 }}>
+      <div className="card cart-header" style={{ padding: 14, borderRadius: 12, marginBottom: 12, borderTop: '3px solid var(--primary)', position: 'sticky', top: 0, background: '#fff', zIndex: 2 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontWeight: 800 }}>Your order</div>
           <div style={{ textAlign: 'right' }}>
