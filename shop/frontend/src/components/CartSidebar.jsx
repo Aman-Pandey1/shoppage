@@ -157,6 +157,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
         borderRadius: 'var(--radius)',
         padding: 16,
         overflowY: 'auto',
+        overscrollBehavior: 'contain',
         // Ensure desktop cart sits above content and banner, below header dropdown
         zIndex: 700,
       }}
