@@ -439,6 +439,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         readyAt={readyAt}
       />
       <TopNav siteSlug={siteSlug} isCartOpen={mobileCartOpen} onSignIn={() => setLoginOpen(true)} onOpenCart={() => setMobileCartOpen(true)} cartCount={state.items.length} />
+      {/* Ensure cart top aligns exactly with header on wide screens */}
+      <style>{`@media (min-width: 1200px){ .cart-sidebar{ top: var(--header-height) !important; } }`}</style>
       {(() => {
         // Remove banner and reserve no extra height
         try { document.documentElement.style.setProperty('--banner-height', '0px'); } catch {}
