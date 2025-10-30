@@ -148,8 +148,8 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
     <aside
       style={{
         position: 'fixed',
-        // Start just below header (no banner)
-        top: `calc(var(--header-height) + 12px)`,
+        // Align cart top flush with header, like the mock
+        top: 'var(--header-height)',
         right: 16,
         bottom: 16,
         width: 'var(--cart-width, 360px)',

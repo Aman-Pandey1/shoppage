@@ -88,7 +88,9 @@ export const CategoryGrid = ({ onSelect, siteSlug = 'default' }) => {
               borderRadius: 14,
               border: '3px solid #111827',
               padding: 6,
-              background: 'transparent'
+              background: 'transparent',
+              // Add strong bottom shadow like the mock
+              boxShadow: '0 6px 0 rgba(0,0,0,0.9)'
             }}
           >
             <div
