@@ -145,11 +145,11 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
   const grandTotal = React.useMemo(() => grandTotalCents / 100, [grandTotalCents]);
 
   return (
-    <aside
+      <aside
       style={{
         position: 'fixed',
-        // Align cart top flush with header, like the mock
-        top: 'var(--header-height)',
+        // Bring the cart near the very top on desktop; mobile overrides in CSS
+        top: 8,
         right: 16,
         bottom: 16,
         width: 'var(--cart-width, 360px)',

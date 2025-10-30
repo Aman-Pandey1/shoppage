@@ -278,8 +278,19 @@ input:focus, select:focus, textarea:focus {
 .cart-sidebar { transition: top .25s ease; will-change: top; }
 @media (min-width: 1200px) {
   .content { max-width: 1280px; }
-  /* Keep cart aligned just below header on large screens */
-  .cart-sidebar { top: calc(var(--header-height) + 12px) !important; }
+}
+
+/* Desktop layout: reserve space for cart at the top header as well
+   and pull the cart up so its top sits near the very top, like the mock. */
+@media (min-width: 1025px) {
+  .top-nav__inner {
+    /* Reduce effective width from the right side to make room for the cart */
+    padding-right: calc(var(--cart-width) + 24px);
+  }
+  .cart-sidebar {
+    /* Bring the cart up to the top-right next to the user icon */
+    top: 8px !important;
+  }
 }
 
 /* Responsive layout adjustments + mobile drawer behavior */
