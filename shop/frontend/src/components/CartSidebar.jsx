@@ -1,4 +1,5 @@
 import React from 'react';
+import { ShoppingCart } from 'lucide-react';
 import { useCart } from '../store/CartContext';
 import { formatCents } from '../lib/money';
 import { fetchJson } from '../lib/api';
@@ -164,8 +165,8 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
       className="cart-sidebar"
       data-open={open ? 'true' : 'false'}
     >
-      <div className="card cart-header" style={{ padding: 14, borderRadius: 12, marginBottom: 12, borderTop: '3px solid var(--primary)', position: 'sticky', top: 0, background: '#fff', zIndex: 2 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="card cart-header" style={{ padding: 14, borderRadius: 12, marginBottom: 12, borderTop: '3px solid var(--primary)', position: 'sticky', top: 0, background: '#fff', zIndex: 2, minHeight: 'var(--header-height)', display: 'flex', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
           <div style={{ fontWeight: 800 }}>Your order</div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: 12 }} className="muted">TOTAL</div>
@@ -190,7 +191,9 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
 
       {state.items.length === 0 ? (
         <div className="card animate-fadeInUp" style={{ textAlign: 'center', padding: 22, borderRadius: 'var(--radius)', border: '1px dashed var(--primary-600)', background: 'var(--primary-alpha-04)', color: 'var(--muted)' }}>
-          <div style={{ fontSize: 36, marginBottom: 6, color: 'var(--accent)' }}>🧾</div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 56, height: 56, borderRadius: '9999px', background: '#111827', marginBottom: 8 }}>
+            <ShoppingCart size={26} color="#fff" />
+          </div>
           <div style={{ fontWeight: 700, marginBottom: 4 }}>Your order is empty</div>
         </div>
       ) : (
