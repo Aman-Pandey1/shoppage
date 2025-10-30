@@ -117,7 +117,7 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
   return (
     <div className="top-nav" data-menu-open={menuOpen ? 'true' : 'false'} role="banner" style={{ zIndex: menuOpen ? 900 : undefined }}>
       <div className="top-nav__inner">
-        {/* Left: Back To Home */}
+        {/* Left: Home pill */}
         <div className="brand" aria-label="Store brand">
           {logoLinkUrl ? (
             <a
@@ -135,14 +135,15 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
                 gap: 8,
                 padding: '6px 12px',
                 borderRadius: 999,
-                border: '1px solid var(--primary-600)',
+                border: '1px solid #111827',
                 background: '#fff',
-                color: 'var(--primary-600)',
+                color: '#111827',
                 fontWeight: 800,
                 fontSize: 12,
               }}
             >
-              Back To Home
+              <span role="img" aria-label="home">🏠</span>
+              Home
             </a>
           ) : null}
         </div>
@@ -184,8 +185,8 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
                 gap: 8,
                 padding: '6px 12px',
                 borderRadius: 999,
-                border: '1px solid var(--primary-600)',
-                background: 'var(--primary-600)',
+                border: '1px solid #111827',
+                background: '#111827',
                 fontSize: 12,
                 textDecoration: 'none',
                 color: '#fff',
@@ -266,7 +267,7 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
           {/* Desktop: account chip remains; hidden on mobile */}
           <button className="profile-chip hide-mobile" aria-label="Account" onClick={() => setMenuOpen((v) => !v)}
             style={{
-              background: 'var(--primary-600)',
+              background: '#111827',
               color: '#fff'
             }}
           >
