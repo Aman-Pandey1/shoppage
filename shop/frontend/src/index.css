@@ -283,6 +283,10 @@ input:focus, select:focus, textarea:focus {
 /* Desktop layout: reserve space for cart at the top header as well
    and pull the cart up so its top sits near the very top, like the mock. */
 @media (min-width: 1025px) {
+  /* Shrink the fixed header from the right so the cart isn't covered */
+  .top-nav {
+    right: calc(var(--cart-width) + 24px);
+  }
   .top-nav__inner {
     /* Reduce effective width from the right side to make room for the cart */
     padding-right: calc(var(--cart-width) + 24px);
