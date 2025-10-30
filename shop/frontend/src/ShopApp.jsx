@@ -445,82 +445,84 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         return null;
       })()}
       <main className="content">
-
-        {/* Top restaurant location bar (grey) */}
-        <div className="animate-popIn" style={{
-          maxWidth: 1280,
-          margin: '0 auto 12px',
-          background: '#6b7280',
-          color: '#fff',
-          borderRadius: 12,
-          padding: 16,
-          display: 'grid',
-          gridTemplateColumns: '1fr auto',
-          gap: 16,
-          alignItems: 'center'
-        }}>
-          <div style={{ display: 'grid', gap: 6 }}>
-            <div style={{ fontWeight: 900, fontSize: 18 }}>{site?.name || 'Restaurant'}</div>
-            {site?.tagline ? (<div style={{ fontSize: 13, opacity: 0.95 }}>{site.tagline}</div>) : null}
+        {/* Keep inner content aligned to the same width as header and order details */}
+        <div className="container">
+          {/* Top restaurant location bar (grey) */}
+          <div className="animate-popIn" style={{
+            /* Fill the container width to match order details */
+            margin: '0 0 12px 0',
+            background: '#6b7280',
+            color: '#fff',
+            borderRadius: 12,
+            padding: 16,
+            display: 'grid',
+            gridTemplateColumns: '1fr auto',
+            gap: 16,
+            alignItems: 'center'
+          }}>
             <div style={{ display: 'grid', gap: 6 }}>
-              <div style={{ fontSize: 12, opacity: 0.95 }}>Restaurant Location</div>
-              <select
-                value={(idx => (idx >= 0 ? String(idx) : ''))(locations.findIndex((l) => l === selectedLocation))}
-                onChange={(e) => {
-                  const idx = Number(e.target.value);
-                  const chosen = locations[idx];
-                  setSelectedLocation(chosen || null);
-                  setSelectedPickupCity((chosen && chosen.address && chosen.address.city) ? chosen.address.city : 'All');
-                  try { localStorage.setItem('selectedPickupIndex', String(idx)); } catch {}
-                }}
+              <div style={{ fontWeight: 900, fontSize: 18 }}>{site?.name || 'Restaurant'}</div>
+              {site?.tagline ? (<div style={{ fontSize: 13, opacity: 0.95 }}>{site.tagline}</div>) : null}
+              <div style={{ display: 'grid', gap: 6 }}>
+                <div style={{ fontSize: 12, opacity: 0.95 }}>Restaurant Location</div>
+                <select
+                  value={(idx => (idx >= 0 ? String(idx) : ''))(locations.findIndex((l) => l === selectedLocation))}
+                  onChange={(e) => {
+                    const idx = Number(e.target.value);
+                    const chosen = locations[idx];
+                    setSelectedLocation(chosen || null);
+                    setSelectedPickupCity((chosen && chosen.address && chosen.address.city) ? chosen.address.city : 'All');
+                    try { localStorage.setItem('selectedPickupIndex', String(idx)); } catch {}
+                  }}
+                  style={{
+                    background: '#fff',
+                    color: '#111827',
+                    borderRadius: 9999,
+                    padding: '10px 14px',
+                    border: 'none',
+                    minWidth: 260,
+                  }}
+                >
+                  {(locations.findIndex((l) => l === selectedLocation) < 0) ? <option value="" disabled>Select a location</option> : null}
+                  {locations.map((loc, idx) => (
+                    <option key={`${loc?.name || 'loc'}-${idx}`} value={String(idx)}>
+                      {(loc?.name || 'Restaurant')} — {(Array.isArray(loc?.address?.streetAddress) ? loc.address.streetAddress.join(' ') : '')}{loc?.address?.city ? `, ${loc.address.city}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'grid', justifyItems: 'end' }}>
+              <button
+                onClick={() => setMobileCartOpen(true)}
+                role="button"
+                aria-label="Order online"
+                className="elevated"
                 style={{
-                  background: '#fff',
-                  color: '#111827',
-                  borderRadius: 9999,
-                  padding: '10px 14px',
-                  border: 'none',
-                  minWidth: 260,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  padding: '12px 18px',
+                  borderRadius: 8,
+                  border: '1px solid var(--primary-600)',
+                  background: 'var(--primary-600)',
+                  color: '#fff',
+                  fontWeight: 900,
+                  letterSpacing: '.03em',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer'
                 }}
               >
-                {(locations.findIndex((l) => l === selectedLocation) < 0) ? <option value="" disabled>Select a location</option> : null}
-                {locations.map((loc, idx) => (
-                  <option key={`${loc?.name || 'loc'}-${idx}`} value={String(idx)}>
-                    {(loc?.name || 'Restaurant')} — {(Array.isArray(loc?.address?.streetAddress) ? loc.address.streetAddress.join(' ') : '')}{loc?.address?.city ? `, ${loc.address.city}` : ''}
-                  </option>
-                ))}
-              </select>
+                ORDER ONLINE
+              </button>
             </div>
           </div>
-          <div style={{ display: 'grid', justifyItems: 'end' }}>
-            <button
-              onClick={() => setMobileCartOpen(true)}
-              role="button"
-              aria-label="Order online"
-              className="elevated"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                padding: '12px 18px',
-                borderRadius: 8,
-                border: '1px solid var(--primary-600)',
-                background: 'var(--primary-600)',
-                color: '#fff',
-                fontWeight: 900,
-                letterSpacing: '.03em',
-                textTransform: 'uppercase',
-                cursor: 'pointer'
-              }}
-            >
-              ORDER ONLINE
-            </button>
-          </div>
+
+          <OrderTypeSelection />
+
+          {content}
         </div>
-
-        <OrderTypeSelection />
-
-        {content}
       </main>
 
       <button className="cart-fab hide-desktop" aria-label="Open cart" onClick={() => setMobileCartOpen(true)} style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
