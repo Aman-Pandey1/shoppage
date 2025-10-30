@@ -278,8 +278,8 @@ input:focus, select:focus, textarea:focus {
 .cart-sidebar { transition: top .25s ease; will-change: top; }
 @media (min-width: 1200px) {
   .content { max-width: 1280px; }
-  /* Keep cart below banner on large screens as well */
-  .cart-sidebar { top: calc(var(--header-height) + var(--banner-height) + 12px) !important; }
+  /* Keep cart aligned just below header on large screens */
+  .cart-sidebar { top: calc(var(--header-height) + 12px) !important; }
 }
 
 /* Responsive layout adjustments + mobile drawer behavior */
@@ -523,7 +523,7 @@ input:focus, select:focus, textarea:focus {
   margin: 12px 0;
   background: #ffffff;
   border: 3px solid #111827; /* bold outline like screenshot */
-  box-shadow: none;
+  box-shadow: 0 6px 0 rgba(0,0,0,0.9);
 }
 /* Two columns: left compact controls, right date/time block */
 .order-bar__row { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 12px; align-items: start; }

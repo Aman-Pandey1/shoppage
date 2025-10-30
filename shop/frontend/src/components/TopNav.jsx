@@ -136,7 +136,7 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
                 padding: '6px 12px',
                 borderRadius: 999,
                 border: '1px solid #111827',
-                background: '#fff',
+                background: '#e5e7eb',
                 color: '#111827',
                 fontWeight: 800,
                 fontSize: 12,
@@ -186,10 +186,10 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
                 padding: '6px 12px',
                 borderRadius: 999,
                 border: '1px solid #111827',
-                background: '#111827',
+                background: '#e5e7eb',
                 fontSize: 12,
                 textDecoration: 'none',
-                color: '#fff',
+                color: '#111827',
                 fontWeight: 800,
               }}
             >
@@ -251,15 +251,15 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  background: 'transparent',
-                  border: '1px solid var(--primary-600)',
+                  background: '#e5e7eb',
+                  border: '1px solid #111827',
                   borderRadius: 999,
-                  color: 'var(--primary-600)',
+                  color: '#111827',
                   cursor: 'pointer',
                   padding: '6px 10px'
                 }}
               >
-                {user ? <span style={{ fontWeight: 800, fontSize: 12 }}>{initials}</span> : <User size={16} color="var(--primary-600)" />}
+                {user ? <span style={{ fontWeight: 800, fontSize: 12 }}>{initials}</span> : <User size={16} color="#111827" />}
               </button>
             </>
           )}
@@ -267,11 +267,12 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
           {/* Desktop: account chip remains; hidden on mobile */}
           <button className="profile-chip hide-mobile" aria-label="Account" onClick={() => setMenuOpen((v) => !v)}
             style={{
-              background: '#111827',
-              color: '#fff'
+              background: '#e5e7eb',
+              color: '#111827',
+              border: '1px solid #111827'
             }}
           >
-            {user ? <span>{initials}</span> : <User size={16} color="#fff" />}
+            {user ? <span>{initials}</span> : <User size={16} color="#111827" />}
           </button>
           {menuOpen ? (
             <div 
