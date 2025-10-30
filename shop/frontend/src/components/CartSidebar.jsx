@@ -332,7 +332,16 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
         <button
           type="button"
           className="primary-btn"
-          style={{ width: '100%', padding: '12px 16px', borderRadius: 12 }}
+          style={{
+            width: '100%',
+            padding: '12px 16px',
+            borderRadius: 12,
+            border: '1px solid #b5835a',
+            background: '#c7925a',
+            color: '#fff',
+            letterSpacing: '.03em',
+            fontWeight: 900
+          }}
           disabled={state.items.length === 0}
           onClick={() => {
             if (typeof onCheckout === 'function') {
@@ -346,7 +355,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
           }}
           aria-disabled={state.items.length === 0 ? 'true' : 'false'}
         >
-          Confirm →
+          CHECKOUT
         </button>
       </div>
     </aside>

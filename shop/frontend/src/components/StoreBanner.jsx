@@ -7,6 +7,9 @@ export const StoreBanner = ({ siteSlug, onCta }) => {
   const [bannerUrl, setBannerUrl] = React.useState('');
   const [hours, setHours] = React.useState(null);
   const [isOpen, setIsOpen] = React.useState(true);
+  // Pickup locations for the grey info bar (to mirror screenshot)
+  const [locations, setLocations] = React.useState([]);
+  const [selectedLocIndex, setSelectedLocIndex] = React.useState(-1);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -20,6 +23,23 @@ export const StoreBanner = ({ siteSlug, onCta }) => {
         }
       } catch {}
     }
+    async function loadLocations() {
+      try {
+        const list = await fetchJson(`/api/shop/${siteSlug}/locations`);
+        const arr = Array.isArray(list) ? list : [];
+        if (!cancelled) {
+          setLocations(arr);
+          try {
+            const saved = Number(localStorage.getItem('selectedPickupIndex'));
+            if (Number.isFinite(saved) && saved >= 0 && saved < arr.length) {
+              setSelectedLocIndex(saved);
+            } else {
+              setSelectedLocIndex(arr.length ? 0 : -1);
+            }
+          } catch { setSelectedLocIndex(arr.length ? 0 : -1); }
+        }
+      } catch { if (!cancelled) { setLocations([]); setSelectedLocIndex(-1); } }
+    }
     async function loadHours() {
       try {
         const resp = await fetchJson(`/api/shop/${siteSlug}/hours`);
@@ -27,6 +47,7 @@ export const StoreBanner = ({ siteSlug, onCta }) => {
       } catch { if (!cancelled) setHours(null); }
     }
     load();
+    loadLocations();
     loadHours();
     return () => { cancelled = true; };
   }, [siteSlug]);
@@ -126,46 +147,90 @@ export const StoreBanner = ({ siteSlug, onCta }) => {
             padding: '16px',
             color: '#fff',
             display: 'grid',
-            gridTemplateRows: '1fr auto',
+            gridTemplateRows: 'auto 1fr',
+            gap: 12,
           }}
         >
+          {/* Grey information bar (mirrors uploaded design) */}
+          <div style={{ pointerEvents: 'auto' }}>
+            <div
+              className="elevated"
+              style={{
+                maxWidth: 1280,
+                margin: '0 auto',
+                background: '#6b7280',
+                color: '#fff',
+                borderRadius: 12,
+                padding: 16,
+                display: 'grid',
+                gridTemplateColumns: '1fr auto',
+                gap: 16,
+                alignItems: 'center',
+              }}
+            >
+              <div style={{ display: 'grid', gap: 8 }}>
+                <div style={{ fontWeight: 900, fontSize: 18 }}>{storeName}</div>
+                {tagline ? (<div style={{ fontSize: 13, opacity: 0.95 }}>{tagline}</div>) : null}
+                <div style={{ display: 'grid', gap: 6 }}>
+                  <div style={{ fontSize: 12, opacity: 0.95 }}>Restaurant Location</div>
+                  <select
+                    value={selectedLocIndex >= 0 ? String(selectedLocIndex) : ''}
+                    onChange={(e) => {
+                      const idx = Number(e.target.value);
+                      setSelectedLocIndex(idx);
+                      try { localStorage.setItem('selectedPickupIndex', String(idx)); } catch {}
+                    }}
+                    style={{
+                      background: '#fff',
+                      color: '#111827',
+                      borderRadius: 9999,
+                      padding: '10px 14px',
+                      border: 'none',
+                      minWidth: 260,
+                    }}
+                  >
+                    {selectedLocIndex < 0 ? <option value="" disabled>Select a location</option> : null}
+                    {locations.map((loc, idx) => (
+                      <option key={`${loc?.name || 'loc'}-${idx}`} value={String(idx)}>
+                        {(loc?.name || 'Restaurant')} — {(Array.isArray(loc?.address?.streetAddress) ? loc.address.streetAddress.join(' ') : '')}{loc?.address?.city ? `, ${loc.address.city}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div style={{ display: 'grid', justifyItems: 'end' }}>
+                <button
+                  onClick={onCta}
+                  role="button"
+                  aria-label="Order online"
+                  className="elevated"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    padding: '12px 18px',
+                    borderRadius: 8,
+                    border: '1px solid var(--primary-600)',
+                    background: 'var(--primary-600)',
+                    color: '#fff',
+                    fontWeight: 900,
+                    letterSpacing: '.03em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ORDER ONLINE
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Centered title over banner (kept subtle) */}
           <div style={{ alignSelf: 'center', textAlign: 'center', display: 'grid', gap: 10 }}>
             <img alt="logo" src={resolveAssetUrl('') || undefined} style={{ display: 'none' }} />
             <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: '.01em' }}>{storeName}</div>
             {tagline ? <div style={{ fontSize: 13, opacity: 0.9 }}>{tagline}</div> : null}
-          </div>
-          <div
-            style={{
-              alignSelf: 'end',
-              justifySelf: 'center',
-              marginBottom: 12,
-              pointerEvents: 'auto',
-            }}
-          >
-            <button
-              onClick={onCta}
-              role="button"
-              aria-label="Order online"
-              className="elevated"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                padding: '10px 18px',
-                borderRadius: 9999,
-                border: '1px solid var(--primary-600)',
-                background: 'var(--primary-600)',
-                color: '#fff',
-                fontWeight: 900,
-                letterSpacing: '.04em',
-                fontSize: 16,
-                textTransform: 'uppercase',
-                cursor: 'pointer'
-              }}
-            >
-              Order Online
-            </button>
           </div>
         </div>
       </div>

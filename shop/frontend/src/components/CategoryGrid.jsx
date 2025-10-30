@@ -36,59 +36,74 @@ export const CategoryGrid = ({ onSelect, siteSlug = 'default' }) => {
           onClick={() => onSelect(cat)}
           className="animate-fadeInUp"
           style={{
-            border: '1px solid var(--border)',
+            border: 'none',
             borderRadius: 'var(--radius)',
             padding: 0,
             cursor: 'pointer',
             textAlign: 'left',
-            background: '#fff',
+            background: 'transparent',
             color: 'var(--text)',
-            boxShadow: 'var(--shadow-soft)',
-            transition: 'transform .15s ease, box-shadow .2s ease, border-color .2s ease',
+            transition: 'transform .15s ease',
             animationDelay: `${idx * 40}ms`,
-            overflow: 'hidden'
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-2px)';
-            e.currentTarget.style.boxShadow = 'var(--shadow-pop)';
-            e.currentTarget.style.borderColor = 'var(--primary)';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = 'none';
-            e.currentTarget.style.boxShadow = 'var(--shadow-soft)';
-            e.currentTarget.style.borderColor = 'var(--border)';
           }}
           aria-label={`Open ${cat.name} category`}
         >
+          {/* Image card */}
+          <div className="card" style={{ overflow: 'hidden', borderRadius: 'var(--radius)', padding: 0 }}>
+            <div
+              style={{
+                width: '100%',
+                aspectRatio: '1 / 1',
+                background: 'linear-gradient(180deg, var(--primary-alpha-08), rgba(167,139,250,0.08))',
+                overflow: 'hidden'
+              }}
+            >
+              {cat.imageUrl ? (
+                <img
+                  src={resolveAssetUrl(cat.imageUrl)}
+                  alt={cat.name}
+                  className="img-cover"
+                  loading="lazy"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    const seed = encodeURIComponent(String(cat.name || 'category').toLowerCase());
+                    e.currentTarget.src = `https://picsum.photos/seed/${seed}/400/400`;
+                  }}
+                />
+              ) : (
+                <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', fontSize: 42 }}>{getIcon(cat.name)}</div>
+              )}
+            </div>
+          </div>
+          {/* Label bar to match screenshot */}
           <div
             style={{
-              width: '100%',
-              aspectRatio: '1 / 1',
-              background: 'linear-gradient(180deg, var(--primary-alpha-08), rgba(167,139,250,0.08))',
-              overflow: 'hidden'
+              marginTop: 10,
+              borderRadius: 14,
+              border: '3px solid #9ca3af',
+              padding: 6,
+              background: 'transparent'
             }}
           >
-          {cat.imageUrl ? (
-              <img
-                src={resolveAssetUrl(cat.imageUrl)}
-                alt={cat.name}
-                className="img-cover"
-                loading="lazy"
-                onError={(e) => {
-                  // Avoid retry loops and use a stable placeholder
-                  e.currentTarget.onerror = null;
-                  const seed = encodeURIComponent(String(cat.name || 'category').toLowerCase());
-                  e.currentTarget.src = `https://picsum.photos/seed/${seed}/400/400`;
-                }}
-              />
-            ) : (
-              <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', fontSize: 42 }}>{getIcon(cat.name)}</div>
-            )}
-          </div>
-          <div style={{ padding: 12 }}>
-            <div style={{ fontWeight: 800, letterSpacing: '.01em' }}>{cat.name}</div>
-            <div className="muted" style={{ fontSize: 13, marginTop: 2 }}>
-              {typeof counts[cat._id] === 'number' ? `${counts[cat._id]} products` : 'Products'}
+            <div
+              style={{
+                background: '#ffffff',
+                borderRadius: 12,
+                padding: '8px 10px',
+                display: 'grid',
+                gap: 2
+              }}
+            >
+              <div style={{ fontWeight: 800, letterSpacing: '.01em' }}>{cat.name}</div>
+              <div className="muted" style={{ fontSize: 12 }}>
+                {typeof counts[cat._id] === 'number' ? `${counts[cat._id]} products` : 'Products'}
+              </div>
             </div>
           </div>
         </button>
