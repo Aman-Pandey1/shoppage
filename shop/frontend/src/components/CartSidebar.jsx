@@ -165,7 +165,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
       className="cart-sidebar"
       data-open={open ? 'true' : 'false'}
     >
-      <div className="card cart-header" style={{ padding: 14, borderRadius: 12, marginBottom: 12, borderTop: '3px solid var(--primary)', position: 'sticky', top: 0, background: '#fff', zIndex: 2, minHeight: 'var(--header-height)', display: 'flex', alignItems: 'center' }}>
+      <div className="card cart-header" style={{ padding: 14, borderRadius: 12, marginBottom: 12, borderTop: '3px solid var(--primary)', position: 'sticky', top: 0, background: '#fff', zIndex: 2, minHeight: 'var(--header-height)', height: 'var(--header-height)', display: 'flex', alignItems: 'center' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
           <div style={{ fontWeight: 800 }}>Your order</div>
           <div style={{ textAlign: 'right' }}>
