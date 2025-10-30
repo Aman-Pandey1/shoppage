@@ -1,5 +1,5 @@
 import React from 'react';
-import { User } from 'lucide-react';
+import { User, Home as HomeIcon, ShoppingCart, Phone } from 'lucide-react';
 import { fetchJson, getCurrentUser, logout, resolveAssetUrl } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 
@@ -136,13 +136,13 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
                 padding: '6px 12px',
                 borderRadius: 999,
                 border: '1px solid #111827',
-                background: '#e5e7eb',
-                color: '#111827',
+                background: '#111827',
+                color: '#fff',
                 fontWeight: 800,
                 fontSize: 12,
               }}
             >
-              <span role="img" aria-label="home">🏠</span>
+              <HomeIcon size={16} color="#fff" />
               Home
             </a>
           ) : null}
@@ -186,14 +186,14 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
                 padding: '6px 12px',
                 borderRadius: 999,
                 border: '1px solid #111827',
-                background: '#e5e7eb',
+                background: '#111827',
                 fontSize: 12,
                 textDecoration: 'none',
-                color: '#111827',
+                color: '#fff',
                 fontWeight: 800,
               }}
             >
-              <span role="img" aria-label="Call">📞</span>
+              <Phone size={16} color="#fff" />
               <span className="hide-mobile">{supportPhone}</span>
             </a>
           ) : null}
@@ -209,15 +209,15 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  background: 'transparent',
-                  border: 'none',
+                  background: '#111827',
+                  border: '1px solid #111827',
                   cursor: 'pointer',
                   position: 'relative',
                   padding: '8px',
                   overflow: 'visible'
                 }}
               >
-                <span role="img" aria-label="cart">🛒</span>
+                <ShoppingCart size={18} color="#fff" />
                 {Number(cartCount) > 0 ? (
                   <span 
                     className="cart-header-badge" 
@@ -251,15 +251,15 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  background: '#e5e7eb',
+                  background: '#111827',
                   border: '1px solid #111827',
                   borderRadius: 999,
-                  color: '#111827',
+                  color: '#fff',
                   cursor: 'pointer',
                   padding: '6px 10px'
                 }}
               >
-                {user ? <span style={{ fontWeight: 800, fontSize: 12 }}>{initials}</span> : <User size={16} color="#111827" />}
+                {user ? <span style={{ fontWeight: 800, fontSize: 12, color: '#fff' }}>{initials}</span> : <User size={16} color="#fff" />}
               </button>
             </>
           )}
@@ -267,12 +267,14 @@ export const TopNav = ({ siteSlug = 'default', onSignIn, onOpenCart, cartCount =
           {/* Desktop: account chip remains; hidden on mobile */}
           <button className="profile-chip hide-mobile" aria-label="Account" onClick={() => setMenuOpen((v) => !v)}
             style={{
-              background: '#e5e7eb',
-              color: '#111827',
-              border: '1px solid #111827'
+              background: '#111827',
+              color: '#fff',
+              border: '1px solid #111827',
+              borderRadius: 999,
+              padding: '6px 10px'
             }}
           >
-            {user ? <span>{initials}</span> : <User size={16} color="#111827" />}
+            {user ? <span style={{ color: '#fff' }}>{initials}</span> : <User size={16} color="#fff" />}
           </button>
           {menuOpen ? (
             <div 
