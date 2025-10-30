@@ -285,15 +285,17 @@ input:focus, select:focus, textarea:focus {
 @media (min-width: 1025px) {
   /* Shrink the fixed header from the right so the cart isn't covered */
   .top-nav {
-    right: calc(var(--cart-width) + 24px);
+    right: calc(var(--cart-width) + 32px);
   }
   .top-nav__inner {
     /* Reduce effective width from the right side to make room for the cart */
-    padding-right: calc(var(--cart-width) + 24px);
+    padding-right: calc(var(--cart-width) + 32px);
   }
   .cart-sidebar {
     /* Bring the cart up to the top-right next to the user icon */
     top: 8px !important;
+    /* Ensure the cart sits above the header container in any overlap edge cases */
+    z-index: 800;
   }
 }
 
