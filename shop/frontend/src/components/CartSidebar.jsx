@@ -147,18 +147,19 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
     <aside
       style={{
         position: 'fixed',
-        // Anchor below header + dynamic banner height so height is always correct
-        top: `calc(var(--header-height) + var(--banner-height) + 12px)`,
+        // Start just below header (no banner)
+        top: `calc(var(--header-height) + 12px)`,
         right: 16,
         bottom: 16,
         width: 'var(--cart-width, 360px)',
         background: '#fff',
-        border: '1px solid var(--border)',
+        border: '3px solid #111827',
         borderRadius: 'var(--radius)',
         padding: 16,
         overflowY: 'auto',
         // Ensure desktop cart sits above content and banner, below header dropdown
         zIndex: 700,
+        boxShadow: '0 6px 0 rgba(0,0,0,0.9)'
       }}
       className="cart-sidebar"
       data-open={open ? 'true' : 'false'}

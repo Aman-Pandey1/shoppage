@@ -5,7 +5,7 @@ import { CategoryGrid } from './components/CategoryGrid';
 // import { StoreHeader } from './components/StoreHeader';
 import { TopNav } from './components/TopNav';
 import { OrderDetailsBar } from './components/OrderDetailsBar';
-import { StoreBanner } from './components/StoreBanner';
+// Banner removed per latest design
 import { AddressAutocomplete } from './components/AddressAutocomplete';
 import { ProductList } from './components/ProductList';
 import { PrivacyPolicyModal } from './components/PrivacyPolicyModal';
@@ -380,16 +380,12 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       pickupTime={pickupTime}
       dateOptions={dateOptions}
       timeOptions={timeOptions}
-      addressSummary={addressSummary}
+      // Hide restaurant location inside order details per new design
+      addressSummary={undefined}
       minutesUntilReady={typeof minutesUntilReady === 'number' ? minutesUntilReady : undefined}
-      locations={locations}
-      selectedLocationIndex={(idx => (idx >= 0 ? idx : (() => { const s = Number(localStorage.getItem('selectedPickupIndex')); return Number.isFinite(s) ? s : undefined; })()))(locations.findIndex((l) => l === selectedLocation))}
-      onChangeLocation={(idx) => {
-        const chosen = locations[idx];
-        setSelectedLocation(chosen || null);
-        setSelectedPickupCity((chosen && chosen.address && chosen.address.city) ? chosen.address.city : 'All');
-        try { localStorage.setItem('selectedPickupIndex', String(idx)); } catch {}
-      }}
+      locations={[]}
+      selectedLocationIndex={undefined}
+      onChangeLocation={undefined}
       onChangeOrderType={() => setFulfillmentOpen(true)}
       onPickupDateChange={(val) => setPickupDate(val)}
       onPickupTimeChange={(val) => setPickupTime(val)}
@@ -443,13 +439,86 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         readyAt={readyAt}
       />
       <TopNav siteSlug={siteSlug} isCartOpen={mobileCartOpen} onSignIn={() => setLoginOpen(true)} onOpenCart={() => setMobileCartOpen(true)} cartCount={state.items.length} />
-      {/* Keep banner directly under header (outside main content) */}
-      <StoreBanner siteSlug={siteSlug} onCta={() => setMobileCartOpen(true)} />
+      {(() => {
+        // Remove banner and reserve no extra height
+        try { document.documentElement.style.setProperty('--banner-height', '0px'); } catch {}
+        return null;
+      })()}
       <main className="content">
 
-        <div className="card order-type-card">
-          <OrderTypeSelection />
+        {/* Top restaurant location bar (grey) */}
+        <div className="animate-popIn" style={{
+          maxWidth: 1280,
+          margin: '0 auto 12px',
+          background: '#6b7280',
+          color: '#fff',
+          borderRadius: 12,
+          padding: 16,
+          display: 'grid',
+          gridTemplateColumns: '1fr auto',
+          gap: 16,
+          alignItems: 'center'
+        }}>
+          <div style={{ display: 'grid', gap: 6 }}>
+            <div style={{ fontWeight: 900, fontSize: 18 }}>{site?.name || 'Restaurant'}</div>
+            {site?.tagline ? (<div style={{ fontSize: 13, opacity: 0.95 }}>{site.tagline}</div>) : null}
+            <div style={{ display: 'grid', gap: 6 }}>
+              <div style={{ fontSize: 12, opacity: 0.95 }}>Restaurant Location</div>
+              <select
+                value={(idx => (idx >= 0 ? String(idx) : ''))(locations.findIndex((l) => l === selectedLocation))}
+                onChange={(e) => {
+                  const idx = Number(e.target.value);
+                  const chosen = locations[idx];
+                  setSelectedLocation(chosen || null);
+                  setSelectedPickupCity((chosen && chosen.address && chosen.address.city) ? chosen.address.city : 'All');
+                  try { localStorage.setItem('selectedPickupIndex', String(idx)); } catch {}
+                }}
+                style={{
+                  background: '#fff',
+                  color: '#111827',
+                  borderRadius: 9999,
+                  padding: '10px 14px',
+                  border: 'none',
+                  minWidth: 260,
+                }}
+              >
+                {(locations.findIndex((l) => l === selectedLocation) < 0) ? <option value="" disabled>Select a location</option> : null}
+                {locations.map((loc, idx) => (
+                  <option key={`${loc?.name || 'loc'}-${idx}`} value={String(idx)}>
+                    {(loc?.name || 'Restaurant')} — {(Array.isArray(loc?.address?.streetAddress) ? loc.address.streetAddress.join(' ') : '')}{loc?.address?.city ? `, ${loc.address.city}` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: 'grid', justifyItems: 'end' }}>
+            <button
+              onClick={() => setMobileCartOpen(true)}
+              role="button"
+              aria-label="Order online"
+              className="elevated"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                padding: '12px 18px',
+                borderRadius: 8,
+                border: '1px solid var(--primary-600)',
+                background: 'var(--primary-600)',
+                color: '#fff',
+                fontWeight: 900,
+                letterSpacing: '.03em',
+                textTransform: 'uppercase',
+                cursor: 'pointer'
+              }}
+            >
+              ORDER ONLINE
+            </button>
+          </div>
         </div>
+
+        <OrderTypeSelection />
 
         {content}
       </main>
