@@ -5,6 +5,8 @@ const CategorySchema = new mongoose.Schema({
 	name: { type: String, required: true },
 	imageUrl: { type: String, required: true },
 	sortIndex: { type: Number, default: 0 },
+    // When true, items in this category are PICKUP-ONLY (no delivery)
+    pickupOnly: { type: Boolean, default: false },
 }, { timestamps: true });
 
 CategorySchema.index({ site: 1, name: 1 }, { unique: true });

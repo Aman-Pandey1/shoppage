@@ -8,6 +8,7 @@ import { requestQuote as uberRequestQuote, createDelivery as uberCreateDelivery 
 import { requestQuote as ddRequestQuote, createDelivery as ddCreateDelivery } from '../services/doordashDrive.js';
 import { distanceBetweenAddressesKm, calculateDistanceFeeCents } from '../services/geo.js';
 import { getNextOrderNumber } from '../utils/orderNumber.js';
+import Category from '../models/Category.js';
 
 const router = Router();
 
@@ -184,7 +185,7 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
     } else if (provider === 'doordash') {
       if ((!site?.doordashStoreId || !hasPickupCfg) && !isMock) return res.status(400).json({ error: 'Site not configured for DoorDash Drive' });
     }
-		const { dropoff, manifestItems, externalId, pickupLocationIndex, notes } = req.body || {};
+    const { dropoff, manifestItems, externalId, pickupLocationIndex, notes } = req.body || {};
 		const locs = (Array.isArray(site.locations) && site.locations.length)
 			? site.locations
 			: (site.pickup ? [site.pickup] : []);
@@ -204,6 +205,23 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 		}
     let pickup = locs[chosenIdx];
 		if (!pickup) return res.status(400).json({ error: 'No pickup location configured' });
+    // Block delivery when any item is from a pickup-only category
+    try {
+      const isPickupOnlyCategory = async (catId) => {
+        if (!catId) return false;
+        if (req.app.locals.mockData) {
+          const cat = (req.app.locals.mockData.categories || []).find((c) => c.site === req.siteId && String(c._id) === String(catId));
+          return !!(cat && cat.pickupOnly);
+        }
+        const found = await Category.findOne({ _id: catId, site: req.siteId });
+        return !!(found && found.pickupOnly);
+      };
+      for (const it of (manifestItems || [])) {
+        if (await isPickupOnlyCategory(it.categoryId)) {
+          return res.status(400).json({ error: 'Cart contains pickup-only items. Delivery is not available.' });
+        }
+      }
+    } catch {}
 		// Ensure pickup has a valid E.164 phone for Uber
     const normalizedPickupPhoneRaw = String(pickup?.phone || '').replace(/[^\d+]/g, '');
     const normalizedPickupPhone = normalizedPickupPhoneRaw
