@@ -287,7 +287,7 @@ input:focus, select:focus, textarea:focus {
 @media (min-width: 1025px) {
   /* Shrink the fixed header from the right so the cart isn't covered */
   .top-nav {
-    right: 400px;
+    right: 390px;
   }
   .top-nav__inner {
     /* Reduce effective width from the right side to make room for the cart */
