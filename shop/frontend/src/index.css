@@ -542,7 +542,8 @@ input:focus, select:focus, textarea:focus {
   margin: 12px 0;
   background: #ffffff;
   border: 3px solid #111827; /* bold outline like screenshot */
-  box-shadow: 0 6px 0 #000; /* pure black shadow like mock */
+  /* Add left and right black bars to match mock */
+  box-shadow: 0 6px 0 #000, 6px 0 0 #000, -6px 0 0 #000;
 }
 /* Two columns: left compact controls, right date/time block */
 .order-bar__row { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 12px; align-items: start; }
