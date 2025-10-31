@@ -153,48 +153,49 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
         right: 16,
         bottom: 16,
         width: 'var(--cart-width, 360px)',
-        background: '#fff',
+        background: '#0b0b0b',
         border: '3px solid #111827',
         borderRadius: 'var(--radius)',
         padding: 16,
         overflowY: 'auto',
         // Ensure desktop cart sits above content and banner, below header dropdown
         zIndex: 700,
-        boxShadow: '0 6px 0 rgba(0,0,0,0.9)'
+        boxShadow: '0 6px 0 rgba(0,0,0,0.95)'
       }}
       className="cart-sidebar"
       data-open={open ? 'true' : 'false'}
     >
-      <div className="card cart-header" style={{ padding: 14, borderRadius: 12, marginBottom: 12, borderTop: '3px solid var(--primary)', position: 'sticky', top: 0, background: '#fff', zIndex: 2, minHeight: 'var(--header-height)', display: 'flex', alignItems: 'center' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-          <div style={{ fontWeight: 800 }}>Your order</div>
+      {/* Top header tile: ORDER READY FOR (time) and TOTAL */}
+      <div
+        className="card"
+        style={{
+          padding: 14,
+          borderRadius: 12,
+          marginBottom: 12,
+          background: '#fff',
+          border: '1px solid var(--border)',
+          boxShadow: 'var(--shadow-soft)'
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', width: '100%', gap: 8 }}>
+          <div>
+            <div className="muted" style={{ fontSize: 12, letterSpacing: '.01em' }}>ORDER READY FOR</div>
+            <div style={{ fontSize: 22, fontWeight: 900, lineHeight: 1.1 }}>{timeString}</div>
+            <div className="muted" style={{ fontSize: 12 }}>{eta}</div>
+          </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: 12 }} className="muted">TOTAL</div>
-            <div style={{ fontWeight: 800 }}>${formatCents(grandTotalCents)}</div>
+            <div style={{ fontWeight: 900, fontSize: 18 }}>${formatCents(grandTotalCents)}</div>
           </div>
-        </div>
-      </div>
-      {/* ORDER READY FOR section should scroll with content (no sticky) */}
-      <div className="card" style={{ marginTop: 8, padding: 12, borderRadius: 10, background: 'var(--primary-alpha-04)', border: '1px dashed var(--primary-600)' }}>
-        <div className="muted" style={{ fontSize: 12 }}>ORDER READY FOR</div>
-        <div style={{ fontSize: 20, fontWeight: 800 }}>{timeString}</div>
-        <div className="muted" style={{ fontSize: 12 }}>{eta}</div>
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 8 }}>
-        <h3 style={{ margin: 0, letterSpacing: '.02em' }}>Your order</h3>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {state.items.length > 0 ? <button onClick={clearCart} className="primary-btn" style={{ padding: '6px 10px', borderRadius: 8 }}>Clear</button> : null}
-          <button onClick={onClose} aria-label="Close cart" title="Close" style={{ border: 'none', background: 'transparent', cursor: 'pointer' }} className="danger hide-desktop">✕</button>
         </div>
       </div>
 
       {state.items.length === 0 ? (
-        <div className="card animate-fadeInUp" style={{ textAlign: 'center', padding: 22, borderRadius: 'var(--radius)', border: '1px dashed var(--primary-600)', background: 'var(--primary-alpha-04)', color: 'var(--muted)' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 56, height: 56, borderRadius: '9999px', background: '#111827', marginBottom: 8 }}>
+        <div className="card animate-fadeInUp" style={{ textAlign: 'center', padding: 22, borderRadius: 12, background: '#fff', color: 'var(--muted)' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 56, height: 56, borderRadius: '9999px', background: '#111827', marginBottom: 10, boxShadow: '0 2px 0 rgba(0,0,0,0.5)' }}>
             <ShoppingCart size={26} color="#fff" />
           </div>
-          <div style={{ fontWeight: 700, marginBottom: 4 }}>Your order is empty</div>
+          <div style={{ fontWeight: 800, marginBottom: 2 }}>Your Cart is Empty!</div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -250,7 +251,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
         </div>
       )}
 
-      <div className="card" style={{ marginTop: 12, borderRadius: 'var(--radius-sm)', padding: 12 }}>
+      <div className="card" style={{ marginTop: 12, borderRadius: 12, padding: 12 }}>
         {freeDeliveryEnabled && typeof freeDeliveryMinSubtotalCents === 'number' ? (
           <div
             className="animate-fadeInUp"
@@ -274,8 +275,8 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
           <span className="muted" style={{ fontSize: 12 }}>Coupon code</span>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g., WELCOME10" style={{ flex: '1 1 160px', minWidth: 0 }} />
-            <button disabled={checking || !code.trim()} style={{ flex: '0 0 auto' }} onClick={async () => {
+            <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g., WELCOME10" style={{ flex: '1 1 160px', minWidth: 0, background: '#fff' }} />
+            <button disabled={checking || !code.trim()} style={{ flex: '0 0 auto', border: '1px solid #d1d5db', background: '#ffffff', color: '#111827', fontWeight: 800 }} onClick={async () => {
               setCouponError('');
               const min = (Number(state.couponMinSubtotalCents) || 5000) / 100;
               if (subtotal < min) { setCouponError(`Minimum $${(min).toFixed(2)} subtotal required to apply discount`); return; }
@@ -292,7 +293,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
                 setCouponError('Invalid code');
               } finally { setChecking(false); }
             }}>Apply</button>
-            {state.coupon ? <button style={{ flex: '0 0 auto' }} onClick={() => { clearCoupon(); setCode(''); }}>Remove</button> : null}
+            {state.coupon ? <button style={{ flex: '0 0 auto', border: '1px solid #d1d5db', background: '#ffffff', color: '#111827', fontWeight: 700 }} onClick={() => { clearCoupon(); setCode(''); }}>Remove</button> : null}
           </div>
           {couponError ? <div style={{ color: 'var(--danger)', fontSize: 12 }}>{couponError}</div> : null}
           {state.coupon ? (
@@ -304,7 +305,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
         </label>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <span className="muted" style={{ fontSize: 12 }}>Notes for restaurant</span>
-          <textarea rows={3} placeholder="e.g., No onions, extra spicy" value={state.notes || ''} onChange={(e) => setNotes(e.target.value)} />
+          <textarea rows={3} placeholder="e.g., No onions, extra spicy" value={state.notes || ''} onChange={(e) => setNotes(e.target.value)} style={{ background: '#fff', borderRadius: 12 }} />
         </label>
         <div style={{ display: 'grid', gap: 6, marginTop: 10 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
