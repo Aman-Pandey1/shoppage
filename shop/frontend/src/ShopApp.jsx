@@ -364,7 +364,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
 
   const cartTotal = getCartTotal();
 
-  const pickupAddressSummary = selectedLocation ? `${selectedLocation?.name || 'Restaurant'} — ${(selectedLocation?.address?.streetAddress || []).join(' ')}, ${selectedLocation?.address?.city || ''}` : undefined;
+  const pickupAddressSummary = selectedLocation ? `${selectedLocation?.name || 'Restaurant'} ? ${(selectedLocation?.address?.streetAddress || []).join(' ')}, ${selectedLocation?.address?.city || ''}` : undefined;
   const pickupCitySummary = selectedPickupCity && selectedPickupCity !== 'All' ? selectedPickupCity : undefined;
   const addressSummary = state.fulfillmentType === 'delivery'
     ? (deliveryAddressSummary || undefined)
@@ -455,7 +455,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
           borderRadius: 12,
           padding: 16,
           display: 'grid',
-          gridTemplateColumns: '1fr auto',
+          gridTemplateColumns: '1fr',
           gap: 16,
           alignItems: 'center'
         }}>
@@ -464,57 +464,57 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
             {site?.tagline ? (<div style={{ fontSize: 13, opacity: 0.95 }}>{site.tagline}</div>) : null}
             <div style={{ display: 'grid', gap: 6 }}>
               <div style={{ fontSize: 12, opacity: 0.95 }}>Restaurant Location</div>
-              <select
-                value={(idx => (idx >= 0 ? String(idx) : ''))(locations.findIndex((l) => l === selectedLocation))}
-                onChange={(e) => {
-                  const idx = Number(e.target.value);
-                  const chosen = locations[idx];
-                  setSelectedLocation(chosen || null);
-                  setSelectedPickupCity((chosen && chosen.address && chosen.address.city) ? chosen.address.city : 'All');
-                  try { localStorage.setItem('selectedPickupIndex', String(idx)); } catch {}
-                }}
-                style={{
-                  background: '#fff',
-                  color: '#111827',
-                  borderRadius: 9999,
-                  padding: '10px 14px',
-                  border: 'none',
-                  minWidth: 260,
-                }}
-              >
-                {(locations.findIndex((l) => l === selectedLocation) < 0) ? <option value="" disabled>Select a location</option> : null}
-                {locations.map((loc, idx) => (
-                  <option key={`${loc?.name || 'loc'}-${idx}`} value={String(idx)}>
-                    {(loc?.name || 'Restaurant')} — {(Array.isArray(loc?.address?.streetAddress) ? loc.address.streetAddress.join(' ') : '')}{loc?.address?.city ? `, ${loc.address.city}` : ''}
-                  </option>
-                ))}
-              </select>
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 12, alignItems: 'center' }}>
+                <select
+                  value={(idx => (idx >= 0 ? String(idx) : ''))(locations.findIndex((l) => l === selectedLocation))}
+                  onChange={(e) => {
+                    const idx = Number(e.target.value);
+                    const chosen = locations[idx];
+                    setSelectedLocation(chosen || null);
+                    setSelectedPickupCity((chosen && chosen.address && chosen.address.city) ? chosen.address.city : 'All');
+                    try { localStorage.setItem('selectedPickupIndex', String(idx)); } catch {}
+                  }}
+                  style={{
+                    background: '#fff',
+                    color: '#111827',
+                    borderRadius: 9999,
+                    padding: '10px 14px',
+                    border: 'none',
+                    minWidth: 220,
+                  }}
+                >
+                  {(locations.findIndex((l) => l === selectedLocation) < 0) ? <option value="" disabled>Select a location</option> : null}
+                  {locations.map((loc, idx) => (
+                    <option key={`${loc?.name || 'loc'}-${idx}`} value={String(idx)}>
+                      {(loc?.name || 'Restaurant')} ? {(Array.isArray(loc?.address?.streetAddress) ? loc.address.streetAddress.join(' ') : '')}{loc?.address?.city ? `, ${loc.address.city}` : ''}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => setMobileCartOpen(true)}
+                  role="button"
+                  aria-label="Order online"
+                  className="elevated"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    padding: '12px 18px',
+                    borderRadius: 8,
+                    border: '1px solid var(--primary-600)',
+                    background: 'var(--primary-600)',
+                    color: '#fff',
+                    fontWeight: 900,
+                    letterSpacing: '.03em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ORDER ONLINE
+                </button>
+              </div>
             </div>
-          </div>
-          <div style={{ display: 'grid', justifyItems: 'end' }}>
-            <button
-              onClick={() => setMobileCartOpen(true)}
-              role="button"
-              aria-label="Order online"
-              className="elevated"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                padding: '12px 18px',
-                borderRadius: 8,
-                border: '1px solid var(--primary-600)',
-                background: 'var(--primary-600)',
-                color: '#fff',
-                fontWeight: 900,
-                letterSpacing: '.03em',
-                textTransform: 'uppercase',
-                cursor: 'pointer'
-              }}
-            >
-              ORDER ONLINE
-            </button>
           </div>
         </div>
 
@@ -524,7 +524,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       </main>
 
       <button className="cart-fab hide-desktop" aria-label="Open cart" onClick={() => setMobileCartOpen(true)} style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-        <span className="cart-fab__icon">🛒</span>
+        <span className="cart-fab__icon">??</span>
         {state.items.length > 0 ? <span className="cart-fab__badge" aria-label={`Items in cart: ${state.items.length}`}>{state.items.length}</span> : null}
       </button>
 
@@ -624,7 +624,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                       <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.8s" repeatCount="indefinite" />
                     </circle>
                   </svg>
-                  Processing…
+                  Processing?
                 </span>
               ) : (
                 'Confirm'
@@ -687,7 +687,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                     }}>
                       {filteredLocations.findIndex((l) => l === selectedLocation) < 0 ? <option value="" disabled>Select a location</option> : null}
                       {filteredLocations.map((loc, idx) => (
-                        <option key={`${loc.name}-${idx}`} value={String(idx)}>{`${loc.name || 'Restaurant'} — ${(loc.address?.streetAddress || []).join(' ')}, ${loc.address?.city || ''}`}</option>
+                        <option key={`${loc.name}-${idx}`} value={String(idx)}>{`${loc.name || 'Restaurant'} ? ${(loc.address?.streetAddress || []).join(' ')}, ${loc.address?.city || ''}`}</option>
                       ))}
                     </select>
                   </label>
@@ -704,7 +704,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                   }}>
                     {locations.findIndex((l) => l === selectedLocation) < 0 ? <option value="" disabled>Select a location</option> : null}
                     {locations.map((loc, idx) => (
-                      <option key={`${loc.name}-${idx}`} value={String(idx)}>{`${loc.name || 'Restaurant'} — ${(loc.address?.streetAddress || []).join(' ')}, ${loc.address?.city || ''}`}</option>
+                      <option key={`${loc.name}-${idx}`} value={String(idx)}>{`${loc.name || 'Restaurant'} ? ${(loc.address?.streetAddress || []).join(' ')}, ${loc.address?.city || ''}`}</option>
                     ))}
                   </select>
                 </label>
@@ -825,7 +825,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         // If pickup, keep user here; they can open order details from cart.
       }} />
       </React.Suspense>
-      <footer className="site-footer">© All Rights Reserved By <a href="https://www.blueboxx.ca/" target="_blank" rel="noopener noreferrer">Blue Boxx</a></footer>
+      <footer className="site-footer">? All Rights Reserved By <a href="https://www.blueboxx.ca/" target="_blank" rel="noopener noreferrer">Blue Boxx</a></footer>
     </div>
   );
 };
