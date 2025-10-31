@@ -192,10 +192,12 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
 
       {state.items.length === 0 ? (
         <div className="card animate-fadeInUp" style={{ textAlign: 'center', padding: 22, borderRadius: 12, background: '#fff', color: 'var(--muted)' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 56, height: 56, borderRadius: '9999px', background: '#111827', marginBottom: 10, boxShadow: '0 2px 0 rgba(0,0,0,0.5)' }}>
-            <ShoppingCart size={26} color="#fff" />
+          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
+            <ShoppingCart size={26} color="#111827" />
           </div>
-          <div style={{ fontWeight: 800, marginBottom: 2 }}>Your Cart is Empty!</div>
+          <div style={{ fontWeight: 800, marginBottom: 2 }}>
+            Your Cart is <span style={{ color: 'var(--danger)' }}>Empty!</span>
+          </div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
