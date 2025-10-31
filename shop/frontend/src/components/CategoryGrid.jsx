@@ -55,7 +55,7 @@ export const CategoryGrid = ({ onSelect, siteSlug = 'default' }) => {
           aria-label={`Open ${cat.name} category`}
         >
           {/* Image card with bold black border and shadow */}
-          <div className="card" style={{ overflow: 'hidden', borderRadius: 'var(--radius)', padding: 0, border: '3px solid #111827', boxShadow: '0 6px 0 rgba(0,0,0,0.9)' }}>
+          <div className="card" style={{ overflow: 'hidden', borderRadius: 'var(--radius)', padding: 0, border: '3px solid #111827', boxShadow: '0 6px 0 #000' }}>
             <div
               style={{
                 width: '100%',
@@ -90,7 +90,7 @@ export const CategoryGrid = ({ onSelect, siteSlug = 'default' }) => {
               padding: 6,
               background: 'transparent',
               // Add strong bottom shadow like the mock
-              boxShadow: '0 6px 0 rgba(0,0,0,0.9)'
+              boxShadow: '0 6px 0 #000'
             }}
           >
             <div

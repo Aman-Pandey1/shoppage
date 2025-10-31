@@ -542,7 +542,7 @@ input:focus, select:focus, textarea:focus {
   margin: 12px 0;
   background: #ffffff;
   border: 3px solid #111827; /* bold outline like screenshot */
-  box-shadow: 0 6px 0 rgba(0,0,0,0.9);
+  box-shadow: 0 6px 0 #000; /* pure black shadow like mock */
 }
 /* Two columns: left compact controls, right date/time block */
 .order-bar__row { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 12px; align-items: start; }
@@ -570,7 +570,7 @@ input:focus, select:focus, textarea:focus {
 /* Subtle ETA (minutes) beside the label */
 .order-bar__eta {
   font-size: 12px;
-  color: #6b7280; /* muted gray instead of accent/red */
+  color: #ea5a4b; /* red ETA just like mock */
   line-height: 1; /* align with label baseline */
 }
 @media (max-width: 900px) {
