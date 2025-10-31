@@ -417,7 +417,8 @@ input:focus, select:focus, textarea:focus {
   right: 0;
   z-index: 700; /* keep above banner (650) but below overlays */
   min-height: var(--header-height);
-  background: #ffffff; /* white background per request */
+  /* Match page background so the logo can visually blend */
+  background: var(--bg);
   color: var(--text);
   box-shadow: 0 1px 0 rgba(0,0,0,0.06);
   /* Remove any tiny scrollbars appearing in header */
@@ -469,6 +470,8 @@ input:focus, select:focus, textarea:focus {
   font-size: 22px;
   /* Nudge the logo up a bit so it stays visually clear of the banner */
   transform: translateY(-4px);
+  /* Create a new stacking context so blend only affects the header background */
+  isolation: isolate;
 }
 @media (min-width: 480px) {
   .brand__logo { width: 150px; height: 66px; }
@@ -491,6 +494,8 @@ input:focus, select:focus, textarea:focus {
   padding: 0; /* remove inset */
   transform: translateY(-2px);
   background: transparent; /* no box */
+  /* Make white backgrounds on uploaded logos visually disappear over the header */
+  mix-blend-mode: multiply;
 }
 .brand__name { font-weight: 700; letter-spacing: .01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 52vw; }
 .brand__tagline { font-size: clamp(11px, 2.6vw, 12px); opacity: .95; }
