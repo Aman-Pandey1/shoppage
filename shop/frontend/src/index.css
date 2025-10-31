@@ -417,9 +417,9 @@ input:focus, select:focus, textarea:focus {
   right: 0;
   z-index: 700; /* keep above banner (650) but below overlays */
   min-height: var(--header-height);
-  /* Match page background so the logo can visually blend */
-  background: var(--bg);
-  color: var(--text);
+  /* Use brand color for a bold header; logo blends into it */
+  background: var(--primary);
+  color: #fff;
   box-shadow: 0 1px 0 rgba(0,0,0,0.06);
   /* Remove any tiny scrollbars appearing in header */
   overflow: visible;
