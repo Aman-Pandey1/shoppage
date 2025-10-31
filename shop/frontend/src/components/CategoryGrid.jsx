@@ -81,23 +81,29 @@ export const CategoryGrid = ({ onSelect, siteSlug = 'default' }) => {
               )}
             </div>
           </div>
-          {/* Label bar to match screenshot */}
+          {/* Label pill styled to match uploaded image */}
           <div
             style={{
               marginTop: 10,
-              borderRadius: 14,
-              border: '3px solid #111827',
+              // Bigger radius for a more pill-like shape
+              borderRadius: 22,
+              // Grey outline like the mock
+              border: '3px solid #9CA3AF',
+              // Emphasize left/right thickness to mimic side caps
+              borderLeftWidth: 6,
+              borderRightWidth: 6,
               padding: 6,
               background: 'transparent',
-              // Add strong bottom shadow like the mock
-              boxShadow: '0 6px 0 #000'
+              // Grey side shadows (no top/bottom), matching screenshot vibe
+              boxShadow: '-6px 0 0 #9CA3AF, 6px 0 0 #9CA3AF'
             }}
           >
             <div
               style={{
                 background: '#ffffff',
-                borderRadius: 12,
-                padding: '8px 10px',
+                // Inner radius slightly smaller to create a crisp grey ring around
+                borderRadius: 18,
+                padding: '10px 12px',
                 display: 'grid',
                 gap: 2
               }}
