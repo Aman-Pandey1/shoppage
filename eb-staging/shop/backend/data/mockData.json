@@ -1,0 +1,2641 @@
+{
+  "sites": [
+    {
+      "_id": "site-1758186524269",
+      "name": "aman",
+      "slug": "aman",
+      "domains": [],
+      "uberCustomerId": "",
+      "pickup": {
+        "name": "",
+        "phone": "",
+        "address": {
+          "streetAddress": [
+            ""
+          ],
+          "city": "",
+          "province": "",
+          "postalCode": "",
+          "country": "CA"
+        }
+      },
+      "brandColor": "#e7c30d",
+      "isActive": true
+    },
+    {
+      "_id": "mock-site",
+      "name": "New Asian Village",
+      "slug": "NewAsianVillage",
+      "isActive": true,
+      "uberCustomerId": "e17d4989-135a-5753-8721-deea80593053",
+      "pickup": {
+        "name": "app",
+        "phone": "+1 604-662-4700",
+        "address": {
+          "streetAddress": [
+            "750 Hornby St"
+          ],
+          "city": "Vancouver",
+          "province": "Canada",
+          "postalCode": "BC V6Z 2H7",
+          "country": "CA"
+        }
+      },
+      "brandColor": "#950933",
+      "locations": [
+        {
+          "name": "Varinderjeet Kaur",
+          "phone": "+1 416-868-6937",
+          "address": {
+            "streetAddress": [
+              "100 Queen St W"
+            ],
+            "city": "Toronto",
+            "province": "ON",
+            "postalCode": "2N2",
+            "country": "CA"
+          }
+        },
+        {
+          "name": "New Assian village",
+          "phone": "+5871234567",
+          "address": {
+            "streetAddress": [
+              "1005,parsons road NW"
+            ],
+            "city": "Edmonton",
+            "province": "AB",
+            "postalCode": "T6X 1S4",
+            "country": "CA"
+          }
+        }
+      ],
+      "cities": [
+        "Delhi"
+      ],
+      "hours": {
+        "mon": {
+          "open": "10:00",
+          "close": "22:00",
+          "closed": false
+        },
+        "tue": {
+          "open": "10:00",
+          "close": "22:00",
+          "closed": false
+        },
+        "wed": {
+          "open": "10:00",
+          "close": "12:41",
+          "closed": false
+        },
+        "thu": {
+          "open": "10:00",
+          "close": "22:00",
+          "closed": false
+        },
+        "fri": {
+          "open": "10:00",
+          "close": "22:00",
+          "closed": false
+        },
+        "sat": {
+          "open": "10:00",
+          "close": "22:00",
+          "closed": false
+        },
+        "sun": {
+          "open": "10:00",
+          "close": "22:00",
+          "closed": false
+        }
+      },
+      "deliveryFeeCents": 804,
+      "logoUrl": "/uploads/site-mock-site-1759720954109-yfutpv.png",
+      "domains": [],
+      "splitDeliveryFee": true,
+      "stripeAccountId": ""
+    }
+  ],
+  "categories": [
+    {
+      "_id": "c-1758638422977-4ydn",
+      "name": "Indo Chinese",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-4ydn-1759721076257-p4go78.png",
+      "sortIndex": 0,
+      "site": "mock-site"
+    },
+    {
+      "_id": "c-1758638422977-vtms",
+      "name": "Daily Special",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-vtms-1759721060382-0hcezm.png",
+      "sortIndex": 0,
+      "site": "mock-site"
+    },
+    {
+      "_id": "c-1758638422977-o0ko",
+      "name": "Beverages",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-o0ko-1759721043395-82w4id.png",
+      "sortIndex": 0,
+      "site": "mock-site"
+    },
+    {
+      "_id": "c-1758638422977-js5s",
+      "name": "Speciality Desserts",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-js5s-1759721141768-bb4ra2.png",
+      "sortIndex": 0,
+      "site": "mock-site"
+    },
+    {
+      "_id": "c-1758638422977-uor7",
+      "name": "Sides",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-uor7-1759721121664-iy4tn4.png",
+      "sortIndex": 0,
+      "site": "mock-site"
+    },
+    {
+      "_id": "c-1758638422977-xa2a",
+      "name": "Naan-Roti-Other Breads",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-xa2a-1759721085572-icgdtr.png",
+      "sortIndex": 0,
+      "site": "mock-site"
+    },
+    {
+      "_id": "c-1758638422977-znnl",
+      "name": "Rice and Biryani",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-znnl-1759721094247-0pbf1r.png",
+      "sortIndex": 0,
+      "site": "mock-site"
+    },
+    {
+      "_id": "c-1758638422977-kbd8",
+      "name": "Tandoori",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-kbd8-1759721150685-qtutsv.png",
+      "sortIndex": 0,
+      "site": "mock-site"
+    },
+    {
+      "_id": "c-1758638422977-2p6q",
+      "name": "Vegetarian Dishes",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-2p6q-1759721160006-h790hp.png",
+      "sortIndex": 0,
+      "site": "mock-site"
+    },
+    {
+      "_id": "c-1758638422977-ktks",
+      "name": "Wraps",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-ktks-1759721167168-wb946p.png",
+      "sortIndex": 0,
+      "site": "mock-site"
+    },
+    {
+      "_id": "c-1758638422977-1pjc",
+      "name": "Salads",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-1pjc-1759721103338-2h590w.png",
+      "sortIndex": 0,
+      "site": "mock-site"
+    },
+    {
+      "_id": "c-1758638422977-agpv",
+      "name": "Curry",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-agpv-1759721051027-3d7j7f.png",
+      "sortIndex": 0,
+      "site": "mock-site"
+    },
+    {
+      "_id": "c-1758638422977-8jsv",
+      "name": "Shorba Soups",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-8jsv-1759721111979-65jnot.png",
+      "sortIndex": 0,
+      "site": "mock-site"
+    },
+    {
+      "_id": "c-1758638422977-v6tv",
+      "name": "Specialities",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-v6tv-1759721132601-13bazz.png",
+      "sortIndex": 0,
+      "site": "mock-site"
+    },
+    {
+      "_id": "c-1758638422977-dg9k",
+      "name": "Appetizers (Part-2)",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422977-dg9k-1759721033898-0yu5kv.png",
+      "sortIndex": 0,
+      "site": "mock-site"
+    },
+    {
+      "_id": "c-1758638422976-x7gs",
+      "name": "Appetizers (Part-1)",
+      "imageUrl": "/uploads/cat-mock-site-c-1758638422976-x7gs-1759721024396-q6my05.png",
+      "sortIndex": 0,
+      "site": "mock-site"
+    },
+    {
+      "_id": "c-1758186558285",
+      "name": "veg",
+      "imageUrl": "",
+      "site": "site-1758186524269"
+    }
+  ],
+  "products": [
+    {
+      "_id": "p-1758638422977-0oc6",
+      "site": "mock-site",
+      "name": "Fried Rice or Hakka Noodle",
+      "description": "",
+      "imageUrl": "",
+      "price": 16.95,
+      "categoryId": "c-1758638422977-4ydn",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-yvti",
+      "site": "mock-site",
+      "name": "Chhole Bhature",
+      "description": "",
+      "imageUrl": "",
+      "price": 14.95,
+      "categoryId": "c-1758638422977-vtms",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-98qa",
+      "site": "mock-site",
+      "name": "Buffet Platter (Veg)",
+      "description": "",
+      "imageUrl": "",
+      "price": 24.95,
+      "categoryId": "c-1758638422977-vtms",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-4gx3",
+      "site": "mock-site",
+      "name": "Buffet Platter (Non-Veg)",
+      "description": "",
+      "imageUrl": "",
+      "price": 29.99,
+      "categoryId": "c-1758638422977-vtms",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-kezo",
+      "site": "mock-site",
+      "name": "Fruit Juice",
+      "description": "",
+      "imageUrl": "",
+      "price": 4,
+      "categoryId": "c-1758638422977-o0ko",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-xnlz",
+      "site": "mock-site",
+      "name": "Lassi",
+      "description": "",
+      "imageUrl": "",
+      "price": 5.95,
+      "categoryId": "c-1758638422977-o0ko",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-6yht",
+      "site": "mock-site",
+      "name": "Masala Chai",
+      "description": "",
+      "imageUrl": "",
+      "price": 4.95,
+      "categoryId": "c-1758638422977-o0ko",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-oynh",
+      "site": "mock-site",
+      "name": "Juice",
+      "description": "",
+      "imageUrl": "",
+      "price": 4.95,
+      "categoryId": "c-1758638422977-o0ko",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-hu9t",
+      "site": "mock-site",
+      "name": "Flavoured Chai",
+      "description": "",
+      "imageUrl": "",
+      "price": 4.95,
+      "categoryId": "c-1758638422977-o0ko",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-k9tz",
+      "site": "mock-site",
+      "name": "Frozen Lemonade",
+      "description": "",
+      "imageUrl": "",
+      "price": 4.95,
+      "categoryId": "c-1758638422977-o0ko",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-875e",
+      "site": "mock-site",
+      "name": "Pop",
+      "description": "",
+      "imageUrl": "",
+      "price": 3.5,
+      "categoryId": "c-1758638422977-o0ko",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-h4qs",
+      "site": "mock-site",
+      "name": "Coconut Naan",
+      "description": "",
+      "imageUrl": "",
+      "price": 7.5,
+      "categoryId": "c-1758638422977-js5s",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-3rfs",
+      "site": "mock-site",
+      "name": "Nutella Naan",
+      "description": "",
+      "imageUrl": "",
+      "price": 7.5,
+      "categoryId": "c-1758638422977-js5s",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-1ibm",
+      "site": "mock-site",
+      "name": "Cinnamon Naan",
+      "description": "",
+      "imageUrl": "",
+      "price": 7.5,
+      "categoryId": "c-1758638422977-js5s",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-9rma",
+      "site": "mock-site",
+      "name": "Kheer Rice Pudding",
+      "description": "",
+      "imageUrl": "",
+      "price": 6.95,
+      "categoryId": "c-1758638422977-js5s",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-p7wq",
+      "site": "mock-site",
+      "name": "Gulaab Jaamun (2 Pcs)",
+      "description": "",
+      "imageUrl": "",
+      "price": 5.95,
+      "categoryId": "c-1758638422977-js5s",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-8l4p",
+      "site": "mock-site",
+      "name": "Mango Custard",
+      "description": "",
+      "imageUrl": "",
+      "price": 6.95,
+      "categoryId": "c-1758638422977-js5s",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-ooks",
+      "site": "mock-site",
+      "name": "Soft Serve Flavours Varies",
+      "description": "",
+      "imageUrl": "",
+      "price": 4.95,
+      "categoryId": "c-1758638422977-js5s",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-4bbz",
+      "site": "mock-site",
+      "name": "Naan Flight",
+      "description": "",
+      "imageUrl": "",
+      "price": 19.99,
+      "categoryId": "c-1758638422977-js5s",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-hbfz",
+      "site": "mock-site",
+      "name": "Mango Cake",
+      "description": "",
+      "imageUrl": "",
+      "price": 7.95,
+      "categoryId": "c-1758638422977-js5s",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-0vv7",
+      "site": "mock-site",
+      "name": "Hot curry sauce",
+      "description": "",
+      "imageUrl": "",
+      "price": 5,
+      "categoryId": "c-1758638422977-uor7",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-jq7s",
+      "site": "mock-site",
+      "name": "Chutney",
+      "description": "",
+      "imageUrl": "",
+      "price": 5,
+      "categoryId": "c-1758638422977-uor7",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-ewh1",
+      "site": "mock-site",
+      "name": "Pickles",
+      "description": "",
+      "imageUrl": "",
+      "price": 5,
+      "categoryId": "c-1758638422977-uor7",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-qxb0",
+      "site": "mock-site",
+      "name": "Indian Tzatziki",
+      "description": "",
+      "imageUrl": "",
+      "price": 6,
+      "categoryId": "c-1758638422977-uor7",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-uu6i",
+      "site": "mock-site",
+      "name": "Yogurt",
+      "description": "",
+      "imageUrl": "",
+      "price": 5,
+      "categoryId": "c-1758638422977-uor7",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-1xr0",
+      "site": "mock-site",
+      "name": "Chicken Naan",
+      "description": "",
+      "imageUrl": "",
+      "price": 7.95,
+      "categoryId": "c-1758638422977-xa2a",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-rh6r",
+      "site": "mock-site",
+      "name": "Potato Naan",
+      "description": "",
+      "imageUrl": "",
+      "price": 5.95,
+      "categoryId": "c-1758638422977-xa2a",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-kol4",
+      "site": "mock-site",
+      "name": "Potato Paratha",
+      "description": "",
+      "imageUrl": "",
+      "price": 6.95,
+      "categoryId": "c-1758638422977-xa2a",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-64pf",
+      "site": "mock-site",
+      "name": "Poori",
+      "description": "",
+      "imageUrl": "",
+      "price": 3.95,
+      "categoryId": "c-1758638422977-xa2a",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-vgxi",
+      "site": "mock-site",
+      "name": "Onion Naan",
+      "description": "",
+      "imageUrl": "",
+      "price": 5.95,
+      "categoryId": "c-1758638422977-xa2a",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-y6k6",
+      "site": "mock-site",
+      "name": "Pooda (Chickpeas flour)",
+      "description": "",
+      "imageUrl": "",
+      "price": 5.95,
+      "categoryId": "c-1758638422977-xa2a",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-dakk",
+      "site": "mock-site",
+      "name": "Chapati Tawa",
+      "description": "",
+      "imageUrl": "",
+      "price": 3.5,
+      "categoryId": "c-1758638422977-xa2a",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-rqte",
+      "site": "mock-site",
+      "name": "Roti (Whole Wheat)",
+      "description": "",
+      "imageUrl": "",
+      "price": 2.95,
+      "categoryId": "c-1758638422977-xa2a",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-i4j8",
+      "site": "mock-site",
+      "name": "Bhatura",
+      "description": "",
+      "imageUrl": "",
+      "price": 4.95,
+      "categoryId": "c-1758638422977-xa2a",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-em74",
+      "site": "mock-site",
+      "name": "Paneer Naan",
+      "description": "",
+      "imageUrl": "",
+      "price": 6.95,
+      "categoryId": "c-1758638422977-xa2a",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-cx8f",
+      "site": "mock-site",
+      "name": "Butter Naan",
+      "description": "",
+      "imageUrl": "",
+      "price": 3.95,
+      "categoryId": "c-1758638422977-xa2a",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-9dol",
+      "site": "mock-site",
+      "name": "Paneer Paratha",
+      "description": "",
+      "imageUrl": "",
+      "price": 6.95,
+      "categoryId": "c-1758638422977-xa2a",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-4xk2",
+      "site": "mock-site",
+      "name": "Paratha",
+      "description": "",
+      "imageUrl": "",
+      "price": 5.95,
+      "categoryId": "c-1758638422977-xa2a",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-iabt",
+      "site": "mock-site",
+      "name": "Garlic Naan",
+      "description": "",
+      "imageUrl": "",
+      "price": 4.95,
+      "categoryId": "c-1758638422977-xa2a",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-jpy5",
+      "site": "mock-site",
+      "name": "Coconut Rice",
+      "description": "",
+      "imageUrl": "",
+      "price": 7.95,
+      "categoryId": "c-1758638422977-znnl",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-pcq0",
+      "site": "mock-site",
+      "name": "Vegetable Biryani (GF)",
+      "description": "",
+      "imageUrl": "",
+      "price": 17.95,
+      "categoryId": "c-1758638422977-znnl",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-o6ga",
+      "site": "mock-site",
+      "name": "Chicken Biryani",
+      "description": "",
+      "imageUrl": "",
+      "price": 21.95,
+      "categoryId": "c-1758638422977-znnl",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-eqto",
+      "site": "mock-site",
+      "name": "Lamb Biryani",
+      "description": "",
+      "imageUrl": "",
+      "price": 23.95,
+      "categoryId": "c-1758638422977-znnl",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-e6pz",
+      "site": "mock-site",
+      "name": "Saffron Rice",
+      "description": "",
+      "imageUrl": "",
+      "price": 7.95,
+      "categoryId": "c-1758638422977-znnl",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-95iy",
+      "site": "mock-site",
+      "name": "Jeera Rice",
+      "description": "",
+      "imageUrl": "",
+      "price": 9.95,
+      "categoryId": "c-1758638422977-znnl",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-cuve",
+      "site": "mock-site",
+      "name": "Basmati Rice",
+      "description": "",
+      "imageUrl": "",
+      "price": 5.95,
+      "categoryId": "c-1758638422977-znnl",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-pamk",
+      "site": "mock-site",
+      "name": "Tandoori Chicken ( Half / Whole)",
+      "description": "",
+      "imageUrl": "",
+      "price": 17.95,
+      "categoryId": "c-1758638422977-kbd8",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-gchx",
+      "site": "mock-site",
+      "name": "Tandoori Mixed Grill",
+      "description": "",
+      "imageUrl": "",
+      "price": 26.95,
+      "categoryId": "c-1758638422977-kbd8",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-gfe6",
+      "site": "mock-site",
+      "name": "Tandoori Prawn Tikka (Kebab)",
+      "description": "",
+      "imageUrl": "",
+      "price": 24.95,
+      "categoryId": "c-1758638422977-kbd8",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-qwrs",
+      "site": "mock-site",
+      "name": "Seafood Sizzler",
+      "description": "",
+      "imageUrl": "",
+      "price": 26.95,
+      "categoryId": "c-1758638422977-kbd8",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-sff8",
+      "site": "mock-site",
+      "name": "Channa Masala",
+      "description": "",
+      "imageUrl": "",
+      "price": 16.95,
+      "categoryId": "c-1758638422977-2p6q",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-87pn",
+      "site": "mock-site",
+      "name": "Bhindi Aloo (GF)",
+      "description": "",
+      "imageUrl": "",
+      "price": 17.95,
+      "categoryId": "c-1758638422977-2p6q",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-8um4",
+      "site": "mock-site",
+      "name": "Palak Paneer",
+      "description": "",
+      "imageUrl": "",
+      "price": 18.95,
+      "categoryId": "c-1758638422977-2p6q",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-bqrg",
+      "site": "mock-site",
+      "name": "Aloo Matar (GF)",
+      "description": "",
+      "imageUrl": "",
+      "price": 15.95,
+      "categoryId": "c-1758638422977-2p6q",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-ck7k",
+      "site": "mock-site",
+      "name": "Palak Paneer (GF)",
+      "description": "",
+      "imageUrl": "",
+      "price": 18.95,
+      "categoryId": "c-1758638422977-2p6q",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-ymwy",
+      "site": "mock-site",
+      "name": "Eggplant Curry (GF)",
+      "description": "",
+      "imageUrl": "",
+      "price": 16.95,
+      "categoryId": "c-1758638422977-2p6q",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-0ovo",
+      "site": "mock-site",
+      "name": "Vegetable Jalfrezi",
+      "description": "",
+      "imageUrl": "",
+      "price": 16.95,
+      "categoryId": "c-1758638422977-2p6q",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-kwzm",
+      "site": "mock-site",
+      "name": "Yellow Daal (lentils)",
+      "description": "",
+      "imageUrl": "",
+      "price": 15.95,
+      "categoryId": "c-1758638422977-2p6q",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-wc2o",
+      "site": "mock-site",
+      "name": "Matar Paneer",
+      "description": "",
+      "imageUrl": "",
+      "price": 18.95,
+      "categoryId": "c-1758638422977-2p6q",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-wge9",
+      "site": "mock-site",
+      "name": "Gobi Matar",
+      "description": "",
+      "imageUrl": "",
+      "price": 17.95,
+      "categoryId": "c-1758638422977-2p6q",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-9p7a",
+      "site": "mock-site",
+      "name": "Daal (lentils) Makhani",
+      "description": "",
+      "imageUrl": "",
+      "price": 16.95,
+      "categoryId": "c-1758638422977-2p6q",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-pxjq",
+      "site": "mock-site",
+      "name": "Aloo Gobi (GF)",
+      "description": "",
+      "imageUrl": "",
+      "price": 17.95,
+      "categoryId": "c-1758638422977-2p6q",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot",
+        "Extra Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": [],
+      "variants": [
+        {
+          "key": "leg_piece",
+          "label": "leg piece",
+          "priceDelta": 0
+        },
+        {
+          "key": "nonvege",
+          "label": "nonvege",
+          "priceDelta": 0
+        },
+        {
+          "key": "test",
+          "label": "test",
+          "priceDelta": 0
+        }
+      ]
+    },
+    {
+      "_id": "p-1758638422977-vk1r",
+      "site": "mock-site",
+      "name": "Chickpea Wrap",
+      "description": "",
+      "imageUrl": "",
+      "price": 12.95,
+      "categoryId": "c-1758638422977-ktks",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-6vuc",
+      "site": "mock-site",
+      "name": "Butter Chicken Wrap",
+      "description": "",
+      "imageUrl": "",
+      "price": 14.95,
+      "categoryId": "c-1758638422977-ktks",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-dgax",
+      "site": "mock-site",
+      "name": "Paneer Wrap",
+      "description": "",
+      "imageUrl": "",
+      "price": 13.95,
+      "categoryId": "c-1758638422977-ktks",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-mjfc",
+      "site": "mock-site",
+      "name": "Chaat Papri",
+      "description": "",
+      "imageUrl": "",
+      "price": 11.95,
+      "categoryId": "c-1758638422977-1pjc",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-qusb",
+      "site": "mock-site",
+      "name": "Chickpea Chaat",
+      "description": "",
+      "imageUrl": "",
+      "price": 11.95,
+      "categoryId": "c-1758638422977-1pjc",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-y9ut",
+      "site": "mock-site",
+      "name": "Desi salad",
+      "description": "",
+      "imageUrl": "",
+      "price": 9.95,
+      "categoryId": "c-1758638422977-1pjc",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-owan",
+      "site": "mock-site",
+      "name": "Korma",
+      "description": "",
+      "imageUrl": "",
+      "price": 17.95,
+      "categoryId": "c-1758638422977-agpv",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-t9v5",
+      "site": "mock-site",
+      "name": "Vindaloo",
+      "description": "",
+      "imageUrl": "",
+      "price": 17.95,
+      "categoryId": "c-1758638422977-agpv",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-w8jp",
+      "site": "mock-site",
+      "name": "Lababdaar",
+      "description": "",
+      "imageUrl": "",
+      "price": 17.95,
+      "categoryId": "c-1758638422977-agpv",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-j6xz",
+      "site": "mock-site",
+      "name": "Bhuna",
+      "description": "",
+      "imageUrl": "",
+      "price": 17.95,
+      "categoryId": "c-1758638422977-agpv",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-rfkf",
+      "site": "mock-site",
+      "name": "Saagwala",
+      "description": "",
+      "imageUrl": "",
+      "price": 17.95,
+      "categoryId": "c-1758638422977-agpv",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-tcsn",
+      "site": "mock-site",
+      "name": "Butter Masala",
+      "description": "",
+      "imageUrl": "",
+      "price": 17.95,
+      "categoryId": "c-1758638422977-agpv",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-rjel",
+      "site": "mock-site",
+      "name": "Kadhai",
+      "description": "",
+      "imageUrl": "",
+      "price": 17.95,
+      "categoryId": "c-1758638422977-agpv",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-mioc",
+      "site": "mock-site",
+      "name": "Chettinad",
+      "description": "",
+      "imageUrl": "",
+      "price": 17.95,
+      "categoryId": "c-1758638422977-agpv",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-c6hw",
+      "site": "mock-site",
+      "name": "Curry",
+      "description": "",
+      "imageUrl": "",
+      "price": 18.95,
+      "categoryId": "c-1758638422977-agpv",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-ua29",
+      "site": "mock-site",
+      "name": "Daal Shorba (GF)",
+      "description": "",
+      "imageUrl": "",
+      "price": 6.95,
+      "categoryId": "c-1758638422977-8jsv",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-7yy9",
+      "site": "mock-site",
+      "name": "Tomato Shorba (GF)",
+      "description": "",
+      "imageUrl": "",
+      "price": 7.95,
+      "categoryId": "c-1758638422977-8jsv",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-jhaa",
+      "site": "mock-site",
+      "name": "Chicken Shorba (GF)",
+      "description": "",
+      "imageUrl": "",
+      "price": 10.95,
+      "categoryId": "c-1758638422977-8jsv",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-711l",
+      "site": "mock-site",
+      "name": "Chilli Chicken",
+      "description": "",
+      "imageUrl": "",
+      "price": 23.95,
+      "categoryId": "c-1758638422977-v6tv",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-bb4c",
+      "site": "mock-site",
+      "name": "Beef Korma",
+      "description": "",
+      "imageUrl": "",
+      "price": 22.95,
+      "categoryId": "c-1758638422977-v6tv",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-0hwq",
+      "site": "mock-site",
+      "name": "Chicken Tikka Masala",
+      "description": "",
+      "imageUrl": "",
+      "price": 23.95,
+      "categoryId": "c-1758638422977-v6tv",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-laq7",
+      "site": "mock-site",
+      "name": "Butter Chicken",
+      "description": "",
+      "imageUrl": "",
+      "price": 22.95,
+      "categoryId": "c-1758638422977-v6tv",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-nkhu",
+      "site": "mock-site",
+      "name": "Prawn Butter Masala",
+      "description": "",
+      "imageUrl": "",
+      "price": 24.95,
+      "categoryId": "c-1758638422977-v6tv",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-nr8i",
+      "site": "mock-site",
+      "name": "Paneer Butter Masala",
+      "description": "",
+      "imageUrl": "",
+      "price": 19.95,
+      "categoryId": "c-1758638422977-v6tv",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-gk3t",
+      "site": "mock-site",
+      "name": "Vegetarian Korma",
+      "description": "",
+      "imageUrl": "",
+      "price": 19.95,
+      "categoryId": "c-1758638422977-v6tv",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-sqmw",
+      "site": "mock-site",
+      "name": "Spinach Dip",
+      "description": "",
+      "imageUrl": "",
+      "price": 14.95,
+      "categoryId": "c-1758638422977-dg9k",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-ejjz",
+      "site": "mock-site",
+      "name": "Aloo Tikki Chaat (GF)",
+      "description": "",
+      "imageUrl": "",
+      "price": 12.95,
+      "categoryId": "c-1758638422977-dg9k",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-oz14",
+      "site": "mock-site",
+      "name": "Papadum Platter with chutney (GF)",
+      "description": "",
+      "imageUrl": "",
+      "price": 5.95,
+      "categoryId": "c-1758638422977-dg9k",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-s48p",
+      "site": "mock-site",
+      "name": "Butter Chicken / Paneer Nachos (GF)",
+      "description": "",
+      "imageUrl": "",
+      "price": 19.95,
+      "categoryId": "c-1758638422977-dg9k",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-vuf8",
+      "site": "mock-site",
+      "name": "Spring Rolls (8 pcs)",
+      "description": "",
+      "imageUrl": "",
+      "price": 9.95,
+      "categoryId": "c-1758638422977-dg9k",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-dwmq",
+      "site": "mock-site",
+      "name": "Butter Naan and Dip",
+      "description": "",
+      "imageUrl": "",
+      "price": 7.95,
+      "categoryId": "c-1758638422977-dg9k",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-r3u3",
+      "site": "mock-site",
+      "name": "Mixed Platter",
+      "description": "",
+      "imageUrl": "",
+      "price": 29,
+      "categoryId": "c-1758638422977-dg9k",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-35u5",
+      "site": "mock-site",
+      "name": "Butter Chicken Poutine / Mac Cheese",
+      "description": "",
+      "imageUrl": "",
+      "price": 15.95,
+      "categoryId": "c-1758638422977-dg9k",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-bcxu",
+      "site": "mock-site",
+      "name": "Cauliflower 65 (GF)",
+      "description": "",
+      "imageUrl": "",
+      "price": 16.95,
+      "categoryId": "c-1758638422977-dg9k",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-za0w",
+      "site": "mock-site",
+      "name": "Beef Samosas Mini",
+      "description": "",
+      "imageUrl": "",
+      "price": 14.95,
+      "categoryId": "c-1758638422976-x7gs",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-dgbv",
+      "site": "mock-site",
+      "name": "Chicken Samosas Mini",
+      "description": "",
+      "imageUrl": "",
+      "price": 14.95,
+      "categoryId": "c-1758638422976-x7gs",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-hgwj",
+      "site": "mock-site",
+      "name": "Vegetable Mini Samosas",
+      "description": "",
+      "imageUrl": "",
+      "price": 12.95,
+      "categoryId": "c-1758638422976-x7gs",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-bemv",
+      "site": "mock-site",
+      "name": "Chicken Samosas (2 pcs)",
+      "description": "",
+      "imageUrl": "",
+      "price": 6.95,
+      "categoryId": "c-1758638422976-x7gs",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-ghkw",
+      "site": "mock-site",
+      "name": "Indian Quesadillas",
+      "description": "",
+      "imageUrl": "",
+      "price": 10.95,
+      "categoryId": "c-1758638422976-x7gs",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-6o6f",
+      "site": "mock-site",
+      "name": "Pakoda - Chicken (GF)",
+      "description": "",
+      "imageUrl": "",
+      "price": 14.95,
+      "categoryId": "c-1758638422976-x7gs",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-loql",
+      "site": "mock-site",
+      "name": "Pakoda - Calamari (GF)",
+      "description": "",
+      "imageUrl": "",
+      "price": 17.95,
+      "categoryId": "c-1758638422976-x7gs",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422977-iyqd",
+      "site": "mock-site",
+      "name": "Beef Samosa (2 pcs)",
+      "description": "",
+      "imageUrl": "",
+      "price": 6.95,
+      "categoryId": "c-1758638422976-x7gs",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422976-iipi",
+      "site": "mock-site",
+      "name": "Chicken Wings",
+      "description": "",
+      "imageUrl": "",
+      "price": 12.95,
+      "categoryId": "c-1758638422976-x7gs",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422976-4r8r",
+      "site": "mock-site",
+      "name": "Vegetable Samosas (2 pcs)",
+      "description": "",
+      "imageUrl": "",
+      "price": 5.95,
+      "categoryId": "c-1758638422976-x7gs",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422976-g6rp",
+      "site": "mock-site",
+      "name": "Pakoda - Dill Pickle",
+      "description": "",
+      "imageUrl": "",
+      "price": 12.95,
+      "categoryId": "c-1758638422976-x7gs",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422976-pu0t",
+      "site": "mock-site",
+      "name": "Pakoda - Paneer Cheese (Homemade - GF)",
+      "description": "",
+      "imageUrl": "",
+      "price": 14.95,
+      "categoryId": "c-1758638422976-x7gs",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422976-cqlb",
+      "site": "mock-site",
+      "name": "Pakoda - Shrimp (GF)",
+      "description": "",
+      "imageUrl": "",
+      "price": 19.95,
+      "categoryId": "c-1758638422976-x7gs",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422976-vt7j",
+      "site": "mock-site",
+      "name": "Vegetable Samosas (12 pcs)",
+      "description": "",
+      "imageUrl": "",
+      "price": 24,
+      "categoryId": "c-1758638422976-x7gs",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422976-lp3c",
+      "site": "mock-site",
+      "name": "Pakoda Cauliflower (GF)",
+      "description": "",
+      "imageUrl": "",
+      "price": 14.95,
+      "categoryId": "c-1758638422976-x7gs",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422976-on19",
+      "site": "mock-site",
+      "name": "Pakoda - Vegetable (Potato & Spinach - GF)",
+      "description": "",
+      "imageUrl": "",
+      "price": 11.95,
+      "categoryId": "c-1758638422976-x7gs",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    },
+    {
+      "_id": "p-1758638422976-s0ee",
+      "site": "mock-site",
+      "name": "Pakoda - Fish (Boston Blue Fish) - GF",
+      "description": "",
+      "imageUrl": "",
+      "price": 14.95,
+      "categoryId": "c-1758638422976-x7gs",
+      "spiceLevels": [
+        "Mild",
+        "Medium",
+        "Hot"
+      ],
+      "isVeg": true,
+      "extraOptionGroups": []
+    }
+  ],
+  "orders": [
+    {
+      "_id": "o-1759550732971",
+      "createdAt": "2025-10-04T04:05:32.971Z",
+      "site": "mock-site",
+      "userEmail": "admin@example.com",
+      "items": [
+        {
+          "name": "Flavoured Chai",
+          "quantity": 12,
+          "priceCents": 495,
+          "spiceLevel": "extra-hot"
+        }
+      ],
+      "totalCents": 6737,
+      "taxCents": 297,
+      "tipCents": 0,
+      "deliveryFeeCents": 500,
+      "deliveryFeeRestaurantCents": 500,
+      "externalId": "New-Asian-Village-order-1759550732958",
+      "uberDeliveryId": "d-1759550732970",
+      "uberTrackingUrl": "https://www.uber.com/",
+      "uberStatus": "courier_accepted",
+      "fulfillmentType": "delivery",
+      "dropoff": {
+        "name": "New Assian village",
+        "phone": "+16046624700",
+        "address": {
+          "streetAddress": [
+            "1005,parsons road NW",
+            "aMAN"
+          ],
+          "city": "Edmonton",
+          "province": "AB",
+          "postalCode": "T6X 1S4",
+          "country": "CA"
+        }
+      },
+      "pickup": {
+        "location": {
+          "name": "New Assian village",
+          "phone": "+5871234567",
+          "address": {
+            "streetAddress": [
+              "1005,parsons road NW"
+            ],
+            "city": "Edmonton",
+            "province": "AB",
+            "postalCode": "T6X 1S4",
+            "country": "CA"
+          }
+        }
+      },
+      "meta": {
+        "distanceKm": 9.904462398520788
+      },
+      "notes": ""
+    },
+    {
+      "_id": "o-1759510139468",
+      "createdAt": "2025-10-03T16:48:59.468Z",
+      "site": "mock-site",
+      "userEmail": "admin@example.com",
+      "items": [
+        {
+          "name": "Beef Samosa (2 pcs)",
+          "quantity": 9,
+          "priceCents": 695,
+          "spiceLevel": "hot"
+        }
+      ],
+      "totalCents": 6968,
+      "taxCents": 313,
+      "tipCents": 0,
+      "deliveryFeeCents": 400,
+      "deliveryFeeRestaurantCents": 400,
+      "externalId": "New-Asian-Village-order-1759510139456",
+      "uberDeliveryId": "d-1759510139468",
+      "uberTrackingUrl": "https://www.uber.com/",
+      "uberStatus": "courier_accepted",
+      "fulfillmentType": "delivery",
+      "dropoff": {
+        "name": "New Assian village",
+        "phone": "+16046624700",
+        "address": {
+          "streetAddress": [
+            "1005,parsons road NW"
+          ],
+          "city": "Edmonton",
+          "province": "AB",
+          "postalCode": "T6X 1S4",
+          "country": "CA"
+        }
+      },
+      "pickup": {
+        "location": {
+          "name": "New Assian village",
+          "phone": "+5871234567",
+          "address": {
+            "streetAddress": [
+              "1005,parsons road NW"
+            ],
+            "city": "Edmonton",
+            "province": "AB",
+            "postalCode": "T6X 1S4",
+            "country": "CA"
+          }
+        }
+      },
+      "meta": {
+        "distanceKm": 0
+      },
+      "notes": ""
+    },
+    {
+      "_id": "o-1759506591426",
+      "createdAt": "2025-10-03T15:49:51.426Z",
+      "site": "mock-site",
+      "userEmail": "admin@example.com",
+      "items": [
+        {
+          "name": "Beef Samosa (2 pcs)",
+          "quantity": 8,
+          "priceCents": 695,
+          "spiceLevel": "extra-hot"
+        }
+      ],
+      "totalCents": 6238,
+      "taxCents": 278,
+      "tipCents": 0,
+      "deliveryFeeCents": 400,
+      "deliveryFeeRestaurantCents": 400,
+      "externalId": "New-Asian-Village-order-1759506591418",
+      "uberDeliveryId": "d-1759506591426",
+      "uberTrackingUrl": "https://www.uber.com/",
+      "uberStatus": "courier_accepted",
+      "fulfillmentType": "delivery",
+      "dropoff": {
+        "name": "New Assian village",
+        "phone": "+16046624700",
+        "address": {
+          "streetAddress": [
+            "1005,parsons road NW"
+          ],
+          "city": "Edmonton",
+          "province": "AB",
+          "postalCode": "T6X 1S4",
+          "country": "CA"
+        }
+      },
+      "pickup": {
+        "location": {
+          "name": "New Assian village",
+          "phone": "+5871234567",
+          "address": {
+            "streetAddress": [
+              "1005,parsons road NW"
+            ],
+            "city": "Edmonton",
+            "province": "AB",
+            "postalCode": "T6X 1S4",
+            "country": "CA"
+          }
+        }
+      },
+      "meta": {
+        "distanceKm": 0
+      },
+      "notes": ""
+    },
+    {
+      "_id": "o-1759506197236",
+      "createdAt": "2025-10-03T15:43:17.236Z",
+      "site": "mock-site",
+      "userEmail": "admin@example.com",
+      "items": [
+        {
+          "name": "Aloo Gobi (GF)",
+          "quantity": 5,
+          "priceCents": 1795,
+          "size": "nonvege",
+          "spiceLevel": "hot"
+        }
+      ],
+      "totalCents": 9824,
+      "taxCents": 449,
+      "tipCents": 0,
+      "deliveryFeeCents": 400,
+      "deliveryFeeRestaurantCents": 400,
+      "externalId": "New-Asian-Village-order-1759506193953",
+      "uberDeliveryId": "d-1759506197236",
+      "uberTrackingUrl": "https://www.uber.com/",
+      "uberStatus": "courier_accepted",
+      "fulfillmentType": "delivery",
+      "dropoff": {
+        "name": "New Assian village",
+        "phone": "+16046624700",
+        "address": {
+          "streetAddress": [
+            "1005,parsons road NW"
+          ],
+          "city": "Edmonton",
+          "province": "AB",
+          "postalCode": "T6X 1S4",
+          "country": "CA"
+        }
+      },
+      "pickup": {
+        "location": {
+          "name": "New Assian village",
+          "phone": "+5871234567",
+          "address": {
+            "streetAddress": [
+              "1005,parsons road NW"
+            ],
+            "city": "Edmonton",
+            "province": "AB",
+            "postalCode": "T6X 1S4",
+            "country": "CA"
+          }
+        }
+      },
+      "meta": {
+        "distanceKm": 0
+      },
+      "notes": ""
+    },
+    {
+      "_id": "o-1759241586544",
+      "createdAt": "2025-09-30T14:13:06.544Z",
+      "site": "mock-site",
+      "userEmail": "admin@example.com",
+      "items": [
+        {
+          "name": "Beef Samosa (2 pcs)",
+          "quantity": 11,
+          "priceCents": 695,
+          "size": "small"
+        }
+      ],
+      "totalCents": 8827,
+      "taxCents": 382,
+      "tipCents": 0,
+      "deliveryFeeCents": 800,
+      "deliveryFeeRestaurantCents": 0,
+      "externalId": "New-Asian-Village-order-1759241585347",
+      "uberDeliveryId": "del_gjkrAMkUQ-mD2Fgl7AeU4A",
+      "uberTrackingUrl": "https://delivery.uber.com/ca/orders/82392b00-c914-43e9-83d8-5825ec0794e0?tenancyOverride=uber%2Ftesting%2Fdirect%2Fe17d4989-135a-5753-8721-deea80593053",
+      "uberStatus": "pending",
+      "fulfillmentType": "delivery",
+      "dropoff": {
+        "name": "test final",
+        "phone": "+9115877104641",
+        "address": {
+          "streetAddress": [
+            "100 Queen St W"
+          ],
+          "city": "Toronto",
+          "province": "ON",
+          "postalCode": " A1A 1A1",
+          "country": "CA"
+        }
+      },
+      "pickup": {
+        "location": {
+          "name": "Varinderjeet Kaur",
+          "phone": "+1 416-868-6937",
+          "address": {
+            "streetAddress": [
+              "100 Queen St W"
+            ],
+            "city": "Toronto",
+            "province": "ON",
+            "postalCode": "2N2",
+            "country": "CA"
+          }
+        }
+      },
+      "meta": {
+        "distanceKm": 0.01466185297694789
+      },
+      "notes": ""
+    },
+    {
+      "_id": "o-1758878716582",
+      "createdAt": "2025-09-26T09:25:16.582Z",
+      "site": "mock-site",
+      "userEmail": "admin@example.com",
+      "items": [
+        {
+          "name": "Pakoda - Chicken (GF)",
+          "quantity": 4,
+          "priceCents": 1495,
+          "size": "small"
+        }
+      ],
+      "totalCents": 7079,
+      "taxCents": 299,
+      "tipCents": 0,
+      "deliveryFeeCents": 800,
+      "externalId": "Default-Site-order-1758878712179",
+      "uberDeliveryId": "d-1758878716581",
+      "uberTrackingUrl": "https://www.uber.com/",
+      "uberStatus": "courier_accepted",
+      "fulfillmentType": "delivery",
+      "dropoff": {
+        "name": "aaa",
+        "phone": "+9115877104641",
+        "address": {
+          "streetAddress": [
+            "10A Main Blvd #200"
+          ],
+          "city": "Sherwood Park",
+          "province": "AB ",
+          "postalCode": "T8A 3W8",
+          "country": "CA"
+        }
+      },
+      "pickup": {
+        "location": {
+          "name": "Varinderjeet Kaur",
+          "phone": "+1 416-868-6937",
+          "address": {
+            "streetAddress": [
+              "100 Queen St W"
+            ],
+            "city": "Toronto",
+            "province": "ON",
+            "postalCode": "2N2",
+            "country": "CA"
+          }
+        }
+      },
+      "meta": {
+        "distanceKm": null
+      },
+      "notes": ""
+    },
+    {
+      "_id": "o-1758877845381",
+      "createdAt": "2025-09-26T09:10:45.381Z",
+      "site": "mock-site",
+      "userEmail": "admin@example.com",
+      "items": [
+        {
+          "name": "Beef Samosa (2 pcs)",
+          "quantity": 9,
+          "priceCents": 695,
+          "size": "small"
+        }
+      ],
+      "totalCents": 6568,
+      "taxCents": 313,
+      "tipCents": 0,
+      "fulfillmentType": "pickup",
+      "pickup": {
+        "location": {
+          "name": "New Assian village",
+          "phone": "+5871234567",
+          "address": {
+            "streetAddress": [
+              "1005,parsons road NW"
+            ],
+            "city": "Edmonton",
+            "province": "AB",
+            "postalCode": "T6X 1S4",
+            "country": "CA"
+          }
+        },
+        "scheduledFor": "2025-09-26T04:30:00.000Z"
+      }
+    },
+    {
+      "_id": "o-1758860742863",
+      "createdAt": "2025-09-26T04:25:42.863Z",
+      "site": "mock-site",
+      "userEmail": "admin@example.com",
+      "items": [
+        {
+          "name": "Beef Samosa (2 pcs)",
+          "quantity": 10,
+          "priceCents": 695,
+          "size": "small"
+        }
+      ],
+      "totalCents": 8098,
+      "taxCents": 348,
+      "tipCents": 0,
+      "deliveryFeeCents": 800,
+      "externalId": "Default-Site-order-1758860740268",
+      "uberDeliveryId": "d-1758860742863",
+      "uberTrackingUrl": "https://www.uber.com/",
+      "uberStatus": "courier_accepted",
+      "fulfillmentType": "delivery",
+      "dropoff": {
+        "name": "Aman",
+        "phone": "+7801234567",
+        "address": {
+          "streetAddress": [
+            "2812 16street NW"
+          ],
+          "city": "Edmonton",
+          "province": "AB",
+          "postalCode": "T6T 0V5",
+          "country": "CA"
+        }
+      },
+      "pickup": {
+        "location": {
+          "name": "Varinderjeet Kaur",
+          "phone": "+1 416-868-6937",
+          "address": {
+            "streetAddress": [
+              "100 Queen St W"
+            ],
+            "city": "Toronto",
+            "province": "ON",
+            "postalCode": "2N2",
+            "country": "CA"
+          }
+        }
+      },
+      "meta": {
+        "distanceKm": null
+      },
+      "notes": ""
+    },
+    {
+      "_id": "o-1758729008449",
+      "createdAt": "2025-09-24T15:50:08.449Z",
+      "site": "mock-site",
+      "userEmail": "admin@example.com",
+      "items": [
+        {
+          "name": "Chicken Wings",
+          "quantity": 6,
+          "priceCents": 1295,
+          "size": "small"
+        }
+      ],
+      "totalCents": 8959,
+      "taxCents": 389,
+      "tipCents": 0,
+      "deliveryFeeCents": 800,
+      "externalId": "Default-Site-order-1758729001568",
+      "uberDeliveryId": "del_m5f6QBdhSXWwcGYOhiEcJA",
+      "uberTrackingUrl": "https://delivery.uber.com/ca/orders/9b97fa40-1761-4975-b070-660e86211c24?tenancyOverride=uber%2Ftesting%2Fdirect%2Fe17d4989-135a-5753-8721-deea80593053",
+      "uberStatus": "pending",
+      "fulfillmentType": "delivery",
+      "dropoff": {
+        "name": "aaa",
+        "phone": "+9115877104641",
+        "address": {
+          "streetAddress": [
+            "100 Queen St W"
+          ],
+          "city": "Toronto",
+          "province": "ON",
+          "postalCode": "A1A 1A1",
+          "country": "IN"
+        }
+      },
+      "pickup": {
+        "location": {
+          "name": "Varinderjeet Kaur",
+          "phone": "+1 416-868-6937",
+          "address": {
+            "streetAddress": [
+              "100 Queen St W"
+            ],
+            "city": "Toronto",
+            "province": "ON",
+            "postalCode": "2N2",
+            "country": "CA"
+          }
+        }
+      },
+      "meta": {
+        "distanceKm": null
+      },
+      "notes": "test nots"
+    },
+    {
+      "_id": "o-1758628898800",
+      "createdAt": "2025-09-23T12:01:38.800Z",
+      "site": "mock-site",
+      "userEmail": "admin@example.com",
+      "items": [
+        {
+          "name": "Gulab Jamun",
+          "quantity": 2,
+          "priceCents": 1200,
+          "size": "small"
+        },
+        {
+          "name": "Chocolate Brownie  ",
+          "quantity": 1,
+          "priceCents": 3000,
+          "size": "small"
+        }
+      ],
+      "totalCents": 6200,
+      "tipCents": 0,
+      "deliveryFeeCents": 800,
+      "externalId": "Default-Site-order-1758628895960",
+      "uberDeliveryId": "del_20td3nCqSZq4QyoBao7shg",
+      "uberTrackingUrl": "https://delivery.uber.com/ca/orders/db4b5dde-70aa-499a-b843-2a016a8eec86?tenancyOverride=uber%2Ftesting%2Fdirect%2Fe17d4989-135a-5753-8721-deea80593053",
+      "uberStatus": "pending",
+      "fulfillmentType": "delivery",
+      "dropoff": {
+        "name": "aaa",
+        "phone": "+9115877104641",
+        "address": {
+          "streetAddress": [
+            "100 Queen St W"
+          ],
+          "city": "Toronto",
+          "province": "ON",
+          "postalCode": "V6Z 2H7",
+          "country": "CA"
+        }
+      },
+      "pickup": {
+        "location": {
+          "name": "Varinderjeet Kaur",
+          "phone": "+1 416-868-6937",
+          "address": {
+            "streetAddress": [
+              "100 Queen St W"
+            ],
+            "city": "Toronto",
+            "province": "ON",
+            "postalCode": "2N2",
+            "country": "CA"
+          }
+        }
+      },
+      "meta": {
+        "distanceKm": null
+      }
+    }
+  ],
+  "users": [
+    {
+      "_id": "u-1758473488632",
+      "email": "ap@gmail.com",
+      "name": "ap",
+      "passwordHash": "$2a$10$Vr9h3dzHzxxiIUMUBa9npOcY2oNl3pwcg8UwsJ4ePaHyTFtRSgzLO",
+      "createdAt": "2025-09-21T16:51:28.632Z"
+    },
+    {
+      "_id": "u-1759214774410",
+      "email": "ap1@gmail.com",
+      "name": "ap",
+      "passwordHash": "$2a$10$FNx4Idm2r3El7aAYaoQzf.e.iWr5joz8epwYBo1yiqfPERibR24fW",
+      "createdAt": "2025-09-30T06:46:14.410Z"
+    },
+    {
+      "_id": "u-1759894183651",
+      "email": "aman.techkriti@gmail.com",
+      "name": "aman",
+      "passwordHash": "$2a$10$ZbRydTuEjPjyHAzMrkmpYOpQwKuNvm8dIwHGkS5zv6jSTze2e.dWm",
+      "createdAt": "2025-10-08T03:29:43.651Z"
+    }
+  ],
+  "coupons": [
+    {
+      "_id": "cp-1758860201299",
+      "site": "mock-site",
+      "code": "WELCOMK",
+      "percent": 10
+    }
+  ]
+}
