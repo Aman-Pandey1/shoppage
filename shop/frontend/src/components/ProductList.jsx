@@ -3,7 +3,7 @@ import { QuickAddModal } from './QuickAddModal';
 import { resolveAssetUrl } from '../lib/api';
 import { useProductsQuery } from '../lib/queries';
 
-export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', vegFilter = 'all' }) => {
+export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', vegFilter = 'all', shouldUseGuidedFlow }) => {
   const { data: products = [], isLoading: loading, isError, error } = useProductsQuery({ siteSlug, categoryId: category._id, vegFilter });
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [activeProduct, setActiveProduct] = useState(null);
@@ -62,57 +62,65 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
 
       {/* Text-only items grid (2–3 per row responsive) */}
       <div className="products-grid" style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
-        {products.map((p, idx) => (
-          <div key={p._id} className="card animate-fadeInUp" style={{ padding: 12, animationDelay: `${idx * 35}ms` }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'start' }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ fontSize: 16 }}>{p.isVeg === false ? '🔴' : '🟢'}</div>
-                <div style={{ fontWeight: 700 }}>{p.name}</div>
-                </div>
-                {p.description ? <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>{p.description}</div> : null}
-                {Array.isArray(p?.variants) && p.variants.length > 0 ? (
-                  <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
-                    {(() => {
-                      try {
-                        const list = p.variants.slice(0, 3).map((v) => {
-                          const price = Number(v?.price || 0);
-                          return `${v?.label || v?.key || 'Variant'}${price ? ` (+$${price.toFixed(2)})` : ''}`;
-                        });
-                        const extra = p.variants.length > 3 ? ` +${p.variants.length - 3} more` : '';
-                        return `Select Item: ${list.join(', ')}${extra}`;
-                      } catch { return 'Select Item available'; }
-                    })()}
+        {products.map((p, idx) => {
+          const requiresGuidedFlow = typeof shouldUseGuidedFlow === 'function'
+            ? !!shouldUseGuidedFlow(p)
+            : (
+                (Array.isArray(p?.variants) && p.variants.length > 0)
+                || (Array.isArray(p?.spiceLevels) && p.spiceLevels.length > 0)
+                || (Array.isArray(p?.flavors) && p.flavors.length > 0)
+                || (Array.isArray(p?.portions) && p.portions.length > 0)
+                || (Array.isArray(p?.quantities) && p.quantities.length > 0)
+                || (Array.isArray(p?.extraOptionGroups) && p.extraOptionGroups.length > 0)
+              );
+          return (
+            <div key={p._id} className="card animate-fadeInUp" style={{ padding: 12, animationDelay: `${idx * 35}ms` }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'start' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ fontSize: 16 }}>{p.isVeg === false ? '🔴' : '🟢'}</div>
+                    <div style={{ fontWeight: 700 }}>{p.name}</div>
                   </div>
-                ) : null}
-              </div>
-              <div style={{ display: 'grid', justifyItems: 'end', gap: 6 }}>
-                <div style={{ fontWeight: 800, color: 'var(--primary-600)' }}>
-                  {`$${Number(p.price || 0).toFixed(2)}`}
+                  {p.description ? <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>{p.description}</div> : null}
+                  {Array.isArray(p?.variants) && p.variants.length > 0 ? (
+                    <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                      {(() => {
+                        try {
+                          const list = p.variants.slice(0, 3).map((v) => {
+                            const price = Number(v?.price || 0);
+                            return `${v?.label || v?.key || 'Variant'}${price ? ` (+$${price.toFixed(2)})` : ''}`;
+                          });
+                          const extra = p.variants.length > 3 ? ` +${p.variants.length - 3} more` : '';
+                          return `Select Item: ${list.join(', ')}${extra}`;
+                        } catch { return 'Select Item available'; }
+                      })()}
+                    </div>
+                  ) : null}
                 </div>
-                <button
-                  onClick={() => {
-                    // Use the guided add-to-cart flow when product has variants, spice levels, or extras.
-                    const hasVariants = Array.isArray(p?.variants) && p.variants.length > 0;
-                    const hasSpice = Array.isArray(p?.spiceLevels) && p.spiceLevels.length > 0;
-                    const hasExtras = Array.isArray(p?.extraOptionGroups) && p.extraOptionGroups.length > 0;
-                    if (hasVariants || hasSpice || hasExtras) {
-                      onAdd({ product: p, quantity: 1, pickupOnlyCategory: !!category?.pickupOnly });
-                      return;
-                    }
-                    setActiveProduct(p);
-                    setQuickAddOpen(true);
-                  }}
-                  className="primary-btn hover-float"
-                  aria-label={(Array.isArray(p?.variants) && p.variants.length > 0) || (Array.isArray(p?.spiceLevels) && p.spiceLevels.length > 0) || (Array.isArray(p?.extraOptionGroups) && p.extraOptionGroups.length > 0) ? `Customize ${p.name}` : `Add ${p.name}`}
-                  title={(Array.isArray(p?.variants) && p.variants.length > 0) || (Array.isArray(p?.spiceLevels) && p.spiceLevels.length > 0) || (Array.isArray(p?.extraOptionGroups) && p.extraOptionGroups.length > 0) ? `Customize ${p.name}` : `Add ${p.name}`}
-                  style={{ borderRadius: 999, width: 38, height: 38, padding: 0, display: 'grid', placeItems: 'center' }}
-                >+
-                </button>
+                <div style={{ display: 'grid', justifyItems: 'end', gap: 6 }}>
+                  <div style={{ fontWeight: 800, color: 'var(--primary-600)' }}>
+                    {`$${Number(p.price || 0).toFixed(2)}`}
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (requiresGuidedFlow) {
+                        onAdd({ product: p, quantity: 1, pickupOnlyCategory: !!category?.pickupOnly });
+                        return;
+                      }
+                      setActiveProduct(p);
+                      setQuickAddOpen(true);
+                    }}
+                    className="primary-btn hover-float"
+                    aria-label={requiresGuidedFlow ? `Customize ${p.name}` : `Add ${p.name}`}
+                    title={requiresGuidedFlow ? `Customize ${p.name}` : `Add ${p.name}`}
+                    style={{ borderRadius: 999, width: 38, height: 38, padding: 0, display: 'grid', placeItems: 'center' }}
+                  >+
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Quick Add Modal */}

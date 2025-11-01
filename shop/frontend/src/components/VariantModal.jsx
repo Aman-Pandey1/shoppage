@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Modal } from './Modal';
+import { resolveAssetUrl } from '../lib/api';
 
 export const VariantModal = ({ open, variants = [], onCancel, onConfirm, product }) => {
   const [selectedKey, setSelectedKey] = useState('');
@@ -21,7 +22,7 @@ export const VariantModal = ({ open, variants = [], onCancel, onConfirm, product
       {product ? (
         <div style={{ position: 'relative', height: 160, borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border)', marginBottom: 12 }}>
           {product.imageUrl ? (
-            <img src={product.imageUrl} alt={product.name} className="img-cover" />
+            <img src={resolveAssetUrl(product.imageUrl)} alt={product.name} className="img-cover" />
           ) : (
             <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', fontSize: 42, background: 'var(--primary-alpha-08)' }}>🧩</div>
           )}
