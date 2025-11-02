@@ -78,7 +78,7 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
               border: 'none',
               cursor: canConfirm ? 'pointer' : 'not-allowed',
             }}
-          >{`Add ${qty}`}</button>
+          >Add</button>
         </div>
       )}
     >
@@ -250,7 +250,7 @@ export const SpiceModal = ({ open, spiceLevels, onCancel, onConfirm, product, si
             className="hover-float"
             style={{ width: 32, height: 32, borderRadius: 999, display: 'grid', placeItems: 'center' }}
           >
-            ?
+            -
           </button>
           <div className={bump ? 'animate-bump' : ''} style={{ minWidth: 24, textAlign: 'center', fontWeight: 800 }}>{qty}</div>
           <button
