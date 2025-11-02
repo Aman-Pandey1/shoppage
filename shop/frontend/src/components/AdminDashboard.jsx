@@ -194,11 +194,28 @@ export const AdminDashboard = () => {
   }, [products, filterCategory, vegFilter]);
 
   function startCreate() {
-    setEditing({ name: '', price: 0, categoryId: categories[0]?._id || '', description: '', imageUrl: '', spiceLevels: [], variants: [], flavors: [], portions: [], quantities: [], extraOptionGroups: [] });
+    setEditing({
+      name: '',
+      price: 0,
+      categoryId: categories[0]?._id || '',
+      description: '',
+      imageUrl: '',
+      spiceLevels: [],
+      variants: [],
+      flavors: [],
+      portions: [],
+      quantities: [],
+      extraOptionGroups: [],
+      freeOptionGroups: [],
+    });
   }
 
   function startEdit(p) {
-    setEditing({ ...p });
+    setEditing({
+      ...p,
+      extraOptionGroups: Array.isArray(p?.extraOptionGroups) ? p.extraOptionGroups : [],
+      freeOptionGroups: Array.isArray(p?.freeOptionGroups) ? p.freeOptionGroups : [],
+    });
   }
 
   // Build a CSV-like string from variants for quick editing
@@ -267,6 +284,7 @@ export const AdminDashboard = () => {
       portions: editing.portions || [],
       quantities: editing.quantities || [],
       extraOptionGroups: editing.extraOptionGroups || [],
+      freeOptionGroups: editing.freeOptionGroups || [],
     };
     if (editing._id) {
       const updated = await putJson(`/api/admin/sites/${selectedSiteId}/products/${editing._id}`, payload);
@@ -1009,6 +1027,22 @@ export const AdminDashboard = () => {
                     setEditing({ ...editing, variants: next });
                   }}>+ Add variant</button>
                 </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <span>Included option groups (one free choice)</span>
+                    <ExtraOptionGroupsEditor
+                      value={editing.freeOptionGroups || []}
+                      onChange={(groups) => {
+                        setEditing({ ...editing, freeOptionGroups: groups });
+                      }}
+                      mode="free"
+                    />
+                    <details style={{ marginTop: 6, background: 'var(--panel-2)', borderRadius: 8, padding: '8px 12px' }}>
+                      <summary style={{ cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Advanced: JSON preview (included options)</summary>
+                      <pre style={{ marginTop: 6, maxHeight: 240, overflow: 'auto', fontSize: 11, background: '#fff', border: '1px solid var(--border)', borderRadius: 6, padding: 8 }}>
+{JSON.stringify(editing.freeOptionGroups || [], null, 2)}
+                      </pre>
+                    </details>
+                  </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <span>Custom option groups</span>
                     <ExtraOptionGroupsEditor

@@ -4,6 +4,45 @@ import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 
+function sanitizeFreeOptionGroups(input) {
+  if (!Array.isArray(input)) return [];
+  return input.map((group, idx) => {
+    const groupKey = String(group?.groupKey || group?.groupLabel || `free_group_${idx}`).trim();
+    const groupLabel = String(group?.groupLabel || groupKey || `Free option ${idx + 1}`).trim();
+    const helpText = group?.helpText ? String(group.helpText) : undefined;
+    const rawOptions = Array.isArray(group?.options) ? group.options : [];
+    const normalizedOptions = rawOptions.map((opt, optIdx) => {
+      const key = String(opt?.key || opt?.label || `${groupKey}_opt_${optIdx}`).trim();
+      const label = String(opt?.label || opt?.key || 'Option').trim();
+      const description = opt?.description ? String(opt.description) : undefined;
+      const isDefault = !!opt?.isDefault;
+      return { key, label, description, isDefault, priceDelta: 0 };
+    });
+    if (!normalizedOptions.length) return null;
+    let defaultIndex = normalizedOptions.findIndex((opt) => opt.isDefault);
+    if (defaultIndex < 0) defaultIndex = 0;
+    const options = normalizedOptions.map((opt, idxOpt) => ({
+      key: opt.key,
+      label: opt.label,
+      description: opt.description,
+      isDefault: idxOpt === defaultIndex,
+      priceDelta: 0,
+    }));
+    const isRequired = group?.isRequired === false ? false : true;
+    return { groupKey, groupLabel, helpText, isRequired, options };
+  }).filter(Boolean);
+}
+
+function normalizeFreeOptionGroups(input) {
+  const groups = sanitizeFreeOptionGroups(input);
+  return groups.map((group) => ({
+    ...group,
+    selectionType: 'single',
+    minSelect: group.isRequired === false ? 0 : 1,
+    maxSelect: 1,
+  }));
+}
+
 // Ensure variants[] always exposes a `price` number for UI
 function normalizeProductShape(p) {
   if (!p) return p;
@@ -58,6 +97,7 @@ function normalizeProductShape(p) {
       };
     });
   }
+  obj.freeOptionGroups = normalizeFreeOptionGroups(obj.freeOptionGroups);
   return obj;
 }
 
@@ -70,7 +110,7 @@ router.get('/', async (req, res) => {
 	}
 	const filter = categoryId ? { categoryId } : {};
   const products = await Product.find(filter)
-    .select('name description imageUrl price categoryId isVeg spiceLevels variants extraOptionGroups')
+    .select('name description imageUrl price categoryId isVeg spiceLevels variants extraOptionGroups freeOptionGroups')
     .sort({ name: 1 });
   res.json(products.map(normalizeProductShape));
 });

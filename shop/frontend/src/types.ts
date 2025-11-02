@@ -24,6 +24,14 @@ export type ExtraOptionGroup = {
   options: ProductOption[];
 };
 
+export type FreeOptionGroup = {
+  groupKey: string;
+  groupLabel: string;
+  helpText?: string;
+  isRequired?: boolean;
+  options: ProductOption[];
+};
+
 export type Product = {
   _id: string;
   name: string;
@@ -59,6 +67,7 @@ export type Product = {
     price?: number;
   }>;
   extraOptionGroups?: ExtraOptionGroup[];
+  freeOptionGroups?: FreeOptionGroup[];
 };
 
 export type Site = {
@@ -90,6 +99,7 @@ export type SelectedOption = {
   optionKey: string;
   optionLabel?: string;
   priceDelta?: number;
+  isFree?: boolean;
 };
 
 export type CartItem = {

@@ -48,6 +48,17 @@ function buildInitialGroupSelections(groups) {
   return state;
 }
 
+function buildInitialFreeSelections(groups) {
+  const state = {};
+  normalizeGroups(groups).forEach((group, idx) => {
+    const groupKey = resolveGroupKey(group, idx);
+    const options = Array.isArray(group?.options) ? group.options : [];
+    const defaultOption = options.find((opt) => opt?.isDefault) || options[0];
+    state[groupKey] = defaultOption ? defaultOption.key : '';
+  });
+  return state;
+}
+
 const currency = (value) => `$${Number(value || 0).toFixed(2)}`;
 
 export const ExtrasModal = ({
@@ -61,6 +72,7 @@ export const ExtrasModal = ({
   const flavors = useMemo(() => (Array.isArray(product?.flavors) ? product.flavors : []), [product]);
   const portions = useMemo(() => (Array.isArray(product?.portions) ? product.portions : []), [product]);
   const quantities = useMemo(() => (Array.isArray(product?.quantities) ? product.quantities : []), [product]);
+  const freeGroups = useMemo(() => normalizeGroups(product?.freeOptionGroups), [product]);
   const groups = useMemo(() => normalizeGroups(product?.extraOptionGroups), [product]);
   const productDescription = useMemo(() => (
     product?.description
@@ -76,6 +88,7 @@ export const ExtrasModal = ({
   const [selectedQuantityKey, setSelectedQuantityKey] = useState('');
   const [quantity, setQuantity] = useState(() => Math.max(1, Math.min(99, Number(initialQuantity) || 1)));
   const [selectedByGroup, setSelectedByGroup] = useState({});
+  const [selectedFreeByGroup, setSelectedFreeByGroup] = useState({});
 
   const productId = product?._id || product?.id || '';
 
@@ -87,7 +100,8 @@ export const ExtrasModal = ({
     setSelectedQuantityKey(() => (quantities.length ? '' : ''));
     setQuantity(Math.max(1, Math.min(99, Number(initialQuantity) || 1)));
     setSelectedByGroup(buildInitialGroupSelections(groups));
-  }, [open, productId, variants, flavors, portions, quantities, groups, initialQuantity]);
+    setSelectedFreeByGroup(buildInitialFreeSelections(freeGroups));
+  }, [open, productId, variants, flavors, portions, quantities, groups, freeGroups, initialQuantity]);
 
   const selectedVariant = useMemo(
     () => variants.find((v) => v.key === selectedVariantKey) || null,
@@ -122,6 +136,18 @@ export const ExtrasModal = ({
     });
   }, [groups, selectedByGroup]);
 
+  const freeGroupSelections = useMemo(() => {
+    return freeGroups.map((group, idx) => {
+      const groupKey = resolveGroupKey(group, idx);
+      const options = Array.isArray(group?.options) ? group.options : [];
+      const fallbackKey = options.find((opt) => opt?.isDefault)?.key || (options[0]?.key || '');
+      const rawSelected = selectedFreeByGroup[groupKey];
+      const selectedKey = options.some((opt) => opt?.key === rawSelected) ? rawSelected : fallbackKey;
+      const isRequired = group?.isRequired === false ? false : true;
+      return { group, groupKey, options, selectedKey, isRequired };
+    });
+  }, [freeGroups, selectedFreeByGroup]);
+
   const isVariantRequired = variants.length > 0;
   const flavorRequired = flavors.length > 0 && flavors.some((f) => f?.price !== undefined || f?.label);
   const portionRequired = portions.length > 0 && portions.some((p) => p?.price !== undefined || p?.label);
@@ -154,8 +180,12 @@ export const ExtrasModal = ({
       if (selectedSet.size < min) return false;
       if (max && max !== Infinity && selectedSet.size > max) return false;
     }
+    for (const { isRequired, options, selectedKey } of freeGroupSelections) {
+      if (!options.length) continue;
+      if (isRequired && !selectedKey) return false;
+    }
     return quantity >= 1;
-  }, [isVariantRequired, selectedVariantKey, flavorRequired, selectedFlavorKey, portionRequired, selectedPortionKey, quantityRequired, selectedQuantityKey, groupSelections, quantity]);
+  }, [isVariantRequired, selectedVariantKey, flavorRequired, selectedFlavorKey, portionRequired, selectedPortionKey, quantityRequired, selectedQuantityKey, groupSelections, freeGroupSelections, quantity]);
 
   const handleToggleOption = (groupKey, selectionType, min, max, optionKey) => {
     setSelectedByGroup((prev) => {
@@ -186,8 +216,25 @@ export const ExtrasModal = ({
     });
   };
 
+  const handleSelectFreeOption = (groupKey, optionKey) => {
+    setSelectedFreeByGroup((prev) => ({ ...prev, [groupKey]: optionKey }));
+  };
+
   function handleConfirm() {
     const selectedOptions = [];
+    freeGroupSelections.forEach(({ group, groupKey, options, selectedKey }) => {
+      if (!selectedKey) return;
+      const match = options.find((opt) => opt.key === selectedKey);
+      if (!match) return;
+      selectedOptions.push({
+        groupKey: group?.groupKey || groupKey,
+        groupLabel: group?.groupLabel || groupKey,
+        optionKey: match.key,
+        optionLabel: match.label,
+        priceDelta: 0,
+        isFree: true,
+      });
+    });
     groupSelections.forEach(({ group, options, selectedSet }) => {
       options.forEach((opt) => {
         if (selectedSet.has(opt.key)) {
@@ -283,6 +330,49 @@ export const ExtrasModal = ({
               </div>
             </section>
           ) : null}
+
+          {freeGroupSelections.map(({ group, groupKey, options, selectedKey, isRequired }, idx) => {
+            if (!options.length) return null;
+            const badgeClass = isRequired ? 'extras-badge extras-badge--required' : 'extras-badge extras-badge--optional';
+            const badgeText = isRequired ? 'Included (choose 1)' : 'Included (optional)';
+            return (
+              <section key={`free-${groupKey || idx}`} className="extras-group">
+                <header className="extras-group__header">
+                  <div>
+                    <h4 className="extras-group__title">{group?.groupLabel || 'Included option'}</h4>
+                    {group?.helpText ? (
+                      <p className="extras-group__hint muted">{group.helpText}</p>
+                    ) : (
+                      <p className="extras-group__hint muted">Pick one option that's included in the price.</p>
+                    )}
+                  </div>
+                  <span className={badgeClass}>{badgeText}</span>
+                </header>
+                <div className="extras-options">
+                  {options.map((opt) => {
+                    const active = selectedKey === opt.key;
+                    return (
+                      <label
+                        key={opt.key}
+                        className={`extras-option ${active ? 'extras-option--active' : ''}`}
+                      >
+                        <div className="extras-option__control">
+                          <input
+                            type="radio"
+                            name={`free-${groupKey}`}
+                            checked={active}
+                            onChange={() => handleSelectFreeOption(groupKey, opt.key)}
+                          />
+                          <span>{opt.label}</span>
+                        </div>
+                        <div className="extras-option__price" data-included="true">Included</div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </section>
+            );
+          })}
 
           {groupSelections.map(({ group, selectionType, options, min, max, selectedSet }, idx) => {
             if (!options.length) return null;

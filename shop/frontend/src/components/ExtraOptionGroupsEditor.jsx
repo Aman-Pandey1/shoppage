@@ -22,14 +22,47 @@ function normalizeGroups(value) {
   return Array.isArray(value) ? value : [];
 }
 
-export const ExtraOptionGroupsEditor = ({ value, onChange }) => {
-  const groups = normalizeGroups(value);
+export const ExtraOptionGroupsEditor = ({ value, onChange, mode = 'extra' }) => {
+  const isFreeMode = mode === 'free';
+
+  const sanitizeForMode = React.useCallback((input) => {
+    const normalized = normalizeGroups(input).map((group) => ({
+      ...group,
+      options: Array.isArray(group?.options)
+        ? group.options.map((opt) => ({ ...opt }))
+        : [],
+    }));
+    if (!isFreeMode) return normalized;
+    return normalized.map((group, idx) => {
+      const options = Array.isArray(group?.options)
+        ? group.options.map((opt) => ({ ...opt, priceDelta: 0 }))
+        : [];
+      if (options.length) {
+        let defaultIndex = options.findIndex((opt) => opt?.isDefault);
+        if (defaultIndex < 0) defaultIndex = 0;
+        options.forEach((opt, optionIdx) => {
+          opt.priceDelta = 0;
+          opt.isDefault = optionIdx === defaultIndex;
+        });
+      }
+      return {
+        ...group,
+        selectionType: 'single',
+        isRequired: true,
+        minSelect: 1,
+        maxSelect: 1,
+        options,
+      };
+    });
+  }, [isFreeMode]);
+
+  const groups = React.useMemo(() => sanitizeForMode(value), [value, sanitizeForMode]);
 
   const setGroups = React.useCallback((next) => {
     if (typeof onChange === 'function') {
-      onChange(next);
+      onChange(sanitizeForMode(next));
     }
-  }, [onChange]);
+  }, [onChange, sanitizeForMode]);
 
   const updateGroup = (index, updater) => {
     setGroups(groups.map((group, idx) => (idx === index ? updater(group) : group)));
@@ -125,6 +158,7 @@ export const ExtraOptionGroupsEditor = ({ value, onChange }) => {
   };
 
   const handleSelectionTypeChange = (groupIdx, selectionType) => {
+    if (isFreeMode) return;
     updateGroup(groupIdx, (group) => {
       const options = Array.isArray(group?.options) ? group.options : [];
       if (selectionType === 'single') {
@@ -159,6 +193,9 @@ export const ExtraOptionGroupsEditor = ({ value, onChange }) => {
       ) : null}
       {groups.map((group, groupIdx) => {
         const options = Array.isArray(group?.options) ? group.options : [];
+        const optionColumns = isFreeMode
+          ? 'minmax(0, 1fr) 160px 140px auto'
+          : 'minmax(0, 1fr) 120px 120px auto';
         return (
           <div key={group?.groupKey || groupIdx} className="card" style={{ padding: 12, borderRadius: 12, border: '1px solid var(--border)', display: 'grid', gap: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -197,16 +234,18 @@ export const ExtraOptionGroupsEditor = ({ value, onChange }) => {
                   }}
                 />
               </label>
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <span>Selection type</span>
-                <select
-                  value={group?.selectionType === 'multi' ? 'multi' : 'single'}
-                  onChange={(e) => handleSelectionTypeChange(groupIdx, e.target.value === 'multi' ? 'multi' : 'single')}
-                >
-                  <option value="single">Single choice (radio)</option>
-                  <option value="multi">Multiple choice (checkbox)</option>
-                </select>
-              </label>
+              {!isFreeMode ? (
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span>Selection type</span>
+                  <select
+                    value={group?.selectionType === 'multi' ? 'multi' : 'single'}
+                    onChange={(e) => handleSelectionTypeChange(groupIdx, e.target.value === 'multi' ? 'multi' : 'single')}
+                  >
+                    <option value="single">Single choice (radio)</option>
+                    <option value="multi">Multiple choice (checkbox)</option>
+                  </select>
+                </label>
+              ) : null}
               <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <span>Help text (optional)</span>
                 <input
@@ -216,56 +255,62 @@ export const ExtraOptionGroupsEditor = ({ value, onChange }) => {
                 />
               </label>
             </div>
-            {group?.selectionType === 'multi' ? (
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <span>Minimum selections</span>
-                  <input
-                    type="number"
-                    min={0}
-                    value={Number(group?.minSelect || 0)}
-                    onChange={(e) => {
-                      const val = Math.max(0, Number(e.target.value) || 0);
-                      updateGroup(groupIdx, (prev) => {
-                        const max = Math.max(val, Number(prev?.maxSelect) || options.length || val);
-                        return {
-                          ...prev,
-                          minSelect: Math.min(val, max),
-                          maxSelect: max,
-                          isRequired: val > 0,
-                        };
-                      });
-                    }}
-                  />
-                </label>
-                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <span>Maximum selections</span>
-                  <input
-                    type="number"
-                    min={0}
-                    value={Number(group?.maxSelect || options.length || 0)}
-                    onChange={(e) => {
-                      const val = Math.max(0, Number(e.target.value) || 0);
-                      updateGroup(groupIdx, (prev) => {
-                        const min = Math.max(0, Number(prev?.minSelect) || 0);
-                        const clamped = Math.min(Math.max(val, min), options.length || val);
-                        return { ...prev, maxSelect: clamped };
-                      });
-                    }}
-                  />
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <input
-                    type="checkbox"
-                    checked={!!group?.isRequired}
-                    onChange={(e) => updateGroup(groupIdx, (prev) => ({ ...prev, isRequired: e.target.checked, minSelect: e.target.checked ? Math.max(1, Number(prev?.minSelect) || 1) : Math.max(0, Number(prev?.minSelect) || 0) }))}
-                  />
-                  <span>Required</span>
-                </label>
-              </div>
+            {!isFreeMode ? (
+              group?.selectionType === 'multi' ? (
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <span>Minimum selections</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={Number(group?.minSelect || 0)}
+                      onChange={(e) => {
+                        const val = Math.max(0, Number(e.target.value) || 0);
+                        updateGroup(groupIdx, (prev) => {
+                          const max = Math.max(val, Number(prev?.maxSelect) || options.length || val);
+                          return {
+                            ...prev,
+                            minSelect: Math.min(val, max),
+                            maxSelect: max,
+                            isRequired: val > 0,
+                          };
+                        });
+                      }}
+                    />
+                  </label>
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <span>Maximum selections</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={Number(group?.maxSelect || options.length || 0)}
+                      onChange={(e) => {
+                        const val = Math.max(0, Number(e.target.value) || 0);
+                        updateGroup(groupIdx, (prev) => {
+                          const min = Math.max(0, Number(prev?.minSelect) || 0);
+                          const clamped = Math.min(Math.max(val, min), options.length || val);
+                          return { ...prev, maxSelect: clamped };
+                        });
+                      }}
+                    />
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <input
+                      type="checkbox"
+                      checked={!!group?.isRequired}
+                      onChange={(e) => updateGroup(groupIdx, (prev) => ({ ...prev, isRequired: e.target.checked, minSelect: e.target.checked ? Math.max(1, Number(prev?.minSelect) || 1) : Math.max(0, Number(prev?.minSelect) || 0) }))}
+                    />
+                    <span>Required</span>
+                  </label>
+                </div>
+              ) : (
+                <div className="muted" style={{ fontSize: 12 }}>
+                  Single choice groups are always required. The first option will be selected by default unless another option is marked as default.
+                </div>
+              )
             ) : (
               <div className="muted" style={{ fontSize: 12 }}>
-                Single choice groups are always required. The first option will be selected by default unless another option is marked as default.
+                Customers can pick one included option. Additional selections are not allowed.
               </div>
             )}
             <div style={{ display: 'grid', gap: 8 }}>
@@ -274,7 +319,7 @@ export const ExtraOptionGroupsEditor = ({ value, onChange }) => {
                 <div className="muted" style={{ fontSize: 12 }}>No options yet.</div>
               ) : null}
               {options.map((option, optionIdx) => (
-                <div key={`${groupIdx}-${optionIdx}`} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 120px 120px auto', gap: 8, alignItems: 'center' }}>
+                <div key={`${groupIdx}-${optionIdx}`} style={{ display: 'grid', gridTemplateColumns: optionColumns, gap: 8, alignItems: 'center' }}>
                   <input
                     placeholder="Label"
                     value={option?.label || ''}
@@ -304,16 +349,20 @@ export const ExtraOptionGroupsEditor = ({ value, onChange }) => {
                       });
                     }}
                   />
-                  <input
-                    type="number"
-                    step="0.01"
-                    placeholder="Price +/?"
-                    value={Number(option?.priceDelta || 0)}
-                    onChange={(e) => {
-                      const val = Number(e.target.value);
-                      updateOption(groupIdx, optionIdx, (prev) => ({ ...prev, priceDelta: Number.isFinite(val) ? val : 0 }));
-                    }}
-                  />
+                  {isFreeMode ? (
+                    <div className="muted" style={{ fontSize: 12 }}>Included</div>
+                  ) : (
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="Price +/?"
+                      value={Number(option?.priceDelta || 0)}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        updateOption(groupIdx, optionIdx, (prev) => ({ ...prev, priceDelta: Number.isFinite(val) ? val : 0 }));
+                      }}
+                    />
+                  )}
                   {group?.selectionType === 'single' ? (
                     <label style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
                       <input

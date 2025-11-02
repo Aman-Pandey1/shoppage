@@ -96,7 +96,8 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
                     const hasVariants = Array.isArray(p?.variants) && p.variants.length > 0;
                     const hasSpice = Array.isArray(p?.spiceLevels) && p.spiceLevels.length > 0;
                     const hasExtras = Array.isArray(p?.extraOptionGroups) && p.extraOptionGroups.length > 0;
-                    if (hasVariants || hasSpice || hasExtras) {
+                    const hasFreeIncluded = Array.isArray(p?.freeOptionGroups) && p.freeOptionGroups.some((group) => Array.isArray(group?.options) && group.options.length > 0);
+                    if (hasVariants || hasSpice || hasExtras || hasFreeIncluded) {
                       onAdd({ product: p, quantity: 1, pickupOnlyCategory: !!category?.pickupOnly });
                       return;
                     }
@@ -104,8 +105,18 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
                     setQuickAddOpen(true);
                   }}
                   className="primary-btn hover-float"
-                  aria-label={(Array.isArray(p?.variants) && p.variants.length > 0) || (Array.isArray(p?.spiceLevels) && p.spiceLevels.length > 0) || (Array.isArray(p?.extraOptionGroups) && p.extraOptionGroups.length > 0) ? `Customize ${p.name}` : `Add ${p.name}`}
-                  title={(Array.isArray(p?.variants) && p.variants.length > 0) || (Array.isArray(p?.spiceLevels) && p.spiceLevels.length > 0) || (Array.isArray(p?.extraOptionGroups) && p.extraOptionGroups.length > 0) ? `Customize ${p.name}` : `Add ${p.name}`}
+                  aria-label={(Array.isArray(p?.variants) && p.variants.length > 0)
+                    || (Array.isArray(p?.spiceLevels) && p.spiceLevels.length > 0)
+                    || (Array.isArray(p?.extraOptionGroups) && p.extraOptionGroups.length > 0)
+                    || (Array.isArray(p?.freeOptionGroups) && p.freeOptionGroups.some((group) => Array.isArray(group?.options) && group.options.length > 0))
+                    ? `Customize ${p.name}`
+                    : `Add ${p.name}`}
+                  title={(Array.isArray(p?.variants) && p.variants.length > 0)
+                    || (Array.isArray(p?.spiceLevels) && p.spiceLevels.length > 0)
+                    || (Array.isArray(p?.extraOptionGroups) && p.extraOptionGroups.length > 0)
+                    || (Array.isArray(p?.freeOptionGroups) && p.freeOptionGroups.some((group) => Array.isArray(group?.options) && group.options.length > 0))
+                    ? `Customize ${p.name}`
+                    : `Add ${p.name}`}
                   style={{ borderRadius: 999, width: 38, height: 38, padding: 0, display: 'grid', placeItems: 'center' }}
                 >+
                 </button>

@@ -183,6 +183,17 @@ if (USE_MOCK_DATA) {
             ],
           },
         ],
+        freeOptionGroups: [
+          {
+            groupKey: "free_dip",
+            groupLabel: "Included dip",
+            options: [
+              { key: "sweet_chili", label: "Sweet chili", priceDelta: 0, isDefault: true },
+              { key: "soy", label: "Soy", priceDelta: 0 },
+              { key: "plum", label: "Plum", priceDelta: 0 },
+            ],
+          },
+        ],
       },
       {
         _id: "p-2",
@@ -215,6 +226,16 @@ if (USE_MOCK_DATA) {
             ],
           },
         ],
+        freeOptionGroups: [
+          {
+            groupKey: "included_rice",
+            groupLabel: "Choose rice",
+            options: [
+              { key: "jasmine", label: "Jasmine rice", priceDelta: 0, isDefault: true },
+              { key: "brown", label: "Brown rice", priceDelta: 0 },
+            ],
+          },
+        ],
       },
       {
         _id: "p-3",
@@ -233,6 +254,17 @@ if (USE_MOCK_DATA) {
               { key: "0", label: "0%", priceDelta: 0 },
               { key: "50", label: "50%", priceDelta: 0 },
               { key: "100", label: "100%", priceDelta: 0 },
+            ],
+          },
+        ],
+        freeOptionGroups: [
+          {
+            groupKey: "ice_level",
+            groupLabel: "Ice level",
+            options: [
+              { key: "regular", label: "Regular ice", priceDelta: 0, isDefault: true },
+              { key: "light", label: "Light ice", priceDelta: 0 },
+              { key: "none", label: "No ice", priceDelta: 0 },
             ],
           },
         ],

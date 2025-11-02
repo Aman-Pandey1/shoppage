@@ -156,8 +156,9 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     const hasPortions = Array.isArray(product?.portions) && product.portions.length > 0;
     const hasQuantities = Array.isArray(product?.quantities) && product.quantities.length > 0;
     const hasExtras = Array.isArray(product?.extraOptionGroups) && product.extraOptionGroups.length > 0;
+    const hasFreeIncluded = Array.isArray(product?.freeOptionGroups) && product.freeOptionGroups.some((group) => Array.isArray(group?.options) && group.options.length > 0);
     const hasSpice = Array.isArray(product?.spiceLevels) && product.spiceLevels.length > 0;
-    const hasCustomization = hasVariants || hasFlavors || hasPortions || hasQuantities || hasExtras;
+    const hasCustomization = hasVariants || hasFlavors || hasPortions || hasQuantities || hasExtras || hasFreeIncluded;
     if (hasCustomization) {
       setExtrasOpen(true);
       return;
