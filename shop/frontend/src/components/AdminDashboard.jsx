@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { deleteJson, fetchJson, postJson, putJson, patchJson, download, postFile, resolveAssetUrl } from '../lib/api';
 import { SiteSettingsPanel } from './SiteSettingsPanel';
 import { Modal } from './Modal';
@@ -45,12 +45,98 @@ export const AdminDashboard = () => {
   const [siteForm, setSiteForm] = useState({ name: '', slug: '', domainsText: '' });
 
   const [isCategoryFormOpen, setIsCategoryFormOpen] = useState(false);
-  const [categoryForm, setCategoryForm] = useState({ name: '', imageUrl: '', file: null, pickupOnly: false });
+  const [categoryForm, setCategoryForm] = useState({ name: '', imageUrl: '', file: null, pickupOnly: false, sortIndex: 0 });
   const [deleteCategoryId, setDeleteCategoryId] = useState(null);
 
   const [deleteProductId, setDeleteProductId] = useState(null);
   const [confirmDeleteAllOpen, setConfirmDeleteAllOpen] = useState(false);
   const [confirmDeleteAllCategoriesOpen, setConfirmDeleteAllCategoriesOpen] = useState(false);
+  const [reorderingCategoryId, setReorderingCategoryId] = useState(null);
+  const [categoryOrderMessage, setCategoryOrderMessage] = useState(null);
+
+  const sortCategoriesList = useCallback((list) => {
+    return [...(Array.isArray(list) ? list : [])].sort((a, b) => {
+      const aIdx = Number(a?.sortIndex ?? 0);
+      const bIdx = Number(b?.sortIndex ?? 0);
+      if (aIdx !== bIdx) return aIdx - bIdx;
+      return String(a?.name || '').localeCompare(String(b?.name || ''));
+    });
+  }, []);
+
+  const computeNextSortIndex = useCallback(() => {
+    if (!Array.isArray(categories) || categories.length === 0) return 0;
+    const max = categories.reduce((acc, cat) => {
+      const idx = Number(cat?.sortIndex);
+      return Number.isFinite(idx) ? Math.max(acc, idx) : acc;
+    }, Number.NEGATIVE_INFINITY);
+    return Number.isFinite(max) ? max + 1 : categories.length;
+  }, [categories]);
+
+  const openCreateCategoryForm = useCallback(() => {
+    setCategoryOrderMessage(null);
+    setReorderingCategoryId(null);
+    setCategoryForm({ name: '', imageUrl: '', file: null, pickupOnly: false, sortIndex: computeNextSortIndex() });
+    setIsCategoryFormOpen(true);
+  }, [computeNextSortIndex]);
+
+  const openEditCategoryForm = useCallback((cat, fallbackIndex = 0) => {
+    if (!cat) return;
+    setCategoryOrderMessage(null);
+    setReorderingCategoryId(null);
+    const parsedSort = Number(cat?.sortIndex);
+    const sortIndex = Number.isFinite(parsedSort) ? parsedSort : fallbackIndex;
+    setCategoryForm({ id: cat._id, name: cat.name || '', imageUrl: cat.imageUrl || '', file: null, pickupOnly: !!cat.pickupOnly, sortIndex });
+    setIsCategoryFormOpen(true);
+  }, []);
+
+  const moveCategory = useCallback(async (categoryId, delta) => {
+    if (!categoryId || !selectedSiteId) return;
+    setReorderingCategoryId(categoryId);
+    setCategoryOrderMessage(null);
+    const updates = new Map();
+    let moved = false;
+    setCategories((prev) => {
+      const sorted = sortCategoriesList(prev);
+      const index = sorted.findIndex((c) => c?._id === categoryId);
+      const swapIndex = index + delta;
+      if (index === -1 || swapIndex < 0 || swapIndex >= sorted.length) {
+        return prev;
+      }
+      const next = [...sorted];
+      const current = { ...next[index] };
+      const swap = { ...next[swapIndex] };
+      const currentSort = Number.isFinite(Number(current.sortIndex)) ? Number(current.sortIndex) : index;
+      const swapSort = Number.isFinite(Number(swap.sortIndex)) ? Number(swap.sortIndex) : swapIndex;
+      current.sortIndex = swapSort;
+      swap.sortIndex = currentSort;
+      next[index] = swap;
+      next[swapIndex] = current;
+      if (current?._id) updates.set(current._id, current.sortIndex);
+      if (swap?._id) updates.set(swap._id, swap.sortIndex);
+      moved = true;
+      return sortCategoriesList(next);
+    });
+    if (!moved || updates.size === 0) {
+      setReorderingCategoryId(null);
+      return;
+    }
+    try {
+      await Promise.all(Array.from(updates.entries()).map(([id, sortIndex]) =>
+        patchJson(`/api/admin/sites/${selectedSiteId}/categories/${id}`, { sortIndex })
+      ));
+      setCategoryOrderMessage({ type: 'success', text: 'Category order updated.' });
+    } catch (err) {
+      setCategoryOrderMessage({ type: 'error', text: err?.message || 'Failed to update order.' });
+      try {
+        const latest = await fetchJson(`/api/admin/sites/${selectedSiteId}/categories`);
+        setCategories(sortCategoriesList(latest));
+      } catch {
+        // ignore secondary failure
+      }
+    } finally {
+      setReorderingCategoryId(null);
+    }
+  }, [selectedSiteId, sortCategoriesList]);
 
   async function loadSites() {
     try {
@@ -100,7 +186,9 @@ export const AdminDashboard = () => {
         fetchJson(`/api/admin/sites/${siteId}/categories`),
         fetchJson(`/api/admin/sites/${siteId}/products`),
       ]);
-      setCategories(cats);
+      setCategories(sortCategoriesList(cats));
+      setCategoryOrderMessage(null);
+      setReorderingCategoryId(null);
       setProducts(prods);
       const current = sites.find(s => s._id === siteId);
       if (current) {
@@ -353,8 +441,7 @@ export const AdminDashboard = () => {
           </select>
         </label>
         <button onClick={() => {
-          setCategoryForm({ name: '', imageUrl: '' });
-          setIsCategoryFormOpen(true);
+          openCreateCategoryForm();
           setActiveTab('categories');
         }}>+ New category</button>
         <button className="primary-btn" style={{ marginTop: 12 }} onClick={startCreate}>+ New product</button>
@@ -426,7 +513,7 @@ export const AdminDashboard = () => {
           <div className="card" style={{ padding: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ fontWeight: 800 }}>Categories</div>
-              <button onClick={() => { setCategoryForm({ name: '', imageUrl: '' }); setIsCategoryFormOpen(true); }}>+ New category</button>
+              <button onClick={openCreateCategoryForm}>+ New category</button>
             </div>
             {/* Merge categories helper */}
             <div className="card" style={{ marginTop: 10, padding: 10, display: 'grid', gap: 8 }}>
@@ -464,7 +551,9 @@ export const AdminDashboard = () => {
                         fetchJson(`/api/admin/sites/${selectedSiteId}/categories`),
                         fetchJson(`/api/admin/sites/${selectedSiteId}/products`),
                       ]);
-                      setCategories(cats);
+                      setCategories(sortCategoriesList(cats));
+                      setCategoryOrderMessage(null);
+                      setReorderingCategoryId(null);
                       setProducts(prods);
                       setMergeMessage('Merged successfully');
                       setMergeFromId('');
@@ -490,39 +579,74 @@ export const AdminDashboard = () => {
                 This will remove all categories for the selected site.
               </div>
             </div>
+            {categoryOrderMessage ? (
+              <div
+                style={{
+                  marginTop: 8,
+                  fontSize: 12,
+                  color: categoryOrderMessage.type === 'error' ? '#b91c1c' : '#047857'
+                }}
+              >
+                {categoryOrderMessage.text}
+              </div>
+            ) : null}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12, marginTop: 10 }}>
-              {categories.map((c) => (
-                <div key={c._id} className="card" style={{ padding: 12 }}>
-                  <div style={{ width: '100%', aspectRatio: '4 / 3', borderRadius: 'var(--radius-sm)', overflow: 'hidden', background: 'linear-gradient(180deg, rgba(59,130,246,0.08), rgba(236,72,153,0.08))', marginBottom: 10 }}>
-                    {c.imageUrl ? (
-                      <img
-                        src={resolveAssetUrl(c.imageUrl)}
-                        alt={c.name}
-                        className="img-cover"
-                        onError={(e) => {
-                          // Avoid retry loops and use a stable placeholder
-                          e.currentTarget.onerror = null;
-                          const seed = encodeURIComponent(String(c.name || 'category').toLowerCase());
-                          e.currentTarget.src = `https://picsum.photos/seed/${seed}/400/300`;
-                        }}
-                      />
-                    ) : null}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{ fontWeight: 800 }}>{c.name}</div>
-                      {c.pickupOnly ? (
-                        <span title="Pickup only" style={{ fontSize: 11, padding: '2px 6px', borderRadius: 6, background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>Pickup only</span>
+              {categories.map((c, idx) => {
+                const order = Number.isFinite(Number(c?.sortIndex)) ? Number(c.sortIndex) : idx;
+                const disableAll = !!reorderingCategoryId;
+                const isProcessing = reorderingCategoryId === c._id;
+                return (
+                  <div key={c._id} className="card" style={{ padding: 12 }}>
+                    <div style={{ width: '100%', aspectRatio: '4 / 3', borderRadius: 'var(--radius-sm)', overflow: 'hidden', background: 'linear-gradient(180deg, rgba(59,130,246,0.08), rgba(236,72,153,0.08))', marginBottom: 10 }}>
+                      {c.imageUrl ? (
+                        <img
+                          src={resolveAssetUrl(c.imageUrl)}
+                          alt={c.name}
+                          className="img-cover"
+                          onError={(e) => {
+                            // Avoid retry loops and use a stable placeholder
+                            e.currentTarget.onerror = null;
+                            const seed = encodeURIComponent(String(c.name || 'category').toLowerCase());
+                            e.currentTarget.src = `https://picsum.photos/seed/${seed}/400/300`;
+                          }}
+                        />
                       ) : null}
                     </div>
-                    <div className="muted" style={{ fontSize: 12 }}>ID: {c._id.slice(-6)}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ fontWeight: 800 }}>{c.name}</div>
+                        {c.pickupOnly ? (
+                          <span title="Pickup only" style={{ fontSize: 11, padding: '2px 6px', borderRadius: 6, background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>Pickup only</span>
+                        ) : null}
+                      </div>
+                      <div className="muted" style={{ fontSize: 12 }}>ID: {c._id.slice(-6)}</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+                      <div className="muted" style={{ fontSize: 12 }}>Display order: {order} (#{idx + 1})</div>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button
+                          disabled={disableAll || idx === 0}
+                          onClick={() => moveCategory(c._id, -1)}
+                          title={idx === 0 ? 'Already at top' : 'Move category up'}
+                        >
+                          {isProcessing ? 'Saving...' : 'Move up'}
+                        </button>
+                        <button
+                          disabled={disableAll || idx === categories.length - 1}
+                          onClick={() => moveCategory(c._id, 1)}
+                          title={idx === categories.length - 1 ? 'Already at bottom' : 'Move category down'}
+                        >
+                          {isProcessing ? 'Saving...' : 'Move down'}
+                        </button>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
+                      <button onClick={() => openEditCategoryForm(c, idx)}>Edit</button>
+                      <button className="danger" onClick={() => setDeleteCategoryId(c._id)}>Delete</button>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
-                    <button onClick={() => { setCategoryForm({ id: c._id, name: c.name, imageUrl: c.imageUrl || '', file: null, pickupOnly: !!c.pickupOnly }); setIsCategoryFormOpen(true); }}>Edit</button>
-                    <button className="danger" onClick={() => setDeleteCategoryId(c._id)}>Delete</button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         ) : null}
@@ -1166,12 +1290,14 @@ export const AdminDashboard = () => {
                 className="primary-btn"
                 onClick={async () => {
                   if (!categoryForm.name) return;
+                  const parsedSort = Number(categoryForm.sortIndex);
+                  const normalizedSortIndex = Number.isFinite(parsedSort) ? parsedSort : 0;
                   // First create/update the category basic fields
                   let cat;
                   if (categoryForm.id) {
-                    cat = await patchJson(`/api/admin/sites/${selectedSiteId}/categories/${categoryForm.id}`, { name: categoryForm.name, imageUrl: categoryForm.imageUrl, pickupOnly: !!categoryForm.pickupOnly });
+                    cat = await patchJson(`/api/admin/sites/${selectedSiteId}/categories/${categoryForm.id}`, { name: categoryForm.name, imageUrl: categoryForm.imageUrl, pickupOnly: !!categoryForm.pickupOnly, sortIndex: normalizedSortIndex });
                   } else {
-                    cat = await postJson(`/api/admin/sites/${selectedSiteId}/categories`, { name: categoryForm.name, imageUrl: categoryForm.imageUrl, pickupOnly: !!categoryForm.pickupOnly });
+                    cat = await postJson(`/api/admin/sites/${selectedSiteId}/categories`, { name: categoryForm.name, imageUrl: categoryForm.imageUrl, pickupOnly: !!categoryForm.pickupOnly, sortIndex: normalizedSortIndex });
                   }
                   // If a file is selected, upload it and update imageUrl
                   if (categoryForm.file) {
@@ -1182,10 +1308,18 @@ export const AdminDashboard = () => {
                       alert('Image upload failed. Please try a different image.');
                     }
                   }
+                  cat = { ...cat, sortIndex: Number.isFinite(Number(cat?.sortIndex)) ? Number(cat.sortIndex) : normalizedSortIndex };
                   // Apply to list and close
-                  setCategories((prev) => categoryForm.id ? prev.map((c) => c._id === cat._id ? cat : c) : [cat, ...prev]);
+                  setCategories((prev) => {
+                    const next = categoryForm.id
+                      ? prev.map((c) => (c._id === cat._id ? cat : c))
+                      : [...prev, cat];
+                    return sortCategoriesList(next);
+                  });
+                  setCategoryOrderMessage(null);
+                  setReorderingCategoryId(null);
                   setIsCategoryFormOpen(false);
-                  setCategoryForm({ name: '', imageUrl: '', file: null, pickupOnly: false });
+                  setCategoryForm({ name: '', imageUrl: '', file: null, pickupOnly: false, sortIndex: 0 });
                 }}
               >{categoryForm.id ? 'Save changes' : 'Create'}</button>
             </>
@@ -1197,10 +1331,22 @@ export const AdminDashboard = () => {
               <input value={categoryForm.name} onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })} />
             </label>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span>Display order</span>
+              <input
+                type="number"
+                value={categoryForm.sortIndex}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setCategoryForm({ ...categoryForm, sortIndex: Number.isFinite(val) ? val : 0 });
+                }}
+              />
+              <span className="muted" style={{ fontSize: 12 }}>Lower numbers appear first.</span>
+            </label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <span>Image URL</span>
               <input value={categoryForm.imageUrl} onChange={(e) => setCategoryForm({ ...categoryForm, imageUrl: e.target.value })} />
             </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <label style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 8 }}>
               <input
                 type="checkbox"
                 checked={!!categoryForm.pickupOnly}
@@ -1230,7 +1376,9 @@ export const AdminDashboard = () => {
                   fetchJson(`/api/admin/sites/${selectedSiteId}/categories`),
                   fetchJson(`/api/admin/sites/${selectedSiteId}/products`),
                 ]);
-                setCategories(cats);
+                setCategories(sortCategoriesList(cats));
+                setCategoryOrderMessage(null);
+                setReorderingCategoryId(null);
                 setProducts(prods);
                 setConfirmDeleteAllCategoriesOpen(false);
               }}>Delete ALL</button>
@@ -1257,7 +1405,9 @@ export const AdminDashboard = () => {
                   fetchJson(`/api/admin/sites/${selectedSiteId}/categories`),
                   fetchJson(`/api/admin/sites/${selectedSiteId}/products`),
                 ]);
-                setCategories(cats);
+                setCategories(sortCategoriesList(cats));
+                setCategoryOrderMessage(null);
+                setReorderingCategoryId(null);
                 setProducts(prods);
                 setConfirmDeleteAllOpen(false);
               }}>Delete ALL</button>
@@ -1298,7 +1448,9 @@ export const AdminDashboard = () => {
               <button className="danger" onClick={async () => {
                 if (!deleteCategoryId) return;
                 await deleteJson(`/api/admin/sites/${selectedSiteId}/categories/${deleteCategoryId}`);
-                setCategories((prev) => prev.filter((c) => c._id !== deleteCategoryId));
+                setCategories((prev) => sortCategoriesList(prev.filter((c) => c._id !== deleteCategoryId)));
+                setCategoryOrderMessage(null);
+                setReorderingCategoryId(null);
                 setDeleteCategoryId(null);
               }}>Delete</button>
             </>
