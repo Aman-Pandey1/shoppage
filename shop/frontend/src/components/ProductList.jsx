@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { QuickAddModal } from './QuickAddModal';
 import { resolveAssetUrl } from '../lib/api';
 import { useProductsQuery } from '../lib/queries';
+import { hasAnyOptionsDeep } from '../lib/optionsTree';
 
 export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', vegFilter = 'all' }) => {
   const { data: products = [], isLoading: loading, isError, error } = useProductsQuery({ siteSlug, categoryId: category._id, vegFilter });
@@ -92,11 +93,10 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
                 </div>
                 <button
                   onClick={() => {
-                    // Use the guided add-to-cart flow when product has variants, spice levels, or extras.
                     const hasVariants = Array.isArray(p?.variants) && p.variants.length > 0;
                     const hasSpice = Array.isArray(p?.spiceLevels) && p.spiceLevels.length > 0;
-                    const hasExtras = Array.isArray(p?.extraOptionGroups) && p.extraOptionGroups.length > 0;
-                    const hasFreeIncluded = Array.isArray(p?.freeOptionGroups) && p.freeOptionGroups.some((group) => Array.isArray(group?.options) && group.options.length > 0);
+                    const hasExtras = hasAnyOptionsDeep(p?.extraOptionGroups);
+                    const hasFreeIncluded = hasAnyOptionsDeep(p?.freeOptionGroups);
                     if (hasVariants || hasSpice || hasExtras || hasFreeIncluded) {
                       onAdd({ product: p, quantity: 1, pickupOnlyCategory: !!category?.pickupOnly });
                       return;
@@ -107,14 +107,14 @@ export const ProductList = ({ category, onAdd, onBack, siteSlug = 'default', veg
                   className="primary-btn hover-float"
                   aria-label={(Array.isArray(p?.variants) && p.variants.length > 0)
                     || (Array.isArray(p?.spiceLevels) && p.spiceLevels.length > 0)
-                    || (Array.isArray(p?.extraOptionGroups) && p.extraOptionGroups.length > 0)
-                    || (Array.isArray(p?.freeOptionGroups) && p.freeOptionGroups.some((group) => Array.isArray(group?.options) && group.options.length > 0))
+                    || hasAnyOptionsDeep(p?.extraOptionGroups)
+                    || hasAnyOptionsDeep(p?.freeOptionGroups)
                     ? `Customize ${p.name}`
                     : `Add ${p.name}`}
                   title={(Array.isArray(p?.variants) && p.variants.length > 0)
                     || (Array.isArray(p?.spiceLevels) && p.spiceLevels.length > 0)
-                    || (Array.isArray(p?.extraOptionGroups) && p.extraOptionGroups.length > 0)
-                    || (Array.isArray(p?.freeOptionGroups) && p.freeOptionGroups.some((group) => Array.isArray(group?.options) && group.options.length > 0))
+                    || hasAnyOptionsDeep(p?.extraOptionGroups)
+                    || hasAnyOptionsDeep(p?.freeOptionGroups)
                     ? `Customize ${p.name}`
                     : `Add ${p.name}`}
                   style={{ borderRadius: 999, width: 38, height: 38, padding: 0, display: 'grid', placeItems: 'center' }}

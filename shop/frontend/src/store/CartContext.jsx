@@ -10,20 +10,14 @@ function calculateExtraCost(selectedOptions) {
 
 function formatOptionsSummary(product, spiceLevel, selectedOptions, variant, flavor, portion, quantityOption) {
   try {
-    const extraGroups = Array.isArray(product?.extraOptionGroups) ? product.extraOptionGroups : [];
-    const freeGroups = Array.isArray(product?.freeOptionGroups) ? product.freeOptionGroups : [];
-    const groups = [...extraGroups, ...freeGroups];
-    const groupKeyToLabel = new Map(groups.map((g) => [g.groupKey, g.groupLabel || g.groupKey]));
-    const groupKeyToOptions = new Map(groups.map((g) => [g.groupKey, new Map((g.options || []).map((o) => [o.key, o.label || o.key]))]));
-
     const perGroupSelections = new Map();
     (selectedOptions || []).forEach((opt) => {
-      const labelMap = groupKeyToOptions.get(opt.groupKey);
-      const optionLabel = opt?.optionLabel
-        || (labelMap ? (labelMap.get(opt.optionKey) || opt.optionKey) : opt.optionKey);
-      const groupLabel = opt?.groupLabel || groupKeyToLabel.get(opt.groupKey) || opt.groupKey;
-      if (!perGroupSelections.has(groupLabel)) perGroupSelections.set(groupLabel, []);
-      perGroupSelections.get(groupLabel).push(optionLabel);
+      const mapKey = opt?.groupPath || opt?.groupKey || opt?.groupLabel || '';
+      const groupLabel = opt?.groupLabel || opt?.groupKey || 'Options';
+      const optionLabel = opt?.optionLabel || opt?.optionKey;
+      if (!optionLabel) return;
+      if (!perGroupSelections.has(mapKey)) perGroupSelections.set(mapKey, { groupLabel, options: [] });
+      perGroupSelections.get(mapKey).options.push(optionLabel);
     });
 
     const parts = [];
@@ -32,8 +26,8 @@ function formatOptionsSummary(product, spiceLevel, selectedOptions, variant, fla
     if (portion && (portion.label || portion.key)) parts.push(`Portion: ${portion.label || portion.key}`);
     if (spiceLevel) parts.push(`Spice: ${spiceLevel}`);
     if (quantityOption && (quantityOption.label || quantityOption.key)) parts.push(`Quantity: ${quantityOption.label || quantityOption.key}`);
-    for (const [groupLabel, labels] of perGroupSelections.entries()) {
-      parts.push(`${groupLabel}: ${labels.join(', ')}`);
+    for (const { groupLabel, options } of perGroupSelections.values()) {
+      parts.push(`${groupLabel}: ${options.join(', ')}`);
     }
     const summary = parts.join(' • ');
     return summary || undefined;
@@ -45,8 +39,12 @@ function formatOptionsSummary(product, spiceLevel, selectedOptions, variant, fla
 function generateItemId(productId, spiceLevel, selectedOptions, variant, flavor, portion, quantityOption) {
   const optsKey = (selectedOptions || [])
     .slice()
-    .sort((a, b) => `${a.groupKey}:${a.optionKey}`.localeCompare(`${b.groupKey}:${b.optionKey}`))
-    .map((o) => `${o.groupKey}:${o.optionKey}`)
+    .sort((a, b) => {
+      const aKey = a?.optionPath || `${a?.groupPath || a?.groupKey || ''}:${a?.optionKey || ''}`;
+      const bKey = b?.optionPath || `${b?.groupPath || b?.groupKey || ''}:${b?.optionKey || ''}`;
+      return aKey.localeCompare(bKey);
+    })
+    .map((o) => o?.optionPath || `${o?.groupPath || o?.groupKey || ''}:${o?.optionKey || ''}`)
     .join('|');
   const variantKey = variant?.key || '';
   const flavorKey = flavor?.key || '';

@@ -99,6 +99,13 @@
   box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
 }
 
+.extras-group--nested {
+  margin-top: 14px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: none;
+  border-style: dashed;
+}
+
 .extras-group__header {
   display: flex;
   justify-content: space-between;
@@ -276,6 +283,14 @@
 .extras-modal__footer-actions {
   display: flex;
   gap: 12px;
+}
+
+.extras-nested {
+  margin-top: 16px;
+  padding-left: 16px;
+  border-left: 2px dashed var(--border);
+  display: grid;
+  gap: 16px;
 }
 
 @media (max-width: 720px) {

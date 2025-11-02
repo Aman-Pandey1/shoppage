@@ -11,6 +11,8 @@ export type ProductOption = {
   priceDelta?: number;
   description?: string;
   isDefault?: boolean;
+  childExtraOptionGroups?: ExtraOptionGroup[];
+  childFreeOptionGroups?: FreeOptionGroup[];
 };
 
 export type ExtraOptionGroup = {
@@ -100,6 +102,8 @@ export type SelectedOption = {
   optionLabel?: string;
   priceDelta?: number;
   isFree?: boolean;
+  groupPath?: string;
+  optionPath?: string;
 };
 
 export type CartItem = {

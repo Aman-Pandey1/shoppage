@@ -22,39 +22,52 @@ function normalizeGroups(value) {
   return Array.isArray(value) ? value : [];
 }
 
-export const ExtraOptionGroupsEditor = ({ value, onChange, mode = 'extra' }) => {
-  const isFreeMode = mode === 'free';
+function sanitizeGroupsForMode(input, mode) {
+  return normalizeGroups(input).map((group) => {
+    const options = Array.isArray(group?.options) ? group.options : [];
+    const sanitizedOptions = options.map((opt) => {
+      const childExtraOptionGroups = sanitizeGroupsForMode(opt?.childExtraOptionGroups, 'extra');
+      const childFreeOptionGroups = sanitizeGroupsForMode(opt?.childFreeOptionGroups, 'free');
+      const delta = Number(opt?.priceDelta);
+      return {
+        ...opt,
+        priceDelta: mode === 'free' ? 0 : (Number.isFinite(delta) ? delta : 0),
+        childExtraOptionGroups,
+        childFreeOptionGroups,
+      };
+    });
 
-  const sanitizeForMode = React.useCallback((input) => {
-    const normalized = normalizeGroups(input).map((group) => ({
-      ...group,
-      options: Array.isArray(group?.options)
-        ? group.options.map((opt) => ({ ...opt }))
-        : [],
-    }));
-    if (!isFreeMode) return normalized;
-    return normalized.map((group, idx) => {
-      const options = Array.isArray(group?.options)
-        ? group.options.map((opt) => ({ ...opt, priceDelta: 0 }))
-        : [];
-      if (options.length) {
-        let defaultIndex = options.findIndex((opt) => opt?.isDefault);
+    if (mode === 'free') {
+      const isRequired = group?.isRequired === false ? false : true;
+      if (sanitizedOptions.length) {
+        let defaultIndex = sanitizedOptions.findIndex((opt) => opt?.isDefault);
         if (defaultIndex < 0) defaultIndex = 0;
-        options.forEach((opt, optionIdx) => {
+        sanitizedOptions.forEach((opt, optionIdx) => {
           opt.priceDelta = 0;
           opt.isDefault = optionIdx === defaultIndex;
         });
       }
       return {
         ...group,
+        options: sanitizedOptions,
         selectionType: 'single',
-        isRequired: true,
-        minSelect: 1,
+        isRequired,
+        minSelect: isRequired ? 1 : 0,
         maxSelect: 1,
-        options,
       };
-    });
-  }, [isFreeMode]);
+    }
+
+    return {
+      ...group,
+      options: sanitizedOptions,
+    };
+  });
+}
+
+export const ExtraOptionGroupsEditor = ({ value, onChange, mode = 'extra' }) => {
+  const isFreeMode = mode === 'free';
+
+  const sanitizeForMode = React.useCallback((input) => sanitizeGroupsForMode(input, isFreeMode ? 'free' : 'extra'), [isFreeMode]);
 
   const groups = React.useMemo(() => sanitizeForMode(value), [value, sanitizeForMode]);
 
@@ -318,82 +331,110 @@ export const ExtraOptionGroupsEditor = ({ value, onChange, mode = 'extra' }) => 
               {options.length === 0 ? (
                 <div className="muted" style={{ fontSize: 12 }}>No options yet.</div>
               ) : null}
-              {options.map((option, optionIdx) => (
-                <div key={`${groupIdx}-${optionIdx}`} style={{ display: 'grid', gridTemplateColumns: optionColumns, gap: 8, alignItems: 'center' }}>
-                  <input
-                    placeholder="Label"
-                    value={option?.label || ''}
-                    onChange={(e) => {
-                      const label = e.target.value;
-                      updateOption(groupIdx, optionIdx, (prev) => {
-                        const optionsForGroup = Array.isArray(group?.options) ? group.options : [];
-                        const existingKeys = new Set(optionsForGroup.map((opt, idx) => (idx === optionIdx ? null : opt?.key)).filter(Boolean));
-                        let key = prev?.key;
-                        if (!key || /^option(_\d+)?$/.test(key) || key.startsWith(`${group?.groupKey || 'group'}_option`)) {
-                          key = generateUniqueKey(`${group?.groupKey || 'group'}_${label}`, existingKeys, 'option');
-                        }
-                        return { ...prev, label, key };
-                      });
-                    }}
-                  />
-                  <input
-                    placeholder="Key"
-                    value={option?.key || ''}
-                    onChange={(e) => {
-                      const raw = e.target.value;
-                      updateOption(groupIdx, optionIdx, (prev) => {
-                        const optionsForGroup = Array.isArray(group?.options) ? group.options : [];
-                        const existingKeys = new Set(optionsForGroup.map((opt, idx) => (idx === optionIdx ? null : opt?.key)).filter(Boolean));
-                        const key = generateUniqueKey(raw, existingKeys, 'option');
-                        return { ...prev, key };
-                      });
-                    }}
-                  />
-                  {isFreeMode ? (
-                    <div className="muted" style={{ fontSize: 12 }}>Included</div>
-                  ) : (
-                    <input
-                      type="number"
-                      step="0.01"
-                      placeholder="Price +/?"
-                      value={Number(option?.priceDelta || 0)}
-                      onChange={(e) => {
-                        const val = Number(e.target.value);
-                        updateOption(groupIdx, optionIdx, (prev) => ({ ...prev, priceDelta: Number.isFinite(val) ? val : 0 }));
-                      }}
-                    />
-                  )}
-                  {group?.selectionType === 'single' ? (
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
+              {options.map((option, optionIdx) => {
+                const optionKey = option?.key || `${groupIdx}-${optionIdx}`;
+                const extraCount = Array.isArray(option?.childExtraOptionGroups) ? option.childExtraOptionGroups.length : 0;
+                const freeCount = Array.isArray(option?.childFreeOptionGroups) ? option.childFreeOptionGroups.length : 0;
+                return (
+                  <React.Fragment key={`${groupIdx}-${optionKey}`}>
+                    <div style={{ display: 'grid', gridTemplateColumns: optionColumns, gap: 8, alignItems: 'center' }}>
                       <input
-                        type="radio"
-                        name={`default-${groupIdx}`}
-                        checked={!!option?.isDefault}
-                        onChange={() => {
-                          updateGroup(groupIdx, (prev) => ({
-                            ...prev,
-                            options: (Array.isArray(prev.options) ? prev.options : []).map((opt, idx) => ({ ...opt, isDefault: idx === optionIdx })),
-                          }));
-                        }}
-                      />
-                      <span style={{ fontSize: 12 }}>Default</span>
-                    </label>
-                  ) : (
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
-                      <input
-                        type="checkbox"
-                        checked={!!option?.isDefault}
+                        placeholder="Label"
+                        value={option?.label || ''}
                         onChange={(e) => {
-                          const checked = e.target.checked;
-                          updateOption(groupIdx, optionIdx, (prev) => ({ ...prev, isDefault: checked }));
+                          const label = e.target.value;
+                          updateOption(groupIdx, optionIdx, (prev) => {
+                            const optionsForGroup = Array.isArray(group?.options) ? group.options : [];
+                            const existingKeys = new Set(optionsForGroup.map((opt, idx) => (idx === optionIdx ? null : opt?.key)).filter(Boolean));
+                            let key = prev?.key;
+                            if (!key || /^option(_\d+)?$/.test(key) || key.startsWith(`${group?.groupKey || 'group'}_option`)) {
+                              key = generateUniqueKey(`${group?.groupKey || 'group'}_${label}`, existingKeys, 'option');
+                            }
+                            return { ...prev, label, key };
+                          });
                         }}
                       />
-                      <span style={{ fontSize: 12 }}>Default selected</span>
-                    </label>
-                  )}
-                  <button className="danger" onClick={() => handleRemoveOption(groupIdx, optionIdx)}>Remove</button>
-                </div>
-              ))}
+                      <input
+                        placeholder="Key"
+                        value={option?.key || ''}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          updateOption(groupIdx, optionIdx, (prev) => {
+                            const optionsForGroup = Array.isArray(group?.options) ? group.options : [];
+                            const existingKeys = new Set(optionsForGroup.map((opt, idx) => (idx === optionIdx ? null : opt?.key)).filter(Boolean));
+                            const key = generateUniqueKey(raw, existingKeys, 'option');
+                            return { ...prev, key };
+                          });
+                        }}
+                      />
+                      {isFreeMode ? (
+                        <div className="muted" style={{ fontSize: 12 }}>Included</div>
+                      ) : (
+                        <input
+                          type="number"
+                          step="0.01"
+                          placeholder="Price +/?"
+                          value={Number(option?.priceDelta || 0)}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            updateOption(groupIdx, optionIdx, (prev) => ({ ...prev, priceDelta: Number.isFinite(val) ? val : 0 }));
+                          }}
+                        />
+                      )}
+                      {group?.selectionType === 'single' ? (
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
+                          <input
+                            type="radio"
+                            name={`default-${groupIdx}`}
+                            checked={!!option?.isDefault}
+                            onChange={() => {
+                              updateGroup(groupIdx, (prev) => ({
+                                ...prev,
+                                options: (Array.isArray(prev.options) ? prev.options : []).map((opt, idx) => ({ ...opt, isDefault: idx === optionIdx })),
+                              }));
+                            }}
+                          />
+                          <span style={{ fontSize: 12 }}>Default</span>
+                        </label>
+                      ) : (
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
+                          <input
+                            type="checkbox"
+                            checked={!!option?.isDefault}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              updateOption(groupIdx, optionIdx, (prev) => ({ ...prev, isDefault: checked }));
+                            }}
+                          />
+                          <span style={{ fontSize: 12 }}>Default selected</span>
+                        </label>
+                      )}
+                      <button className="danger" onClick={() => handleRemoveOption(groupIdx, optionIdx)}>Remove</button>
+                    </div>
+                    <div style={{ gridColumn: '1 / -1', display: 'grid', gap: 6, paddingLeft: 12, borderLeft: '2px dashed var(--border)', marginTop: 6 }}>
+                      <details style={{ fontSize: 12 }} defaultOpen={extraCount > 0}>
+                        <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Paid add-on groups ({extraCount})</summary>
+                        <div style={{ marginTop: 8 }}>
+                          <ExtraOptionGroupsEditor
+                            value={option?.childExtraOptionGroups || []}
+                            onChange={(nextGroups) => updateOption(groupIdx, optionIdx, (prev) => ({ ...prev, childExtraOptionGroups: nextGroups }))}
+                          />
+                        </div>
+                      </details>
+                      <details style={{ fontSize: 12 }} defaultOpen={freeCount > 0}>
+                        <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Included sub-options ({freeCount})</summary>
+                        <div style={{ marginTop: 8 }}>
+                          <ExtraOptionGroupsEditor
+                            mode="free"
+                            value={option?.childFreeOptionGroups || []}
+                            onChange={(nextGroups) => updateOption(groupIdx, optionIdx, (prev) => ({ ...prev, childFreeOptionGroups: nextGroups }))}
+                          />
+                        </div>
+                      </details>
+                    </div>
+                  </React.Fragment>
+                );
+              })}
               <button onClick={() => handleAddOption(groupIdx)}>+ Add option</button>
             </div>
           </div>

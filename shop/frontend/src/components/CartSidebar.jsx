@@ -235,7 +235,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
                   {item.selectedOptions.length > 0 ? (
                     <ul style={{ paddingLeft: 18, margin: '6px 0', color: 'var(--text)' }}>
                       {item.selectedOptions.map((opt) => (
-                        <li key={`${opt.groupKey}:${opt.optionKey}`}>
+                        <li key={opt.optionPath || `${opt.groupKey}:${opt.optionKey}`}>
                           <span style={{ fontWeight: 600 }}>{opt.groupLabel || opt.groupKey}:</span> {opt.optionLabel || opt.optionKey}
                           {opt.priceDelta ? ` (+$${opt.priceDelta.toFixed(2)})` : ''}
                         </li>
