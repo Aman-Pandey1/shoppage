@@ -274,7 +274,7 @@ export const ExtraOptionGroupsEditor = ({ value, onChange }) => {
                 <div className="muted" style={{ fontSize: 12 }}>No options yet.</div>
               ) : null}
               {options.map((option, optionIdx) => (
-                <div key={option?.key || optionIdx} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 120px 120px auto', gap: 8, alignItems: 'center' }}>
+                <div key={`${groupIdx}-${optionIdx}`} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 120px 120px auto', gap: 8, alignItems: 'center' }}>
                   <input
                     placeholder="Label"
                     value={option?.label || ''}
