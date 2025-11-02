@@ -399,29 +399,44 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
     }
     function ensureRow(){ if (doc.y + 20 > pageBottom) { doc.addPage(); drawSectionTitle(); } }
     drawSectionTitle();
-    let subtotal = 0;
-    (Array.isArray(order.items) ? order.items : []).forEach((it, idx) => {
-      ensureRow();
-      const unit = Number(it.priceCents||0)/100;
-      const qty = Number(it.quantity||1);
-      const line = unit * qty;
-      subtotal += line;
-      // simplified rows without shaded backgrounds for a cleaner look
-      const rowY = doc.y;
-      // Build left-side label with attributes and quantity
-      let label = `${it.name}`;
-      if (it.size) label += ` (${it.size})`;
-      if (it.flavor) label += ` ? Flavor: ${it.flavor}`;
-      if (it.portion) label += ` ? Portion: ${it.portion}`;
-      if (it.spiceLevel) label += ` [${it.spiceLevel}]`;
-      label += ` x${qty}`;
-      doc.font('Helvetica').fontSize(10).fillColor(colors.text)
-        .text(label, listX, rowY, { width: listWidth - priceColWidth - 12, align: 'left' });
-      doc.font('Helvetica').fontSize(10).fillColor(colors.textDark)
-        .text(`$${line.toFixed(2)}`, listX + listWidth - priceColWidth, rowY, { width: priceColWidth, align: 'right' });
-      doc.moveDown(0.2);
-      doc.moveTo(listX, doc.y).lineTo(listX + listWidth, doc.y).strokeColor(colors.border).stroke();
-    });
+	let subtotal = 0;
+	(Array.isArray(order.items) ? order.items : []).forEach((it, idx) => {
+		ensureRow();
+		const unit = Number(it.priceCents||0)/100;
+		const qty = Number(it.quantity||1);
+		const line = unit * qty;
+		subtotal += line;
+		// simplified rows without shaded backgrounds for a cleaner look
+		const rowY = doc.y;
+		// Build left-side label with attributes and quantity
+		let label = `${it.name}`;
+		if (it.size) label += ` (${it.size})`;
+		if (it.flavor) label += ` - Flavor: ${it.flavor}`;
+		if (it.portion) label += ` - Portion: ${it.portion}`;
+		if (it.spiceLevel) label += ` [${it.spiceLevel}]`;
+		label += ` x${qty}`;
+		doc.font('Helvetica').fontSize(10).fillColor(colors.text)
+			.text(label, listX, rowY, { width: listWidth - priceColWidth - 12, align: 'left' });
+		doc.font('Helvetica').fontSize(10).fillColor(colors.textDark)
+			.text(`$${line.toFixed(2)}`, listX + listWidth - priceColWidth, rowY, { width: priceColWidth, align: 'right' });
+		doc.moveDown(0.15);
+		const selectedOptions = Array.isArray(it?.selectedOptions) ? it.selectedOptions : [];
+		if (selectedOptions.length) {
+			selectedOptions.forEach((opt) => {
+				ensureRow();
+				doc.font('Helvetica').fontSize(9).fillColor(colors.text)
+					.text(`- ${(opt?.groupLabel || opt?.groupKey || 'Option')}: ${opt?.optionLabel || opt?.optionKey}` +
+						(Number(opt?.priceDelta || 0) !== 0
+							? ` (${opt.priceDelta > 0 ? '+' : ''}$${Math.abs(Number(opt.priceDelta)).toFixed(2)})`
+							: ' (Included)')
+					 , listX + 10, doc.y, { width: listWidth - priceColWidth - 22, align: 'left' });
+				doc.moveDown(0.1);
+			});
+			doc.moveDown(0.05);
+		}
+		doc.moveTo(listX, doc.y).lineTo(listX + listWidth, doc.y).strokeColor(colors.border).stroke();
+		doc.moveDown(0.2);
+	});
 
     doc.moveDown();
     const tax = Number(order.taxCents||0)/100;

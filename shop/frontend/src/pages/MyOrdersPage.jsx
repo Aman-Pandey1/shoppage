@@ -154,19 +154,30 @@ export const MyOrdersPage = () => {
               </div>
               <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>{o.fulfillmentType === 'delivery' ? 'Delivery' : 'Takeout'}</div>
               <ul style={{ margin: '8px 0', paddingLeft: 18 }}>
-                {(Array.isArray(o.items) ? o.items : []).map((it, idx) => (
-                  <li key={idx}>
-                    {it.name}
-                    {it.flavor ? ` — Flavor: ${it.flavor}` : ''}
-                    {it.portion ? ` — Portion: ${it.portion}` : ''}
-                    {it.spiceLevel ? ` [${it.spiceLevel}]` : ''}
-                    {it.size ? ` — Select Item: ${it.size}` : ''}
-                    {it.portion ? ` — Portion: ${it.portion}` : ''}
-                    {it.flavor ? ` — Flavor: ${it.flavor}` : ''}
-                    {it.quantityOption ? ` — Quantity: ${it.quantityOption}` : ''}
-                    × {it.quantity}
-                  </li>
-                ))}
+                {(Array.isArray(o.items) ? o.items : []).map((it, idx) => {
+                  const selectedOptions = Array.isArray(it?.selectedOptions) ? it.selectedOptions : [];
+                  return (
+                    <li key={idx}>
+                      {it.name}
+                      {it.flavor ? ` — Flavor: ${it.flavor}` : ''}
+                      {it.portion ? ` — Portion: ${it.portion}` : ''}
+                      {it.spiceLevel ? ` [${it.spiceLevel}]` : ''}
+                      {it.size ? ` — Select Item: ${it.size}` : ''}
+                      {it.quantityOption ? ` — Quantity: ${it.quantityOption}` : ''}
+                      x {it.quantity}
+                      {selectedOptions.length > 0 ? (
+                        <ul style={{ marginTop: 4, paddingLeft: 18 }}>
+                          {selectedOptions.map((opt, optIdx) => (
+                            <li key={opt?.optionPath || `${opt?.groupKey || optIdx}:${opt?.optionKey || optIdx}`} style={{ fontSize: 12 }}>
+                              <span style={{ fontWeight: 600 }}>{opt?.groupLabel || opt?.groupKey || 'Option'}:</span> {opt?.optionLabel || opt?.optionKey}
+                              {Number(opt?.priceDelta || 0) !== 0 ? ` (${opt.priceDelta > 0 ? '+' : ''}$${Math.abs(Number(opt.priceDelta)).toFixed(2)})` : ' (Included)'}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </li>
+                  );
+                })}
               </ul>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ fontWeight: 900, color: 'var(--primary-600)' }}>${(o.totalCents/100).toFixed(2)}</div>

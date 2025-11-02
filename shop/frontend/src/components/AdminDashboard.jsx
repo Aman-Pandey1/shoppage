@@ -759,7 +759,13 @@ export const AdminDashboard = () => {
                   <tbody>
                     {(Array.isArray(orders) ? orders : []).map((o) => {
                       const customer = o.dropoff?.name || o.userEmail || '?';
-                      const itemsText = (Array.isArray(o.items) ? o.items : []).map((it) => `${it.name}${it.spiceLevel ? ` [${it.spiceLevel}]` : ''}${it.size ? ` (${it.size})` : ''} ? ${it.quantity}`).join(', ');
+                      const itemsText = (Array.isArray(o.items) ? o.items : []).map((it) => {
+                        const selectedOptions = Array.isArray(it?.selectedOptions) ? it.selectedOptions : [];
+                        const extras = selectedOptions.length
+                          ? ` {${selectedOptions.map((opt) => `${opt?.groupLabel || opt?.groupKey || 'Option'}: ${opt?.optionLabel || opt?.optionKey}${Number(opt?.priceDelta || 0) !== 0 ? ` (${opt.priceDelta > 0 ? '+' : ''}$${Math.abs(Number(opt.priceDelta)).toFixed(2)})` : ' (Included)'}`).join('; ')}}`
+                          : '';
+                        return `${it.name}${it.spiceLevel ? ` [${it.spiceLevel}]` : ''}${it.size ? ` (${it.size})` : ''}${extras ? ` ${extras}` : ''} x ${it.quantity}`;
+                      }).join(', ');
                       const tax = ((o.taxCents||0)/100).toFixed(2);
                       const notes = o.notes ? String(o.notes).slice(0, 60) : '';
                       return (
