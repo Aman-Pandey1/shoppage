@@ -12,6 +12,7 @@ import Site from '../models/Site.js';
 import { calculateDistanceFeeCents, distanceBetweenAddressesKm } from '../services/geo.js';
 import Category from '../models/Category.js';
 import { getNextOrderNumber } from '../utils/orderNumber.js';
+import { normalizePhoneForCountry } from '../utils/phone.js';
 
 const router = Router();
 
@@ -163,11 +164,17 @@ router.get('/confirm/:sessionId', async (req, res) => {
           if (updatedOrder?.dropoff && updatedOrder?.pickup?.location && site) {
             const provider = site.deliveryProvider || 'uber';
             let delivery = null;
+            const pickupCountry = String(updatedOrder.pickup?.location?.address?.country || site?.country || 'CA').toUpperCase();
+            const dropCountry = String(updatedOrder.dropoff?.address?.country || 'CA').toUpperCase();
+            const normalizedPickupPhone = normalizePhoneForCountry(updatedOrder.pickup?.location?.phone, pickupCountry) || '+14155550123';
+            const normalizedDropoffPhone = normalizePhoneForCountry(updatedOrder.dropoff?.phone, dropCountry) || '+14155550123';
+            const safePickup = { ...(updatedOrder.pickup?.location || {}), phone: normalizedPickupPhone };
+            const safeDropoff = { ...(updatedOrder.dropoff || {}), phone: normalizedDropoffPhone };
             if (provider === 'doordash' && site.doordashStoreId) {
               delivery = await ddCreateDelivery({
                 storeId: site.doordashStoreId,
-                pickup: updatedOrder.pickup.location,
-                dropoff: updatedOrder.dropoff,
+                pickup: safePickup,
+                dropoff: safeDropoff,
                 manifestItems: (updatedOrder.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
                 tip: 0,
                 externalId: String(updatedOrder._id),
@@ -175,8 +182,8 @@ router.get('/confirm/:sessionId', async (req, res) => {
             } else if (site.uberCustomerId) {
               delivery = await uberCreateDelivery({
                 customerId: site.uberCustomerId,
-                pickup: updatedOrder.pickup.location,
-                dropoff: updatedOrder.dropoff,
+                pickup: safePickup,
+                dropoff: safeDropoff,
                 manifestItems: (updatedOrder.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
                 tip: 0,
                 externalId: String(updatedOrder._id),
@@ -488,6 +495,16 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
     if (!locs.length) return res.status(400).json({ error: 'No pickup location configured' });
     const chosenIdx = (typeof pickupLocationIndex === 'number' && locs[pickupLocationIndex]) ? pickupLocationIndex : 0;
     const pickup = locs[chosenIdx];
+    const pickupCountry = String(pickup?.address?.country || site?.country || 'CA').toUpperCase();
+    const normalizedPickupPhone = normalizePhoneForCountry(pickup?.phone, pickupCountry) || '+14155550123';
+    const safePickup = { ...pickup, phone: normalizedPickupPhone || '+14155550123' };
+
+    const dropCountry = String(dropoff?.address?.country || 'CA').toUpperCase();
+    const normalizedDropoffPhone = normalizePhoneForCountry(dropoff?.phone, dropCountry);
+    if (!normalizedDropoffPhone) {
+      return res.status(400).json({ error: 'Phone number is invalid. Use E.164 format like +14155550123.' });
+    }
+    const safeDropoff = { ...dropoff, phone: normalizedDropoffPhone };
 
     // Items subtotal and coupon validation (apply per-item discount; ignore client percent)
     const itemsSubtotal = manifestItems.reduce((sum, it) => sum + (Number(it.priceCents) || 0) * (Number(it.quantity) || 1), 0);
@@ -515,7 +532,7 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
 
     // Compute delivery fee based on distance; do not block here on max km
     let distanceKm = null;
-    try { distanceKm = await distanceBetweenAddressesKm(pickup.address, dropoff?.address); } catch {}
+    try { distanceKm = await distanceBetweenAddressesKm(pickup.address, safeDropoff?.address); } catch {}
     // Max-distance validation is handled earlier (Fulfillment modal via /delivery/quote)
     // Compute delivery fee using admin-configured per-km rate (cents/km)
     const baseFee = (typeof site?.deliveryFeeCents === 'number' && isFinite(site.deliveryFeeCents))
@@ -574,8 +591,8 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
       deliveryFeeCents: customerDeliveryFeeCents,
       deliveryFeeRestaurantCents: restaurantDeliveryFeeCents,
       fulfillmentType: 'delivery',
-      dropoff,
-      pickup: { location: pickup },
+      dropoff: safeDropoff,
+      pickup: { location: safePickup },
       notes: typeof notes === 'string' ? notes.slice(0, 1000) : undefined,
       // Include coupon metadata so PDFs can render a Discount row later
       meta: appliedCoupon
