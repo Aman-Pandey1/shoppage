@@ -311,9 +311,29 @@
 }
 
 .extras-option__nested.extras-nested {
-  margin-top: 8px;
+  margin-top: 0;
   margin-left: 36px;
   gap: 14px;
+}
+
+.extras-collapse {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-6px);
+  transition: max-height 0.3s ease, opacity 0.22s ease, transform 0.26s ease, margin-top 0.26s ease;
+}
+
+.extras-collapse--open {
+  max-height: 1200px;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.extras-option__nested.extras-collapse--open {
+  margin-top: 8px;
 }
 
 @media (max-width: 720px) {
