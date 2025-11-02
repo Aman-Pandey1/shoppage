@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Modal } from './Modal';
-import { resolveAssetUrl } from '../lib/api';
+import './ExtrasModal.css';
 
 function normalizeGroups(groups) {
   return Array.isArray(groups) ? groups : [];
@@ -62,6 +62,13 @@ export const ExtrasModal = ({
   const portions = useMemo(() => (Array.isArray(product?.portions) ? product.portions : []), [product]);
   const quantities = useMemo(() => (Array.isArray(product?.quantities) ? product.quantities : []), [product]);
   const groups = useMemo(() => normalizeGroups(product?.extraOptionGroups), [product]);
+  const productDescription = useMemo(() => (
+    product?.description
+    || product?.summary
+    || product?.shortDescription
+    || product?.subtitle
+    || ''
+  ), [product]);
 
   const [selectedVariantKey, setSelectedVariantKey] = useState('');
   const [selectedFlavorKey, setSelectedFlavorKey] = useState('');
@@ -211,214 +218,266 @@ export const ExtrasModal = ({
       onClose={onCancel}
       title={product?.name ? `Customize ${product.name}` : 'Customize item'}
       footer={(
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-          <div style={{ fontWeight: 700 }}>
-            Total: {currency(totalPrice)}
-          </div>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <button onClick={onCancel}>Cancel</button>
-            <button className="primary-btn" disabled={!canConfirm} onClick={handleConfirm}>
+        <div className="extras-modal__footer">
+          <div className="extras-modal__total">Total: {currency(totalPrice)}</div>
+          <div className="extras-modal__footer-actions">
+            <button type="button" onClick={onCancel}>Cancel</button>
+            <button type="button" className="primary-btn" disabled={!canConfirm} onClick={handleConfirm}>
               Add to order {currency(unitPrice)}
             </button>
           </div>
         </div>
       )}
     >
-      {product ? (
-        <div style={{ position: 'relative', height: 180, borderRadius: 16, overflow: 'hidden', marginBottom: 16, border: '1px solid var(--border)' }}>
-          {product.imageUrl ? (
-            <img src={resolveAssetUrl(product.imageUrl)} alt={product.name} className="img-cover" />
-          ) : (
-            <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', background: 'linear-gradient(180deg, rgba(15,23,42,0.08), rgba(15,23,42,0.16))' }}>
-              <span style={{ fontWeight: 700, fontSize: 18, color: '#1f2937' }}>No image</span>
-            </div>
-          )}
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(15,23,42,0), rgba(15,23,42,0.55))' }} />
-          <div style={{ position: 'absolute', bottom: 12, left: 16, right: 16, color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-            <div style={{ fontWeight: 800, fontSize: 20 }}>{product.name}</div>
-            <div style={{ fontWeight: 700 }}>{currency(basePrice)}</div>
+      <div className="extras-modal">
+        <div className="extras-modal__summary">
+          <div className="extras-modal__summary-text">
+            <span className="extras-modal__eyebrow">You're customizing</span>
+            <h3 className="extras-modal__name">{product?.name || 'Menu item'}</h3>
+            {(productDescription || groups.length || variants.length || flavors.length || portions.length || quantities.length) ? (
+              productDescription
+                ? <p className="extras-modal__description">{productDescription}</p>
+                : <p className="extras-modal__description">Choose your favorite add-ons and build the perfect bite.</p>
+            ) : null}
+          </div>
+          <div className="extras-modal__price-chip">
+            <span>Starting at</span>
+            <strong>{currency(basePrice)}</strong>
           </div>
         </div>
-      ) : null}
 
-      <div style={{ display: 'grid', gap: 16 }}>
-        {variants.length ? (
-          <section style={{ display: 'grid', gap: 8 }}>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <h4 style={{ margin: 0 }}>Choose size</h4>
-              <span style={{ fontSize: 12, color: 'var(--success-700)', border: '1px solid var(--success-500)', borderRadius: 999, padding: '2px 8px' }}>Required</span>
-            </div>
-            <div style={{ display: 'grid', gap: 8 }}>
-              {variants.map((variant) => (
-                <label key={variant.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', cursor: 'pointer', background: selectedVariantKey === variant.key ? 'var(--primary-alpha-08)' : 'transparent' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <input
-                      type="radio"
-                      name="variant"
-                      checked={selectedVariantKey === variant.key}
-                      onChange={() => setSelectedVariantKey(variant.key)}
-                    />
-                    <span>{variant.label}</span>
-                  </div>
-                  <div style={{ fontWeight: 600 }}>{variant.price ? `+${currency(variant.price)}` : 'Included'}</div>
-                </label>
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-        {groups.map((groupInfo, idx) => {
-          const options = Array.isArray(groupInfo?.options) ? groupInfo.options : [];
-          if (!options.length) return null;
-          const selectionType = groupInfo?.selectionType === 'single' ? 'single' : 'multi';
-          const { min, max } = clampSelections(selectionType, groupInfo?.minSelect, groupInfo?.maxSelect, options.length);
-          const groupKey = resolveGroupKey(groupInfo, idx);
-          const selectedSet = selectedByGroup[groupKey] instanceof Set
-            ? selectedByGroup[groupKey]
-            : new Set();
-          const badge = selectionType === 'single'
-            ? 'Required'
-            : (min > 0 ? `Choose at least ${min}` : 'Optional');
-          return (
-            <section key={groupInfo.groupKey || groupKey} style={{ display: 'grid', gap: 8 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="extras-sections">
+          {variants.length ? (
+            <section className="extras-group">
+              <header className="extras-group__header">
                 <div>
-                  <h4 style={{ margin: 0 }}>{groupInfo.groupLabel}</h4>
-                  {groupInfo.helpText ? <div className="muted" style={{ fontSize: 12 }}>{groupInfo.helpText}</div> : null}
+                  <h4 className="extras-group__title">Choose size</h4>
+                  <p className="extras-group__hint muted">Pick the size that suits your appetite.</p>
                 </div>
-                <span style={{ fontSize: 12, borderRadius: 999, padding: '2px 8px', border: '1px solid var(--border)', color: 'var(--muted)' }}>{badge}{max && max !== Infinity && selectionType === 'multi' ? ` (up to ${max})` : ''}</span>
-              </div>
-              <div style={{ display: 'grid', gap: 8 }}>
-                {options.map((opt) => {
-                  const active = selectedSet.has(opt.key);
-                  const price = Number(opt?.priceDelta || 0);
-                  if (selectionType === 'single') {
-                    return (
-                      <label key={opt.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', cursor: 'pointer', background: active ? 'var(--primary-alpha-08)' : 'transparent' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <input
-                            type="radio"
-                            name={`group-${groupKey}`}
-                            checked={active}
-                            onChange={() => handleToggleOption(groupKey, selectionType, min, max, opt.key)}
-                          />
-                          <span>{opt.label}</span>
-                        </div>
-                        <div style={{ fontWeight: 600 }}>{price ? `+${currency(price)}` : 'Included'}</div>
-                      </label>
-                    );
-                  }
+                <span className="extras-badge extras-badge--required">Required</span>
+              </header>
+              <div className="extras-options">
+                {variants.map((variant) => {
+                  const price = Number(variant?.price || 0);
+                  const active = selectedVariantKey === variant.key;
                   return (
-                    <label key={opt.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', cursor: 'pointer', background: active ? 'var(--primary-alpha-08)' : 'transparent' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <label
+                      key={variant.key}
+                      className={`extras-option ${active ? 'extras-option--active' : ''}`}
+                    >
+                      <div className="extras-option__control">
                         <input
-                          type="checkbox"
+                          type="radio"
+                          name="variant"
                           checked={active}
-                          onChange={() => handleToggleOption(groupKey, selectionType, min, max, opt.key)}
+                          onChange={() => setSelectedVariantKey(variant.key)}
                         />
-                        <span>{opt.label}</span>
+                        <span>{variant.label}</span>
                       </div>
-                      <div style={{ fontWeight: 600 }}>{price ? `+${currency(price)}` : 'Included'}</div>
+                      <div className="extras-option__price" data-included={price === 0 ? 'true' : 'false'}>
+                        {price ? `+${currency(price)}` : 'Included'}
+                      </div>
                     </label>
                   );
                 })}
               </div>
             </section>
-          );
-        })}
+          ) : null}
 
-        {flavors.length ? (
-          <section style={{ display: 'grid', gap: 8 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h4 style={{ margin: 0 }}>Flavor</h4>
-              <span style={{ fontSize: 12, borderRadius: 999, padding: '2px 8px', border: '1px solid var(--border)', color: 'var(--muted)' }}>{flavorRequired ? 'Required' : 'Optional'}</span>
-            </div>
-            <div style={{ display: 'grid', gap: 8 }}>
-              {flavors.map((flavor) => (
-                <label key={flavor.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', cursor: 'pointer', background: selectedFlavorKey === flavor.key ? 'var(--primary-alpha-08)' : 'transparent' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <input
-                      type="radio"
-                      name="flavor"
-                      checked={selectedFlavorKey === flavor.key}
-                      onChange={() => setSelectedFlavorKey(flavor.key)}
-                    />
-                    <span>{flavor.label}</span>
+          {groupSelections.map(({ group, selectionType, options, min, max, selectedSet }, idx) => {
+            if (!options.length) return null;
+            const groupKey = resolveGroupKey(group, idx);
+            const isRequired = selectionType === 'single' || min > 0;
+            const badgeText = selectionType === 'single'
+              ? 'Required'
+              : (min > 0 ? `Choose at least ${min}` : 'Optional');
+            const maxText = max && max !== Infinity && selectionType === 'multi' ? ` (up to ${max})` : '';
+            return (
+              <section key={groupKey} className="extras-group">
+                <header className="extras-group__header">
+                  <div>
+                    <h4 className="extras-group__title">{group?.groupLabel || 'Options'}</h4>
+                    {group?.helpText ? (
+                      <p className="extras-group__hint muted">{group.helpText}</p>
+                    ) : null}
                   </div>
-                  <div style={{ fontWeight: 600 }}>{flavor.price ? `+${currency(flavor.price)}` : 'Included'}</div>
-                </label>
-              ))}
+                  <span className={`extras-badge ${isRequired ? 'extras-badge--required' : 'extras-badge--optional'}`}>
+                    {badgeText}{maxText}
+                  </span>
+                </header>
+                <div className="extras-options">
+                  {options.map((opt) => {
+                    const active = selectedSet.has(opt.key);
+                    const price = Number(opt?.priceDelta || 0);
+                    return (
+                      <label
+                        key={opt.key}
+                        className={`extras-option ${active ? 'extras-option--active' : ''}`}
+                      >
+                        <div className="extras-option__control">
+                          <input
+                            type={selectionType === 'single' ? 'radio' : 'checkbox'}
+                            name={selectionType === 'single' ? `group-${groupKey}` : undefined}
+                            checked={active}
+                            onChange={() => handleToggleOption(groupKey, selectionType, min, max, opt.key)}
+                          />
+                          <span>{opt.label}</span>
+                        </div>
+                        <div className="extras-option__price" data-included={price === 0 ? 'true' : 'false'}>
+                          {price ? `+${currency(price)}` : 'Included'}
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </section>
+            );
+          })}
+
+          {flavors.length ? (
+            <section className="extras-group">
+              <header className="extras-group__header">
+                <div>
+                  <h4 className="extras-group__title">Flavor</h4>
+                  <p className="extras-group__hint muted">Add a flavor accent to elevate the dish.</p>
+                </div>
+                <span className={`extras-badge ${flavorRequired ? 'extras-badge--required' : 'extras-badge--optional'}`}>
+                  {flavorRequired ? 'Required' : 'Optional'}
+                </span>
+              </header>
+              <div className="extras-options">
+                {flavors.map((flavor) => {
+                  const price = Number(flavor?.price || 0);
+                  const active = selectedFlavorKey === flavor.key;
+                  return (
+                    <label
+                      key={flavor.key}
+                      className={`extras-option ${active ? 'extras-option--active' : ''}`}
+                    >
+                      <div className="extras-option__control">
+                        <input
+                          type="radio"
+                          name="flavor"
+                          checked={active}
+                          onChange={() => setSelectedFlavorKey(flavor.key)}
+                        />
+                        <span>{flavor.label}</span>
+                      </div>
+                      <div className="extras-option__price" data-included={price === 0 ? 'true' : 'false'}>
+                        {price ? `+${currency(price)}` : 'Included'}
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
+
+          {portions.length ? (
+            <section className="extras-group">
+              <header className="extras-group__header">
+                <div>
+                  <h4 className="extras-group__title">Portion</h4>
+                  <p className="extras-group__hint muted">Select the serving style you prefer.</p>
+                </div>
+                <span className={`extras-badge ${portionRequired ? 'extras-badge--required' : 'extras-badge--optional'}`}>
+                  {portionRequired ? 'Required' : 'Optional'}
+                </span>
+              </header>
+              <div className="extras-options">
+                {portions.map((portion) => {
+                  const price = Number(portion?.price || 0);
+                  const active = selectedPortionKey === portion.key;
+                  return (
+                    <label
+                      key={portion.key}
+                      className={`extras-option ${active ? 'extras-option--active' : ''}`}
+                    >
+                      <div className="extras-option__control">
+                        <input
+                          type="radio"
+                          name="portion"
+                          checked={active}
+                          onChange={() => setSelectedPortionKey(portion.key)}
+                        />
+                        <span>{portion.label}</span>
+                      </div>
+                      <div className="extras-option__price" data-included={price === 0 ? 'true' : 'false'}>
+                        {price ? `+${currency(price)}` : 'Included'}
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
+
+          {quantities.length ? (
+            <section className="extras-group">
+              <header className="extras-group__header">
+                <div>
+                  <h4 className="extras-group__title">Quantity choice</h4>
+                  <p className="extras-group__hint muted">Choose a preset combo if available.</p>
+                </div>
+                <span className={`extras-badge ${quantityRequired ? 'extras-badge--required' : 'extras-badge--optional'}`}>
+                  {quantityRequired ? 'Required' : 'Optional'}
+                </span>
+              </header>
+              <div className="extras-options">
+                {quantities.map((quantityOption) => {
+                  const price = Number(quantityOption?.price || 0);
+                  const active = selectedQuantityKey === quantityOption.key;
+                  return (
+                    <label
+                      key={quantityOption.key}
+                      className={`extras-option ${active ? 'extras-option--active' : ''}`}
+                    >
+                      <div className="extras-option__control">
+                        <input
+                          type="radio"
+                          name="quantityOption"
+                          checked={active}
+                          onChange={() => setSelectedQuantityKey(quantityOption.key)}
+                        />
+                        <span>{quantityOption.label}</span>
+                      </div>
+                      <div className="extras-option__price" data-included={price === 0 ? 'true' : 'false'}>
+                        {price ? `+${currency(price)}` : 'Included'}
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
+
+          <section className="extras-quantity">
+            <div className="extras-quantity__label">
+              <h4>Quantity</h4>
+              <p className="muted">Set how many of this item you'd like to add.</p>
+            </div>
+            <div className="extras-quantity__controls">
+              <button
+                type="button"
+                className="extras-quantity__btn"
+                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                aria-label="Decrease quantity"
+                disabled={quantity <= 1}
+              >
+                -
+              </button>
+              <span className="extras-quantity__value">{quantity}</span>
+              <button
+                type="button"
+                className="extras-quantity__btn"
+                onClick={() => setQuantity((q) => Math.min(99, q + 1))}
+                aria-label="Increase quantity"
+              >
+                +
+              </button>
             </div>
           </section>
-        ) : null}
-
-        {portions.length ? (
-          <section style={{ display: 'grid', gap: 8 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h4 style={{ margin: 0 }}>Portion</h4>
-              <span style={{ fontSize: 12, borderRadius: 999, padding: '2px 8px', border: '1px solid var(--border)', color: 'var(--muted)' }}>{portionRequired ? 'Required' : 'Optional'}</span>
-            </div>
-            <div style={{ display: 'grid', gap: 8 }}>
-              {portions.map((portion) => (
-                <label key={portion.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', cursor: 'pointer', background: selectedPortionKey === portion.key ? 'var(--primary-alpha-08)' : 'transparent' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <input
-                      type="radio"
-                      name="portion"
-                      checked={selectedPortionKey === portion.key}
-                      onChange={() => setSelectedPortionKey(portion.key)}
-                    />
-                    <span>{portion.label}</span>
-                  </div>
-                  <div style={{ fontWeight: 600 }}>{portion.price ? `+${currency(portion.price)}` : 'Included'}</div>
-                </label>
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-        {quantities.length ? (
-          <section style={{ display: 'grid', gap: 8 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h4 style={{ margin: 0 }}>Quantity choice</h4>
-              <span style={{ fontSize: 12, borderRadius: 999, padding: '2px 8px', border: '1px solid var(--border)', color: 'var(--muted)' }}>{quantityRequired ? 'Required' : 'Optional'}</span>
-            </div>
-            <div style={{ display: 'grid', gap: 8 }}>
-              {quantities.map((quantityOption) => (
-                <label key={quantityOption.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', cursor: 'pointer', background: selectedQuantityKey === quantityOption.key ? 'var(--primary-alpha-08)' : 'transparent' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <input
-                      type="radio"
-                      name="quantityOption"
-                      checked={selectedQuantityKey === quantityOption.key}
-                      onChange={() => setSelectedQuantityKey(quantityOption.key)}
-                    />
-                    <span>{quantityOption.label}</span>
-                  </div>
-                  <div style={{ fontWeight: 600 }}>{quantityOption.price ? `+${currency(quantityOption.price)}` : 'Included'}</div>
-                </label>
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-        <section style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: 12, border: '1px solid var(--border)', padding: '10px 12px', background: 'var(--panel-2)' }}>
-          <div style={{ fontWeight: 700 }}>Quantity</div>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, borderRadius: 999, border: '1px solid var(--border)', padding: 6, background: '#fff' }}>
-            <button
-              onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-              style={{ width: 32, height: 32, borderRadius: '50%', border: 'none', background: 'var(--panel)', cursor: 'pointer', fontSize: 18 }}
-              aria-label="Decrease quantity"
-            >-</button>
-            <div style={{ minWidth: 24, textAlign: 'center', fontWeight: 700 }}>{quantity}</div>
-            <button
-              onClick={() => setQuantity((q) => Math.min(99, q + 1))}
-              style={{ width: 32, height: 32, borderRadius: '50%', border: 'none', background: 'var(--panel)', cursor: 'pointer', fontSize: 18 }}
-              aria-label="Increase quantity"
-            >+</button>
-          </div>
-        </section>
-
+        </div>
       </div>
     </Modal>
   );
