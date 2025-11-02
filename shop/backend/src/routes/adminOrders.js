@@ -207,8 +207,8 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
         if (order.dropoff) {
           const d = order.dropoff || {};
           const addr = Array.isArray(d?.address?.streetAddress) ? d.address.streetAddress.join(' ') : '';
-          doc.text(`Name: ${d.name || '—'}`, leftX, doc.y, { width: columnWidth });
-          doc.text(`Phone: ${d.phone || '—'}`, leftX, doc.y, { width: columnWidth });
+          doc.text(`Name: ${d.name || '?'}`, leftX, doc.y, { width: columnWidth });
+          doc.text(`Phone: ${d.phone || '?'}`, leftX, doc.y, { width: columnWidth });
           doc.text(`Address: ${addr} ${d?.address?.city || ''} ${d?.address?.province || ''} ${d?.address?.postalCode || ''}`, leftX, doc.y, { width: columnWidth });
         } else {
           doc.text('Delivery', leftX, doc.y, { width: columnWidth });
@@ -272,21 +272,36 @@ router.get('/:orderId/pdf', requireAdmin, async (req, res) => {
 			const line = unit * qty;
 			itemsSubtotal += line;
 
-      // simplified rows without shaded backgrounds
+	      // simplified rows without shaded backgrounds
 
 			const rowY = doc.y;
 			let label = `${it.name}`;
 			if (it.size) label += ` (${it.size})`;
-			if (it.flavor) label += ` — Flavor: ${it.flavor}`;
-			if (it.portion) label += ` — Portion: ${it.portion}`;
+			if (it.flavor) label += ` - Flavor: ${it.flavor}`;
+			if (it.portion) label += ` - Portion: ${it.portion}`;
 			if (it.spiceLevel) label += ` [${it.spiceLevel}]`;
 			label += ` x${qty}`;
 			doc.font('Helvetica').fontSize(10).fillColor(colors.text)
 				.text(label, listX, rowY, { width: listWidth - priceColWidth - 12, align: 'left' });
 			doc.font('Helvetica').fontSize(10).fillColor(colors.textDark)
 				.text(`$${line.toFixed(2)}`, listX + listWidth - priceColWidth, rowY, { width: priceColWidth, align: 'right' });
-			doc.moveDown(0.2);
+			doc.moveDown(0.15);
+			const selectedOptions = Array.isArray(it?.selectedOptions) ? it.selectedOptions : [];
+			if (selectedOptions.length) {
+				selectedOptions.forEach((opt) => {
+					ensureRowSpace();
+					doc.font('Helvetica').fontSize(9).fillColor(colors.text)
+						.text(`- ${(opt?.groupLabel || opt?.groupKey || 'Option')}: ${opt?.optionLabel || opt?.optionKey}` +
+							(Number(opt?.priceDelta || 0) !== 0
+								? ` (${opt.priceDelta > 0 ? '+' : ''}$${Math.abs(Number(opt.priceDelta)).toFixed(2)})`
+								: ' (Included)')
+						 , listX + 10, doc.y, { width: listWidth - priceColWidth - 22, align: 'left' });
+					doc.moveDown(0.1);
+				});
+				doc.moveDown(0.05);
+			}
 			doc.moveTo(listX, doc.y).lineTo(listX + listWidth, doc.y).strokeColor(colors.border).stroke();
+			doc.moveDown(0.2);
 		});
 
 		doc.moveDown();
