@@ -185,6 +185,8 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
     } else if (provider === 'doordash') {
       if ((!site?.doordashStoreId || !hasPickupCfg) && !isMock) return res.status(400).json({ error: 'Site not configured for DoorDash Drive' });
     }
+	  const stripeSecretKey = site?.stripeSecretKey || process.env.STRIPE_SECRET_KEY || '';
+	  const isStripeSandboxMode = /^sk_test_/i.test(String(stripeSecretKey || '').trim());
     const { dropoff, manifestItems, externalId, pickupLocationIndex, notes } = req.body || {};
 		const locs = (Array.isArray(site.locations) && site.locations.length)
 			? site.locations
@@ -247,15 +249,25 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
       : 800;
     const distanceFeeCents = calculateDistanceFeeCents(distanceKm, baseFee);
     // Enforce payment before creating real delivery in non-mock environments
-    if (!isMock) {
-      // If an externalId corresponds to an order, ensure it is paid. Otherwise block.
-      if (externalId) {
-        const maybeOrder = await Order.findOne({ externalId });
-        if (maybeOrder && maybeOrder.status !== 'paid') {
-          return res.status(402).json({ error: 'Payment required before creating delivery' });
-        }
-      }
-    }
+		if (!isMock) {
+		  // If an externalId corresponds to an order, ensure it is paid. Otherwise block.
+		  if (externalId) {
+			const maybeOrder = await Order.findOne({ externalId });
+			if (maybeOrder) {
+			  const status = String(maybeOrder.status || '').toLowerCase();
+			  const sandboxSatisfied = isStripeSandboxMode && (status === 'awaiting_payment' || status === 'created' || status === 'test_paid');
+			  if (sandboxSatisfied && status !== 'paid') {
+				try {
+				  const meta = (maybeOrder.meta && typeof maybeOrder.meta === 'object') ? { ...maybeOrder.meta, sandboxPaymentOverride: true } : { sandboxPaymentOverride: true };
+				  await Order.findByIdAndUpdate(maybeOrder._id, { status: 'paid', meta });
+				} catch {}
+			  }
+			  if (!sandboxSatisfied && status !== 'paid') {
+				return res.status(402).json({ error: 'Payment required before creating delivery' });
+			  }
+			}
+		  }
+		}
     // Use selected provider
     const delivery = provider === 'doordash'
       ? await ddCreateDelivery({ storeId: site.doordashStoreId, pickup: safePickup, dropoff: safeDropoff, manifestItems, tip: 0, externalId })
