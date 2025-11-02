@@ -21,6 +21,23 @@ const SpiceModal = React.lazy(() => import('./components/SpiceModal').then(m => 
 const ExtrasModal = React.lazy(() => import('./components/ExtrasModal').then(m => ({ default: m.ExtrasModal })));
 const AddToCartToast = React.lazy(() => import('./components/AddToCartToast').then(m => ({ default: m.AddToCartToast })));
 
+const hasAny = (value, predicate) => Array.isArray(value) && value.some(predicate);
+const hasNonEmptyText = (val) => typeof val === 'string' && val.trim().length > 0;
+const hasLabeledOption = (opt) => !!opt && (hasNonEmptyText(opt?.label) || hasNonEmptyText(opt?.key));
+const groupHasSelectableOptions = (group) => Array.isArray(group?.options) && group.options.some(hasLabeledOption);
+
+const doesProductHaveExtras = (product) => hasAny(product?.extraOptionGroups, groupHasSelectableOptions);
+
+const doesProductNeedSpiceModal = (product) => (
+  hasAny(product?.variants, hasLabeledOption)
+  || hasAny(product?.spiceLevels, hasNonEmptyText)
+  || hasAny(product?.flavors, hasLabeledOption)
+  || hasAny(product?.portions, hasLabeledOption)
+  || hasAny(product?.quantities, hasLabeledOption)
+);
+
+const doesProductNeedGuidedFlow = (product) => doesProductNeedSpiceModal(product) || doesProductHaveExtras(product);
+
 const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const { state, setFulfillmentType, addItem, getCartTotal } = useCart();
   const [privacyOpen, setPrivacyOpen] = useState(true);
@@ -137,19 +154,34 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     // Support both legacy signature (product, quantity) and new object with pickupOnlyCategory flag
     const product = (argProduct && argProduct.product) ? argProduct.product : argProduct;
     const pickupOnlyCategory = !!(argProduct && argProduct.pickupOnlyCategory);
-    setPendingProduct(product);
-    setPendingQuantity(Math.max(1, Math.min(99, Number(quantity) || 1)));
-    // Show unified modal for variants/spice in a single popup
-    if ((Array.isArray(product?.variants) && product.variants.length > 0) || (product.spiceLevels && product.spiceLevels.length > 0)) {
-      setSpiceOpen(true);
-    } else if (product.extraOptionGroups && product.extraOptionGroups.length > 0) {
-      setExtrasOpen(true);
-    } else {
-      addItem({ product, quantity: Math.max(1, Math.min(99, Number(quantity) || 1)), pickupOnlyCategory });
-      setPendingProduct(null);
-      setPendingQuantity(1);
-      // Do not open payment/details modals on add-to-cart; user will open from cart
+    const normalizedQty = Math.max(1, Math.min(99, Number(quantity) || 1));
+
+    const needsSpiceModal = doesProductNeedSpiceModal(product);
+    const hasExtras = doesProductHaveExtras(product);
+
+    if (needsSpiceModal || hasExtras) {
+      setPendingProduct(product);
+      setPendingQuantity(normalizedQty);
+      setPendingQuantityOption(null);
     }
+
+    if (needsSpiceModal) {
+      setSpiceOpen(true);
+      return;
+    }
+
+    if (hasExtras) {
+      setExtrasOpen(true);
+      return;
+    }
+
+    addItem({ product, quantity: normalizedQty, pickupOnlyCategory });
+    setPendingProduct(null);
+    setPendingSpice(undefined);
+    setPendingVariant(null);
+    setPendingQuantity(1);
+    setPendingQuantityOption(null);
+    // Do not open payment/details modals on add-to-cart; user will open from cart
   }
 
   function confirmSpice(result) {
@@ -160,7 +192,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     setPendingQuantity(confirmedQty);
     setPendingQuantityOption(quantityOption || null);
     setSpiceOpen(false);
-    if (pendingProduct && pendingProduct.extraOptionGroups && pendingProduct.extraOptionGroups.length > 0) {
+    if (pendingProduct && doesProductHaveExtras(pendingProduct)) {
       setExtrasOpen(true);
     } else if (pendingProduct) {
       // Derive pickupOnly flag by checking the selectedCategory if available
@@ -334,6 +366,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
           onAdd={startAddToCart}
           onBack={() => setSelectedCategory(null)}
           vegFilter={vegFilter}
+          shouldUseGuidedFlow={doesProductNeedGuidedFlow}
         />
       );
     }
