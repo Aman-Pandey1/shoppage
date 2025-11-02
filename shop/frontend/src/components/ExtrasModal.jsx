@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Modal } from './Modal';
 import './ExtrasModal.css';
-import { normalizeGroups, resolveGroupKey, clampSelections, makeGroupPath, makeOptionPath } from '../lib/optionsTree';
+import { normalizeGroups, resolveGroupKey, clampSelections, makeGroupPath, makeOptionPath, hasAnyOptionsDeep } from '../lib/optionsTree';
 
 const currency = (value) => `$${Number(value || 0).toFixed(2)}`;
 
@@ -385,11 +385,6 @@ export const ExtrasModal = ({
       const isRequired = group?.isRequired === false ? false : true;
       const badgeClass = isRequired ? 'extras-badge extras-badge--required' : 'extras-badge extras-badge--optional';
       const badgeText = isRequired ? 'Included (choose 1)' : 'Included (optional)';
-      const selectedOption = options.find((opt) => opt.key === selectedKey);
-      const optionPath = selectedOption ? makeOptionPath(groupPath, selectedOption.key, 'free') : '';
-      const nestedFree = selectedOption ? renderFreeGroups(selectedOption.childFreeOptionGroups, optionPath, depth + 1) : [];
-      const nestedExtra = selectedOption ? renderExtraGroups(selectedOption.childExtraOptionGroups, optionPath, depth + 1) : [];
-      const hasNested = (nestedFree && nestedFree.length) || (nestedExtra && nestedExtra.length);
       return (
         <section key={groupPath} className={`extras-group ${depth > 0 ? 'extras-group--nested' : ''}`}>
           <header className="extras-group__header">
@@ -404,30 +399,46 @@ export const ExtrasModal = ({
             <span className={badgeClass}>{badgeText}</span>
           </header>
           <div className="extras-options">
-            {options.map((opt) => {
+            {options.map((opt, optionIdx) => {
+              const optionKey = opt?.key || `${groupPath}-${optionIdx}`;
+              const optionPath = makeOptionPath(groupPath, opt?.key, 'free', optionIdx);
               const active = selectedKey === opt.key;
+              const hasNestedChildren = hasAnyOptionsDeep(opt?.childFreeOptionGroups) || hasAnyOptionsDeep(opt?.childExtraOptionGroups);
+              const nestedContent = active
+                ? [
+                    ...renderFreeGroups(opt?.childFreeOptionGroups, optionPath, depth + 1),
+                    ...renderExtraGroups(opt?.childExtraOptionGroups, optionPath, depth + 1),
+                  ]
+                    .filter(Boolean)
+                : [];
               return (
-                <label key={opt.key} className={`extras-option ${active ? 'extras-option--active' : ''}`}>
-                  <div className="extras-option__control">
-                    <input
-                      type="radio"
-                      name={`free-${groupPath}`}
-                      checked={active}
-                      onChange={() => handleSelectFreeOption(groupPath, group, opt)}
-                    />
-                    <span>{opt.label}</span>
-                  </div>
-                  <div className="extras-option__price" data-included="true">Included</div>
-                </label>
+                <div key={optionKey} className={`extras-option-block ${active ? 'extras-option-block--active' : ''}`}>
+                  <label className={`extras-option ${active ? 'extras-option--active' : ''}`}>
+                    <div className="extras-option__control">
+                      <input
+                        type="radio"
+                        name={`free-${groupPath}`}
+                        checked={active}
+                        onChange={() => handleSelectFreeOption(groupPath, group, opt)}
+                      />
+                      <div className="extras-option__labels">
+                        <span>{opt.label}</span>
+                        {hasNestedChildren ? (
+                          <span className="extras-option__subtext">Sub options available</span>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="extras-option__price" data-included="true">Included</div>
+                  </label>
+                  {active && nestedContent.length ? (
+                    <div className="extras-option__nested extras-nested">
+                      {nestedContent}
+                    </div>
+                  ) : null}
+                </div>
               );
             })}
           </div>
-          {hasNested ? (
-            <div className="extras-nested">
-              {nestedFree}
-              {nestedExtra}
-            </div>
-          ) : null}
         </section>
       );
     }).filter(Boolean);
@@ -449,22 +460,6 @@ export const ExtrasModal = ({
         ? 'Required'
         : (min > 0 ? `Choose at least ${min}` : 'Optional');
       const maxText = max && max !== Infinity && selectionType === 'multi' ? ` (up to ${max})` : '';
-      const nestedSections = options
-        .filter((opt) => selectedKeys.has(opt.key))
-        .map((opt) => {
-          const optionPath = makeOptionPath(groupPath, opt.key, 'extra');
-          const nestedFree = renderFreeGroups(opt.childFreeOptionGroups, optionPath, depth + 1);
-          const nestedExtra = renderExtraGroups(opt.childExtraOptionGroups, optionPath, depth + 1);
-          if ((!nestedFree || !nestedFree.length) && (!nestedExtra || !nestedExtra.length)) {
-            return null;
-          }
-          return (
-            <div key={`${optionPath}-children`} className="extras-nested">
-              {nestedFree}
-              {nestedExtra}
-            </div>
-          );
-        }).filter(Boolean);
       return (
         <section key={groupPath} className={`extras-group ${depth > 0 ? 'extras-group--nested' : ''}`}>
           <header className="extras-group__header">
@@ -479,28 +474,49 @@ export const ExtrasModal = ({
             </span>
           </header>
           <div className="extras-options">
-            {options.map((opt) => {
+            {options.map((opt, optionIdx) => {
+              const optionKey = opt?.key || `${groupPath}-${optionIdx}`;
+              const optionPath = makeOptionPath(groupPath, opt?.key, 'extra', optionIdx);
               const active = selectedKeys.has(opt.key);
+              const hasNestedChildren = hasAnyOptionsDeep(opt?.childFreeOptionGroups) || hasAnyOptionsDeep(opt?.childExtraOptionGroups);
+              const nestedContent = active
+                ? [
+                    ...renderFreeGroups(opt.childFreeOptionGroups, optionPath, depth + 1),
+                    ...renderExtraGroups(opt.childExtraOptionGroups, optionPath, depth + 1),
+                  ]
+                    .filter(Boolean)
+                : [];
               const price = Number(opt?.priceDelta || 0);
               return (
-                <label key={opt.key} className={`extras-option ${active ? 'extras-option--active' : ''}`}>
-                  <div className="extras-option__control">
-                    <input
-                      type={selectionType === 'single' ? 'radio' : 'checkbox'}
-                      name={selectionType === 'single' ? `group-${groupPath}` : undefined}
-                      checked={active}
-                      onChange={() => handleToggleOption(groupPath, group, selectionType, min, max, opt)}
-                    />
-                    <span>{opt.label}</span>
-                  </div>
-                  <div className="extras-option__price" data-included={price === 0 ? 'true' : 'false'}>
-                    {price ? `+${currency(price)}` : 'Included'}
-                  </div>
-                </label>
+                <div key={optionKey} className={`extras-option-block ${active ? 'extras-option-block--active' : ''}`}>
+                  <label className={`extras-option ${active ? 'extras-option--active' : ''}`}>
+                    <div className="extras-option__control">
+                      <input
+                        type={selectionType === 'single' ? 'radio' : 'checkbox'}
+                        name={selectionType === 'single' ? `group-${groupPath}` : undefined}
+                        checked={active}
+                        onChange={() => handleToggleOption(groupPath, group, selectionType, min, max, opt)}
+                      />
+                      <div className="extras-option__labels">
+                        <span>{opt.label}</span>
+                        {hasNestedChildren ? (
+                          <span className="extras-option__subtext">Sub options available</span>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="extras-option__price" data-included={price === 0 ? 'true' : 'false'}>
+                      {price ? `+${currency(price)}` : 'Included'}
+                    </div>
+                  </label>
+                  {active && nestedContent.length ? (
+                    <div className="extras-option__nested extras-nested">
+                      {nestedContent}
+                    </div>
+                  ) : null}
+                </div>
               );
             })}
           </div>
-          {nestedSections.length ? nestedSections : null}
         </section>
       );
     }).filter(Boolean);
