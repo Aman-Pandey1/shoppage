@@ -144,6 +144,8 @@ router.get('/confirm/:sessionId', async (req, res) => {
     if (!orderId || !siteId) return res.status(400).json({ error: 'Missing order or site metadata' });
 
     let updatedOrder = null;
+    let deliveryInfo = null;
+    let deliveryError = null;
     if (paid) {
       // Mark order paid
       updatedOrder = await Order.findByIdAndUpdate(orderId, { status: 'paid' }, { new: true });
@@ -155,43 +157,63 @@ router.get('/confirm/:sessionId', async (req, res) => {
         } catch {}
       }
       if (updatedOrder && updatedOrder.fulfillmentType === 'delivery' && !updatedOrder.uberDeliveryId) {
-        // Create delivery now (same logic as webhook)
-        const site = await Site.findById(updatedOrder.site);
-        if (updatedOrder?.dropoff && updatedOrder?.pickup?.location && site) {
-          const provider = site.deliveryProvider || 'uber';
-          let delivery = null;
-          if (provider === 'doordash' && site.doordashStoreId) {
-            delivery = await ddCreateDelivery({
-              storeId: site.doordashStoreId,
-              pickup: updatedOrder.pickup.location,
-              dropoff: updatedOrder.dropoff,
-              manifestItems: (updatedOrder.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
-              tip: 0,
-              externalId: String(updatedOrder._id),
-            });
-          } else if (site.uberCustomerId) {
-            delivery = await uberCreateDelivery({
-              customerId: site.uberCustomerId,
-              pickup: updatedOrder.pickup.location,
-              dropoff: updatedOrder.dropoff,
-              manifestItems: (updatedOrder.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
-              tip: 0,
-              externalId: String(updatedOrder._id),
-              creds: {
-                clientId: site?.uberClientId,
-                clientSecret: site?.uberClientSecret,
-                env: site?.uberEnv,
-                audience: String(site?.uberEnv || '').toLowerCase() === 'sandbox'
-                  ? 'https://sandbox-api.uber.com'
-                  : 'https://api.uber.com',
-              }
-            });
+        try {
+          // Create delivery now (same logic as webhook)
+          const site = await Site.findById(updatedOrder.site);
+          if (updatedOrder?.dropoff && updatedOrder?.pickup?.location && site) {
+            const provider = site.deliveryProvider || 'uber';
+            let delivery = null;
+            if (provider === 'doordash' && site.doordashStoreId) {
+              delivery = await ddCreateDelivery({
+                storeId: site.doordashStoreId,
+                pickup: updatedOrder.pickup.location,
+                dropoff: updatedOrder.dropoff,
+                manifestItems: (updatedOrder.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
+                tip: 0,
+                externalId: String(updatedOrder._id),
+              });
+            } else if (site.uberCustomerId) {
+              delivery = await uberCreateDelivery({
+                customerId: site.uberCustomerId,
+                pickup: updatedOrder.pickup.location,
+                dropoff: updatedOrder.dropoff,
+                manifestItems: (updatedOrder.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
+                tip: 0,
+                externalId: String(updatedOrder._id),
+                creds: {
+                  clientId: site?.uberClientId,
+                  clientSecret: site?.uberClientSecret,
+                  env: site?.uberEnv,
+                  audience: String(site?.uberEnv || '').toLowerCase() === 'sandbox'
+                    ? 'https://sandbox-api.uber.com'
+                    : 'https://api.uber.com',
+                }
+              });
+            }
+            if (delivery) {
+              const trackingUrl = delivery?.tracking_url || delivery?.trackingUrl || delivery?.share_url || '';
+              const status = delivery?.status || delivery?.state || delivery?.current_status || '';
+              await Order.findByIdAndUpdate(updatedOrder._id, { uberDeliveryId: delivery?.id || delivery?.delivery_id, uberTrackingUrl: trackingUrl, uberStatus: status });
+              deliveryInfo = {
+                id: delivery?.id || delivery?.delivery_id || null,
+                trackingUrl,
+                status,
+              };
+            }
           }
-          if (delivery) {
-            const trackingUrl = delivery?.tracking_url || delivery?.trackingUrl || delivery?.share_url || '';
-            const status = delivery?.status || delivery?.state || delivery?.current_status || '';
-            await Order.findByIdAndUpdate(updatedOrder._id, { uberDeliveryId: delivery?.id || delivery?.delivery_id, uberTrackingUrl: trackingUrl, uberStatus: status });
-          }
+        } catch (errDelivery) {
+          deliveryError = errDelivery instanceof Error ? errDelivery : new Error(String(errDelivery));
+          try {
+            console.error('[payments:stripe:confirm] Uber/Doordash delivery error', {
+              orderId: updatedOrder?._id ? String(updatedOrder._id) : undefined,
+              siteId: updatedOrder?.site ? String(updatedOrder.site) : undefined,
+              message: deliveryError?.message,
+            });
+          } catch {}
+          try {
+            const message = deliveryError?.message || String(deliveryError);
+            await Order.findByIdAndUpdate(updatedOrder._id, { $set: { 'meta.uberError': message } });
+          } catch {}
         }
       }
       try {
@@ -201,7 +223,19 @@ router.get('/confirm/:sessionId', async (req, res) => {
       } catch {}
     }
 
-    return res.json({ ok: true, paid, orderId });
+    const responsePayload = { ok: true, paid, orderId };
+    if (deliveryInfo) {
+      responsePayload.delivery = {
+        id: deliveryInfo.id,
+        trackingUrl: deliveryInfo.trackingUrl,
+        status: deliveryInfo.status,
+      };
+    }
+    if (deliveryError) {
+      responsePayload.deliveryError = deliveryError.message || String(deliveryError);
+    }
+
+    return res.json(responsePayload);
   } catch (err) {
     return res.status(400).json({ error: err.message });
   }
