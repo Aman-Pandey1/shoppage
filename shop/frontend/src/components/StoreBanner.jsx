@@ -192,7 +192,7 @@ export const StoreBanner = ({ siteSlug, onCta }) => {
                     {selectedLocIndex < 0 ? <option value="" disabled>Select a location</option> : null}
                     {locations.map((loc, idx) => (
                       <option key={`${loc?.name || 'loc'}-${idx}`} value={String(idx)}>
-                        {(loc?.name || 'Restaurant')} — {(Array.isArray(loc?.address?.streetAddress) ? loc.address.streetAddress.join(' ') : '')}{loc?.address?.city ? `, ${loc.address.city}` : ''}
+                        {(loc?.name || 'Restaurant')} - {(Array.isArray(loc?.address?.streetAddress) ? loc.address.streetAddress.join(' ') : '')}{loc?.address?.city ? `, ${loc.address.city}` : ''}
                       </option>
                     ))}
                   </select>

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { ShoppingCart } from 'lucide-react';
 import { useCart } from './store/CartContext';
 import { CartSidebar } from './components/CartSidebar';
 import { CategoryGrid } from './components/CategoryGrid';
@@ -428,7 +429,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
 
   const cartTotal = getCartTotal();
 
-  const pickupAddressSummary = selectedLocation ? `${selectedLocation?.name || 'Restaurant'} ? ${(selectedLocation?.address?.streetAddress || []).join(' ')}, ${selectedLocation?.address?.city || ''}` : undefined;
+  const pickupAddressSummary = selectedLocation ? `${selectedLocation?.name || 'Restaurant'} - ${(selectedLocation?.address?.streetAddress || []).join(' ')}, ${selectedLocation?.address?.city || ''}` : undefined;
   const pickupCitySummary = selectedPickupCity && selectedPickupCity !== 'All' ? selectedPickupCity : undefined;
   const addressSummary = state.fulfillmentType === 'delivery'
     ? (deliveryAddressSummary || undefined)
@@ -550,7 +551,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                   {(locations.findIndex((l) => l === selectedLocation) < 0) ? <option value="" disabled>Select a location</option> : null}
                   {locations.map((loc, idx) => (
                     <option key={`${loc?.name || 'loc'}-${idx}`} value={String(idx)}>
-                      {(loc?.name || 'Restaurant')} ? {(Array.isArray(loc?.address?.streetAddress) ? loc.address.streetAddress.join(' ') : '')}{loc?.address?.city ? `, ${loc.address.city}` : ''}
+                      {(loc?.name || 'Restaurant')} - {(Array.isArray(loc?.address?.streetAddress) ? loc.address.streetAddress.join(' ') : '')}{loc?.address?.city ? `, ${loc.address.city}` : ''}
                     </option>
                   ))}
                 </select>
@@ -588,7 +589,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
       </main>
 
       <button className="cart-fab hide-desktop" aria-label="Open cart" onClick={() => setMobileCartOpen(true)} style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-        <span className="cart-fab__icon">??</span>
+        <span className="cart-fab__icon" aria-hidden="true"><ShoppingCart size={18} strokeWidth={2.2} /></span>
         {state.items.length > 0 ? <span className="cart-fab__badge" aria-label={`Items in cart: ${state.items.length}`}>{state.items.length}</span> : null}
       </button>
 
@@ -759,10 +760,10 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                       setSelectedLocation(chosen || null);
                       try { localStorage.setItem('selectedPickupIndex', String(locations.findIndex((l) => l === chosen))); } catch {}
                     }}>
-                      {filteredLocations.findIndex((l) => l === selectedLocation) < 0 ? <option value="" disabled>Select a location</option> : null}
-                      {filteredLocations.map((loc, idx) => (
-                        <option key={`${loc.name}-${idx}`} value={String(idx)}>{`${loc.name || 'Restaurant'} ? ${(loc.address?.streetAddress || []).join(' ')}, ${loc.address?.city || ''}`}</option>
-                      ))}
+                {filteredLocations.findIndex((l) => l === selectedLocation) < 0 ? <option value="" disabled>Select a location</option> : null}
+                {filteredLocations.map((loc, idx) => (
+                  <option key={`${loc.name}-${idx}`} value={String(idx)}>{`${loc.name || 'Restaurant'} - ${(loc.address?.streetAddress || []).join(' ')}, ${loc.address?.city || ''}`}</option>
+                ))}
                     </select>
                   </label>
                 </>
@@ -776,10 +777,10 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                     setSelectedPickupCity(chosen?.address?.city || 'All');
                     try { localStorage.setItem('selectedPickupIndex', String(idx)); } catch {}
                   }}>
-                    {locations.findIndex((l) => l === selectedLocation) < 0 ? <option value="" disabled>Select a location</option> : null}
-                    {locations.map((loc, idx) => (
-                      <option key={`${loc.name}-${idx}`} value={String(idx)}>{`${loc.name || 'Restaurant'} ? ${(loc.address?.streetAddress || []).join(' ')}, ${loc.address?.city || ''}`}</option>
-                    ))}
+                {locations.findIndex((l) => l === selectedLocation) < 0 ? <option value="" disabled>Select a location</option> : null}
+                {locations.map((loc, idx) => (
+                  <option key={`${loc.name}-${idx}`} value={String(idx)}>{`${loc.name || 'Restaurant'} - ${(loc.address?.streetAddress || []).join(' ')}, ${loc.address?.city || ''}`}</option>
+                ))}
                   </select>
                 </label>
               )}
@@ -905,7 +906,7 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         // If pickup, keep user here; they can open order details from cart.
       }} />
       </React.Suspense>
-      <footer className="site-footer">? All Rights Reserved By <a href="https://www.blueboxx.ca/" target="_blank" rel="noopener noreferrer">Blue Boxx</a></footer>
+      <footer className="site-footer">&copy; All Rights Reserved By <a href="https://www.blueboxx.ca/" target="_blank" rel="noopener noreferrer">Blue Boxx</a></footer>
     </div>
   );
 };

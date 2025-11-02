@@ -147,7 +147,7 @@ export const OrderDetailsBar = ({
                 <option value="" disabled>Select a location</option>
               ) : null}
               {locations.map((loc, idx) => {
-                const text = `${loc?.name || 'Restaurant'} — ${(loc?.address?.streetAddress || []).join(' ')}, ${loc?.address?.city || ''}`;
+                const text = `${loc?.name || 'Restaurant'} - ${(loc?.address?.streetAddress || []).join(' ')}, ${loc?.address?.city || ''}`;
                 return (
                   <option key={`${loc?.name || 'loc'}-${idx}`} value={String(idx)}>{text}</option>
                 );

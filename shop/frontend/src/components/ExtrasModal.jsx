@@ -211,7 +211,9 @@ export const ExtrasModal = ({
           {product.imageUrl ? (
             <img src={resolveAssetUrl(product.imageUrl)} alt={product.name} className="img-cover" />
           ) : (
-            <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', fontSize: 42, background: 'linear-gradient(180deg, rgba(15,23,42,0.08), rgba(15,23,42,0.16))' }}>???</div>
+            <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', background: 'linear-gradient(180deg, rgba(15,23,42,0.08), rgba(15,23,42,0.16))' }}>
+              <span style={{ fontWeight: 700, fontSize: 18, color: '#1f2937' }}>No image</span>
+            </div>
           )}
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(15,23,42,0), rgba(15,23,42,0.55))' }} />
           <div style={{ position: 'absolute', bottom: 12, left: 16, right: 16, color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
@@ -388,7 +390,7 @@ export const ExtrasModal = ({
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
               style={{ width: 32, height: 32, borderRadius: '50%', border: 'none', background: 'var(--panel)', cursor: 'pointer', fontSize: 18 }}
               aria-label="Decrease quantity"
-            >?</button>
+            >-</button>
             <div style={{ minWidth: 24, textAlign: 'center', fontWeight: 700 }}>{quantity}</div>
             <button
               onClick={() => setQuantity((q) => Math.min(99, q + 1))}
