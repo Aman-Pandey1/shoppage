@@ -49,6 +49,49 @@ function normalizeProductShape(p) {
       return { key, label, price };
     });
   }
+  if (Array.isArray(obj.extraOptionGroups)) {
+    obj.extraOptionGroups = obj.extraOptionGroups.map((group, idx) => {
+      const selectionType = group?.selectionType === 'single' ? 'single' : 'multi';
+      const options = Array.isArray(group?.options)
+        ? group.options.map((opt) => ({
+            key: String(opt?.key || opt?.label || `option_${idx}`).trim(),
+            label: String(opt?.label || opt?.key || 'Option').trim(),
+            priceDelta: Number((opt?.priceDelta ?? opt?.price) || 0) || 0,
+            description: opt?.description ? String(opt.description) : undefined,
+            isDefault: !!opt?.isDefault,
+          }))
+        : [];
+      const normalizedMin = Number.isFinite(Number(group?.minSelect)) ? Number(group.minSelect) : 0;
+      const normalizedMax = Number.isFinite(Number(group?.maxSelect)) ? Number(group.maxSelect) : 0;
+      let isRequired;
+      if (selectionType === 'single') {
+        if (typeof group?.isRequired === 'boolean') {
+          isRequired = group.isRequired;
+        } else {
+          const hasDefault = options.some((opt) => opt.isDefault);
+          isRequired = normalizedMin >= 1 || hasDefault;
+        }
+      } else {
+        isRequired = typeof group?.isRequired === 'boolean'
+          ? group.isRequired
+          : normalizedMin > 0;
+      }
+      const resolvedMin = selectionType === 'single' ? 1 : Math.max(0, normalizedMin);
+      const resolvedMax = selectionType === 'single'
+        ? 1
+        : Math.max(0, normalizedMax || (options.length ? options.length : 0));
+      return {
+        groupKey: String(group?.groupKey || group?.groupLabel || `group_${idx}`).trim(),
+        groupLabel: String(group?.groupLabel || group?.groupKey || `Group ${idx + 1}`).trim(),
+        helpText: group?.helpText ? String(group.helpText) : undefined,
+        selectionType,
+        isRequired,
+        minSelect: resolvedMin,
+        maxSelect: Math.max(resolvedMin, resolvedMax),
+        options,
+      };
+    });
+  }
   return obj;
 }
 
@@ -206,8 +249,8 @@ router.get('/orders/:orderId/pdf', requireUser, async (req, res) => {
         if (order.dropoff) {
           const d = order.dropoff || {};
           const addr = Array.isArray(d?.address?.streetAddress) ? d.address.streetAddress.join(' ') : '';
-          doc.text(`Name: ${d.name || '—'}`, leftX, doc.y, { width: columnWidth });
-          doc.text(`Phone: ${d.phone || '—'}`, leftX, doc.y, { width: columnWidth });
+          doc.text(`Name: ${d.name || '?'}`, leftX, doc.y, { width: columnWidth });
+          doc.text(`Phone: ${d.phone || '?'}`, leftX, doc.y, { width: columnWidth });
           doc.text(`Address: ${addr} ${d?.address?.city || ''} ${d?.address?.province || ''} ${d?.address?.postalCode || ''}`, leftX, doc.y, { width: columnWidth });
         } else {
           doc.text('Delivery', leftX, doc.y, { width: columnWidth });
@@ -253,8 +296,8 @@ router.get('/orders/:orderId/pdf', requireUser, async (req, res) => {
       const rowY = doc.y;
       let label = `${it.name}`;
       if (it.size) label += ` (${it.size})`;
-      if (it.flavor) label += ` — Flavor: ${it.flavor}`;
-      if (it.portion) label += ` — Portion: ${it.portion}`;
+      if (it.flavor) label += ` ? Flavor: ${it.flavor}`;
+      if (it.portion) label += ` ? Portion: ${it.portion}`;
       if (it.spiceLevel) label += ` [${it.spiceLevel}]`;
       label += ` x${qty}`;
       doc.font('Helvetica').fontSize(10).fillColor(colors.text)
@@ -391,7 +434,7 @@ router.get('/:slug/hours', async (req, res) => {
   try {
     const { site } = req;
     const defaultHours = {
-      // Default store hours: 10:00 AM – 10:00 PM (last order 9:45 PM)
+      // Default store hours: 10:00 AM ? 10:00 PM (last order 9:45 PM)
       mon: { open: '10:00', close: '22:00', closed: false },
       tue: { open: '10:00', close: '22:00', closed: false },
       wed: { open: '10:00', close: '22:00', closed: false },

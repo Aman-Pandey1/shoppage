@@ -285,6 +285,7 @@ export const DeliveryAddressModal = ({ open, siteSlug, onClose, onConfirmed, man
                   quantityOption: m.quantityOption,
                   productId: m.productId,
                   categoryId: m.categoryId,
+                  selectedOptions: m.selectedOptions,
                 })),
                 pickupLocationIndex: chosenIdx,
                 deliveryFeeCents: quotedFee,

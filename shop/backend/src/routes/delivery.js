@@ -11,6 +11,24 @@ import { getNextOrderNumber } from '../utils/orderNumber.js';
 import Category from '../models/Category.js';
 import { normalizePhoneForCountry } from '../utils/phone.js';
 
+function normalizeSelectedOptions(list) {
+  if (!Array.isArray(list)) return [];
+  return list
+    .map((opt) => {
+      const groupKey = String(opt?.groupKey || '').trim();
+      const optionKey = String(opt?.optionKey || '').trim();
+      if (!groupKey || !optionKey) return null;
+      return {
+        groupKey,
+        groupLabel: opt?.groupLabel ? String(opt.groupLabel) : undefined,
+        optionKey,
+        optionLabel: opt?.optionLabel ? String(opt.optionLabel) : undefined,
+        priceDelta: Number(opt?.priceDelta || 0) || 0,
+      };
+    })
+    .filter(Boolean);
+}
+
 const router = Router();
 
 router.use('/:slug', tenantBySlug);
@@ -266,7 +284,17 @@ router.post('/:slug/create', requireAuth, async (req, res) => {
 			site: req.siteId,
 			userId: req.user?.userId,
 			userEmail: req.user?.email,
-			items: (manifestItems || []).map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.price, size: m.size, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion, quantityOption: m.quantityOption })),
+		items: (manifestItems || []).map((m) => ({
+		  name: m.name,
+		  quantity: m.quantity,
+		  priceCents: m.price,
+		  size: m.size,
+		  spiceLevel: m.spiceLevel,
+		  flavor: m.flavor,
+		  portion: m.portion,
+		  quantityOption: m.quantityOption,
+		  selectedOptions: normalizeSelectedOptions(m.selectedOptions),
+		})),
 			totalCents,
 			taxCents,
 			tipCents: 0,

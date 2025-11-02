@@ -17,9 +17,11 @@ function formatOptionsSummary(product, spiceLevel, selectedOptions, variant, fla
     const perGroupSelections = new Map();
     (selectedOptions || []).forEach((opt) => {
       const labelMap = groupKeyToOptions.get(opt.groupKey);
-      const optionLabel = labelMap ? (labelMap.get(opt.optionKey) || opt.optionKey) : opt.optionKey;
-      if (!perGroupSelections.has(opt.groupKey)) perGroupSelections.set(opt.groupKey, []);
-      perGroupSelections.get(opt.groupKey).push(optionLabel);
+      const optionLabel = opt?.optionLabel
+        || (labelMap ? (labelMap.get(opt.optionKey) || opt.optionKey) : opt.optionKey);
+      const groupLabel = opt?.groupLabel || groupKeyToLabel.get(opt.groupKey) || opt.groupKey;
+      if (!perGroupSelections.has(groupLabel)) perGroupSelections.set(groupLabel, []);
+      perGroupSelections.get(groupLabel).push(optionLabel);
     });
 
     const parts = [];
@@ -28,9 +30,8 @@ function formatOptionsSummary(product, spiceLevel, selectedOptions, variant, fla
     if (portion && (portion.label || portion.key)) parts.push(`Portion: ${portion.label || portion.key}`);
     if (spiceLevel) parts.push(`Spice: ${spiceLevel}`);
     if (quantityOption && (quantityOption.label || quantityOption.key)) parts.push(`Quantity: ${quantityOption.label || quantityOption.key}`);
-    for (const [gk, labels] of perGroupSelections.entries()) {
-      const glabel = groupKeyToLabel.get(gk) || gk;
-      parts.push(`${glabel}: ${labels.join(', ')}`);
+    for (const [groupLabel, labels] of perGroupSelections.entries()) {
+      parts.push(`${groupLabel}: ${labels.join(', ')}`);
     }
     const summary = parts.join(' • ');
     return summary || undefined;

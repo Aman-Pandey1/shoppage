@@ -14,6 +14,24 @@ const router = Router();
 
 router.use('/:slug', tenantBySlug);
 
+function normalizeSelectedOptions(list) {
+  if (!Array.isArray(list)) return [];
+  return list
+    .map((opt) => {
+      const groupKey = String(opt?.groupKey || '').trim();
+      const optionKey = String(opt?.optionKey || '').trim();
+      if (!groupKey || !optionKey) return null;
+      return {
+        groupKey,
+        groupLabel: opt?.groupLabel ? String(opt.groupLabel) : undefined,
+        optionKey,
+        optionLabel: opt?.optionLabel ? String(opt.optionLabel) : undefined,
+        priceDelta: Number(opt?.priceDelta || 0) || 0,
+      };
+    })
+    .filter(Boolean);
+}
+
 router.get('/:slug/orders/mine', requireUser, async (req, res) => {
   try {
     const page = Math.max(1, Number(req.query.page) || 1);
@@ -182,7 +200,17 @@ router.post('/:slug/orders/pickup', requireUser, async (req, res) => {
       site: req.siteId,
       userId: req.user?.userId,
       userEmail: req.user?.email,
-      items: items.map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.priceCents, size: m.size, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
+      items: items.map((m) => ({
+        name: m.name,
+        quantity: m.quantity,
+        priceCents: m.priceCents,
+        size: m.size,
+        spiceLevel: m.spiceLevel,
+        flavor: m.flavor,
+        portion: m.portion,
+        quantityOption: m.quantityOption,
+        selectedOptions: normalizeSelectedOptions(m.selectedOptions),
+      })),
       totalCents,
       taxCents,
       tipCents: 0,
@@ -332,8 +360,8 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
         if (order.dropoff) {
           const d = order.dropoff || {};
           const addr = Array.isArray(d?.address?.streetAddress) ? d.address.streetAddress.join(' ') : '';
-          doc.text(`Name: ${d.name || '—'}`, leftX, doc.y, { width: columnWidth });
-          doc.text(`Phone: ${d.phone || '—'}`, leftX, doc.y, { width: columnWidth });
+          doc.text(`Name: ${d.name || '?'}`, leftX, doc.y, { width: columnWidth });
+          doc.text(`Phone: ${d.phone || '?'}`, leftX, doc.y, { width: columnWidth });
           doc.text(`Address: ${addr} ${d?.address?.city || ''} ${d?.address?.province || ''} ${d?.address?.postalCode || ''}`, leftX, doc.y, { width: columnWidth });
         } else {
           doc.text('Delivery', leftX, doc.y, { width: columnWidth });
@@ -383,8 +411,8 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
       // Build left-side label with attributes and quantity
       let label = `${it.name}`;
       if (it.size) label += ` (${it.size})`;
-      if (it.flavor) label += ` — Flavor: ${it.flavor}`;
-      if (it.portion) label += ` — Portion: ${it.portion}`;
+      if (it.flavor) label += ` ? Flavor: ${it.flavor}`;
+      if (it.portion) label += ` ? Portion: ${it.portion}`;
       if (it.spiceLevel) label += ` [${it.spiceLevel}]`;
       label += ` x${qty}`;
       doc.font('Helvetica').fontSize(10).fillColor(colors.text)
@@ -426,7 +454,7 @@ router.get('/:slug/orders/:orderId/pdf', requireUser, async (req, res) => {
     doc.font('Helvetica-Bold');
     row('TOTAL', total);
 
-    // Footer — centered thank you note
+    // Footer ? centered thank you note
     doc.moveDown(1.2);
     doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.textDark)
       .text('THANK YOU FOR YOUR ORDER!', doc.page.margins.left, doc.y, { width: avail, align: 'center', lineBreak: false });

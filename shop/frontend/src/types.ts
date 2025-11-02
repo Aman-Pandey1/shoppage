@@ -9,11 +9,16 @@ export type ProductOption = {
   key: string;
   label: string;
   priceDelta?: number;
+  description?: string;
+  isDefault?: boolean;
 };
 
 export type ExtraOptionGroup = {
   groupKey: string;
   groupLabel: string;
+  helpText?: string;
+  selectionType?: 'single' | 'multi';
+  isRequired?: boolean;
   minSelect?: number;
   maxSelect?: number;
   options: ProductOption[];
@@ -81,7 +86,9 @@ export type FulfillmentType = 'pickup' | 'delivery';
 
 export type SelectedOption = {
   groupKey: string;
+  groupLabel?: string;
   optionKey: string;
+  optionLabel?: string;
   priceDelta?: number;
 };
 
