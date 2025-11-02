@@ -104,6 +104,21 @@ export const ExtraOptionGroupsEditor = ({
 
   const groups = React.useMemo(() => sanitizeForMode(value), [value, sanitizeForMode]);
 
+  const showGroupKeyField = !isNested;
+  const showGroupHelpTextField = !isNested;
+  const showOptionKeyField = !isNested;
+
+  const optionColumns = (() => {
+    if (showOptionKeyField) {
+      return isFreeMode
+        ? 'minmax(0, 1fr) 160px 140px auto'
+        : 'minmax(0, 1fr) 120px 120px auto';
+    }
+    return isFreeMode
+      ? 'minmax(0, 1fr) 140px auto auto'
+      : 'minmax(0, 1fr) 120px auto auto';
+  })();
+
   const setGroups = React.useCallback((next) => {
     if (typeof onChange === 'function') {
       onChange(sanitizeForMode(next));
@@ -282,9 +297,6 @@ export const ExtraOptionGroupsEditor = ({
       ) : null}
       {groups.map((group, groupIdx) => {
         const options = Array.isArray(group?.options) ? group.options : [];
-        const optionColumns = isFreeMode
-          ? 'minmax(0, 1fr) 160px 140px auto'
-          : 'minmax(0, 1fr) 120px 120px auto';
         return (
           <div key={group?.groupKey || groupIdx} className={cardClassName} style={groupCardStyle}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -309,20 +321,22 @@ export const ExtraOptionGroupsEditor = ({
                   }}
                 />
               </label>
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <span>Key</span>
-                <input
-                  value={group?.groupKey || ''}
-                  onChange={(e) => {
-                    const raw = e.target.value;
-                    updateGroup(groupIdx, (prev) => {
-                      const existingKeys = new Set(groups.map((g, idx) => (idx === groupIdx ? null : g?.groupKey)).filter(Boolean));
-                      const candidate = generateUniqueKey(raw, existingKeys, 'group');
-                      return { ...prev, groupKey: candidate };
-                    });
-                  }}
-                />
-              </label>
+              {showGroupKeyField ? (
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span>Key</span>
+                  <input
+                    value={group?.groupKey || ''}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      updateGroup(groupIdx, (prev) => {
+                        const existingKeys = new Set(groups.map((g, idx) => (idx === groupIdx ? null : g?.groupKey)).filter(Boolean));
+                        const candidate = generateUniqueKey(raw, existingKeys, 'group');
+                        return { ...prev, groupKey: candidate };
+                      });
+                    }}
+                  />
+                </label>
+              ) : null}
               {!isFreeMode ? (
                 <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <span>Selection type</span>
@@ -335,14 +349,16 @@ export const ExtraOptionGroupsEditor = ({
                   </select>
                 </label>
               ) : null}
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <span>Help text (optional)</span>
-                <input
-                  value={group?.helpText || ''}
-                  onChange={(e) => updateGroup(groupIdx, (prev) => ({ ...prev, helpText: e.target.value }))}
-                  placeholder="Shown under group title"
-                />
-              </label>
+              {showGroupHelpTextField ? (
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span>Help text (optional)</span>
+                  <input
+                    value={group?.helpText || ''}
+                    onChange={(e) => updateGroup(groupIdx, (prev) => ({ ...prev, helpText: e.target.value }))}
+                    placeholder="Shown under group title"
+                  />
+                </label>
+              ) : null}
             </div>
             {!isFreeMode ? (
               group?.selectionType === 'multi' ? (
@@ -431,19 +447,21 @@ export const ExtraOptionGroupsEditor = ({
                           });
                         }}
                       />
-                      <input
-                        placeholder="Key"
-                        value={option?.key || ''}
-                        onChange={(e) => {
-                          const raw = e.target.value;
-                          updateOption(groupIdx, optionIdx, (prev) => {
-                            const optionsForGroup = Array.isArray(group?.options) ? group.options : [];
-                            const existingKeys = new Set(optionsForGroup.map((opt, idx) => (idx === optionIdx ? null : opt?.key)).filter(Boolean));
-                            const key = generateUniqueKey(raw, existingKeys, 'option');
-                            return { ...prev, key };
-                          });
-                        }}
-                      />
+                      {showOptionKeyField ? (
+                        <input
+                          placeholder="Key"
+                          value={option?.key || ''}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            updateOption(groupIdx, optionIdx, (prev) => {
+                              const optionsForGroup = Array.isArray(group?.options) ? group.options : [];
+                              const existingKeys = new Set(optionsForGroup.map((opt, idx) => (idx === optionIdx ? null : opt?.key)).filter(Boolean));
+                              const key = generateUniqueKey(raw, existingKeys, 'option');
+                              return { ...prev, key };
+                            });
+                          }}
+                        />
+                      ) : null}
                       {isFreeMode ? (
                         <div className="muted" style={{ fontSize: 12 }}>Included</div>
                       ) : (
