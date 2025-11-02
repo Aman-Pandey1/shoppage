@@ -303,7 +303,24 @@ export const ExtrasModal = ({
         } else {
           const limit = max && max !== Infinity ? max : Infinity;
           if (nextSet.size >= limit) {
-            return prev;
+            if (limit === Infinity || limit <= 0) {
+              return prev;
+            }
+            const removedKeysForSpace = [];
+            while (nextSet.size >= limit) {
+              const iterator = nextSet.values();
+              const firstKey = iterator.next().value;
+              if (firstKey === undefined) break;
+              nextSet.delete(firstKey);
+              removedKeysForSpace.push(firstKey);
+            }
+            removedKeysForSpace.forEach((key) => {
+              const replacedPath = makeOptionPath(groupPath, key, 'extra');
+              clearSelectionsUnderPath(nextExtra, nextFree, replacedPath);
+            });
+            if (nextSet.size >= limit) {
+              return prev;
+            }
           }
           nextSet.add(optionKey);
         }
