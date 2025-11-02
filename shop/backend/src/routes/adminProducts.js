@@ -14,6 +14,20 @@ const upload = multer({
   },
 });
 
+function normalizeExtraOptionGroups(input) {
+  const groups = sanitizeExtraOptionGroups(input);
+  return groups.map((group) => ({
+    ...group,
+    options: Array.isArray(group?.options)
+      ? group.options.map((opt) => ({
+          ...opt,
+          childExtraOptionGroups: normalizeExtraOptionGroups(opt?.childExtraOptionGroups),
+          childFreeOptionGroups: normalizeFreeOptionGroups(opt?.childFreeOptionGroups),
+        }))
+      : [],
+  }));
+}
+
 function normalizeProductShape(p) {
   if (!p) return p;
   const obj = (typeof p.toObject === 'function') ? p.toObject() : { ...p };
@@ -49,54 +63,12 @@ function normalizeProductShape(p) {
       return { key, label, price };
     });
   }
-  if (Array.isArray(obj.extraOptionGroups)) {
-    obj.extraOptionGroups = obj.extraOptionGroups.map((group, idx) => {
-      const selectionType = group?.selectionType === 'single' ? 'single' : 'multi';
-      const options = Array.isArray(group?.options)
-        ? group.options.map((opt) => ({
-            key: String(opt?.key || opt?.label || `option_${idx}`).trim(),
-            label: String(opt?.label || opt?.key || 'Option').trim(),
-            priceDelta: Number((opt?.priceDelta ?? opt?.price) || 0) || 0,
-            description: opt?.description ? String(opt.description) : undefined,
-            isDefault: !!opt?.isDefault,
-          }))
-        : [];
-      const normalizedMin = Number.isFinite(Number(group?.minSelect)) ? Number(group.minSelect) : 0;
-      const normalizedMax = Number.isFinite(Number(group?.maxSelect)) ? Number(group.maxSelect) : 0;
-      let isRequired;
-      if (selectionType === 'single') {
-        if (typeof group?.isRequired === 'boolean') {
-          isRequired = group.isRequired;
-        } else {
-          const hasDefault = options.some((opt) => opt.isDefault);
-          isRequired = normalizedMin >= 1 || hasDefault;
-        }
-      } else {
-        isRequired = typeof group?.isRequired === 'boolean'
-          ? group.isRequired
-          : normalizedMin > 0;
-      }
-      const resolvedMin = selectionType === 'single' ? 1 : Math.max(0, normalizedMin);
-      const resolvedMax = selectionType === 'single'
-        ? 1
-        : Math.max(0, normalizedMax || (options.length ? options.length : 0));
-      return {
-        groupKey: String(group?.groupKey || group?.groupLabel || `group_${idx}`).trim(),
-        groupLabel: String(group?.groupLabel || group?.groupKey || `Group ${idx + 1}`).trim(),
-        helpText: group?.helpText ? String(group.helpText) : undefined,
-        selectionType,
-        isRequired,
-        minSelect: resolvedMin,
-        maxSelect: Math.max(resolvedMin, resolvedMax),
-        options,
-      };
-    });
-  }
+  obj.extraOptionGroups = normalizeExtraOptionGroups(obj.extraOptionGroups);
   obj.freeOptionGroups = normalizeFreeOptionGroups(obj.freeOptionGroups);
   return obj;
 }
 
-function sanitizeExtraOptionGroups(input) {
+function sanitizeExtraOptionGroups(input, depth = 0) {
   if (!Array.isArray(input)) return [];
   return input.map((group, idx) => {
     const selectionType = group?.selectionType === 'single' ? 'single' : 'multi';
@@ -112,7 +84,9 @@ function sanitizeExtraOptionGroups(input) {
           const priceDelta = Number((opt?.priceDelta ?? opt?.price) || 0) || 0;
           const description = opt?.description ? String(opt.description) : undefined;
           const isDefault = !!opt?.isDefault;
-          return { key, label, priceDelta, description, isDefault };
+          const childExtraOptionGroups = sanitizeExtraOptionGroups(opt?.childExtraOptionGroups, depth + 1);
+          const childFreeOptionGroups = sanitizeFreeOptionGroups(opt?.childFreeOptionGroups, depth + 1);
+          return { key, label, priceDelta, description, isDefault, childExtraOptionGroups, childFreeOptionGroups };
         })
       : [];
     let isRequired;
@@ -127,9 +101,10 @@ function sanitizeExtraOptionGroups(input) {
       isRequired = typeof group?.isRequired === 'boolean' ? group.isRequired : normalizedMin > 0;
     }
     const resolvedMin = selectionType === 'single' ? 1 : Math.max(0, normalizedMin);
-    const resolvedMax = selectionType === 'single'
+    const resolvedMaxCandidate = selectionType === 'single'
       ? 1
       : Math.max(0, normalizedMax || (options.length ? options.length : 0));
+    const resolvedMax = Math.max(resolvedMin, resolvedMaxCandidate);
     return {
       groupKey,
       groupLabel,
@@ -137,13 +112,13 @@ function sanitizeExtraOptionGroups(input) {
       selectionType,
       isRequired,
       minSelect: resolvedMin,
-      maxSelect: Math.max(resolvedMin, resolvedMax),
+      maxSelect: resolvedMax,
       options,
     };
   });
 }
 
-function sanitizeFreeOptionGroups(input) {
+function sanitizeFreeOptionGroups(input, depth = 0) {
   if (!Array.isArray(input)) return [];
   return input.map((group, idx) => {
     const groupKey = String(group?.groupKey || group?.groupLabel || `free_group_${idx}`).trim();
@@ -155,15 +130,23 @@ function sanitizeFreeOptionGroups(input) {
       const label = String(opt?.label || opt?.key || 'Option').trim();
       const description = opt?.description ? String(opt.description) : undefined;
       const isDefault = !!opt?.isDefault;
-      return { key, label, description, isDefault, priceDelta: 0 };
-    });
+      const childExtraOptionGroups = sanitizeExtraOptionGroups(opt?.childExtraOptionGroups, depth + 1);
+      const childFreeOptionGroups = sanitizeFreeOptionGroups(opt?.childFreeOptionGroups, depth + 1);
+      return {
+        key,
+        label,
+        description,
+        isDefault,
+        priceDelta: 0,
+        childExtraOptionGroups,
+        childFreeOptionGroups,
+      };
+    }).filter((opt) => opt.key && opt.label);
     if (!normalizedOptions.length) return null;
     let defaultIndex = normalizedOptions.findIndex((opt) => opt.isDefault);
     if (defaultIndex < 0) defaultIndex = 0;
     const options = normalizedOptions.map((opt, idxOpt) => ({
-      key: opt.key,
-      label: opt.label,
-      description: opt.description,
+      ...opt,
       isDefault: idxOpt === defaultIndex,
       priceDelta: 0,
     }));
@@ -179,6 +162,13 @@ function normalizeFreeOptionGroups(input) {
     selectionType: 'single',
     minSelect: group.isRequired === false ? 0 : 1,
     maxSelect: 1,
+    options: Array.isArray(group?.options)
+      ? group.options.map((opt) => ({
+          ...opt,
+          childExtraOptionGroups: normalizeExtraOptionGroups(opt?.childExtraOptionGroups),
+          childFreeOptionGroups: normalizeFreeOptionGroups(opt?.childFreeOptionGroups),
+        }))
+      : [],
   }));
 }
 
