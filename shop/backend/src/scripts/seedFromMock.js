@@ -146,6 +146,43 @@ async function seed() {
             priceDelta: Number(o.priceDelta) || 0,
           })) : [],
         })) : [],
+        freeOptionGroups: Array.isArray(p.freeOptionGroups) ? p.freeOptionGroups.map((g) => {
+          const groupKey = String(g.groupKey || g.groupLabel || 'free_group');
+          const groupLabel = String(g.groupLabel || groupKey || 'Included option');
+          const helpText = g.helpText ? String(g.helpText) : undefined;
+          const rawOptions = isNonEmptyArray(g.options) ? g.options : [];
+          const normalizedOptions = rawOptions.map((o) => ({
+            key: String(o.key || o.label || `${groupKey}_option`),
+            label: String(o.label || o.key || 'Option'),
+            priceDelta: 0,
+            description: o.description ? String(o.description) : undefined,
+            isDefault: !!o.isDefault,
+          }));
+          if (normalizedOptions.length) {
+            let defaultFound = false;
+            normalizedOptions.forEach((opt, idx) => {
+              if (opt.isDefault && !defaultFound) {
+                defaultFound = true;
+                opt.isDefault = true;
+              } else {
+                opt.isDefault = false;
+              }
+              if (!defaultFound && idx === normalizedOptions.length - 1) {
+                normalizedOptions[0].isDefault = true;
+              }
+            });
+            if (!normalizedOptions.some((opt) => opt.isDefault)) {
+              normalizedOptions[0].isDefault = true;
+            }
+          }
+          return {
+            groupKey,
+            groupLabel,
+            helpText,
+            isRequired: g.isRequired === false ? false : true,
+            options: normalizedOptions,
+          };
+        }) : [],
       });
       replacedProducts += 1;
     }

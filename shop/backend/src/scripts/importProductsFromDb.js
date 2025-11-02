@@ -127,6 +127,7 @@ async function main() {
           price: Number(v.price != null ? v.price : (v.priceDelta != null ? v.priceDelta : 0)) || 0,
         })) : [],
         extraOptionGroups: Array.isArray(p.extraOptionGroups) ? p.extraOptionGroups : [],
+        freeOptionGroups: Array.isArray(p.freeOptionGroups) ? p.freeOptionGroups : [],
       };
 
       if (!payload.name) continue;
@@ -148,6 +149,7 @@ async function main() {
           spiceLevels: payload.spiceLevels,
           variants: payload.variants,
           extraOptionGroups: payload.extraOptionGroups,
+          freeOptionGroups: payload.freeOptionGroups,
         } });
         updatedCount += 1;
       } else {

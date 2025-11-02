@@ -19,6 +19,14 @@ const ExtraOptionGroupSchema = new mongoose.Schema({
 	options: [OptionSchema],
 }, { _id: false });
 
+const FreeOptionGroupSchema = new mongoose.Schema({
+	groupKey: { type: String, required: true },
+	groupLabel: { type: String, required: true },
+	helpText: { type: String },
+	isRequired: { type: Boolean, default: true },
+	options: [OptionSchema],
+}, { _id: false });
+
 const ProductSchema = new mongoose.Schema({
 	site: { type: mongoose.Schema.Types.ObjectId, ref: 'Site', required: true, index: true },
 	name: { type: String, required: true },
@@ -55,6 +63,7 @@ const ProductSchema = new mongoose.Schema({
 		price: { type: Number, default: 0 },
 	}],
 	extraOptionGroups: [ExtraOptionGroupSchema],
+	freeOptionGroups: [FreeOptionGroupSchema],
 }, { timestamps: true });
 
 ProductSchema.index({ site: 1, categoryId: 1, name: 1 });

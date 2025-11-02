@@ -92,6 +92,7 @@ function normalizeProductShape(p) {
       };
     });
   }
+  obj.freeOptionGroups = normalizeFreeOptionGroups(obj.freeOptionGroups);
   return obj;
 }
 
@@ -142,6 +143,45 @@ function sanitizeExtraOptionGroups(input) {
   });
 }
 
+function sanitizeFreeOptionGroups(input) {
+  if (!Array.isArray(input)) return [];
+  return input.map((group, idx) => {
+    const groupKey = String(group?.groupKey || group?.groupLabel || `free_group_${idx}`).trim();
+    const groupLabel = String(group?.groupLabel || groupKey || `Free option ${idx + 1}`).trim();
+    const helpText = group?.helpText ? String(group.helpText) : undefined;
+    const rawOptions = Array.isArray(group?.options) ? group.options : [];
+    const normalizedOptions = rawOptions.map((opt, optIdx) => {
+      const key = String(opt?.key || opt?.label || `${groupKey}_opt_${optIdx}`).trim();
+      const label = String(opt?.label || opt?.key || 'Option').trim();
+      const description = opt?.description ? String(opt.description) : undefined;
+      const isDefault = !!opt?.isDefault;
+      return { key, label, description, isDefault, priceDelta: 0 };
+    });
+    if (!normalizedOptions.length) return null;
+    let defaultIndex = normalizedOptions.findIndex((opt) => opt.isDefault);
+    if (defaultIndex < 0) defaultIndex = 0;
+    const options = normalizedOptions.map((opt, idxOpt) => ({
+      key: opt.key,
+      label: opt.label,
+      description: opt.description,
+      isDefault: idxOpt === defaultIndex,
+      priceDelta: 0,
+    }));
+    const isRequired = group?.isRequired === false ? false : true;
+    return { groupKey, groupLabel, helpText, isRequired, options };
+  }).filter(Boolean);
+}
+
+function normalizeFreeOptionGroups(input) {
+  const groups = sanitizeFreeOptionGroups(input);
+  return groups.map((group) => ({
+    ...group,
+    selectionType: 'single',
+    minSelect: group.isRequired === false ? 0 : 1,
+    maxSelect: 1,
+  }));
+}
+
 router.get('/', requireAdmin, async (req, res) => {
 	try {
 		const { siteId } = req.params;
@@ -174,7 +214,7 @@ router.get('/', requireAdmin, async (req, res) => {
 			if (isVeg.toLowerCase() === 'false') filter.isVeg = false;
 		}
     const products = await Product.find(filter)
-      .select('name description imageUrl price categoryId isVeg spiceLevels variants flavors portions quantities extraOptionGroups site createdAt updatedAt')
+      .select('name description imageUrl price categoryId isVeg spiceLevels variants flavors portions quantities extraOptionGroups freeOptionGroups site createdAt updatedAt')
       .sort({ name: 1 });
     res.json(products.map(normalizeProductShape));
 	} catch (err) {
@@ -194,6 +234,7 @@ router.post('/', requireAdmin, async (req, res) => {
         _id: `p-${Date.now()}`,
         ...payload,
         extraOptionGroups: sanitizeExtraOptionGroups(payload.extraOptionGroups),
+        freeOptionGroups: sanitizeFreeOptionGroups(payload.freeOptionGroups),
       };
       // Normalize variants so UI sees `price`
       const normalized = normalizeProductShape(created);
@@ -235,6 +276,7 @@ router.post('/', requireAdmin, async (req, res) => {
         price: Number((v.price ?? v.priceDelta) || 0) || 0,
       })) : [],
       extraOptionGroups: sanitizeExtraOptionGroups(payload.extraOptionGroups),
+      freeOptionGroups: sanitizeFreeOptionGroups(payload.freeOptionGroups),
     };
     const created = await Product.create(allowed);
     res.status(201).json(normalizeProductShape(created));
@@ -279,6 +321,9 @@ router.put('/:id', requireAdmin, async (req, res) => {
         ...update,
         ...(update.extraOptionGroups !== undefined
           ? { extraOptionGroups: sanitizeExtraOptionGroups(update.extraOptionGroups) }
+          : {}),
+        ...(update.freeOptionGroups !== undefined
+          ? { freeOptionGroups: sanitizeFreeOptionGroups(update.freeOptionGroups) }
           : {}),
       };
       const product = normalizeProductShape(merged);
@@ -349,6 +394,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
         ...(update.portions !== undefined ? { portions: normalizedPortions } : {}),
         ...(update.quantities !== undefined ? { quantities: normalizedQuantities } : {}),
         ...(update.extraOptionGroups !== undefined ? { extraOptionGroups: sanitizeExtraOptionGroups(update.extraOptionGroups) } : {}),
+        ...(update.freeOptionGroups !== undefined ? { freeOptionGroups: sanitizeFreeOptionGroups(update.freeOptionGroups) } : {}),
       } },
       { new: true, runValidators: true, overwrite: false }
     );
@@ -539,7 +585,7 @@ router.post('/bulk', requireAdmin, upload.single('file'), async (req, res) => {
 			const variants = variantsCsv ? parseVariantsCsv(variantsCsv) : [];
 
 			const categoryId = await ensureCategoryByName(categoryName);
-			const payload = { site: siteId, name, description, imageUrl, price, categoryId, spiceLevels, isVeg, variants, extraOptionGroups: [] };
+			const payload = { site: siteId, name, description, imageUrl, price, categoryId, spiceLevels, isVeg, variants, extraOptionGroups: [], freeOptionGroups: [] };
 			if (mock) {
 				const p = { _id: `p-${Date.now()}-${Math.random().toString(36).slice(2,6)}`, ...payload };
 				mock.products.unshift(p);

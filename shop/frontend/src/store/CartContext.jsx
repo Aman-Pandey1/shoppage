@@ -10,7 +10,9 @@ function calculateExtraCost(selectedOptions) {
 
 function formatOptionsSummary(product, spiceLevel, selectedOptions, variant, flavor, portion, quantityOption) {
   try {
-    const groups = Array.isArray(product?.extraOptionGroups) ? product.extraOptionGroups : [];
+    const extraGroups = Array.isArray(product?.extraOptionGroups) ? product.extraOptionGroups : [];
+    const freeGroups = Array.isArray(product?.freeOptionGroups) ? product.freeOptionGroups : [];
+    const groups = [...extraGroups, ...freeGroups];
     const groupKeyToLabel = new Map(groups.map((g) => [g.groupKey, g.groupLabel || g.groupKey]));
     const groupKeyToOptions = new Map(groups.map((g) => [g.groupKey, new Map((g.options || []).map((o) => [o.key, o.label || o.key]))]));
 
