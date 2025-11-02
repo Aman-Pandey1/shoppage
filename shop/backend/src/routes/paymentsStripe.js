@@ -75,9 +75,56 @@ router.get('/confirm/:sessionId', async (req, res) => {
         siteForClient = await Site.findById(byExternal.site);
       }
     } catch {}
-    const stripe = getStripeClient(siteForClient);
+    const siteSecret = siteForClient?.stripeSecretKey;
+    const envSecret = process.env.STRIPE_SECRET_KEY;
+    const sessionMode = sessionId.startsWith('cs_test_') ? 'test' : (sessionId.startsWith('cs_live_') ? 'live' : null);
+    const modeOfSecret = (secret) => {
+      if (!secret) return null;
+      if (/^sk_test_/i.test(secret)) return 'test';
+      if (/^sk_live_/i.test(secret)) return 'live';
+      return null;
+    };
 
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const secrets = [];
+    if (siteSecret) secrets.push(siteSecret);
+    if (envSecret && !secrets.includes(envSecret)) secrets.push(envSecret);
+    if (secrets.length === 0) {
+      throw new Error('Missing STRIPE_SECRET_KEY');
+    }
+    secrets.sort((a, b) => {
+      const modeA = modeOfSecret(a) === sessionMode ? 0 : 1;
+      const modeB = modeOfSecret(b) === sessionMode ? 0 : 1;
+      return modeA - modeB;
+    });
+
+    let stripe = null;
+    let session = null;
+    let lastError = null;
+    for (const secret of secrets) {
+      try {
+        stripe = new Stripe(secret, { apiVersion: process.env.STRIPE_API_VERSION || '2024-06-20' });
+        session = await stripe.checkout.sessions.retrieve(sessionId);
+        if (session) break;
+      } catch (err) {
+        lastError = err;
+        const isMissing = err?.type === 'StripeInvalidRequestError' && /No such checkout session/i.test(err?.message || '');
+        if (!isMissing) {
+          break;
+        }
+      }
+    }
+
+    if (!session) {
+      if (lastError) throw lastError;
+      throw new Error('Failed to retrieve checkout session');
+    }
+
+    if (!siteForClient && session?.metadata?.siteId) {
+      try {
+        siteForClient = await Site.findById(session.metadata.siteId);
+      } catch {}
+    }
+
     if (!session) return res.status(404).json({ error: 'Session not found' });
     const paid = (session.payment_status === 'paid') || (session.status === 'complete');
     let orderId = session.metadata?.orderId;
@@ -293,10 +340,10 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
 
     // Create concrete Product objects so we can scope the discount to items only
     const itemProducts = await Promise.all(items.map(async (it) => {
-      const flavorText = it.flavor ? ` — Flavor: ${it.flavor}` : '';
-      const portionText = it.portion ? ` — Portion: ${it.portion}` : '';
-      const qtyText = it.quantityOption ? ` — Quantity: ${it.quantityOption}` : '';
-      const name = `${it.name}${it.size ? ' — Select Item: ' + it.size : ''}${flavorText}${portionText}${qtyText}`;
+      const flavorText = it.flavor ? ` ? Flavor: ${it.flavor}` : '';
+      const portionText = it.portion ? ` ? Portion: ${it.portion}` : '';
+      const qtyText = it.quantityOption ? ` ? Quantity: ${it.quantityOption}` : '';
+      const name = `${it.name}${it.size ? ' ? Select Item: ' + it.size : ''}${flavorText}${portionText}${qtyText}`;
       const p = await stripe.products.create({ name });
       return p.id;
     }));
@@ -548,10 +595,10 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
     const taxRateIdDel = await ensureTaxRateIdDel();
 
     const itemProductsDel = await Promise.all(manifestItems.map(async (it) => {
-      const flavorText = it.flavor ? ` — Flavor: ${it.flavor}` : '';
-      const portionText = it.portion ? ` — Portion: ${it.portion}` : '';
-      const qtyText = it.quantityOption ? ` — Quantity: ${it.quantityOption}` : '';
-      const name = `${it.name}${it.size ? ' — Select Item: ' + it.size : ''}${flavorText}${portionText}${qtyText}`;
+      const flavorText = it.flavor ? ` ? Flavor: ${it.flavor}` : '';
+      const portionText = it.portion ? ` ? Portion: ${it.portion}` : '';
+      const qtyText = it.quantityOption ? ` ? Quantity: ${it.quantityOption}` : '';
+      const name = `${it.name}${it.size ? ' ? Select Item: ' + it.size : ''}${flavorText}${portionText}${qtyText}`;
       const p = await stripe.products.create({ name });
       return p.id;
     }));
