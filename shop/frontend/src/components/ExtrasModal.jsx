@@ -6,6 +6,12 @@ function normalizeGroups(groups) {
   return Array.isArray(groups) ? groups : [];
 }
 
+function resolveGroupKey(group, idx = 0) {
+  if (group?.groupKey) return group.groupKey;
+  if (group?.groupLabel) return group.groupLabel;
+  return `group_${idx}`;
+}
+
 function clampSelections(selectionType, minSelect = 0, maxSelect = 0, optionsLength = 0) {
   if (selectionType === 'single') {
     return { min: 1, max: 1 };
@@ -18,20 +24,26 @@ function clampSelections(selectionType, minSelect = 0, maxSelect = 0, optionsLen
 
 function buildInitialGroupSelections(groups) {
   const state = {};
-  normalizeGroups(groups).forEach((group) => {
+  normalizeGroups(groups).forEach((group, idx) => {
+    const groupKey = resolveGroupKey(group, idx);
     const options = Array.isArray(group?.options) ? group.options : [];
     const selectionType = group?.selectionType === 'single' ? 'single' : 'multi';
-    if (!options.length) {
-      state[group.groupKey] = new Set();
-      return;
-    }
+    const selected = new Set();
+
     if (selectionType === 'single') {
-      const defaultOption = options.find((opt) => opt?.isDefault) || options[0];
-      state[group.groupKey] = new Set(defaultOption ? [defaultOption.key] : []);
-    } else {
-      const defaults = options.filter((opt) => opt?.isDefault).map((opt) => opt.key);
-      state[group.groupKey] = new Set(defaults);
+      const defaultOption = options.find((opt) => opt?.isDefault);
+      if (defaultOption) {
+        selected.add(defaultOption.key);
+      } else if ((group?.isRequired || Number(group?.minSelect) >= 1) && options.length === 1) {
+        selected.add(options[0].key);
+      }
+    } else if (options.length) {
+      options.forEach((opt) => {
+        if (opt?.isDefault) selected.add(opt.key);
+      });
     }
+
+    state[groupKey] = selected;
   });
   return state;
 }
@@ -91,12 +103,13 @@ export const ExtrasModal = ({
   );
 
   const groupSelections = useMemo(() => {
-    return groups.map((group) => {
+    return groups.map((group, idx) => {
+      const groupKey = resolveGroupKey(group, idx);
       const selectionType = group?.selectionType === 'single' ? 'single' : 'multi';
       const options = Array.isArray(group?.options) ? group.options : [];
       const { min, max } = clampSelections(selectionType, group?.minSelect, group?.maxSelect, options.length);
-      const selectedSet = selectedByGroup[group.groupKey] instanceof Set
-        ? selectedByGroup[group.groupKey]
+      const selectedSet = selectedByGroup[groupKey] instanceof Set
+        ? selectedByGroup[groupKey]
         : new Set();
       return { group, selectionType, options, min, max, selectedSet };
     });
@@ -141,8 +154,13 @@ export const ExtrasModal = ({
     setSelectedByGroup((prev) => {
       const current = prev[groupKey] instanceof Set ? new Set(prev[groupKey]) : new Set();
       if (selectionType === 'single') {
-        const next = new Set(optionKey ? [optionKey] : []);
-        return { ...prev, [groupKey]: next };
+        if (current.has(optionKey)) {
+          if (min <= 0) {
+            return { ...prev, [groupKey]: new Set() };
+          }
+          return prev;
+        }
+        return { ...prev, [groupKey]: new Set(optionKey ? [optionKey] : []) };
       }
       if (current.has(optionKey)) {
         current.delete(optionKey);
@@ -249,19 +267,20 @@ export const ExtrasModal = ({
           </section>
         ) : null}
 
-        {groups.map((groupInfo) => {
+        {groups.map((groupInfo, idx) => {
           const options = Array.isArray(groupInfo?.options) ? groupInfo.options : [];
           if (!options.length) return null;
           const selectionType = groupInfo?.selectionType === 'single' ? 'single' : 'multi';
           const { min, max } = clampSelections(selectionType, groupInfo?.minSelect, groupInfo?.maxSelect, options.length);
-          const selectedSet = selectedByGroup[groupInfo.groupKey] instanceof Set
-            ? selectedByGroup[groupInfo.groupKey]
+          const groupKey = resolveGroupKey(groupInfo, idx);
+          const selectedSet = selectedByGroup[groupKey] instanceof Set
+            ? selectedByGroup[groupKey]
             : new Set();
           const badge = selectionType === 'single'
             ? 'Required'
             : (min > 0 ? `Choose at least ${min}` : 'Optional');
           return (
-            <section key={groupInfo.groupKey} style={{ display: 'grid', gap: 8 }}>
+            <section key={groupInfo.groupKey || groupKey} style={{ display: 'grid', gap: 8 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <h4 style={{ margin: 0 }}>{groupInfo.groupLabel}</h4>
@@ -279,9 +298,9 @@ export const ExtrasModal = ({
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <input
                             type="radio"
-                            name={`group-${groupInfo.groupKey}`}
+                            name={`group-${groupKey}`}
                             checked={active}
-                            onChange={() => handleToggleOption(groupInfo.groupKey, selectionType, min, max, opt.key)}
+                            onChange={() => handleToggleOption(groupKey, selectionType, min, max, opt.key)}
                           />
                           <span>{opt.label}</span>
                         </div>
@@ -295,7 +314,7 @@ export const ExtrasModal = ({
                         <input
                           type="checkbox"
                           checked={active}
-                          onChange={() => handleToggleOption(groupInfo.groupKey, selectionType, min, max, opt.key)}
+                          onChange={() => handleToggleOption(groupKey, selectionType, min, max, opt.key)}
                         />
                         <span>{opt.label}</span>
                       </div>
