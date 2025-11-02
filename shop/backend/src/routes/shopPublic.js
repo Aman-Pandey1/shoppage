@@ -12,43 +12,107 @@ import Coupon from '../models/Coupon.js';
 
 const router = Router();
 
-function sanitizeFreeOptionGroups(input) {
-  if (!Array.isArray(input)) return [];
-  return input.map((group, idx) => {
-    const groupKey = String(group?.groupKey || group?.groupLabel || `free_group_${idx}`).trim();
-    const groupLabel = String(group?.groupLabel || groupKey || `Free option ${idx + 1}`).trim();
-    const helpText = group?.helpText ? String(group.helpText) : undefined;
-    const rawOptions = Array.isArray(group?.options) ? group.options : [];
-    const normalizedOptions = rawOptions.map((opt, optIdx) => {
-      const key = String(opt?.key || opt?.label || `${groupKey}_opt_${optIdx}`).trim();
-      const label = String(opt?.label || opt?.key || 'Option').trim();
-      const description = opt?.description ? String(opt.description) : undefined;
-      const isDefault = !!opt?.isDefault;
-      return { key, label, description, isDefault, priceDelta: 0 };
-    });
-    if (!normalizedOptions.length) return null;
-    let defaultIndex = normalizedOptions.findIndex((opt) => opt.isDefault);
-    if (defaultIndex < 0) defaultIndex = 0;
-    const options = normalizedOptions.map((opt, idxOpt) => ({
-      key: opt.key,
-      label: opt.label,
-      description: opt.description,
-      isDefault: idxOpt === defaultIndex,
-      priceDelta: 0,
-    }));
-    const isRequired = group?.isRequired === false ? false : true;
-    return { groupKey, groupLabel, helpText, isRequired, options };
-  }).filter(Boolean);
+function normalizeOption(option, mode, contextKey, idx) {
+  const fallbackKey = `${contextKey}_option_${idx}`;
+  const key = String(option?.key || option?.label || fallbackKey).trim() || fallbackKey;
+  const label = String(option?.label || option?.key || 'Option').trim();
+  const description = option?.description ? String(option.description) : undefined;
+  const priceDelta = mode === 'free' ? 0 : (Number(option?.priceDelta ?? option?.price) || 0);
+  const childExtraOptionGroups = normalizeOptionGroups(option?.childExtraOptionGroups, 'extra', `${contextKey}::${key}`);
+  const childFreeOptionGroups = normalizeOptionGroups(option?.childFreeOptionGroups, 'free', `${contextKey}::${key}`);
+  return {
+    key,
+    label,
+    priceDelta,
+    description,
+    isDefault: !!option?.isDefault,
+    childExtraOptionGroups,
+    childFreeOptionGroups,
+  };
 }
 
-function normalizeFreeOptionGroups(input) {
-  const groups = sanitizeFreeOptionGroups(input);
-  return groups.map((group) => ({
-    ...group,
-    selectionType: 'single',
-    minSelect: group.isRequired === false ? 0 : 1,
-    maxSelect: 1,
-  }));
+function normalizeOptionGroups(input, mode = 'extra', contextKey = 'root') {
+  if (!Array.isArray(input)) return [];
+  return input
+    .map((group, idx) => {
+      const fallbackKey = `${mode}_group_${idx}`;
+      const groupKey = String(group?.groupKey || group?.groupLabel || fallbackKey).trim() || fallbackKey;
+      const groupLabel = String(group?.groupLabel || groupKey || `Group ${idx + 1}`).trim();
+      const helpText = group?.helpText ? String(group.helpText) : undefined;
+      const rawOptions = Array.isArray(group?.options) ? group.options : [];
+      const normalizedOptions = rawOptions
+        .map((opt, optIdx) => normalizeOption(opt, mode, `${contextKey}::${groupKey}`, optIdx))
+        .filter(Boolean);
+      if (!normalizedOptions.length) return null;
+
+      if (mode === 'free') {
+        let defaultIndex = normalizedOptions.findIndex((opt) => opt.isDefault);
+        if (defaultIndex < 0) defaultIndex = 0;
+        const options = normalizedOptions.map((opt, optionIdx) => ({
+          ...opt,
+          priceDelta: 0,
+          isDefault: optionIdx === defaultIndex,
+        }));
+        const isRequired = group?.isRequired === false ? false : true;
+        return {
+          groupKey,
+          groupLabel,
+          helpText,
+          selectionType: 'single',
+          isRequired,
+          minSelect: isRequired ? 1 : 0,
+          maxSelect: 1,
+          options,
+        };
+      }
+
+      const selectionType = group?.selectionType === 'multi' ? 'multi' : 'single';
+      if (selectionType === 'single') {
+        let defaultIndex = normalizedOptions.findIndex((opt) => opt.isDefault);
+        if (defaultIndex < 0) defaultIndex = 0;
+        const options = normalizedOptions.map((opt, optionIdx) => ({
+          ...opt,
+          isDefault: optionIdx === defaultIndex,
+        }));
+        let isRequired;
+        if (typeof group?.isRequired === 'boolean') {
+          isRequired = group.isRequired;
+        } else {
+          const minRaw = Number(group?.minSelect);
+          isRequired = Number.isFinite(minRaw) ? minRaw >= 1 : defaultIndex >= 0;
+        }
+        return {
+          groupKey,
+          groupLabel,
+          helpText,
+          selectionType: 'single',
+          isRequired,
+          minSelect: isRequired ? 1 : 0,
+          maxSelect: 1,
+          options,
+        };
+      }
+
+      const options = normalizedOptions.map((opt) => ({ ...opt, isDefault: !!opt.isDefault }));
+      const minRaw = Number(group?.minSelect);
+      const maxRaw = Number(group?.maxSelect);
+      const minSelect = Number.isFinite(minRaw) ? Math.max(0, minRaw) : 0;
+      const optionCount = options.length;
+      let maxSelect = Number.isFinite(maxRaw) ? Math.max(minSelect, maxRaw) : (optionCount || minSelect);
+      if (optionCount && maxSelect > optionCount) maxSelect = optionCount;
+      const isRequired = typeof group?.isRequired === 'boolean' ? group.isRequired : minSelect > 0;
+      return {
+        groupKey,
+        groupLabel,
+        helpText,
+        selectionType: 'multi',
+        isRequired,
+        minSelect: Math.min(minSelect, maxSelect),
+        maxSelect: maxSelect || optionCount || 0,
+        options,
+      };
+    })
+    .filter(Boolean);
 }
 
 // Normalize product shape for frontend compatibility
@@ -88,50 +152,8 @@ function normalizeProductShape(p) {
       return { key, label, price };
     });
   }
-  if (Array.isArray(obj.extraOptionGroups)) {
-    obj.extraOptionGroups = obj.extraOptionGroups.map((group, idx) => {
-      const selectionType = group?.selectionType === 'single' ? 'single' : 'multi';
-      const options = Array.isArray(group?.options)
-        ? group.options.map((opt) => ({
-            key: String(opt?.key || opt?.label || `option_${idx}`).trim(),
-            label: String(opt?.label || opt?.key || 'Option').trim(),
-            priceDelta: Number((opt?.priceDelta ?? opt?.price) || 0) || 0,
-            description: opt?.description ? String(opt.description) : undefined,
-            isDefault: !!opt?.isDefault,
-          }))
-        : [];
-      const normalizedMin = Number.isFinite(Number(group?.minSelect)) ? Number(group.minSelect) : 0;
-      const normalizedMax = Number.isFinite(Number(group?.maxSelect)) ? Number(group.maxSelect) : 0;
-      let isRequired;
-      if (selectionType === 'single') {
-        if (typeof group?.isRequired === 'boolean') {
-          isRequired = group.isRequired;
-        } else {
-          const hasDefault = options.some((opt) => opt.isDefault);
-          isRequired = normalizedMin >= 1 || hasDefault;
-        }
-      } else {
-        isRequired = typeof group?.isRequired === 'boolean'
-          ? group.isRequired
-          : normalizedMin > 0;
-      }
-      const resolvedMin = selectionType === 'single' ? 1 : Math.max(0, normalizedMin);
-      const resolvedMax = selectionType === 'single'
-        ? 1
-        : Math.max(0, normalizedMax || (options.length ? options.length : 0));
-      return {
-        groupKey: String(group?.groupKey || group?.groupLabel || `group_${idx}`).trim(),
-        groupLabel: String(group?.groupLabel || group?.groupKey || `Group ${idx + 1}`).trim(),
-        helpText: group?.helpText ? String(group.helpText) : undefined,
-        selectionType,
-        isRequired,
-        minSelect: resolvedMin,
-        maxSelect: Math.max(resolvedMin, resolvedMax),
-        options,
-      };
-    });
-  }
-  obj.freeOptionGroups = normalizeFreeOptionGroups(obj.freeOptionGroups);
+  obj.extraOptionGroups = normalizeOptionGroups(obj.extraOptionGroups, 'extra', 'product');
+  obj.freeOptionGroups = normalizeOptionGroups(obj.freeOptionGroups, 'free', 'product');
   return obj;
 }
 
