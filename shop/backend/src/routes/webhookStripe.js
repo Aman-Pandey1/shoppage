@@ -297,6 +297,55 @@ webhookStripeNoSite.post('/', async (req, res) => {
               order = await Order.findByIdAndUpdate(order._id, { orderNumber: assigned }, { new: true });
             } catch {}
           }
+          if (order && order.fulfillmentType === 'delivery' && !order.uberDeliveryId) {
+            try {
+              const site = await Site.findById(order.site);
+              if (site && order?.dropoff && order?.pickup?.location) {
+                const provider = site.deliveryProvider || 'uber';
+                let delivery = null;
+                if (provider === 'doordash' && site.doordashStoreId) {
+                  delivery = await ddCreateDelivery({
+                    storeId: site.doordashStoreId,
+                    pickup: order.pickup.location,
+                    dropoff: order.dropoff,
+                    manifestItems: (order.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
+                    tip: 0,
+                    externalId: String(order._id),
+                  });
+                } else if (site.uberCustomerId) {
+                  delivery = await uberCreateDelivery({
+                    customerId: site.uberCustomerId,
+                    pickup: order.pickup.location,
+                    dropoff: order.dropoff,
+                    manifestItems: (order.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
+                    tip: 0,
+                    externalId: String(order._id),
+                    creds: {
+                      clientId: site?.uberClientId,
+                      clientSecret: site?.uberClientSecret,
+                      env: site?.uberEnv,
+                      scopes: site?.uberTokenScopes,
+                      audience: String(site?.uberEnv || '').toLowerCase() === 'sandbox'
+                        ? 'https://sandbox-api.uber.com'
+                        : 'https://api.uber.com',
+                    }
+                  });
+                }
+                if (delivery) {
+                  const trackingUrl = delivery?.tracking_url || delivery?.trackingUrl || delivery?.share_url || '';
+                  const status = delivery?.status || delivery?.state || delivery?.current_status || '';
+                  order = await Order.findByIdAndUpdate(order._id, { uberDeliveryId: delivery?.id || delivery?.delivery_id, uberTrackingUrl: trackingUrl, uberStatus: status }, { new: true });
+                }
+              }
+            } catch {}
+          }
+          try {
+            const site = await Site.findById(order?.site);
+            if (order && site) {
+              await sendOrderEmail({ to: order.userEmail, siteName: site?.name || '', orderId: order._id, orderNumber: order.orderNumber, items: order.items, totalCents: order.totalCents, deliveryFeeCents: order.deliveryFeeCents, fulfillmentType: order.fulfillmentType, trackingUrl: order.uberTrackingUrl });
+              await sendOrderNotify(order, site?.name || '');
+            }
+          } catch {}
         } catch {}
       }
     }
