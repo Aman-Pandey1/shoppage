@@ -404,7 +404,7 @@ export const ExtrasModal = ({
               const optionPath = makeOptionPath(groupPath, opt?.key, 'free', optionIdx);
               const active = selectedKey === opt.key;
               const hasNestedChildren = hasAnyOptionsDeep(opt?.childFreeOptionGroups) || hasAnyOptionsDeep(opt?.childExtraOptionGroups);
-              const nestedContent = active
+              const nestedContent = hasNestedChildren
                 ? [
                     ...renderFreeGroups(opt?.childFreeOptionGroups, optionPath, depth + 1),
                     ...renderExtraGroups(opt?.childExtraOptionGroups, optionPath, depth + 1),
@@ -430,8 +430,11 @@ export const ExtrasModal = ({
                     </div>
                     <div className="extras-option__price" data-included="true">Included</div>
                   </label>
-                  {active && nestedContent.length ? (
-                    <div className="extras-option__nested extras-nested">
+                  {nestedContent.length ? (
+                    <div
+                      className={`extras-option__nested extras-nested extras-collapse ${active ? 'extras-collapse--open' : ''}`}
+                      aria-hidden={!active}
+                    >
                       {nestedContent}
                     </div>
                   ) : null}
@@ -479,7 +482,7 @@ export const ExtrasModal = ({
               const optionPath = makeOptionPath(groupPath, opt?.key, 'extra', optionIdx);
               const active = selectedKeys.has(opt.key);
               const hasNestedChildren = hasAnyOptionsDeep(opt?.childFreeOptionGroups) || hasAnyOptionsDeep(opt?.childExtraOptionGroups);
-              const nestedContent = active
+              const nestedContent = hasNestedChildren
                 ? [
                     ...renderFreeGroups(opt.childFreeOptionGroups, optionPath, depth + 1),
                     ...renderExtraGroups(opt.childExtraOptionGroups, optionPath, depth + 1),
@@ -508,8 +511,11 @@ export const ExtrasModal = ({
                       {price ? `+${currency(price)}` : 'Included'}
                     </div>
                   </label>
-                  {active && nestedContent.length ? (
-                    <div className="extras-option__nested extras-nested">
+                  {nestedContent.length ? (
+                    <div
+                      className={`extras-option__nested extras-nested extras-collapse ${active ? 'extras-collapse--open' : ''}`}
+                      aria-hidden={!active}
+                    >
                       {nestedContent}
                     </div>
                   ) : null}
