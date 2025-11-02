@@ -205,13 +205,17 @@ export const ExtrasModal = ({
           // enforce minimum by leaving selection unchanged
           return prev;
         }
-      } else {
-        const limit = max && max !== Infinity ? max : Infinity;
-        if (current.size >= limit) {
-          return prev;
-        }
-        current.add(optionKey);
+        return { ...prev, [groupKey]: current };
       }
+
+      const limit = max && max !== Infinity ? max : Infinity;
+      if (current.size >= limit) {
+        if (limit === 1) {
+          return { ...prev, [groupKey]: new Set([optionKey]) };
+        }
+        return prev;
+      }
+      current.add(optionKey);
       return { ...prev, [groupKey]: current };
     });
   };
