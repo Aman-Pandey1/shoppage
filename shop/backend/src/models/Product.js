@@ -27,6 +27,11 @@ const FreeOptionGroupSchema = new mongoose.Schema({
 	options: [OptionSchema],
 }, { _id: false });
 
+OptionSchema.add({
+	childExtraOptionGroups: { type: [ExtraOptionGroupSchema], default: [] },
+	childFreeOptionGroups: { type: [FreeOptionGroupSchema], default: [] },
+});
+
 const ProductSchema = new mongoose.Schema({
 	site: { type: mongoose.Schema.Types.ObjectId, ref: 'Site', required: true, index: true },
 	name: { type: String, required: true },

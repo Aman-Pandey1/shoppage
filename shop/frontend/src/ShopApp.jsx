@@ -13,6 +13,7 @@ import { PrivacyPolicyModal } from './components/PrivacyPolicyModal';
 import { Modal } from './components/Modal';
 import { AlertModal } from './components/AlertModal';
 import { getAuthToken, postJson } from './lib/api';
+import { hasAnyOptionsDeep } from './lib/optionsTree';
 import { useCategoriesQuery, useSiteQuery, useLocationsQuery, useCitiesQuery, useHoursQuery } from './lib/queries';
 // Lazy-loaded modals and UI pieces for faster initial paint
 const FulfillmentModal = React.lazy(() => import('./components/FulfillmentModal').then(m => ({ default: m.FulfillmentModal })));
@@ -155,8 +156,8 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     const hasFlavors = Array.isArray(product?.flavors) && product.flavors.length > 0;
     const hasPortions = Array.isArray(product?.portions) && product.portions.length > 0;
     const hasQuantities = Array.isArray(product?.quantities) && product.quantities.length > 0;
-    const hasExtras = Array.isArray(product?.extraOptionGroups) && product.extraOptionGroups.length > 0;
-    const hasFreeIncluded = Array.isArray(product?.freeOptionGroups) && product.freeOptionGroups.some((group) => Array.isArray(group?.options) && group.options.length > 0);
+    const hasExtras = hasAnyOptionsDeep(product?.extraOptionGroups);
+    const hasFreeIncluded = hasAnyOptionsDeep(product?.freeOptionGroups);
     const hasSpice = Array.isArray(product?.spiceLevels) && product.spiceLevels.length > 0;
     const hasCustomization = hasVariants || hasFlavors || hasPortions || hasQuantities || hasExtras || hasFreeIncluded;
     if (hasCustomization) {
@@ -422,6 +423,9 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
               optionKey: opt.optionKey,
               optionLabel: opt.optionLabel,
               priceDelta: Number(opt?.priceDelta || 0),
+              groupPath: opt.groupPath,
+              optionPath: opt.optionPath,
+              isFree: opt.isFree,
             }))
           : [],
       };
