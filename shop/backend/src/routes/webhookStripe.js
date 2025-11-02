@@ -5,6 +5,7 @@ import Site from '../models/Site.js';
 import { getNextOrderNumber } from '../utils/orderNumber.js';
 import { createDelivery as uberCreateDelivery } from '../services/uberDirect.js';
 import { createDelivery as ddCreateDelivery } from '../services/doordashDrive.js';
+import { normalizePhoneForCountry } from '../utils/phone.js';
 import { sendOrderEmail } from '../utils/mailer.js';
 import fetch from 'node-fetch';
 
@@ -149,11 +150,17 @@ router.post('/:siteIdOrSlug', async (req, res) => {
                   if (site && list[idx]?.dropoff && list[idx]?.pickup?.location) {
                     const provider = site.deliveryProvider || 'uber';
                     let delivery = null;
+                    const pickupCountry = String(list[idx].pickup?.location?.address?.country || site?.country || 'CA').toUpperCase();
+                    const dropCountry = String(list[idx].dropoff?.address?.country || 'CA').toUpperCase();
+                    const normalizedPickupPhone = normalizePhoneForCountry(list[idx].pickup?.location?.phone, pickupCountry) || '+14155550123';
+                    const normalizedDropoffPhone = normalizePhoneForCountry(list[idx].dropoff?.phone, dropCountry) || '+14155550123';
+                    const safePickup = { ...(list[idx].pickup?.location || {}), phone: normalizedPickupPhone };
+                    const safeDropoff = { ...(list[idx].dropoff || {}), phone: normalizedDropoffPhone };
                     if (provider === 'doordash' && site.doordashStoreId) {
                       delivery = await ddCreateDelivery({
                         storeId: site.doordashStoreId,
-                        pickup: list[idx].pickup.location,
-                        dropoff: list[idx].dropoff,
+                        pickup: safePickup,
+                        dropoff: safeDropoff,
                         manifestItems: (list[idx].items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
                         tip: 0,
                         externalId: String(list[idx]._id),
@@ -161,8 +168,8 @@ router.post('/:siteIdOrSlug', async (req, res) => {
                     } else if (site.uberCustomerId) {
                       delivery = await uberCreateDelivery({
                         customerId: site.uberCustomerId,
-                        pickup: list[idx].pickup.location,
-                        dropoff: list[idx].dropoff,
+                        pickup: safePickup,
+                        dropoff: safeDropoff,
                         manifestItems: (list[idx].items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
                         tip: 0,
                         externalId: String(list[idx]._id),
@@ -208,11 +215,17 @@ router.post('/:siteIdOrSlug', async (req, res) => {
                 if (order?.dropoff && order?.pickup?.location && site) {
                   const provider = site.deliveryProvider || 'uber';
                   let delivery = null;
+                  const pickupCountry = String(order.pickup?.location?.address?.country || site?.country || 'CA').toUpperCase();
+                  const dropCountry = String(order.dropoff?.address?.country || 'CA').toUpperCase();
+                  const normalizedPickupPhone = normalizePhoneForCountry(order.pickup?.location?.phone, pickupCountry) || '+14155550123';
+                  const normalizedDropoffPhone = normalizePhoneForCountry(order.dropoff?.phone, dropCountry) || '+14155550123';
+                  const safePickup = { ...(order.pickup?.location || {}), phone: normalizedPickupPhone };
+                  const safeDropoff = { ...(order.dropoff || {}), phone: normalizedDropoffPhone };
                   if (provider === 'doordash' && site.doordashStoreId) {
                     delivery = await ddCreateDelivery({
                       storeId: site.doordashStoreId,
-                      pickup: order.pickup.location,
-                      dropoff: order.dropoff,
+                      pickup: safePickup,
+                      dropoff: safeDropoff,
                       manifestItems: (order.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
                       tip: 0,
                       externalId: String(order._id),
@@ -220,8 +233,8 @@ router.post('/:siteIdOrSlug', async (req, res) => {
                   } else if (site.uberCustomerId) {
                     delivery = await uberCreateDelivery({
                       customerId: site.uberCustomerId,
-                      pickup: order.pickup.location,
-                      dropoff: order.dropoff,
+                      pickup: safePickup,
+                      dropoff: safeDropoff,
                       manifestItems: (order.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
                       tip: 0,
                       externalId: String(order._id),
@@ -303,11 +316,17 @@ webhookStripeNoSite.post('/', async (req, res) => {
               if (site && order?.dropoff && order?.pickup?.location) {
                 const provider = site.deliveryProvider || 'uber';
                 let delivery = null;
+                const pickupCountry = String(order.pickup?.location?.address?.country || site?.country || 'CA').toUpperCase();
+                const dropCountry = String(order.dropoff?.address?.country || 'CA').toUpperCase();
+                const normalizedPickupPhone = normalizePhoneForCountry(order.pickup?.location?.phone, pickupCountry) || '+14155550123';
+                const normalizedDropoffPhone = normalizePhoneForCountry(order.dropoff?.phone, dropCountry) || '+14155550123';
+                const safePickup = { ...(order.pickup?.location || {}), phone: normalizedPickupPhone };
+                const safeDropoff = { ...(order.dropoff || {}), phone: normalizedDropoffPhone };
                 if (provider === 'doordash' && site.doordashStoreId) {
                   delivery = await ddCreateDelivery({
                     storeId: site.doordashStoreId,
-                    pickup: order.pickup.location,
-                    dropoff: order.dropoff,
+                    pickup: safePickup,
+                    dropoff: safeDropoff,
                     manifestItems: (order.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
                     tip: 0,
                     externalId: String(order._id),
@@ -315,8 +334,8 @@ webhookStripeNoSite.post('/', async (req, res) => {
                 } else if (site.uberCustomerId) {
                   delivery = await uberCreateDelivery({
                     customerId: site.uberCustomerId,
-                    pickup: order.pickup.location,
-                    dropoff: order.dropoff,
+                    pickup: safePickup,
+                    dropoff: safeDropoff,
                     manifestItems: (order.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
                     tip: 0,
                     externalId: String(order._id),
