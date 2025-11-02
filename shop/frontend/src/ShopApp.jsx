@@ -33,6 +33,11 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   const [extrasOpen, setExtrasOpen] = useState(false);
   const [pendingSpice, setPendingSpice] = useState(undefined);
   const [pendingVariant, setPendingVariant] = useState(null);
+  const [pendingFlavor, setPendingFlavor] = useState(null);
+  const [pendingPortion, setPendingPortion] = useState(null);
+  const [pendingQuantityOption, setPendingQuantityOption] = useState(null);
+  const [pendingSelectedOptions, setPendingSelectedOptions] = useState([]);
+  const [pendingPickupOnly, setPendingPickupOnly] = useState(false);
   const [deliveryModalOpen, setDeliveryModalOpen] = useState(false);
   const [deliveryModalMode, setDeliveryModalMode] = useState('checkout'); // 'prefill' | 'checkout'
   const [loginOpen, setLoginOpen] = useState(false);
@@ -45,7 +50,6 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
   // Track 'Order Now' vs 'Order For Later' selection to allow checkout when closed
   const [orderWhen, setOrderWhen] = useState(null); // 'now' | 'later' | null
   const [pickupSubmitting, setPickupSubmitting] = useState(false);
-  const [pendingQuantityOption, setPendingQuantityOption] = useState(null);
 
   // Additional UI state brought from the alternate implementation
   // Order details state
@@ -139,52 +143,103 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
     const pickupOnlyCategory = !!(argProduct && argProduct.pickupOnlyCategory);
     setPendingProduct(product);
     setPendingQuantity(Math.max(1, Math.min(99, Number(quantity) || 1)));
-    // Show unified modal for variants/spice in a single popup
-    if ((Array.isArray(product?.variants) && product.variants.length > 0) || (product.spiceLevels && product.spiceLevels.length > 0)) {
-      setSpiceOpen(true);
-    } else if (product.extraOptionGroups && product.extraOptionGroups.length > 0) {
+    setPendingVariant(null);
+    setPendingFlavor(null);
+    setPendingPortion(null);
+    setPendingQuantityOption(null);
+    setPendingSelectedOptions([]);
+    setPendingSpice(undefined);
+    setPendingPickupOnly(pickupOnlyCategory);
+    const hasVariants = Array.isArray(product?.variants) && product.variants.length > 0;
+    const hasFlavors = Array.isArray(product?.flavors) && product.flavors.length > 0;
+    const hasPortions = Array.isArray(product?.portions) && product.portions.length > 0;
+    const hasQuantities = Array.isArray(product?.quantities) && product.quantities.length > 0;
+    const hasExtras = Array.isArray(product?.extraOptionGroups) && product.extraOptionGroups.length > 0;
+    const hasSpice = Array.isArray(product?.spiceLevels) && product.spiceLevels.length > 0;
+    const hasCustomization = hasVariants || hasFlavors || hasPortions || hasQuantities || hasExtras;
+    if (hasCustomization) {
       setExtrasOpen(true);
-    } else {
-      addItem({ product, quantity: Math.max(1, Math.min(99, Number(quantity) || 1)), pickupOnlyCategory });
-      setPendingProduct(null);
-      setPendingQuantity(1);
-      // Do not open payment/details modals on add-to-cart; user will open from cart
+      return;
     }
+    if (hasSpice) {
+      setSpiceOpen(true);
+      return;
+    }
+    const qty = Math.max(1, Math.min(99, Number(quantity) || 1));
+    addItem({ product, quantity: qty, pickupOnlyCategory });
+    setPendingProduct(null);
+    setPendingQuantity(1);
+    setPendingPickupOnly(false);
   }
 
   function confirmSpice(result) {
-    const { spice, variant, flavor, portion, quantity, quantityOption } = result || {};
+    const { spice, quantity } = result || {};
     const confirmedQty = Math.max(1, Math.min(99, Number(quantity || pendingQuantity) || 1));
-    setPendingSpice(spice);
-    setPendingVariant(variant || null);
-    setPendingQuantity(confirmedQty);
-    setPendingQuantityOption(quantityOption || null);
     setSpiceOpen(false);
-    if (pendingProduct && pendingProduct.extraOptionGroups && pendingProduct.extraOptionGroups.length > 0) {
-      setExtrasOpen(true);
-    } else if (pendingProduct) {
-      // Derive pickupOnly flag by checking the selectedCategory if available
-      const isPickupOnly = !!(selectedCategory && selectedCategory.pickupOnly);
-      addItem({ product: pendingProduct, variant: variant || undefined, spiceLevel: spice, flavor: flavor || undefined, portion: portion || undefined, quantityOption: quantityOption || undefined, quantity: confirmedQty, pickupOnlyCategory: isPickupOnly });
-      setPendingProduct(null);
-      setPendingSpice(undefined);
-      setPendingVariant(null);
-      setPendingQuantity(1);
-      setPendingQuantityOption(null);
+    if (pendingProduct) {
+      const isPickupOnly = pendingPickupOnly || !!(selectedCategory && selectedCategory.pickupOnly);
+      addItem({
+        product: pendingProduct,
+        variant: pendingVariant || undefined,
+        flavor: pendingFlavor || undefined,
+        portion: pendingPortion || undefined,
+        quantityOption: pendingQuantityOption || undefined,
+        selectedOptions: pendingSelectedOptions,
+        spiceLevel: spice,
+        quantity: confirmedQty,
+        pickupOnlyCategory: isPickupOnly,
+      });
     }
+    resetPendingCustomizationState();
   }
 
-  function confirmExtras(selected) {
+  function confirmExtras(payload) {
+    const {
+      selectedOptions = [],
+      variant = null,
+      flavor = null,
+      portion = null,
+      quantityOption = null,
+      quantity,
+    } = payload || {};
     setExtrasOpen(false);
-    if (pendingProduct) {
-      const isPickupOnly = !!(selectedCategory && selectedCategory.pickupOnly);
-      addItem({ product: pendingProduct, variant: pendingVariant || undefined, spiceLevel: pendingSpice, selectedOptions: selected, quantityOption: pendingQuantityOption || undefined, quantity: pendingQuantity, pickupOnlyCategory: isPickupOnly });
+    const confirmedQty = Math.max(1, Math.min(99, Number(quantity || pendingQuantity) || 1));
+    setPendingVariant(variant || null);
+    setPendingFlavor(flavor || null);
+    setPendingPortion(portion || null);
+    setPendingQuantityOption(quantityOption || null);
+    setPendingSelectedOptions(Array.isArray(selectedOptions) ? selectedOptions : []);
+    setPendingQuantity(confirmedQty);
+    if (pendingProduct && Array.isArray(pendingProduct?.spiceLevels) && pendingProduct.spiceLevels.length > 0) {
+      setSpiceOpen(true);
+      return;
     }
+    if (pendingProduct) {
+      const isPickupOnly = pendingPickupOnly || !!(selectedCategory && selectedCategory.pickupOnly);
+      addItem({
+        product: pendingProduct,
+        variant: variant || undefined,
+        flavor: flavor || undefined,
+        portion: portion || undefined,
+        quantityOption: quantityOption || undefined,
+        selectedOptions: Array.isArray(selectedOptions) ? selectedOptions : [],
+        quantity: confirmedQty,
+        pickupOnlyCategory: isPickupOnly,
+      });
+    }
+    resetPendingCustomizationState();
+  }
+
+  function resetPendingCustomizationState() {
     setPendingProduct(null);
     setPendingSpice(undefined);
     setPendingVariant(null);
+    setPendingFlavor(null);
+    setPendingPortion(null);
     setPendingQuantity(1);
     setPendingQuantityOption(null);
+    setPendingSelectedOptions([]);
+    setPendingPickupOnly(false);
   }
 
   const { data: categoriesData } = useCategoriesQuery(siteSlug);
@@ -358,6 +413,15 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         flavor: it?.flavor?.label || it?.flavor?.key || undefined,
         portion: it?.portion?.label || it?.portion?.key || undefined,
         quantityOption: it?.quantityOption?.label || it?.quantityOption?.key || undefined,
+        selectedOptions: Array.isArray(it.selectedOptions)
+          ? it.selectedOptions.map((opt) => ({
+              groupKey: opt.groupKey,
+              groupLabel: opt.groupLabel,
+              optionKey: opt.optionKey,
+              optionLabel: opt.optionLabel,
+              priceDelta: Number(opt?.priceDelta || 0),
+            }))
+          : [],
       };
     });
   }, [state.items]);
@@ -582,7 +646,17 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
                 if (!manifest.length) { setOrderError('Please add items to your cart before confirming'); return; }
                 if (!selectedLocation) setSelectedLocation(chosenLocation);
                 const payload = {
-                  items: manifest.map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.priceCents || 0, size: m.size, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
+                  items: manifest.map((m) => ({
+                    name: m.name,
+                    quantity: m.quantity,
+                    priceCents: m.priceCents || 0,
+                    size: m.size,
+                    spiceLevel: m.spiceLevel,
+                    flavor: m.flavor,
+                    portion: m.portion,
+                    quantityOption: m.quantityOption,
+                    selectedOptions: m.selectedOptions,
+                  })),
                   tipCents: 0,
                   pickup: {
                     location: chosenLocation,
@@ -791,7 +865,6 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
         open={spiceOpen}
         spiceLevels={pendingProduct?.spiceLevels}
         product={pendingProduct}
-        category={(pendingProduct && categories.find(c => String(c._id) === String(pendingProduct.categoryId))) || selectedCategory || null}
         siteLogoSrc={(function(){
           try {
             const el = document.querySelector('.brand__logo img');
@@ -799,12 +872,19 @@ const Main = ({ siteSlug = 'default', initialCategoryId }) => {
           } catch { return ''; }
         })()}
         initialQuantity={pendingQuantity}
-        onCancel={() => setSpiceOpen(false)}
+        initialSpice={pendingSpice}
+        onCancel={() => { setSpiceOpen(false); resetPendingCustomizationState(); }}
         onConfirm={confirmSpice}
       />
       </React.Suspense>
       <React.Suspense fallback={<div className="loading-center"><div className="spinner" aria-label="Loading dialog" /></div>}>
-      <ExtrasModal open={extrasOpen} groups={pendingProduct?.extraOptionGroups} product={pendingProduct} onCancel={() => setExtrasOpen(false)} onConfirm={confirmExtras} />
+      <ExtrasModal
+        open={extrasOpen}
+        product={pendingProduct}
+        initialQuantity={pendingQuantity}
+        onCancel={() => { setExtrasOpen(false); resetPendingCustomizationState(); }}
+        onConfirm={confirmExtras}
+      />
       </React.Suspense>
       <React.Suspense fallback={null}>
         <AddToCartToast />

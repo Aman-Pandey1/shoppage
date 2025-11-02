@@ -49,7 +49,97 @@ function normalizeProductShape(p) {
       return { key, label, price };
     });
   }
+  if (Array.isArray(obj.extraOptionGroups)) {
+    obj.extraOptionGroups = obj.extraOptionGroups.map((group, idx) => {
+      const selectionType = group?.selectionType === 'single' ? 'single' : 'multi';
+      const options = Array.isArray(group?.options)
+        ? group.options.map((opt) => ({
+            key: String(opt?.key || opt?.label || `option_${idx}`).trim(),
+            label: String(opt?.label || opt?.key || 'Option').trim(),
+            priceDelta: Number((opt?.priceDelta ?? opt?.price) || 0) || 0,
+            description: opt?.description ? String(opt.description) : undefined,
+            isDefault: !!opt?.isDefault,
+          }))
+        : [];
+      const normalizedMin = Number.isFinite(Number(group?.minSelect)) ? Number(group.minSelect) : 0;
+      const normalizedMax = Number.isFinite(Number(group?.maxSelect)) ? Number(group.maxSelect) : 0;
+      let isRequired;
+      if (selectionType === 'single') {
+        if (typeof group?.isRequired === 'boolean') {
+          isRequired = group.isRequired;
+        } else {
+          const hasDefault = options.some((opt) => opt.isDefault);
+          isRequired = normalizedMin >= 1 || hasDefault;
+        }
+      } else {
+        isRequired = typeof group?.isRequired === 'boolean'
+          ? group.isRequired
+          : normalizedMin > 0;
+      }
+      const resolvedMin = selectionType === 'single' ? 1 : Math.max(0, normalizedMin);
+      const resolvedMax = selectionType === 'single'
+        ? 1
+        : Math.max(0, normalizedMax || (options.length ? options.length : 0));
+      return {
+        groupKey: String(group?.groupKey || group?.groupLabel || `group_${idx}`).trim(),
+        groupLabel: String(group?.groupLabel || group?.groupKey || `Group ${idx + 1}`).trim(),
+        helpText: group?.helpText ? String(group.helpText) : undefined,
+        selectionType,
+        isRequired,
+        minSelect: resolvedMin,
+        maxSelect: Math.max(resolvedMin, resolvedMax),
+        options,
+      };
+    });
+  }
   return obj;
+}
+
+function sanitizeExtraOptionGroups(input) {
+  if (!Array.isArray(input)) return [];
+  return input.map((group, idx) => {
+    const selectionType = group?.selectionType === 'single' ? 'single' : 'multi';
+    const groupKey = String(group?.groupKey || group?.groupLabel || `group_${idx}`).trim();
+    const groupLabel = String(group?.groupLabel || groupKey || `Group ${idx + 1}`).trim();
+    const helpText = group?.helpText ? String(group.helpText) : undefined;
+    const normalizedMin = Number.isFinite(Number(group?.minSelect)) ? Number(group.minSelect) : 0;
+    const normalizedMax = Number.isFinite(Number(group?.maxSelect)) ? Number(group.maxSelect) : 0;
+    const options = Array.isArray(group?.options)
+      ? group.options.map((opt, optIdx) => {
+          const key = String(opt?.key || opt?.label || `${groupKey}_opt_${optIdx}`).trim();
+          const label = String(opt?.label || opt?.key || 'Option').trim();
+          const priceDelta = Number((opt?.priceDelta ?? opt?.price) || 0) || 0;
+          const description = opt?.description ? String(opt.description) : undefined;
+          const isDefault = !!opt?.isDefault;
+          return { key, label, priceDelta, description, isDefault };
+        })
+      : [];
+    let isRequired;
+    if (selectionType === 'single') {
+      if (typeof group?.isRequired === 'boolean') {
+        isRequired = group.isRequired;
+      } else {
+        const hasDefault = options.some((opt) => opt.isDefault);
+        isRequired = normalizedMin >= 1 || hasDefault;
+      }
+    } else {
+      isRequired = typeof group?.isRequired === 'boolean' ? group.isRequired : normalizedMin > 0;
+    }
+    const resolvedMin = selectionType === 'single' ? 1 : Math.max(0, normalizedMin);
+    const resolvedMax = selectionType === 'single'
+      ? 1
+      : Math.max(0, normalizedMax || (options.length ? options.length : 0));
+    return {
+      groupKey,
+      groupLabel,
+      helpText,
+      selectionType,
+      isRequired,
+      minSelect: resolvedMin,
+      maxSelect: Math.max(resolvedMin, resolvedMax),
+      options,
+    };
+  });
 }
 
 router.get('/', requireAdmin, async (req, res) => {
@@ -100,7 +190,11 @@ router.post('/', requireAdmin, async (req, res) => {
     const payload = { ...req.body, site: siteId };
 			const catOk = mock.categories.some((c) => c._id === payload.categoryId && c.site === siteId);
 			if (!catOk) return res.status(400).json({ error: 'Invalid category for site' });
-      const created = { _id: `p-${Date.now()}`, ...payload };
+      const created = {
+        _id: `p-${Date.now()}`,
+        ...payload,
+        extraOptionGroups: sanitizeExtraOptionGroups(payload.extraOptionGroups),
+      };
       // Normalize variants so UI sees `price`
       const normalized = normalizeProductShape(created);
       mock.products.unshift(normalized);
@@ -140,7 +234,7 @@ router.post('/', requireAdmin, async (req, res) => {
         label: String(v.label || v.key || 'Default'),
         price: Number((v.price ?? v.priceDelta) || 0) || 0,
       })) : [],
-      extraOptionGroups: Array.isArray(payload.extraOptionGroups) ? payload.extraOptionGroups : [],
+      extraOptionGroups: sanitizeExtraOptionGroups(payload.extraOptionGroups),
     };
     const created = await Product.create(allowed);
     res.status(201).json(normalizeProductShape(created));
@@ -180,7 +274,13 @@ router.put('/:id', requireAdmin, async (req, res) => {
 			}
 			const idx = mock.products.findIndex((p) => p._id === id && p.site === siteId);
 			if (idx === -1) return res.status(404).json({ error: 'Not found' });
-      const merged = { ...mock.products[idx], ...update };
+      const merged = {
+        ...mock.products[idx],
+        ...update,
+        ...(update.extraOptionGroups !== undefined
+          ? { extraOptionGroups: sanitizeExtraOptionGroups(update.extraOptionGroups) }
+          : {}),
+      };
       const product = normalizeProductShape(merged);
       mock.products[idx] = product;
 			try { saveMockData(req.app.locals.mockData); } catch {}
@@ -248,7 +348,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
         ...(update.flavors !== undefined ? { flavors: normalizedFlavors } : {}),
         ...(update.portions !== undefined ? { portions: normalizedPortions } : {}),
         ...(update.quantities !== undefined ? { quantities: normalizedQuantities } : {}),
-        ...(update.extraOptionGroups !== undefined ? { extraOptionGroups: Array.isArray(update.extraOptionGroups) ? update.extraOptionGroups : [] } : {}),
+        ...(update.extraOptionGroups !== undefined ? { extraOptionGroups: sanitizeExtraOptionGroups(update.extraOptionGroups) } : {}),
       } },
       { new: true, runValidators: true, overwrite: false }
     );

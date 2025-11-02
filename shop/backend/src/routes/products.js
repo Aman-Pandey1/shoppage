@@ -15,6 +15,49 @@ function normalizeProductShape(p) {
       price: Number((v?.price ?? v?.priceDelta) || 0) || 0,
     }));
   }
+  if (Array.isArray(obj.extraOptionGroups)) {
+    obj.extraOptionGroups = obj.extraOptionGroups.map((group, idx) => {
+      const selectionType = (group?.selectionType === 'single') ? 'single' : 'multi';
+      const options = Array.isArray(group?.options)
+        ? group.options.map((opt) => ({
+            key: String(opt?.key || opt?.label || `option_${idx}`).trim(),
+            label: String(opt?.label || opt?.key || 'Option').trim(),
+            priceDelta: Number((opt?.priceDelta ?? opt?.price) || 0) || 0,
+            description: opt?.description ? String(opt.description) : undefined,
+            isDefault: !!opt?.isDefault,
+          }))
+        : [];
+      const normalizedMin = Number.isFinite(Number(group?.minSelect)) ? Number(group.minSelect) : 0;
+      const normalizedMax = Number.isFinite(Number(group?.maxSelect)) ? Number(group.maxSelect) : 0;
+      let isRequired;
+      if (selectionType === 'single') {
+        if (typeof group?.isRequired === 'boolean') {
+          isRequired = group.isRequired;
+        } else {
+          const hasDefault = options.some((opt) => opt.isDefault);
+          isRequired = normalizedMin >= 1 || hasDefault;
+        }
+      } else {
+        isRequired = typeof group?.isRequired === 'boolean'
+          ? group.isRequired
+          : normalizedMin > 0;
+      }
+      const resolvedMin = selectionType === 'single' ? 1 : Math.max(0, normalizedMin);
+      const resolvedMax = selectionType === 'single'
+        ? 1
+        : Math.max(0, normalizedMax || (options.length ? options.length : 0));
+      return {
+        groupKey: String(group?.groupKey || group?.groupLabel || `group_${idx}`).trim(),
+        groupLabel: String(group?.groupLabel || group?.groupKey || `Group ${idx + 1}`).trim(),
+        helpText: group?.helpText ? String(group.helpText) : undefined,
+        selectionType,
+        isRequired,
+        minSelect: resolvedMin,
+        maxSelect: Math.max(resolvedMin, resolvedMax),
+        options,
+      };
+    });
+  }
   return obj;
 }
 

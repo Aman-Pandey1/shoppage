@@ -1,5 +1,13 @@
 import mongoose from 'mongoose';
 
+const SelectedOptionSchema = new mongoose.Schema({
+    groupKey: { type: String },
+    groupLabel: { type: String },
+    optionKey: { type: String },
+    optionLabel: { type: String },
+    priceDelta: { type: Number, default: 0 },
+}, { _id: false });
+
 const OrderItemSchema = new mongoose.Schema({
     productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
     name: { type: String, required: true },
@@ -14,6 +22,7 @@ const OrderItemSchema = new mongoose.Schema({
     portion: { type: String },
     // Optional: quantity choice selected by the customer (e.g., 250g / 500g)
     quantityOption: { type: String },
+    selectedOptions: [SelectedOptionSchema],
 }, { _id: false });
 
 const OrderSchema = new mongoose.Schema({

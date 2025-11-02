@@ -16,6 +16,24 @@ import { normalizePhoneForCountry } from '../utils/phone.js';
 
 const router = Router();
 
+function normalizeSelectedOptions(list) {
+  if (!Array.isArray(list)) return [];
+  return list
+    .map((opt) => {
+      const groupKey = String(opt?.groupKey || '').trim();
+      const optionKey = String(opt?.optionKey || '').trim();
+      if (!groupKey || !optionKey) return null;
+      return {
+        groupKey,
+        groupLabel: opt?.groupLabel ? String(opt.groupLabel) : undefined,
+        optionKey,
+        optionLabel: opt?.optionLabel ? String(opt.optionLabel) : undefined,
+        priceDelta: Number(opt?.priceDelta || 0) || 0,
+      };
+    })
+    .filter(Boolean);
+}
+
 // Helper: Notify external API after order events (default to Blueboxx backend)
 const ORDER_NOTIFY_URL_FALLBACK = process.env.ORDER_NOTIFY_URL || 'https://blueboxx-backend.onrender.com/api/order/notify';
 function buildNotifyPayload(order, siteName) {
@@ -34,6 +52,7 @@ function buildNotifyPayload(order, siteName) {
       flavor: m.flavor,
       portion: m.portion,
       quantityOption: m.quantityOption,
+      selectedOptions: normalizeSelectedOptions(m.selectedOptions),
     })),
     totalCents: order?.totalCents,
     taxCents: order?.taxCents,
@@ -175,7 +194,17 @@ router.get('/confirm/:sessionId', async (req, res) => {
                 storeId: site.doordashStoreId,
                 pickup: safePickup,
                 dropoff: safeDropoff,
-                manifestItems: (updatedOrder.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
+                manifestItems: (updatedOrder.items || []).map((m) => ({
+                  name: m.name,
+                  quantity: m.quantity,
+                  size: m.size,
+                  price: m.priceCents,
+                  spiceLevel: m.spiceLevel,
+                  flavor: m.flavor,
+                  portion: m.portion,
+                  quantityOption: m.quantityOption,
+                  selectedOptions: normalizeSelectedOptions(m.selectedOptions),
+                })),
                 tip: 0,
                 externalId: String(updatedOrder._id),
               });
@@ -184,7 +213,17 @@ router.get('/confirm/:sessionId', async (req, res) => {
                 customerId: site.uberCustomerId,
                 pickup: safePickup,
                 dropoff: safeDropoff,
-                manifestItems: (updatedOrder.items || []).map((m) => ({ name: m.name, quantity: m.quantity, size: m.size, price: m.priceCents, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion })),
+                manifestItems: (updatedOrder.items || []).map((m) => ({
+                  name: m.name,
+                  quantity: m.quantity,
+                  size: m.size,
+                  price: m.priceCents,
+                  spiceLevel: m.spiceLevel,
+                  flavor: m.flavor,
+                  portion: m.portion,
+                  quantityOption: m.quantityOption,
+                  selectedOptions: normalizeSelectedOptions(m.selectedOptions),
+                })),
                 tip: 0,
                 externalId: String(updatedOrder._id),
                 creds: {
@@ -333,6 +372,7 @@ router.post('/:slug/checkout/pickup', requireUser, async (req, res) => {
         flavor: m.flavor,
         portion: m.portion,
         quantityOption: m.quantityOption,
+        selectedOptions: normalizeSelectedOptions(m.selectedOptions),
       })),
       totalCents,
       taxCents,
@@ -585,7 +625,17 @@ router.post('/:slug/checkout/delivery', requireUser, async (req, res) => {
       site: req.siteId,
       userId: req.user?.userId,
       userEmail: req.user?.email,
-      items: manifestItems.map((m) => ({ name: m.name, quantity: m.quantity, priceCents: m.priceCents || m.price || 0, size: m.size, spiceLevel: m.spiceLevel, flavor: m.flavor, portion: m.portion, quantityOption: m.quantityOption })),
+      items: manifestItems.map((m) => ({
+        name: m.name,
+        quantity: m.quantity,
+        priceCents: m.priceCents || m.price || 0,
+        size: m.size,
+        spiceLevel: m.spiceLevel,
+        flavor: m.flavor,
+        portion: m.portion,
+        quantityOption: m.quantityOption,
+        selectedOptions: normalizeSelectedOptions(m.selectedOptions),
+      })),
       totalCents,
       taxCents,
       deliveryFeeCents: customerDeliveryFeeCents,

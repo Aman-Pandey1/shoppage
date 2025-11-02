@@ -4,6 +4,19 @@ const OptionSchema = new mongoose.Schema({
 	key: { type: String, required: true },
 	label: { type: String, required: true },
 	priceDelta: { type: Number, default: 0 },
+	description: { type: String },
+	isDefault: { type: Boolean, default: false },
+}, { _id: false });
+
+const ExtraOptionGroupSchema = new mongoose.Schema({
+	groupKey: { type: String, required: true },
+	groupLabel: { type: String, required: true },
+	helpText: { type: String },
+	selectionType: { type: String, enum: ['single', 'multi'], default: 'multi' },
+	isRequired: { type: Boolean, default: false },
+	minSelect: { type: Number, default: 0 },
+	maxSelect: { type: Number, default: 0 },
+	options: [OptionSchema],
 }, { _id: false });
 
 const ProductSchema = new mongoose.Schema({
@@ -41,13 +54,7 @@ const ProductSchema = new mongoose.Schema({
 		label: { type: String, required: true },
 		price: { type: Number, default: 0 },
 	}],
-	extraOptionGroups: [{
-		groupKey: { type: String, required: true },
-		groupLabel: { type: String, required: true },
-		minSelect: { type: Number, default: 0 },
-		maxSelect: { type: Number, default: 0 },
-		options: [OptionSchema],
-	}],
+	extraOptionGroups: [ExtraOptionGroupSchema],
 }, { timestamps: true });
 
 ProductSchema.index({ site: 1, categoryId: 1, name: 1 });

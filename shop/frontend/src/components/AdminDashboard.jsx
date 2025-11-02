@@ -3,6 +3,7 @@ import { deleteJson, fetchJson, postJson, putJson, patchJson, download, postFile
 import { SiteSettingsPanel } from './SiteSettingsPanel';
 import { Modal } from './Modal';
 import { getSpiceBadge, normalizeSpiceLevel } from '../lib/assetFinder';
+import { ExtraOptionGroupsEditor } from './ExtraOptionGroupsEditor';
 
 export const AdminDashboard = () => {
   const [sites, setSites] = useState([]);
@@ -329,8 +330,8 @@ export const AdminDashboard = () => {
           <span>Veg / Non-Veg</span>
           <select value={vegFilter} onChange={(e) => setVegFilter(e.target.value)}>
             <option value="all">All</option>
-            <option value="veg">🟢 Veg</option>
-            <option value="nonveg">🔴 Non-Veg</option>
+            <option value="veg">?? Veg</option>
+            <option value="nonveg">?? Non-Veg</option>
           </select>
         </label>
         <button onClick={() => {
@@ -455,7 +456,7 @@ export const AdminDashboard = () => {
                     } finally { setMerging(false); }
                   }}
                   className={merging ? 'primary-btn' : ''}
-                >{merging ? 'Merging…' : 'Merge'}</button>
+                >{merging ? 'Merging?' : 'Merge'}</button>
               </div>
               {mergeMessage ? <div className="muted" style={{ fontSize: 12 }}>{mergeMessage}</div> : null}
             </div>
@@ -597,7 +598,7 @@ export const AdminDashboard = () => {
                 </label>
               </div>
             </div>
-            {ordersLoading ? <div style={{ marginTop: 10 }}>Loading orders…</div> : null}
+            {ordersLoading ? <div style={{ marginTop: 10 }}>Loading orders?</div> : null}
             {ordersError ? <div style={{ color: 'red', marginTop: 10 }}>{ordersError}</div> : null}
             {!ordersLoading && !ordersError ? (
               <div style={{ marginTop: 12, overflowX: 'auto' }}>
@@ -615,14 +616,14 @@ export const AdminDashboard = () => {
                   </thead>
                   <tbody>
                     {(Array.isArray(orders) ? orders : []).map((o) => {
-                      const customer = o.dropoff?.name || o.userEmail || '—';
-                      const itemsText = (Array.isArray(o.items) ? o.items : []).map((it) => `${it.name}${it.spiceLevel ? ` [${it.spiceLevel}]` : ''}${it.size ? ` (${it.size})` : ''} × ${it.quantity}`).join(', ');
+                      const customer = o.dropoff?.name || o.userEmail || '?';
+                      const itemsText = (Array.isArray(o.items) ? o.items : []).map((it) => `${it.name}${it.spiceLevel ? ` [${it.spiceLevel}]` : ''}${it.size ? ` (${it.size})` : ''} ? ${it.quantity}`).join(', ');
                       const tax = ((o.taxCents||0)/100).toFixed(2);
                       const notes = o.notes ? String(o.notes).slice(0, 60) : '';
                       return (
                         <tr key={o._id}>
                           <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>{o.orderNumber || `BB-${String(o._id).slice(-6)}`}</td>
-                          <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>{customer}{notes ? <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>Notes: {notes}{o.notes.length > 60 ? '…' : ''}</div> : null}</td>
+                          <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>{customer}{notes ? <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>Notes: {notes}{o.notes.length > 60 ? '?' : ''}</div> : null}</td>
                           <td style={{ padding: '8px 6px', borderBottom: '1px solid var(--border)' }}>{(function(){
                             try {
                               const tz = (selectedSite && selectedSite.timeZone) ? selectedSite.timeZone : 'America/Edmonton';
@@ -1008,19 +1009,21 @@ export const AdminDashboard = () => {
                     setEditing({ ...editing, variants: next });
                   }}>+ Add variant</button>
                 </div>
-                  <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <span>Extra option groups (JSON)</span>
-                    <textarea
-                      rows={4}
-                      value={JSON.stringify(editing.extraOptionGroups || [], null, 2)}
-                      onChange={(e) => {
-                        try {
-                          const parsed = JSON.parse(e.target.value);
-                          setEditing({ ...editing, extraOptionGroups: parsed });
-                        } catch {}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <span>Custom option groups</span>
+                    <ExtraOptionGroupsEditor
+                      value={editing.extraOptionGroups || []}
+                      onChange={(groups) => {
+                        setEditing({ ...editing, extraOptionGroups: groups });
                       }}
                     />
-                  </label>
+                    <details style={{ marginTop: 6, background: 'var(--panel-2)', borderRadius: 8, padding: '8px 12px' }}>
+                      <summary style={{ cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Advanced: JSON preview</summary>
+                      <pre style={{ marginTop: 6, maxHeight: 240, overflow: 'auto', fontSize: 11, background: '#fff', border: '1px solid var(--border)', borderRadius: 6, padding: 8 }}>
+{JSON.stringify(editing.extraOptionGroups || [], null, 2)}
+                      </pre>
+                    </details>
+                  </div>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 10 }}>
                   <button onClick={() => setEditing(null)}>Cancel</button>
@@ -1058,7 +1061,7 @@ export const AdminDashboard = () => {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ fontWeight: 800 }}>{p.name}</div>
-                    <div title={p.isVeg === false ? 'Non-Veg' : 'Veg'}>{p.isVeg === false ? '🔴' : '🟢'}</div>
+                    <div title={p.isVeg === false ? 'Non-Veg' : 'Veg'}>{p.isVeg === false ? '??' : '??'}</div>
                   </div>
                   <div className="muted" style={{ fontSize: 13, margin: '4px 0 8px' }}>{p.description}</div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
