@@ -64,8 +64,41 @@ function sanitizeGroupsForMode(input, mode) {
   });
 }
 
-export const ExtraOptionGroupsEditor = ({ value, onChange, mode = 'extra' }) => {
+export const ExtraOptionGroupsEditor = ({
+  value,
+  onChange,
+  mode = 'extra',
+  depth = 0,
+  parentKeyBase = 'group',
+  addGroupLabel,
+  addOptionLabel,
+}) => {
   const isFreeMode = mode === 'free';
+  const isNested = depth > 0;
+
+  const derivedAddGroupLabel = addGroupLabel || (depth === 0
+    ? '+ Add option group'
+    : depth === 1
+      ? '+ Add sub option'
+      : '+ Add nested option group');
+
+  const derivedAddOptionLabel = addOptionLabel || (depth === 0
+    ? '+ Add option'
+    : depth === 1
+      ? '+ Add their option'
+      : '+ Add nested option');
+
+  const cleanGroupActionLabel = derivedAddGroupLabel.replace(/^\+\s*/, '').trim();
+
+  const emptyStateMessage = (() => {
+    if (!isNested) {
+      return `No custom option groups yet. Click "${cleanGroupActionLabel}" to create one.`;
+    }
+    if (depth === 1) {
+      return `No sub options yet. Click "${cleanGroupActionLabel}" to create one.`;
+    }
+    return `No nested options yet. Click "${cleanGroupActionLabel}" to create one.`;
+  })();
 
   const sanitizeForMode = React.useCallback((input) => sanitizeGroupsForMode(input, isFreeMode ? 'free' : 'extra'), [isFreeMode]);
 
@@ -76,6 +109,31 @@ export const ExtraOptionGroupsEditor = ({ value, onChange, mode = 'extra' }) => 
       onChange(sanitizeForMode(next));
     }
   }, [onChange, sanitizeForMode]);
+
+  const createEmptyGroup = React.useCallback((existingGroups, baseOverride) => {
+    const list = Array.isArray(existingGroups) ? existingGroups : [];
+    const existingKeys = new Set(list.map((g) => g?.groupKey).filter(Boolean));
+    const baseName = baseOverride || parentKeyBase || 'group';
+    const groupBase = `${baseName}_group`;
+    const groupKey = generateUniqueKey(groupBase, existingKeys, 'group');
+    return {
+      groupKey,
+      groupLabel: '',
+      selectionType: 'single',
+      isRequired: true,
+      helpText: '',
+      minSelect: 1,
+      maxSelect: 1,
+      options: [
+        {
+          key: `${groupKey}_option`,
+          label: '',
+          priceDelta: 0,
+          isDefault: true,
+        },
+      ],
+    };
+  }, [parentKeyBase]);
 
   const updateGroup = (index, updater) => {
     setGroups(groups.map((group, idx) => (idx === index ? updater(group) : group)));
@@ -90,27 +148,10 @@ export const ExtraOptionGroupsEditor = ({ value, onChange, mode = 'extra' }) => 
   };
 
   const handleAddGroup = () => {
-    const existingKeys = new Set(groups.map((g) => g?.groupKey).filter(Boolean));
-    const newKey = generateUniqueKey('group', existingKeys);
+    const nextGroup = createEmptyGroup(groups);
     const next = [
       ...groups,
-      {
-        groupKey: newKey,
-        groupLabel: '',
-        selectionType: 'single',
-        isRequired: true,
-        helpText: '',
-        minSelect: 1,
-        maxSelect: 1,
-        options: [
-          {
-            key: `${newKey}_option`,
-            label: '',
-            priceDelta: 0,
-            isDefault: true,
-          },
-        ],
-      },
+      nextGroup,
     ];
     setGroups(next);
   };
@@ -197,11 +238,46 @@ export const ExtraOptionGroupsEditor = ({ value, onChange, mode = 'extra' }) => 
     });
   };
 
+  const containerStyle = isNested
+    ? {
+        display: 'grid',
+        gap: 10,
+        padding: 10,
+        borderRadius: 10,
+        border: '1px solid var(--border)',
+        background: 'var(--panel-1)',
+      }
+    : {
+        display: 'grid',
+        gap: 12,
+      };
+
+  const groupCardStyle = isNested
+    ? {
+        padding: 10,
+        borderRadius: 10,
+        border: '1px dashed var(--border)',
+        background: '#fff',
+        display: 'grid',
+        gap: 8,
+      }
+    : {
+        padding: 12,
+        borderRadius: 12,
+        border: '1px solid var(--border)',
+        display: 'grid',
+        gap: 10,
+      };
+
+  const cardClassName = isNested ? undefined : 'card';
+
+  const headerTitle = depth === 0 ? 'Option group' : depth === 1 ? 'Sub option group' : 'Nested option group';
+
   return (
-    <div style={{ display: 'grid', gap: 12 }}>
+    <div style={containerStyle}>
       {groups.length === 0 ? (
         <div className="muted" style={{ fontSize: 12 }}>
-          No custom option groups yet. Click "Add option group" to create one.
+          {emptyStateMessage}
         </div>
       ) : null}
       {groups.map((group, groupIdx) => {
@@ -210,9 +286,9 @@ export const ExtraOptionGroupsEditor = ({ value, onChange, mode = 'extra' }) => 
           ? 'minmax(0, 1fr) 160px 140px auto'
           : 'minmax(0, 1fr) 120px 120px auto';
         return (
-          <div key={group?.groupKey || groupIdx} className="card" style={{ padding: 12, borderRadius: 12, border: '1px solid var(--border)', display: 'grid', gap: 10 }}>
+          <div key={group?.groupKey || groupIdx} className={cardClassName} style={groupCardStyle}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontWeight: 800 }}>Option group #{groupIdx + 1}</div>
+              <div style={{ fontWeight: 800 }}>{headerTitle} #{groupIdx + 1}</div>
               <button className="danger" onClick={() => handleRemoveGroup(groupIdx)}>Remove group</button>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
@@ -335,6 +411,7 @@ export const ExtraOptionGroupsEditor = ({ value, onChange, mode = 'extra' }) => 
                 const optionKey = option?.key || `${groupIdx}-${optionIdx}`;
                 const extraCount = Array.isArray(option?.childExtraOptionGroups) ? option.childExtraOptionGroups.length : 0;
                 const freeCount = Array.isArray(option?.childFreeOptionGroups) ? option.childFreeOptionGroups.length : 0;
+                const optionParentKeyBase = optionKey || `${group?.groupKey || 'group'}_${optionIdx}`;
                 return (
                   <React.Fragment key={`${groupIdx}-${optionKey}`}>
                     <div style={{ display: 'grid', gridTemplateColumns: optionColumns, gap: 8, alignItems: 'center' }}>
@@ -411,37 +488,47 @@ export const ExtraOptionGroupsEditor = ({ value, onChange, mode = 'extra' }) => 
                       )}
                       <button className="danger" onClick={() => handleRemoveOption(groupIdx, optionIdx)}>Remove</button>
                     </div>
-                    <div style={{ gridColumn: '1 / -1', display: 'grid', gap: 6, paddingLeft: 12, borderLeft: '2px dashed var(--border)', marginTop: 6 }}>
-                      <details style={{ fontSize: 12 }} defaultOpen={extraCount > 0}>
-                        <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Paid add-on groups ({extraCount})</summary>
-                        <div style={{ marginTop: 8 }}>
-                          <ExtraOptionGroupsEditor
-                            value={option?.childExtraOptionGroups || []}
-                            onChange={(nextGroups) => updateOption(groupIdx, optionIdx, (prev) => ({ ...prev, childExtraOptionGroups: nextGroups }))}
-                          />
+                    <div style={{ gridColumn: '1 / -1', display: 'grid', gap: 10, marginTop: 10 }}>
+                      <div style={{ display: 'grid', gap: 6 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span>Sub options</span>
+                          <span className="muted" style={{ fontSize: 11 }}>({extraCount})</span>
                         </div>
-                      </details>
-                      <details style={{ fontSize: 12 }} defaultOpen={freeCount > 0}>
-                        <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Included sub-options ({freeCount})</summary>
-                        <div style={{ marginTop: 8 }}>
-                          <ExtraOptionGroupsEditor
-                            mode="free"
-                            value={option?.childFreeOptionGroups || []}
-                            onChange={(nextGroups) => updateOption(groupIdx, optionIdx, (prev) => ({ ...prev, childFreeOptionGroups: nextGroups }))}
-                          />
+                        <ExtraOptionGroupsEditor
+                          value={option?.childExtraOptionGroups || []}
+                          onChange={(nextGroups) => updateOption(groupIdx, optionIdx, (prev) => ({ ...prev, childExtraOptionGroups: nextGroups }))}
+                          depth={depth + 1}
+                          parentKeyBase={`${optionParentKeyBase}_extra`}
+                          addGroupLabel="+ Add sub option"
+                          addOptionLabel="+ Add their option"
+                        />
+                      </div>
+                      <div style={{ display: 'grid', gap: 6 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span>Included sub options</span>
+                          <span className="muted" style={{ fontSize: 11 }}>({freeCount})</span>
                         </div>
-                      </details>
+                        <ExtraOptionGroupsEditor
+                          mode="free"
+                          value={option?.childFreeOptionGroups || []}
+                          onChange={(nextGroups) => updateOption(groupIdx, optionIdx, (prev) => ({ ...prev, childFreeOptionGroups: nextGroups }))}
+                          depth={depth + 1}
+                          parentKeyBase={`${optionParentKeyBase}_free`}
+                          addGroupLabel="+ Add included sub option"
+                          addOptionLabel="+ Add their option"
+                        />
+                      </div>
                     </div>
                   </React.Fragment>
                 );
               })}
-              <button onClick={() => handleAddOption(groupIdx)}>+ Add option</button>
+              <button onClick={() => handleAddOption(groupIdx)}>{derivedAddOptionLabel}</button>
             </div>
           </div>
         );
       })}
       <div>
-        <button onClick={handleAddGroup} className="primary-btn">+ Add option group</button>
+        <button onClick={handleAddGroup} className={depth === 0 ? 'primary-btn' : undefined}>{derivedAddGroupLabel}</button>
       </div>
     </div>
   );
