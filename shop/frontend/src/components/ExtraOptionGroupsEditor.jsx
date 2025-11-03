@@ -1,5 +1,44 @@
 import React from 'react';
 
+const DEPTH_THEMES = [
+  {
+    background: '#f0f9ff',
+    border: '#bae6fd',
+    accent: '#0ea5e9',
+    optionBackground: '#e0f2fe',
+    headerBackground: 'rgba(14, 165, 233, 0.12)',
+    ring: 'rgba(14, 165, 233, 0.14)'
+  },
+  {
+    background: '#f0fdf4',
+    border: '#bbf7d0',
+    accent: '#16a34a',
+    optionBackground: '#dcfce7',
+    headerBackground: 'rgba(22, 163, 74, 0.12)',
+    ring: 'rgba(22, 163, 74, 0.14)'
+  },
+  {
+    background: '#fdf4ff',
+    border: '#e9d5ff',
+    accent: '#a855f7',
+    optionBackground: '#f5f3ff',
+    headerBackground: 'rgba(168, 85, 247, 0.12)',
+    ring: 'rgba(168, 85, 247, 0.14)'
+  },
+  {
+    background: '#fff7ed',
+    border: '#fed7aa',
+    accent: '#f97316',
+    optionBackground: '#ffedd5',
+    headerBackground: 'rgba(249, 115, 22, 0.12)',
+    ring: 'rgba(249, 115, 22, 0.16)'
+  }
+];
+
+function getDepthTheme(depth = 0) {
+  return DEPTH_THEMES[depth % DEPTH_THEMES.length];
+}
+
 function slugify(value, fallback) {
   const base = String(value || '')
     .toLowerCase()
@@ -107,6 +146,9 @@ export const ExtraOptionGroupsEditor = ({
   const showGroupKeyField = !isNested;
   const showGroupHelpTextField = !isNested;
   const showOptionKeyField = !isNested;
+
+  const theme = getDepthTheme(depth);
+  const accentThickness = Math.max(2, 6 - depth);
 
   const optionColumns = (() => {
     if (showOptionKeyField) {
@@ -257,10 +299,11 @@ export const ExtraOptionGroupsEditor = ({
     ? {
         display: 'grid',
         gap: 10,
-        padding: 10,
-        borderRadius: 10,
-        border: '1px solid var(--border)',
-        background: 'var(--panel-1)',
+        padding: 12,
+        borderRadius: 12,
+        border: `1px solid ${theme.border}`,
+        background: theme.background,
+        boxShadow: `inset 0 0 0 1px ${theme.ring}`,
       }
     : {
         display: 'grid',
@@ -269,24 +312,72 @@ export const ExtraOptionGroupsEditor = ({
 
   const groupCardStyle = isNested
     ? {
-        padding: 10,
-        borderRadius: 10,
-        border: '1px dashed var(--border)',
-        background: '#fff',
-        display: 'grid',
-        gap: 8,
-      }
-    : {
         padding: 12,
         borderRadius: 12,
-        border: '1px solid var(--border)',
+        border: `1px solid ${theme.border}`,
+        background: theme.background,
+        display: 'grid',
+        gap: 8,
+        boxShadow: `0 0 0 1px ${theme.ring}`,
+        borderLeft: `${accentThickness}px solid ${theme.accent}`,
+      }
+    : {
+        padding: 14,
+        borderRadius: 14,
+        border: `1px solid ${theme.border}`,
+        background: theme.background,
         display: 'grid',
         gap: 10,
+        boxShadow: `0 2px 6px -3px ${theme.ring}`,
+        borderLeft: `${accentThickness}px solid ${theme.accent}`,
       };
 
   const cardClassName = isNested ? undefined : 'card';
 
   const headerTitle = depth === 0 ? 'Option group' : depth === 1 ? 'Sub option group' : 'Nested option group';
+
+  const headerStyle = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '8px 10px',
+    borderRadius: 10,
+    background: theme.headerBackground,
+  };
+
+  const headerTitleStyle = {
+    fontWeight: 800,
+    color: theme.accent,
+  };
+
+  const optionRowStyle = {
+    display: 'grid',
+    gap: 8,
+    alignItems: 'center',
+    padding: '8px 10px',
+    borderRadius: 10,
+    border: `1px solid ${theme.border}`,
+    background: theme.optionBackground,
+    boxShadow: `0 1px 0 ${theme.ring}`,
+  };
+
+  const nestedDividerStyle = {
+    gridColumn: '1 / -1',
+    display: 'grid',
+    gap: 10,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTop: `1px dashed ${theme.border}`,
+  };
+
+  const optionsContainerStyle = {
+    display: 'grid',
+    gap: 8,
+    padding: '10px 12px',
+    borderRadius: 12,
+    border: `1px dashed ${theme.border}`,
+    background: `linear-gradient(180deg, ${theme.optionBackground}, ${theme.background})`,
+  };
 
   return (
     <div style={containerStyle}>
@@ -299,8 +390,8 @@ export const ExtraOptionGroupsEditor = ({
         const options = Array.isArray(group?.options) ? group.options : [];
         return (
           <div key={group?.groupKey || groupIdx} className={cardClassName} style={groupCardStyle}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontWeight: 800 }}>{headerTitle} #{groupIdx + 1}</div>
+            <div style={headerStyle}>
+              <div style={headerTitleStyle}>{headerTitle} #{groupIdx + 1}</div>
               <button className="danger" onClick={() => handleRemoveGroup(groupIdx)}>Remove group</button>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
@@ -418,7 +509,7 @@ export const ExtraOptionGroupsEditor = ({
                 Customers can pick one included option. Additional selections are not allowed.
               </div>
             )}
-            <div style={{ display: 'grid', gap: 8 }}>
+            <div style={optionsContainerStyle}>
               <div style={{ fontWeight: 700 }}>Options</div>
               {options.length === 0 ? (
                 <div className="muted" style={{ fontSize: 12 }}>No options yet.</div>
@@ -430,7 +521,7 @@ export const ExtraOptionGroupsEditor = ({
                 const optionParentKeyBase = optionKey || `${group?.groupKey || 'group'}_${optionIdx}`;
                 return (
                   <React.Fragment key={`${groupIdx}-${optionKey}`}>
-                    <div style={{ display: 'grid', gridTemplateColumns: optionColumns, gap: 8, alignItems: 'center' }}>
+                    <div style={{ ...optionRowStyle, gridTemplateColumns: optionColumns }}>
                       <input
                         placeholder="Label"
                         value={option?.label || ''}
@@ -506,7 +597,7 @@ export const ExtraOptionGroupsEditor = ({
                       )}
                       <button className="danger" onClick={() => handleRemoveOption(groupIdx, optionIdx)}>Remove</button>
                     </div>
-                    <div style={{ gridColumn: '1 / -1', display: 'grid', gap: 10, marginTop: 10 }}>
+                    <div style={nestedDividerStyle}>
                       <div style={{ display: 'grid', gap: 6 }}>
                         <div style={{ fontSize: 12, fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <span>Sub options</span>
