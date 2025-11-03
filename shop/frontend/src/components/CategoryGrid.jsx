@@ -1,10 +1,21 @@
 import React from 'react';
 import { resolveAssetUrl } from '../lib/api';
-import { useCategoriesQuery, useCategoryCountsQuery } from '../lib/queries';
+import { useCategoriesQuery } from '../lib/queries';
 
 export const CategoryGrid = ({ onSelect, siteSlug = 'default' }) => {
   const { data: categories = [], isLoading: loading, isError, error } = useCategoriesQuery(siteSlug);
-  const counts = useCategoryCountsQuery(siteSlug, categories);
+  const counts = React.useMemo(() => {
+    if (!Array.isArray(categories)) return {};
+    return categories.reduce((acc, cat) => {
+      if (!cat?._id) return acc;
+      const id = String(cat._id);
+      const value = typeof cat.productCount === 'number'
+        ? cat.productCount
+        : Array.isArray(cat.products) ? cat.products.length : undefined;
+      if (typeof value === 'number') acc[id] = value;
+      return acc;
+    }, {});
+  }, [categories]);
 
   if (loading) return (
     <div className="loading-center">
@@ -110,7 +121,7 @@ export const CategoryGrid = ({ onSelect, siteSlug = 'default' }) => {
             >
               <div style={{ fontWeight: 800, letterSpacing: '.01em' }}>{cat.name}</div>
               <div className="muted" style={{ fontSize: 12 }}>
-                {typeof counts[cat._id] === 'number' ? `${counts[cat._id]} products` : 'Products'}
+                {typeof counts[String(cat._id)] === 'number' ? `${counts[String(cat._id)]} products` : 'Products'}
               </div>
             </div>
           </div>

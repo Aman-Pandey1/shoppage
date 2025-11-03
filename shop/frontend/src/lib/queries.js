@@ -1,4 +1,4 @@
-import { useQuery, useQueries } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { fetchJson } from './api'
 
 export function useSiteQuery(siteSlug = 'default') {
@@ -49,23 +49,3 @@ export function useHoursQuery(siteSlug = 'default') {
   })
 }
 
-export function useCategoryCountsQuery(siteSlug = 'default', categories) {
-  const list = Array.isArray(categories) ? categories : []
-  const results = useQueries({
-    queries: list.map((c) => ({
-      queryKey: ['productsCount', siteSlug, String(c._id)],
-      queryFn: async () => {
-        const data = await fetchJson(`/api/shop/${siteSlug}/products?categoryId=${encodeURIComponent(String(c._id))}`)
-        return data.length
-      },
-      enabled: !!c?._id,
-      staleTime: 60_000,
-    })),
-  })
-  const counts = {}
-  results.forEach((r, idx) => {
-    const id = String(list[idx]._id)
-    if (r.isSuccess) counts[id] = r.data
-  })
-  return counts
-}

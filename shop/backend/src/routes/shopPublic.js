@@ -552,14 +552,48 @@ router.get('/:slug/categories', async (req, res) => {
 	try {
 		const mock = req.app.locals.mockData;
 		if (mock) {
-      const categories = mock.categories
-        .filter((c) => c.site === req.siteId)
-        .map((c) => ({ ...c, pickupOnly: !!c.pickupOnly }))
-        .sort((a, b) => (a.sortIndex - b.sortIndex) || a.name.localeCompare(b.name));
+			const countMap = (mock.products || [])
+				.filter((p) => p.site === req.siteId)
+				.reduce((acc, product) => {
+					const key = String(product.categoryId || '');
+					if (!key) return acc;
+					acc[key] = (acc[key] || 0) + 1;
+					return acc;
+				}, {});
+			const categories = mock.categories
+				.filter((c) => c.site === req.siteId)
+				.map((c) => ({
+					...c,
+					pickupOnly: !!c.pickupOnly,
+					productCount: countMap[String(c._id)] || 0,
+				}))
+				.sort((a, b) => (a.sortIndex - b.sortIndex) || a.name.localeCompare(b.name));
 			return res.json(categories);
 		}
-    const categories = await Category.find({ site: req.siteId }).sort({ sortIndex: 1, name: 1 });
-		res.json(categories);
+
+		const [categories, counts] = await Promise.all([
+			Category.find({ site: req.siteId }).sort({ sortIndex: 1, name: 1 }),
+			Product.aggregate([
+				{ $match: { site: req.siteId } },
+				{ $group: { _id: '$categoryId', count: { $sum: 1 } } },
+			]),
+		]);
+
+		const countMap = counts.reduce((acc, { _id, count }) => {
+			if (_id) acc[String(_id)] = count;
+			return acc;
+		}, {});
+
+		const response = categories.map((catDoc) => {
+			const cat = typeof catDoc.toObject === 'function' ? catDoc.toObject() : { ...catDoc };
+			return {
+				...cat,
+				productCount: countMap[String(cat._id)] || 0,
+				pickupOnly: !!cat.pickupOnly,
+			};
+		});
+
+		res.json(response);
 	} catch (err) {
 		res.status(400).json({ error: err.message });
 	}
