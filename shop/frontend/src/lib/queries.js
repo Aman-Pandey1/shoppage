@@ -15,17 +15,30 @@ export function useCategoriesQuery(siteSlug = 'default') {
   })
 }
 
-export function useProductsQuery({ siteSlug = 'default', categoryId, vegFilter = 'all' }) {
+export function useProductsQuery({ siteSlug = 'default', categoryId, vegFilter = 'all', enabled }) {
   return useQuery({
-    enabled: !!categoryId,
+    // if `enabled` is passed, use it; otherwise keep old behavior: !!categoryId
+    enabled: typeof enabled === 'boolean' ? enabled : !!categoryId,
     queryKey: ['products', siteSlug, categoryId, vegFilter],
     queryFn: () => {
-      const params = new URLSearchParams({ categoryId: String(categoryId) })
-      if (vegFilter === 'veg') params.set('veg', 'veg')
-      if (vegFilter === 'nonveg') params.set('veg', 'nonveg')
-      return fetchJson(`/api/shop/${siteSlug}/products?${params.toString()}`)
+      const params = new URLSearchParams();
+
+      // previous behavior: only add categoryId when we have one
+      if (categoryId != null) {
+        params.set('categoryId', String(categoryId));
+      }
+
+      if (vegFilter === 'veg') params.set('veg', 'veg');
+      if (vegFilter === 'nonveg') params.set('veg', 'nonveg');
+
+      const qs = params.toString();
+      const url = qs
+        ? `/api/shop/${siteSlug}/products?${qs}`
+        : `/api/shop/${siteSlug}/products`;
+
+      return fetchJson(url);
     },
-  })
+  });
 }
 
 export function useLocationsQuery(siteSlug = 'default') {

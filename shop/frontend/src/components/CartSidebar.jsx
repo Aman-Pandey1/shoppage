@@ -150,17 +150,16 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
         position: 'fixed',
         // Bring the cart near the very top on desktop; mobile overrides in CSS
         top: 8,
-        right: 16,
-        bottom: 16,
+        right: 0,
+        bottom: 4,
         width: 'var(--cart-width, 360px)',
         background: '#0b0b0b',
         border: '3px solid #111827',
-        borderRadius: 'var(--radius)',
-        padding: 16,
+        padding: 4,
         overflowY: 'auto',
         // Ensure desktop cart sits above content and banner, below header dropdown
         zIndex: 700,
-        boxShadow: '0 6px 0 rgba(0,0,0,0.95)'
+        // boxShadow: '0 6px 0 rgba(0,0,0,0.95)'
       }}
       className="cart-sidebar"
       data-open={open ? 'true' : 'false'}
@@ -171,7 +170,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
         style={{
           padding: 14,
           borderRadius: 12,
-          marginBottom: 12,
+          marginBottom: 6,
           background: '#fff',
           border: '1px solid var(--border)',
           boxShadow: 'var(--shadow-soft)'
@@ -256,7 +255,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
         </div>
       )}
 
-      <div className="card" style={{ marginTop: 12, borderRadius: 12, padding: 12 }}>
+      <div className="card" style={{ marginTop: 6, borderRadius: 12, padding: 12 }}>
         {freeDeliveryEnabled && typeof freeDeliveryMinSubtotalCents === 'number' ? (
           <div
             className="animate-fadeInUp"
