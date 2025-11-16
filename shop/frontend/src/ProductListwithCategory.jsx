@@ -148,9 +148,9 @@ const ProductListwithCategory = ({
   const isAllSelected = !selectedCategory;
 
   return (
-    <div className="w-full h-[calc(100dvh-144px)] overflow-hidden flex justify-center items-start gap-2">
+    <div className="w-full md:h-[calc(100dvh-144px)] overflow-hidden flex flex-col md:flex-row justify-center items-start gap-2 relative md:top-0 top-[350px]">
       {/* CATEGORY SIDEBAR */}
-      <aside className="w-1/4 max-w-xs h-full sticky top-4">
+      <aside className="md:w-1/4 w-full md:max-w-xs h-full md:sticky relative md:top-4">
         <div className="h-full bg-white border border-slate-200 shadow-sm flex flex-col overflow-hidden">
           {/* Header */}
           <div className="px-4 pt-4 pb-4 border-b border-slate-100">
@@ -234,7 +234,7 @@ const ProductListwithCategory = ({
       </aside>
 
       {/* RIGHT SIDE CONTENT */}
-      <div className="w-3/4 h-full overflow-auto">
+      <div className="md:w-3/4 w-full h-full overflow-auto">
         <div className="w-full h-full bg-slate-50 border border-slate-200 p-4 space-y-6">
           {loadingProducts ? (
             <div className="flex flex-col items-center gap-3 text-slate-500">

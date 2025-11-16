@@ -243,7 +243,7 @@ export const TopNav = ({
             htmlFor=""
             className=" flex justify-start items-center gap-3 relative"
           >
-            <span className=" text-sm">Order Type:</span>
+            <span className=" md:text-sm text-[2.5vw]">Order Type:</span>
             <input
               type="text"
               readOnly
@@ -258,7 +258,7 @@ export const TopNav = ({
             htmlFor=""
             className=" flex justify-start items-center gap-3 relative"
           >
-            <span className=" text-sm">Location:</span>
+            <span className=" md:text-sm text-[2.5vw]">Location:</span>
             <RestaurantLocation
               locations={locations}
               setSelectedLocation={setSelectedLocation}
@@ -311,16 +311,16 @@ export const TopNav = ({
             minWidth: 0,
           }}
         >
-          <div className=" flex-1 flex flex-col justify-center items-end gap-2">
+          <div className=" flex-1 flex flex-col justify-center md:items-end items-start gap-2">
             <p className="text-black font-semibold flex justify-center items-center gap-2 pr-4">
-              <span className=" text-sm">Phone Number:</span>
+              <span className=" md:text-sm text-[2.5vw]">Phone Number:</span>
               <a
                 href={telHref}
                 aria-label="Call support"
                 title={`Call ${supportPhone}`}
                 className=" font-medium"
               >
-                <span className="hide-mobile text-xs text-black pb-2 border-b-2 border-black">{supportPhone}</span>
+                <span className=" text-xs text-black pb-2 border-b-2 border-black">{supportPhone}</span>
               </a>
             </p>
 
@@ -328,7 +328,7 @@ export const TopNav = ({
               htmlFor=""
               className="flex justify-start items-center gap-3 relative text-black font-semibold"
             >
-              <span className=" text-sm">Order Date/Time:</span>
+              <span className=" md:text-sm text-[2.5vw]">Order Date/Time:</span>
               <RestaurantDateTime
                 formattedDateOptions={formattedDateOptions}
                 formattedTimeOptions={formattedTimeOptions}
@@ -341,7 +341,7 @@ export const TopNav = ({
           </div>
           {/* Mobile: Cart + Account buttons */}
           {!isDesktop && (
-            <>
+            <div className=" w-full flex justify-start items-center gap-2">
               <button
                 className="cart-header-btn"
                 aria-label="Open cart"
@@ -387,7 +387,7 @@ export const TopNav = ({
                 ) : null}
               </button>
               <button
-                className="account-header-btn"
+                className="account-header-btn aspect-square"
                 aria-label="Account menu"
                 title="Account"
                 onClick={() => setMenuOpen((v) => !v)}
@@ -398,6 +398,7 @@ export const TopNav = ({
                   background: "#111827",
                   border: "1px solid #111827",
                   borderRadius: 999,
+                  flexShrink:0,
                   color: "#fff",
                   cursor: "pointer",
                   padding: "6px 10px",
@@ -413,7 +414,7 @@ export const TopNav = ({
                   <User size={16} color="#fff" />
                 )}
               </button>
-            </>
+            </div>
           )}
 
           {/* Desktop: account chip remains; hidden on mobile */}
@@ -543,7 +544,7 @@ const RestaurantLocation = ({
 }) => {
   return (
     <select
-      className=" flex-1 bg-transparent text-xs text-black border-0 rounded-none border-b-2 border-black p-2 font-medium remove-arr pr-8"
+      className=" flex-1 max-w-[75vw] bg-transparent text-xs text-black border-0 rounded-none border-b-2 border-black p-2 font-medium remove-arr pr-8"
       value={((idx) => (idx >= 0 ? String(idx) : ""))(
         locations.findIndex((l) => l === selectedLocation)
       )}
