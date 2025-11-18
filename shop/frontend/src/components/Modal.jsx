@@ -10,7 +10,7 @@ const overlayStyle = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  zIndex: 1000,
+  zIndex: 100000,
   backdropFilter: 'blur(4px)',
   overscrollBehavior: 'contain',
   touchAction: 'none',

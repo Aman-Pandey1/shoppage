@@ -311,7 +311,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
           className="card empty-cart animate-fadeInUp"
           style={{
             textAlign: 'center',
-            padding: 16,
+            padding: 12,
             borderRadius: 16,
             background: '#ffffff',
             color: 'var(--muted)',
@@ -830,7 +830,6 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
           style={{
             display: 'grid',
             gap: 6,
-            marginTop: 8,
             padding: 10,
             borderRadius: 12,
             background: '#f9fafb',
@@ -932,7 +931,7 @@ export const CartSidebar = ({ open, onClose, onCheckout, readyAt }) => {
           className="primary-btn"
           style={{
             width: '100%',
-            padding: '12px 16px',
+            padding: '10px 16px',
             borderRadius: 999,
             border: '1px solid #ea580c',
             background: 'linear-gradient(135deg, #fb923c, #f97316)',
